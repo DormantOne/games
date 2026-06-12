@@ -1,0 +1,463 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hyponatremia Quick Lab</title>
+<style>
+:root{
+  --bg:#07131f; --panel:#10263a; --panel2:#0c1d2d; --ink:#eef9ff; --muted:#a7bed1;
+  --blue:#48b8ff; --gold:#ffd769; --violet:#b99cff; --green:#71f0b2; --red:#ff6f83; --orange:#ffba6b;
+  --line:rgba(255,255,255,.12); --shadow:0 18px 55px rgba(0,0,0,.32);
+  --radius:22px; --sans:ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; min-height:100vh; color:var(--ink); font-family:var(--sans);
+  background:
+    radial-gradient(circle at 15% 15%, rgba(72,184,255,.22), transparent 32%),
+    radial-gradient(circle at 86% 10%, rgba(255,215,105,.14), transparent 28%),
+    linear-gradient(140deg,#06101b,#0a1b2d 60%,#04080e);
+}
+header{padding:24px 24px 10px; max-width:1250px; margin:auto}
+h1{font-size:clamp(30px,5vw,58px); line-height:.9; margin:0; letter-spacing:-.055em}
+header p{color:var(--muted); margin:12px 0 0; max-width:850px}
+main{max-width:1250px; margin:auto; padding:14px 18px 28px; display:grid; grid-template-columns:1.05fr .95fr; gap:16px}
+@media(max-width:950px){main{grid-template-columns:1fr}}
+.card{
+  background:linear-gradient(180deg,rgba(16,38,58,.88),rgba(9,24,38,.88));
+  border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden;
+}
+.card h2{font-size:17px; margin:0; padding:16px 18px 8px; display:flex; justify-content:space-between; align-items:center}
+.card h2 small{font-size:12px; color:var(--muted); font-weight:500}
+.body{padding:12px 16px 18px}
+button{
+  border:1px solid var(--line); background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.035));
+  color:var(--ink); border-radius:15px; padding:11px 13px; font-family:var(--sans); font-weight:750; cursor:pointer;
+  transition:.14s transform,.14s border;
+}
+button:hover{transform:translateY(-1px); border-color:rgba(72,184,255,.5)}
+button.primary{background:linear-gradient(180deg,rgba(72,184,255,.28),rgba(72,184,255,.12)); border-color:rgba(72,184,255,.45)}
+button.good{border-color:rgba(113,240,178,.55)}
+button.bad{border-color:rgba(255,111,131,.55)}
+.row{display:flex; gap:9px; flex-wrap:wrap; align-items:center}
+.casebox{
+  display:grid; grid-template-columns:120px 1fr; gap:14px; align-items:center;
+  background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:20px; padding:14px;
+}
+.patient{
+  height:150px; display:grid; place-items:center; position:relative; border-radius:18px;
+  background:radial-gradient(circle,rgba(72,184,255,.18),rgba(72,184,255,.04) 65%,transparent);
+}
+.person{font-size:72px; filter:drop-shadow(0 8px 18px rgba(0,0,0,.4))}
+.status-pills{display:flex; flex-wrap:wrap; gap:7px; margin-top:9px}
+.pill{font-size:12px; color:#d9efff; border:1px solid var(--line); background:rgba(255,255,255,.045); border-radius:999px; padding:5px 8px}
+.pill.warn{border-color:rgba(255,186,107,.5); color:#ffe2bd}
+.pill.bad{border-color:rgba(255,111,131,.5); color:#ffc8d0}
+.pill.good{border-color:rgba(113,240,178,.5); color:#caffdf}
+.labs{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:12px}
+@media(max-width:700px){.labs{grid-template-columns:repeat(2,1fr)}.casebox{grid-template-columns:1fr}.patient{height:110px}.person{font-size:58px}}
+.lab{
+  background:rgba(3,12,22,.45); border:1px solid rgba(255,255,255,.09); border-radius:16px; padding:11px;
+}
+.lab .k{color:var(--muted); font-size:12px}
+.lab .v{font-family:var(--mono); font-size:21px; margin-top:3px}
+.lab .u{color:var(--muted); font-size:11px; margin-top:2px}
+.quizgrid{display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:12px}
+@media(max-width:700px){.quizgrid{grid-template-columns:1fr}}
+.choice{text-align:left; min-height:64px}
+.choice b{display:block; font-size:13px}
+.choice small{display:block; color:var(--muted); margin-top:4px; line-height:1.25}
+.answer{
+  margin-top:12px; border-radius:18px; border:1px solid rgba(113,240,178,.25);
+  background:linear-gradient(180deg,rgba(113,240,178,.11),rgba(72,184,255,.06)); padding:13px; display:none;
+}
+.answer.show{display:block}
+.answer h3{margin:0 0 6px}
+.answer p{margin:7px 0; color:#d9eefc; line-height:1.38}
+.explain-viz{
+  margin-top:10px; display:grid; grid-template-columns:1fr 1fr; gap:10px;
+}
+.tank{
+  height:118px; border:1px solid var(--line); border-radius:18px; position:relative; overflow:hidden;
+  background:rgba(0,0,0,.18);
+}
+.wave{
+  position:absolute; left:-8%; right:-8%; bottom:0; height:40%;
+  background:linear-gradient(180deg,rgba(72,184,255,.75),rgba(72,184,255,.28));
+  border-radius:45% 45% 0 0; animation:slosh 3s ease-in-out infinite;
+}
+.solutes{position:absolute; inset:0}
+.dot{position:absolute; width:7px; height:7px; border-radius:50%; background:var(--gold); box-shadow:0 0 9px rgba(255,215,105,.8)}
+.dot.v{background:var(--violet); box-shadow:0 0 9px rgba(185,156,255,.8)}
+.tank label{position:absolute; top:8px; left:10px; color:#dff4ff; font-size:12px; z-index:3}
+@keyframes slosh{50%{transform:translateY(-4px) rotate(.8deg)}}
+.flow{
+  background:rgba(0,0,0,.18); border:1px solid var(--line); border-radius:18px; min-height:118px; padding:12px;
+}
+.meter{height:14px; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.08); border-radius:999px; overflow:hidden; margin:6px 0 12px}
+.meter i{display:block; height:100%; width:50%; border-radius:inherit; background:linear-gradient(90deg,var(--green),var(--orange),var(--red))}
+.treatments{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px}
+@media(max-width:700px){.treatments{grid-template-columns:1fr}}
+.treat{
+  border:1px solid var(--line); background:rgba(255,255,255,.04); border-radius:17px; padding:12px;
+}
+.treat b{display:block}
+.treat p{margin:5px 0 0; color:var(--muted); font-size:13px; line-height:1.35}
+.treat.yes{border-color:rgba(113,240,178,.45)}
+.treat.caution{border-color:rgba(255,186,107,.45)}
+.treat.no{border-color:rgba(255,111,131,.45)}
+.tree{display:flex; flex-direction:column; gap:8px}
+.node{
+  display:grid; grid-template-columns:30px 1fr; gap:9px; align-items:start; padding:10px; border-radius:16px;
+  border:1px solid var(--line); background:rgba(255,255,255,.04);
+}
+.n{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:rgba(167,190,209,.24);font-weight:900}
+.node.on{border-color:rgba(113,240,178,.5); background:rgba(113,240,178,.07)}
+.node.on .n{background:var(--green); color:#052015}
+.node.warn{border-color:rgba(255,186,107,.5); background:rgba(255,186,107,.07)}
+.node.warn .n{background:var(--orange); color:#241405}
+.node h3{margin:0 0 4px; font-size:14px}
+.node p{margin:0; color:var(--muted); font-size:12.5px; line-height:1.35}
+.footer{max-width:1250px;margin:auto;padding:0 22px 26px;color:var(--muted);font-size:12px;line-height:1.35}
+kbd{font-family:var(--mono);background:rgba(255,255,255,.08);border:1px solid var(--line);border-radius:6px;padding:2px 5px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Hyponatremia Quick Lab</h1>
+  <p>Random serum + urine labs. Guess the pattern. Reveal the physiology and reasonable treatment options. Tiny, fast, and intentionally not a dosing tool.</p>
+</header>
+
+<main>
+<section class="card">
+  <h2>Random Patient <small id="caseNumber">case 1</small></h2>
+  <div class="body">
+    <div class="row">
+      <button class="primary" id="newCase">🎲 New random labs</button>
+      <button id="reveal">Reveal answer</button>
+      <button id="clear">Clear answer</button>
+    </div>
+
+    <div class="casebox" style="margin-top:12px">
+      <div class="patient">
+        <div class="person" id="personIcon">🧍</div>
+      </div>
+      <div>
+        <h2 style="padding:0;margin:0;font-size:19px" id="stem">Loading...</h2>
+        <p style="color:var(--muted);margin:8px 0 0;line-height:1.35" id="history"></p>
+        <div class="status-pills" id="pills"></div>
+      </div>
+    </div>
+
+    <div class="labs" id="labs"></div>
+
+    <h2 style="padding:18px 0 0">What is the main pattern?</h2>
+    <div class="quizgrid" id="choices"></div>
+
+    <div class="answer" id="answerBox">
+      <h3 id="answerTitle"></h3>
+      <p id="answerWhy"></p>
+      <div class="explain-viz">
+        <div class="tank">
+          <label id="tankLabel">Water vs cation density</label>
+          <div class="wave" id="wave"></div>
+          <div class="solutes" id="solutes"></div>
+        </div>
+        <div class="flow">
+          <b>What is happening?</b>
+          <p id="flowText" style="color:var(--muted);font-size:13px;line-height:1.35;margin:6px 0 10px"></p>
+          <small>ADH effect</small>
+          <div class="meter"><i id="adhMeter"></i></div>
+          <small>Free-water clearance</small>
+          <div class="meter"><i id="fwcMeter"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Decision Tree <small>the simple version</small></h2>
+  <div class="body">
+    <div class="tree" id="tree"></div>
+
+    <h2 style="padding:18px 0 0">Treatment Options <small>educational</small></h2>
+    <div class="treatments" id="treatments"></div>
+  </div>
+</section>
+</main>
+
+<div class="footer">
+  This demo simplifies real hyponatremia. It assumes hypotonic hyponatremia unless the case says otherwise. Severe symptoms, rapid correction risk, liver disease, advanced kidney disease, and local protocols matter. Tolvaptan is included as a concept card, not as a dosing recommendation.
+</div>
+
+<script>
+const patterns = {
+  hypovolemic_extrarenal:{
+    label:'Hypovolemic, extrarenal loss',
+    short:'Low volume, kidney sodium-avid',
+    emoji:'🥀',
+    stem:'Dizzy patient with poor intake and GI losses',
+    history:'Orthostasis, dry mucous membranes, no edema. Recent vomiting or diarrhea.',
+    exam:['low BP','tachycardia','dry','no edema'],
+    labs:{na:[118,129], sosm:[245,270], k:[2.9,3.8], bun:[28,55], cr:[0.9,1.8], uosm:[450,800], una:[3,20], uk:[15,45]},
+    why:'Effective arterial volume is low. Baroreceptors drive ADH even though serum osmolality is low. The kidney tries to hold sodium, so urine sodium is low.',
+    flow:'Low EABV → ADH on → concentrated urine. Low urine sodium means the kidney is sodium-avid, consistent with extrarenal loss.',
+    treatments:[
+      ['yes','Isotonic saline / volume restoration','Addresses the driver: low effective arterial volume. Once volume is restored, ADH may turn off and sodium can rise quickly.'],
+      ['caution','Potassium repletion if low','K replacement can raise serum sodium too; count it toward correction.'],
+      ['no','Tolvaptan','Usually wrong/dangerous in hypovolemic hyponatremia; it can worsen water loss and underfilling.'],
+      ['caution','Watch for overcorrection','After volume restoration, sudden water diuresis can occur.']
+    ]
+  },
+  renal_loss:{
+    label:'Hypovolemic, renal loss',
+    short:'Low volume, urine Na high',
+    emoji:'💊',
+    stem:'Volume-depleted patient with renal sodium loss',
+    history:'Orthostasis, no edema. Think diuretic exposure, adrenal insufficiency, salt wasting, or renal tubular loss.',
+    exam:['low BP','tachycardia','dry','urine Na high'],
+    labs:{na:[116,130], sosm:[242,270], k:[2.7,5.9], bun:[20,45], cr:[0.9,1.9], uosm:[350,750], una:[40,110], uk:[25,75]},
+    why:'The patient looks underfilled, and ADH is appropriately high. But urine sodium is not low, meaning sodium is being lost through the kidney or the urine sodium is confounded by diuretics/adrenal physiology.',
+    flow:'Low EABV → ADH on → concentrated urine. High urine sodium points toward renal salt loss, diuretics, adrenal insufficiency, or CKD/tubular dysfunction.',
+    treatments:[
+      ['yes','Stop offending diuretic / correct cause','Remove the renal sodium-loss driver when present.'],
+      ['yes','Isotonic saline if truly volume depleted','Restores effective arterial volume and can suppress ADH.'],
+      ['caution','Steroids/mineralocorticoid evaluation if adrenal pattern','Low BP + high urine Na ± high K should trigger adrenal consideration.'],
+      ['no','Tolvaptan','Not for hypovolemia or renal salt-loss physiology.']
+    ]
+  },
+  siadh:{
+    label:'Euvolemic SIADH-like',
+    short:'ADH on despite no underfilling',
+    emoji:'🫁',
+    stem:'Euvolemic patient with concentrated urine',
+    history:'No edema, no orthostasis. Possible SSRI, pulmonary disease, CNS disease, malignancy, nausea, pain, or post-op state.',
+    exam:['euvolemic','normal BP','no edema','ADH active'],
+    labs:{na:[114,130], sosm:[240,270], k:[3.4,4.8], bun:[4,14], cr:[0.55,1.0], uosm:[300,750], una:[35,120], uk:[15,55]},
+    why:'Serum osmolality is low, but urine is not dilute. That means ADH effect persists. The patient is not obviously underfilled or edematous, and urine sodium is often high: SIADH-like physiology.',
+    flow:'ADH valve stuck on → water retained → concentrated urine. Sodium concentration falls because water cannot leave normally.',
+    treatments:[
+      ['yes','Fluid restriction','First-line concept for many chronic/asymptomatic SIADH patterns, but often weak if urine is very concentrated.'],
+      ['yes','Urea or increased solute','Adds osmotic cargo so the kidney can excrete more water.'],
+      ['caution','Loop diuretic + salt/solute in selected cases','Can lower urine concentration and increase water excretion; monitor volume/K.'],
+      ['caution','Tolvaptan','V2 antagonist: can aquarese and raise Na in selected euvolemic/hypervolemic cases. Hospital/specialist monitoring; avoid urgent-correction use and liver-risk situations.']
+    ]
+  },
+  hypervolemic:{
+    label:'Hypervolemic hyponatremia',
+    short:'Water overloaded but arterial underfilled',
+    emoji:'🌊',
+    stem:'Edematous patient with low effective arterial volume',
+    history:'Peripheral edema, ascites, crackles, elevated JVP, or known heart failure/cirrhosis/nephrotic/advanced CKD.',
+    exam:['edema','JVP/ascites','low EABV','congestion'],
+    labs:{na:[118,132], sosm:[250,274], k:[3.5,5.3], bun:[22,70], cr:[1.0,3.0], uosm:[250,650], una:[5,28], uk:[10,55]},
+    why:'Total body water is high, but effective arterial volume is sensed as low. ADH and RAAS stay active, so the kidney retains water and often sodium.',
+    flow:'Congestion/third spacing + low EABV signal → ADH on → concentrated urine. Urine sodium is often low unless diuretics or CKD interfere.',
+    treatments:[
+      ['yes','Fluid restriction','Reduces water input; usually modest but physiologically aligned.'],
+      ['yes','Loop diuresis / treat HF-cirrhosis driver','Removes excess water/sodium and improves congestion when appropriate.'],
+      ['caution','Tolvaptan','Can raise Na via aquaresis in selected hypervolemic/euvolemic cases, but caution is major; avoid liver disease/cirrhosis risk and monitor closely.'],
+      ['no','Routine salt loading','Can worsen edema/congestion unless part of a carefully selected plan.']
+    ]
+  },
+  low_solute:{
+    label:'Low-solute intake',
+    short:'Too little osmotic cargo',
+    emoji:'🍺',
+    stem:'Low dietary solute with excess free water',
+    history:'Beer potomania, tea-and-toast diet, malnutrition, or very low protein/salt intake.',
+    exam:['often euvolemic','low BUN','low solute','overcorrection risk'],
+    labs:{na:[108,125], sosm:[225,260], k:[2.7,4.0], bun:[2,8], cr:[0.45,0.9], uosm:[50,220], una:[5,28], uk:[5,30]},
+    why:'The kidney needs osmoles to excrete water. With very low solute intake, maximum water excretion is capped. Restoring solute can suddenly unleash a water diuresis.',
+    flow:'Low osmole conveyor → limited water excretion despite low ADH. Add food/urea/salt and urine output may surge, risking rapid sodium correction.',
+    treatments:[
+      ['yes','Careful solute/protein repletion','Treats the mechanism but can overcorrect rapidly.'],
+      ['caution','DDAVP/D5W rescue strategy if overcorrecting','Used conceptually to slow or reverse overly rapid correction.'],
+      ['caution','Frequent sodium monitoring','This pattern can correct dramatically after nutrition/solute is restored.'],
+      ['no','Tolvaptan','Usually not the mechanism; aquaresis may worsen overcorrection risk.']
+    ]
+  },
+  polydipsia:{
+    label:'Primary polydipsia / excess water',
+    short:'ADH suppressed, water intake huge',
+    emoji:'🚰',
+    stem:'Very high free-water intake',
+    history:'Large water intake. Urine is maximally dilute unless kidney function or solute limits interfere.',
+    exam:['euvolemic','very dilute urine','ADH off','high intake'],
+    labs:{na:[118,132], sosm:[248,274], k:[3.4,4.6], bun:[5,16], cr:[0.55,1.0], uosm:[35,95], una:[8,30], uk:[5,25]},
+    why:'Urine osmolality is very low, so ADH is appropriately suppressed. Hyponatremia comes from water intake exceeding excretory capacity.',
+    flow:'ADH off → dilute urine. But water intake is so high that even dilute urine cannot keep up.',
+    treatments:[
+      ['yes','Reduce free-water intake','Directly treats the mechanism.'],
+      ['yes','Address behavioral/psychiatric driver when present','Prevents recurrence.'],
+      ['caution','Solute adequacy','Low solute can coexist and cap water excretion.'],
+      ['no','Tolvaptan','Not useful when ADH is already suppressed.']
+    ]
+  },
+  hyperglycemia:{
+    label:'Translocational / hypertonic',
+    short:'Not true hypotonic hyponatremia',
+    emoji:'🍬',
+    stem:'Hyponatremia with marked hyperglycemia',
+    history:'High glucose pulls water extracellularly, lowering measured sodium concentration.',
+    exam:['glucose high','serum osm not low','not hypotonic','correct Na'],
+    labs:{na:[122,132], sosm:[286,330], k:[3.8,5.5], bun:[12,40], cr:[0.7,2.0], glucose:[320,780], uosm:[300,850], una:[10,80], uk:[10,60]},
+    why:'This is not primarily hypotonic hyponatremia. Hyperglycemia raises tonicity and shifts water out of cells, diluting measured sodium. Correct the sodium for glucose.',
+    flow:'Glucose osmoles pull water into the extracellular space → measured sodium falls while serum osmolality is high.',
+    treatments:[
+      ['yes','Treat hyperglycemia / underlying crisis','Correcting glucose changes measured sodium.'],
+      ['caution','Use corrected sodium to judge water deficit','Do not treat the uncorrected sodium in isolation.'],
+      ['no','Tolvaptan','Wrong mechanism. ADH blockade is not the answer.'],
+      ['caution','Monitor K and volume carefully','Insulin/fluids shift potassium and water.']
+    ]
+  }
+};
+
+const choices = Object.keys(patterns);
+let current = null;
+let caseIndex = 0;
+let selected = null;
+
+function randInt(a,b){return Math.round(a+Math.random()*(b-a))}
+function randLab(range, dec=0){return +(range[0]+Math.random()*(range[1]-range[0])).toFixed(dec)}
+function pick(arr){return arr[Math.floor(Math.random()*arr.length)]}
+
+function makeCase(){
+  caseIndex++;
+  selected=null;
+  const id = pick(choices);
+  const p = patterns[id];
+  const labs = {};
+  for (const [k,r] of Object.entries(p.labs)){
+    labs[k] = randLab(r, (k==='k'||k==='cr')?1:0);
+  }
+  if(!labs.glucose) labs.glucose = randInt(76,142);
+  current = {id, p, labs};
+  document.getElementById('caseNumber').textContent = 'case '+caseIndex;
+  renderCase();
+  hideAnswer();
+}
+function renderCase(){
+  const {p,labs}=current;
+  document.getElementById('personIcon').textContent=p.emoji;
+  document.getElementById('stem').textContent=p.stem;
+  document.getElementById('history').textContent=p.history;
+  const pills=document.getElementById('pills'); pills.innerHTML='';
+  p.exam.forEach((x,i)=>{
+    const span=document.createElement('span');
+    span.className='pill '+(x.includes('low')||x.includes('risk')?'warn':x.includes('edema')||x.includes('congestion')?'bad':'good');
+    span.textContent=x;
+    pills.appendChild(span);
+  });
+  const labDefs=[
+    ['Na', labs.na, 'mEq/L'],
+    ['Serum Osm', labs.sosm, 'mOsm/kg'],
+    ['Glucose', labs.glucose, 'mg/dL'],
+    ['K', labs.k, 'mEq/L'],
+    ['BUN', labs.bun, 'mg/dL'],
+    ['Cr', labs.cr, 'mg/dL'],
+    ['Urine Osm', labs.uosm, 'mOsm/kg'],
+    ['Urine Na', labs.una, 'mEq/L'],
+    ['Urine K', labs.uk, 'mEq/L']
+  ];
+  const box=document.getElementById('labs'); box.innerHTML='';
+  labDefs.forEach(([k,v,u])=>{
+    const d=document.createElement('div'); d.className='lab';
+    d.innerHTML=`<div class="k">${k}</div><div class="v">${v}</div><div class="u">${u}</div>`;
+    box.appendChild(d);
+  });
+  renderChoices();
+  renderTree(false);
+  renderTreatments(null);
+}
+function renderChoices(){
+  const box=document.getElementById('choices'); box.innerHTML='';
+  choices.forEach(id=>{
+    const p=patterns[id];
+    const b=document.createElement('button');
+    b.className='choice';
+    b.innerHTML=`<b>${p.label}</b><small>${p.short}</small>`;
+    b.onclick=()=>{
+      selected=id;
+      [...box.children].forEach(x=>x.classList.remove('good','bad'));
+      b.classList.add(id===current.id?'good':'bad');
+      showAnswer();
+    };
+    box.appendChild(b);
+  });
+}
+function showAnswer(){
+  const {id,p,labs}=current;
+  const box=document.getElementById('answerBox');
+  box.classList.add('show');
+  const right = !selected || selected===id;
+  document.getElementById('answerTitle').textContent = right ? `Answer: ${p.label}` : `Not quite: this is ${p.label}`;
+  document.getElementById('answerWhy').textContent = p.why;
+  document.getElementById('flowText').textContent = p.flow;
+  const waterPct = Math.min(82, Math.max(22, (140-labs.na)*2.1 + (labs.sosm<275?18:8)));
+  document.getElementById('wave').style.height = waterPct+'%';
+  document.getElementById('adhMeter').style.width = Math.min(100, labs.uosm/7.5)+'%';
+  const fwc = labs.uosm < 100 ? 82 : labs.uosm < 250 ? 48 : 18;
+  document.getElementById('fwcMeter').style.width = fwc+'%';
+  const sol=document.getElementById('solutes'); sol.innerHTML='';
+  const count = Math.max(12, Math.min(38, Math.round((labs.na-105)*1.2)));
+  for(let i=0;i<count;i++){
+    const d=document.createElement('i'); d.className='dot'+(i%7===0?' v':'');
+    d.style.left=(8+Math.random()*84)+'%';
+    d.style.top=(12+Math.random()*76)+'%';
+    sol.appendChild(d);
+  }
+  renderTree(true);
+  renderTreatments(id);
+}
+function hideAnswer(){
+  document.getElementById('answerBox').classList.remove('show');
+  renderTree(false);
+  renderTreatments(null);
+  [...document.getElementById('choices').children].forEach(x=>x.classList.remove('good','bad'));
+}
+function renderTree(revealed){
+  const {labs,id}=current;
+  const hypotonic=labs.sosm<275;
+  const uosmLow=labs.uosm<100;
+  const unaHigh=labs.una>=30;
+  const nodes=[
+    ['Serum Osm', hypotonic?'Hypotonic hyponatremia pathway.':'Serum osm is not low: think hyperglycemia/translocational or other non-hypotonic causes.', hypotonic, !hypotonic],
+    ['Urine Osm', uosmLow?'Urine is dilute: ADH is mostly off, so think polydipsia or low solute.':'Urine is concentrated: ADH effect is present.', !uosmLow, uosmLow],
+    ['Volume / exam', revealed?patterns[id].short:'Use exam/history: dry, normal, or edematous?', revealed, false],
+    ['Urine Na', unaHigh?'Urine Na is high: SIADH, renal loss, diuretic/adrenal, or CKD can do this.':'Urine Na is low: kidney is sodium-avid, often low EABV or low solute.', unaHigh, !unaHigh],
+    ['Final pattern', revealed?patterns[id].label:'Choose an answer to reveal.', revealed, false]
+  ];
+  const tree=document.getElementById('tree'); tree.innerHTML='';
+  nodes.forEach((n,i)=>{
+    const div=document.createElement('div');
+    div.className='node '+(n[2]?'on ':'')+(n[3]?'warn':'');
+    div.innerHTML=`<div class="n">${i+1}</div><div><h3>${n[0]}</h3><p>${n[1]}</p></div>`;
+    tree.appendChild(div);
+  });
+}
+function renderTreatments(id){
+  const box=document.getElementById('treatments'); box.innerHTML='';
+  const list = id ? patterns[id].treatments : [
+    ['caution','Treatment cards appear after reveal','The goal is to match treatment to mechanism, not to reflexively chase the sodium number.'],
+    ['caution','Severe symptoms override the quiz','Seizure/coma/severe symptoms are an emergency hypertonic-saline pathway.'],
+    ['caution','Avoid rapid correction','Low solute, hypovolemia after saline, hypokalemia, liver disease, and malnutrition raise overcorrection concern.'],
+    ['caution','Tolvaptan is selective','Consider only for selected euvolemic/hypervolemic patterns with close monitoring; not hypovolemia or urgent correction.']
+  ];
+  list.forEach(([cls,title,text])=>{
+    const div=document.createElement('div'); div.className='treat '+cls;
+    div.innerHTML=`<b>${title}</b><p>${text}</p>`;
+    box.appendChild(div);
+  });
+}
+document.getElementById('newCase').onclick=makeCase;
+document.getElementById('reveal').onclick=()=>showAnswer();
+document.getElementById('clear').onclick=()=>{selected=null;hideAnswer()};
+makeCase();
+</script>
+</body>
+</html>
