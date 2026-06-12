@@ -1,0 +1,2553 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mobility Marionette Dance Studio</title>
+  <style>
+    :root {
+      --bg: #0e1117;
+      --panel: rgba(18, 23, 34, 0.92);
+      --panel2: rgba(28, 35, 50, 0.92);
+      --text: #eaf0ff;
+      --muted: #9eacc8;
+      --accent: #7dd3fc;
+      --danger: #ff7a90;
+      --ok: #93f5b5;
+      --line: rgba(255,255,255,0.12);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    #app {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      grid-template-columns: 410px 1fr;
+      min-width: 900px;
+    }
+    #left {
+      height: 100vh;
+      overflow: auto;
+      background: linear-gradient(180deg, rgba(14,17,23,0.98), rgba(16,24,39,0.98));
+      border-right: 1px solid var(--line);
+      padding: 16px;
+      z-index: 5;
+    }
+    #stageWrap {
+      position: relative;
+      height: 100vh;
+      min-width: 0;
+    }
+    #three {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    h1 {
+      font-size: 20px;
+      margin: 0 0 4px;
+      letter-spacing: 0.2px;
+    }
+    h2 {
+      font-size: 13px;
+      color: var(--accent);
+      margin: 18px 0 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.11em;
+    }
+    p {
+      color: var(--muted);
+      line-height: 1.4;
+      font-size: 13px;
+      margin: 6px 0 10px;
+    }
+    textarea {
+      width: 100%;
+      height: 420px;
+      resize: vertical;
+      background: #070a10;
+      color: #dce8ff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.4;
+      outline: none;
+      tab-size: 2;
+      white-space: pre;
+    }
+    textarea:focus { border-color: rgba(125,211,252,0.6); }
+    button, select, input {
+      font: inherit;
+    }
+    .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin: 8px 0;
+    }
+    button {
+      background: var(--panel2);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 12px;
+      cursor: pointer;
+      transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+      font-size: 13px;
+    }
+    button:hover {
+      transform: translateY(-1px);
+      border-color: rgba(125,211,252,0.5);
+      background: rgba(36,47,67,0.96);
+    }
+    button.primary {
+      background: linear-gradient(180deg, #2563eb, #1d4ed8);
+      border-color: rgba(255,255,255,0.18);
+    }
+    button.danger {
+      background: rgba(100, 20, 36, 0.7);
+      border-color: rgba(255,122,144,0.5);
+    }
+    .sliderRow {
+      display: grid;
+      grid-template-columns: 110px 1fr 48px;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 12px;
+      margin: 8px 0;
+    }
+    input[type="range"] { width: 100%; }
+    #status {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(125,211,252,0.08);
+      border: 1px solid rgba(125,211,252,0.22);
+      color: #cdefff;
+      font-size: 12px;
+      white-space: pre-wrap;
+    }
+    #hud {
+      position: absolute;
+      left: 16px;
+      bottom: 16px;
+      width: min(520px, calc(100% - 32px));
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+      z-index: 4;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 18px 60px rgba(0,0,0,0.35);
+    }
+    #lyrics {
+      font-size: 18px;
+      line-height: 1.25;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+    #cue {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    #meter {
+      height: 6px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    #meterFill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #7dd3fc, #c084fc);
+    }
+    #readout {
+      position: absolute;
+      right: 16px;
+      top: 16px;
+      width: 300px;
+      max-height: calc(100vh - 32px);
+      overflow: auto;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px;
+      z-index: 4;
+      backdrop-filter: blur(10px);
+      font-size: 12px;
+      color: var(--muted);
+      box-shadow: 0 18px 60px rgba(0,0,0,0.35);
+    }
+    .readTitle {
+      color: var(--accent);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+    .readPuppet {
+      border-top: 1px solid var(--line);
+      padding-top: 8px;
+      margin-top: 8px;
+    }
+    .readPuppet strong {
+      color: var(--text);
+    }
+    code {
+      color: #d8b4fe;
+      background: rgba(216,180,254,0.08);
+      padding: 1px 4px;
+      border-radius: 5px;
+    }
+    .mini {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .schema {
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.035);
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+    .hidden { display: none; }
+    @media (max-width: 960px) {
+      #app { grid-template-columns: 1fr; min-width: 0; }
+      #left {
+        position: absolute;
+        width: min(92vw, 430px);
+        height: 100vh;
+        transform: translateX(-100%);
+        transition: transform 180ms ease;
+      }
+      #left.open { transform: translateX(0); }
+      #togglePanel { display: inline-block !important; }
+      #readout { right: 8px; top: 58px; width: min(330px, calc(100vw - 16px)); }
+    }
+    #togglePanel {
+      display: none;
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      z-index: 8;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <aside id="left">
+    <h1>Mobility Marionette Dance Studio</h1>
+    <p>Paste a JSON score with lyrics, puppet definitions, choreography cues, relationship rules, and optional <b>music</b>. Hit <b>Load JSON</b>, then play.</p>
+
+    <div class="row">
+      <button class="primary" id="loadBtn">Load JSON</button>
+      <button id="playBtn">Play</button>
+      <button id="musicBtn">Music on</button>
+      <button id="resetBtn">Reset</button>
+      <button id="sampleBtn">Load sample</button>
+      <button id="downloadBtn">Download JSON</button>
+    </div>
+
+    <div class="sliderRow">
+      <label>Scrub</label>
+      <input id="scrub" type="range" min="0" max="1000" value="0">
+      <span id="scrubVal">0.0s</span>
+    </div>
+    <div class="sliderRow">
+      <label>Sim speed</label>
+      <input id="speed" type="range" min="0.1" max="2.0" step="0.05" value="1.0">
+      <span id="speedVal">1.00×</span>
+    </div>
+    <div class="sliderRow">
+      <label>Music vol</label>
+      <input id="musicVol" type="range" min="0" max="1" step="0.01" value="0.42">
+      <span id="musicVolVal">0.42</span>
+    </div>
+    <div class="sliderRow">
+      <label>Gravity sag</label>
+      <input id="gravity" type="range" min="0" max="2.5" step="0.05" value="0.75">
+      <span id="gravityVal">0.75</span>
+    </div>
+    <div class="sliderRow">
+      <label>String tension</label>
+      <input id="tension" type="range" min="0.2" max="4.0" step="0.05" value="1.4">
+      <span id="tensionVal">1.40</span>
+    </div>
+    <div class="sliderRow">
+      <label>Damping</label>
+      <input id="damping" type="range" min="0.02" max="1.0" step="0.02" value="0.22">
+      <span id="dampingVal">0.22</span>
+    </div>
+
+    <div id="status">Ready. Mobility sample JSON is loaded. Click Play to start dance + music.</div>
+
+    <h2>Score JSON</h2>
+    <textarea id="jsonBox" spellcheck="false"></textarea>
+
+    <h2>Mini schema</h2>
+    <div class="schema">
+      <b>puppets</b>: <code>{ id, label, color, start:[x,y,z], mass }</code><br>
+      <b>relationships</b>: <code>mirror</code>, <code>follow</code>, <code>avoid</code>, <code>orbit</code>, <code>sync</code><br>
+      <b>music</b>: <code>{ enabled, volume, instruments, clips, sequences, notes }</code><br>
+      <b>choreography</b>: <code>{ t, duration, lyric, moves:[...] }</code><br>
+      <b>move</b>: <code>{ puppet, root, preset, pose, pulse, energy }</code><br>
+      Pose joints: <code>torso head leftArm rightArm leftForearm rightForearm leftLeg rightLeg leftShin rightShin twist</code>.<br>
+      Angles are radians. Root is stage position. Pulse adds sinusoidal torque/target motion.
+    </div>
+  </aside>
+
+  <main id="stageWrap">
+    <button id="togglePanel">JSON</button>
+    <canvas id="three"></canvas>
+    <div id="hud">
+      <div id="lyrics">No cue yet.</div>
+      <div id="cue">t = 0.0s</div>
+      <div id="meter"><div id="meterFill"></div></div>
+    </div>
+    <div id="readout">
+      <div class="readTitle">Physics readout</div>
+      <div id="physicsText">Load a score to start.</div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+
+if (!window.THREE || !THREE.OrbitControls) {
+  const msg = "Three.js failed to load. Check internet access, or serve this file through a tiny local web server.";
+  document.body.innerHTML = '<div style="font-family:system-ui;padding:24px;background:#0e1117;color:white;height:100vh"><h2>3D Marionette Studio</h2><p>' + msg + '</p><p>Try: <code>python -m http.server 8000</code> in the folder, then open <code>http://localhost:8000/</code>.</p></div>';
+  throw new Error(msg);
+}
+const TAU = Math.PI * 2;
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const lerp = (a,b,t) => a + (b-a)*t;
+const ease = t => t*t*(3-2*t);
+const v3 = (a=[0,0,0]) => new THREE.Vector3(a[0]||0, a[1]||0, a[2]||0);
+const fmt = n => Number.isFinite(n) ? n.toFixed(2) : "0.00";
+
+const defaultScore = {
+  "title": "Mobility Matters: Rise, Roll, Run",
+  "bpm": 124,
+  "beatsPerBar": 4,
+  "duration": 32,
+  "stage": {
+    "width": 12,
+    "depth": 8,
+    "height": 5.4
+  },
+  "puppets": [
+    {
+      "id": "atlas",
+      "label": "Atlas",
+      "color": "#7dd3fc",
+      "start": [
+        -2.4,
+        0.46,
+        0.35
+      ],
+      "mass": 12
+    },
+    {
+      "id": "lumen",
+      "label": "Lumen",
+      "color": "#c084fc",
+      "start": [
+        2.4,
+        0.46,
+        0.35
+      ],
+      "mass": 11
+    },
+    {
+      "id": "pivot",
+      "label": "Pivot",
+      "color": "#93f5b5",
+      "start": [
+        0.0,
+        0.8,
+        -2.0
+      ],
+      "mass": 8
+    },
+    {
+      "id": "spark",
+      "label": "Spark",
+      "color": "#fbbf24",
+      "start": [
+        0.0,
+        1.18,
+        1.8
+      ],
+      "mass": 7
+    }
+  ],
+  "relationships": [
+    {
+      "type": "mirror",
+      "a": "atlas",
+      "b": "lumen",
+      "axis": "x",
+      "strength": 0.62
+    },
+    {
+      "type": "follow",
+      "leader": "atlas",
+      "follower": "pivot",
+      "lag": 0.4,
+      "strength": 0.36
+    },
+    {
+      "type": "avoid",
+      "a": "all",
+      "b": "all",
+      "distance": 1.05,
+      "strength": 1.15
+    },
+    {
+      "type": "sync",
+      "group": [
+        "atlas",
+        "lumen",
+        "pivot",
+        "spark"
+      ],
+      "joints": [
+        "leftLeg",
+        "rightLeg",
+        "leftShin",
+        "rightShin"
+      ],
+      "strength": 0.1
+    }
+  ],
+  "music": {
+    "enabled": true,
+    "volume": 0.42,
+    "instruments": {
+      "kick": {
+        "type": "kick",
+        "gain": 0.95
+      },
+      "clap": {
+        "type": "noise",
+        "color": "clap",
+        "gain": 0.48
+      },
+      "hat": {
+        "type": "hat",
+        "gain": 0.18
+      },
+      "tick": {
+        "type": "noise",
+        "color": "wood",
+        "gain": 0.2
+      },
+      "bass": {
+        "type": "synth",
+        "waveform": "sawtooth",
+        "gain": 0.28,
+        "attack": 0.006,
+        "release": 0.12
+      },
+      "bell": {
+        "type": "synth",
+        "waveform": "triangle",
+        "gain": 0.18,
+        "attack": 0.012,
+        "release": 0.38
+      },
+      "lead": {
+        "type": "synth",
+        "waveform": "square",
+        "gain": 0.12,
+        "attack": 0.01,
+        "release": 0.2
+      }
+    },
+    "clips": [
+      {
+        "instrument": "tick",
+        "start": 0.0,
+        "every": 0.242,
+        "count": 14,
+        "duration": 0.035,
+        "gain": 0.2
+      },
+      {
+        "instrument": "kick",
+        "start": 3.87,
+        "every": 0.968,
+        "count": 30,
+        "duration": 0.13,
+        "gain": 0.9
+      },
+      {
+        "instrument": "clap",
+        "start": 4.84,
+        "every": 1.936,
+        "count": 15,
+        "duration": 0.08,
+        "gain": 0.48
+      },
+      {
+        "instrument": "hat",
+        "start": 6.77,
+        "every": 0.242,
+        "count": 104,
+        "duration": 0.025,
+        "gain": 0.16
+      },
+      {
+        "instrument": "kick",
+        "start": 14.52,
+        "every": 0.484,
+        "count": 15,
+        "duration": 0.11,
+        "gain": 0.72
+      }
+    ],
+    "sequences": [
+      {
+        "instrument": "bass",
+        "start": 6.77,
+        "step": 0.484,
+        "repeats": 7,
+        "duration": 0.35,
+        "gain": 0.32,
+        "pattern": [
+          "C2",
+          null,
+          "Eb2",
+          "G2",
+          "Bb1",
+          null,
+          "G1",
+          "Bb1"
+        ]
+      },
+      {
+        "instrument": "bell",
+        "start": 10.64,
+        "step": 0.968,
+        "repeats": 6,
+        "duration": 0.72,
+        "gain": 0.16,
+        "pattern": [
+          "G4",
+          "Bb4",
+          "C5",
+          "Eb5"
+        ]
+      },
+      {
+        "instrument": "lead",
+        "start": 18.39,
+        "step": 0.242,
+        "repeats": 8,
+        "duration": 0.16,
+        "gain": 0.11,
+        "pattern": [
+          "C4",
+          "Eb4",
+          null,
+          "G4",
+          "Bb4",
+          null,
+          "G4",
+          "Eb4"
+        ]
+      }
+    ],
+    "notes": [
+      {
+        "instrument": "bell",
+        "t": 0.0,
+        "note": "C5",
+        "duration": 0.65,
+        "gain": 0.1
+      },
+      {
+        "instrument": "bell",
+        "t": 1.45,
+        "note": "G4",
+        "duration": 0.7,
+        "gain": 0.1
+      },
+      {
+        "instrument": "bell",
+        "t": 2.9,
+        "note": "Bb4",
+        "duration": 0.7,
+        "gain": 0.12
+      },
+      {
+        "instrument": "bell",
+        "t": 27.1,
+        "note": "C5",
+        "duration": 1.2,
+        "gain": 0.2
+      },
+      {
+        "instrument": "bell",
+        "t": 29.0,
+        "note": "Eb5",
+        "duration": 1.0,
+        "gain": 0.18
+      },
+      {
+        "instrument": "bell",
+        "t": 30.65,
+        "note": "G5",
+        "duration": 1.35,
+        "gain": 0.22
+      }
+    ]
+  },
+  "choreography": [
+    {
+      "t": 0,
+      "duration": 3.4,
+      "lyric": "Two marionettes on the floor: toes flicker first, then knees remember they are hinges.",
+      "moves": [
+        {
+          "puppet": "atlas",
+          "root": [
+            -2.4,
+            0.46,
+            0.35
+          ],
+          "preset": "floorTwitch",
+          "energy": 0.72,
+          "pulse": [
+            {
+              "joint": "leftShin",
+              "amp": 0.3,
+              "hz": 3.0
+            },
+            {
+              "joint": "rightShin",
+              "amp": -0.28,
+              "hz": 3.4
+            },
+            {
+              "joint": "leftForearm",
+              "amp": 0.16,
+              "hz": 5.0
+            },
+            {
+              "joint": "rightForearm",
+              "amp": -0.16,
+              "hz": 4.6
+            }
+          ]
+        },
+        {
+          "puppet": "lumen",
+          "root": [
+            2.4,
+            0.46,
+            0.35
+          ],
+          "preset": "floorTwitch",
+          "energy": 0.72,
+          "pulse": [
+            {
+              "joint": "leftShin",
+              "amp": -0.3,
+              "hz": 3.4
+            },
+            {
+              "joint": "rightShin",
+              "amp": 0.28,
+              "hz": 3.0
+            },
+            {
+              "joint": "twist",
+              "amp": 0.08,
+              "hz": 2.0
+            }
+          ]
+        },
+        {
+          "puppet": "pivot",
+          "root": [
+            0.0,
+            0.64,
+            -2.0
+          ],
+          "preset": "crawl",
+          "energy": 0.55,
+          "pulse": [
+            {
+              "joint": "leftLeg",
+              "amp": 0.18,
+              "hz": 2.1
+            },
+            {
+              "joint": "rightLeg",
+              "amp": -0.18,
+              "hz": 2.1
+            }
+          ]
+        },
+        {
+          "puppet": "spark",
+          "root": [
+            0.0,
+            1.18,
+            1.8
+          ],
+          "preset": "watcherBounce",
+          "energy": 0.65,
+          "pulse": [
+            {
+              "joint": "head",
+              "amp": 0.08,
+              "hz": 2.0
+            },
+            {
+              "joint": "leftArm",
+              "amp": 0.13,
+              "hz": 1.5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "t": 3.4,
+      "duration": 3.4,
+      "lyric": "Wrists press down; hips float up; the stage gets a pulse.",
+      "moves": [
+        {
+          "puppet": "atlas",
+          "root": [
+            -2.1,
+            0.72,
+            0.15
+          ],
+          "preset": "pushUp",
+          "energy": 1.05,
+          "jump": 0.12,
+          "pulse": [
+            {
+              "joint": "torso",
+              "amp": 0.18,
+              "hz": 1.5
+            },
+            {
+              "joint": "leftLeg",
+              "amp": 0.25,
+              "hz": 2.0
+            }
+          ]
+        },
+        {
+          "puppet": "lumen",
+          "root": [
+            2.1,
+            0.72,
+            0.15
+          ],
+          "preset": "pushUp",
+          "energy": 1.05,
+          "jump": 0.12,
+          "pulse": [
+            {
+              "joint": "torso",
+              "amp": -0.18,
+              "hz": 1.5
+            },
+            {
+              "joint": "rightLeg",
+              "amp": -0.25,
+              "hz": 2.0
+            }
+          ]
+        },
+        {
+          "puppet": "pivot",
+          "root": [
+            0.0,
+            0.92,
+            -1.55
+          ],
+          "preset": "floorRise",
+          "energy": 0.95,
+          "pulse": [
+            {
+              "joint": "leftShin",
+              "amp": 0.22,
+              "hz": 2.2
+            },
+            {
+              "joint": "rightShin",
+              "amp": -0.22,
+              "hz": 2.2
+            }
+          ]
+        },
+        {
+          "puppet": "spark",
+          "root": [
+            0.0,
+            1.28,
+            1.55
+          ],
+          "preset": "heelToe",
+          "energy": 0.9,
+          "pulse": [
+            {
+              "joint": "leftShin",
+              "amp": 0.35,
+              "hz": 2.0
+            },
+            {
+              "joint": "rightShin",
+              "amp": -0.35,
+              "hz": 2.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "t": 6.8,
+      "duration": 3.8,
+      "lyric": "First steps: heel, toe, knee drive \u2014 mobility matters.",
+      "moves": [
+        {
+          "puppet": "atlas",
+          "root": [
+            -1.55,
+            1.16,
+            -0.15
+          ],
+          "preset": "heelToe",
+          "energy": 1.35,
+          "pulse": [
+            {
+              "joint": "leftLeg",
+              "amp": 0.48,
+              "hz": 2.05
+            },
+            {
+              "joint": "rightLeg",
+              "amp": -0.48,
+              "hz": 2.05
+            },
+            {
+              "joint": "leftShin",
+              "amp": -0.38,
+              "hz": 2.05,
+              "phase": 1.57
+            }
+          ]
+        },
+        {
+          "puppet": "lumen",
+          "root": [
+            1.55,
+            1.16,
+            -0.15
+          ],
+          "preset": "heelToe",
+          "energy": 1.35,
+          "pulse": [
+            {
+              "joint": "leftLeg",
+              "amp": -0.48,
+              "hz": 2.05
+            },
+            {
+              "joint": "rightLeg",
+              "amp": 0.48,
+              "hz": 2.05
+            },
+            {
+              "joint": "rightShin",
+              "amp": 0.38,
+              "hz": 2.05,
+              "phase": 1.57
+            }
+          ]
+        },
+        {
+          "puppet": "pivot",
+          "root": [
+            0.0,
+            1.14,
+            -1.15
+          ],
+          "preset": "kneeDrive",
+          "energy": 1.25,
+          "pulse": [
+            {
+              "joint": "leftLeg",
+              "amp": 0.62,
+              "hz": 2.35
+            },
+            {
+              "joint": "rightLeg",
+              "amp": -0.62,
+              "hz": 2.35
+            }
+          ]
+        },
+        {
+          "puppet": "spark",
+          "root": [
+            0.0,
+            1.3,
+            1.2
+          ],
+          "preset": "jazzHands",
+          "energy": 1.0,
+          "pulse": [
+            {
+              "joint": "leftArm",
+              "amp": 0.2,
+              "hz": 3.6
+            },
+            {
+              "joint": "rightArm",
+              "amp": -0.2,
+              "hz": 3.6
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "t": 10.6,
+      "duration": 3.9,
+      "lyric": "The step pattern gets proud: cross, plant, sweep, recover.",
+      "relationshipOverrides": [
+        {
+          "type": "sync",
+          "group": [
+            "atlas",
+            "lumen"
+          ],
+          "joints": [
+            "leftLeg",
+            "rightLeg",
+            "leftShin",
+            "rightShin"
+          ],
+          "strength": 0.28
+        }
+      ],
+      "moves": [
+        {
+          "puppet": "atlas",
+          "root": [
+            -1.05,
+            1.18,
+            0.62
+          ],
+          "preset": "crossStep",
+          "energy": 1.65,
+          "pulse": [
+            {
+              "joint": "twist",
+              "amp": 0.32,
+              "hz": 1.05
+            },
+            {
+              "joint": "leftLeg",
+              "amp": 0.58,
+              "hz": 2.2
+            },
+            {
+              "joint": "rightShin",
+              "amp": -0.45,
+              "hz": 2.2
+            }
+          ]
+        },
+        {
+          "puppet": "lumen",
+          "root": [
+            1.05,
+            1.18,
+            0.62
+          ],
+          "preset": "crossStep",
+          "energy": 1.65,
+          "pulse": [
+            {
+              "joint": "twist",
+              "amp": -0.32,
+              "hz": 1.05
+            },
+            {
+              "joint": "rightLeg",
+              "amp": -0.58,
+              "hz": 2.2
+            },
+            {
+              "joint": "leftShin",
+              "amp": 0.45,
+              "hz": 2.2
+            }
+          ]
+        },
+        {
+          "puppet": "pivot",
+          "root": [
+            0.0,
+            1.16,
+            -0.85
+          ],
+          "preset": "mobilityMarch",
+          "energy": 1.45,
+          "pulse": [
+            {
+              "joint": "leftLeg",
+              "amp": 0.7,
+              "hz": 2.4
+            },
+            {
+              "joint": "rightLeg",
+              "amp": -0.7,
+              "hz": 2.4
+            },
+            {
+              "joint": "torso",
+              "amp": 0.1,
+              "hz": 2.4
+            }
+          ]
+        },
+        {
+          "puppet": "spark",
+          "root": [
+            0.0,
+            1.25,
+            1.72
+          ],
+          "preset": "spin",
+          "energy": 1.25,
+          "pulse": [
+            {
+              "joint": "twist",
+              "amp": 0.75,
+              "hz": 0.75
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "t": 14.5,
+      "duration": 3.9,
+      "lyric": "Wild legs: fast feet, loose knees, comic-book torque.",
+      "moves": [
+        {
+          "puppet": "atlas",
+          "root": [
+            -2.0,
+            1.22,
+            -0.45
+          ],
+          "preset": "wildLegs",
+          "energy": 2.1,
+          "jump": 0.28,
+          "pulse": [
+            {
+              "joint": "leftLeg",
+              "amp": 0.85,
+              "hz": 3.1
+            },
+            {
+              "joint": "rightLeg",
+              "amp": -0.85,
+              "hz": 3.1
+            },
+            {
+              "joint": "leftShin",
+              "amp": -0.65,
+              "hz": 3.1
+            },
+            {
+              "joint": "rightShin",
+              "amp": 0.65,
+              "hz": 3.1
+            }
+          ]
+        },
+        {
+          "puppet": "lumen",
+          "root": [
+            2.0,
+            1.22,
+            -0.45
+          ],
+          "preset": "wildLegs",
+          "energy": 2.1,
+          "jump": 0.28,
+          "pulse": [
+            {
+              "joint": "leftLeg",
+              "amp": -0.85,
+              "hz": 3.1
+            },
+            {
+              "joint": "rightLeg",
+              "amp": 0.85,
+              "hz": 3.1
+            },
+            {
+              "joint": "leftShin",
+              "amp": 0.65,
+              "hz": 3.1
+            },
+            {
+              "joint": "rightShin",
+              "amp": -0.65,
+              "hz": 3.1
+            }
+          ]
+        },
+        {
+          "puppet": "pivot",
+          "root": [
+            0.0,
+            1.25,
+            -1.75
+          ],
+          "preset": "run",
+          "energy": 1.8,
+          "jump": 0.22,
+          "pulse": [
+            {
+              "joint": "leftLeg",
+              "amp": 0.78,
+              "hz": 3.4
+            },
+            {
+              "joint": "rightLeg",
+              "amp": -0.78,
+              "hz": 3.4
+            }
+          ]
+        },
+        {
+          "puppet": "spark",
+          "root": [
+            0.0,
+            1.34,
+            1.1
+          ],
+          "preset": "kneeDrive",
+          "energy": 1.75,
+          "jump": 0.18,
+          "pulse": [
+            {
+              "joint": "leftShin",
+              "amp": 0.7,
+              "hz": 3.0
+            },
+            {
+              "joint": "rightShin",
+              "amp": -0.7,
+              "hz": 3.0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "t": 18.4,
+      "duration": 4.0,
+      "lyric": "Assist-and-release: one leads, one follows, then everyone finds their own gait.",
+      "relationshipOverrides": [
+        {
+          "type": "follow",
+          "leader": "atlas",
+          "follower": "lumen",
+          "lag": 0.22,
+          "strength": 0.5
+        },
+        {
+          "type": "follow",
+          "leader": "lumen",
+          "follower": "pivot",
+          "lag": 0.28,
+          "strength": 0.42
+        }
+      ],
+      "moves": [
+        {
+          "puppet": "atlas",
+          "root": [
+            -0.65,
+            1.18,
+            -0.2
+          ],
+          "preset": "sweepKick",
+          "energy": 1.75,
+          "pulse": [
+            {
+              "joint": "leftLeg",
+              "amp": 0.72,
+              "hz": 1.9
+            },
+            {
+              "joint": "rightShin",
+              "amp": -0.6,
+              "hz": 1.9
+            },
+            {
+              "joint": "twist",
+              "amp": 0.32,
+              "hz": 0.95
+            }
+          ]
+        },
+        {
+          "puppet": "lumen",
+          "root": [
+            0.65,
+            1.18,
+            -0.2
+          ],
+          "preset": "sweepKick",
+          "energy": 1.65,
+          "pulse": [
+            {
+              "joint": "rightLeg",
+              "amp": -0.72,
+              "hz": 1.9
+            },
+            {
+              "joint": "leftShin",
+              "amp": 0.6,
+              "hz": 1.9
+            },
+            {
+              "joint": "twist",
+              "amp": -0.32,
+              "hz": 0.95
+            }
+          ]
+        },
+        {
+          "puppet": "pivot",
+          "root": [
+            0.0,
+            1.12,
+            -1.25
+          ],
+          "preset": "crossStep",
+          "energy": 1.35,
+          "pulse": [
+            {
+              "joint": "torso",
+              "amp": 0.14,
+              "hz": 1.9
+            }
+          ]
+        },
+        {
+          "puppet": "spark",
+          "root": [
+            0.0,
+            1.2,
+            1.65
+          ],
+          "preset": "splitReach",
+          "energy": 1.2,
+          "pulse": [
+            {
+              "joint": "leftForearm",
+              "amp": 0.25,
+              "hz": 2.2
+            },
+            {
+              "joint": "rightForearm",
+              "amp": -0.25,
+              "hz": 2.2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "t": 22.4,
+      "duration": 4.7,
+      "lyric": "A circle of gait: orbit, march, pivot, breathe.",
+      "relationshipOverrides": [
+        {
+          "type": "orbit",
+          "center": [
+            0,
+            1.18,
+            0
+          ],
+          "group": [
+            "atlas",
+            "lumen",
+            "pivot",
+            "spark"
+          ],
+          "radius": 2.25,
+          "hz": 0.12,
+          "strength": 0.92
+        },
+        {
+          "type": "sync",
+          "group": [
+            "atlas",
+            "lumen",
+            "pivot",
+            "spark"
+          ],
+          "joints": [
+            "leftArm",
+            "rightArm"
+          ],
+          "strength": 0.25
+        }
+      ],
+      "moves": [
+        {
+          "puppet": "atlas",
+          "preset": "mobilityMarch",
+          "energy": 1.55,
+          "pulse": [
+            {
+              "joint": "leftLeg",
+              "amp": 0.58,
+              "hz": 2.2
+            },
+            {
+              "joint": "rightLeg",
+              "amp": -0.58,
+              "hz": 2.2
+            }
+          ]
+        },
+        {
+          "puppet": "lumen",
+          "preset": "mobilityMarch",
+          "energy": 1.55,
+          "pulse": [
+            {
+              "joint": "leftLeg",
+              "amp": -0.58,
+              "hz": 2.2
+            },
+            {
+              "joint": "rightLeg",
+              "amp": 0.58,
+              "hz": 2.2
+            }
+          ]
+        },
+        {
+          "puppet": "pivot",
+          "preset": "kneeDrive",
+          "energy": 1.5,
+          "pulse": [
+            {
+              "joint": "leftShin",
+              "amp": 0.55,
+              "hz": 2.5
+            },
+            {
+              "joint": "rightShin",
+              "amp": -0.55,
+              "hz": 2.5
+            }
+          ]
+        },
+        {
+          "puppet": "spark",
+          "preset": "run",
+          "energy": 1.45,
+          "pulse": [
+            {
+              "joint": "twist",
+              "amp": 0.35,
+              "hz": 1.3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "t": 27.1,
+      "duration": 4.9,
+      "lyric": "Final lift: knees soft, strings bright, momentum fading into balance.",
+      "moves": [
+        {
+          "puppet": "atlas",
+          "root": [
+            -1.6,
+            1.2,
+            0.25
+          ],
+          "preset": "finalMobilityLeft",
+          "energy": 1.05,
+          "pulse": [
+            {
+              "joint": "torso",
+              "amp": 0.06,
+              "hz": 0.7
+            },
+            {
+              "joint": "rightShin",
+              "amp": 0.14,
+              "hz": 1.4
+            }
+          ]
+        },
+        {
+          "puppet": "lumen",
+          "root": [
+            1.6,
+            1.2,
+            0.25
+          ],
+          "preset": "finalMobilityRight",
+          "energy": 1.05,
+          "pulse": [
+            {
+              "joint": "torso",
+              "amp": -0.06,
+              "hz": 0.7
+            },
+            {
+              "joint": "leftShin",
+              "amp": -0.14,
+              "hz": 1.4
+            }
+          ]
+        },
+        {
+          "puppet": "pivot",
+          "root": [
+            0.0,
+            1.18,
+            -1.2
+          ],
+          "preset": "splitReach",
+          "energy": 0.95,
+          "pulse": [
+            {
+              "joint": "leftArm",
+              "amp": 0.1,
+              "hz": 0.8
+            },
+            {
+              "joint": "rightArm",
+              "amp": -0.1,
+              "hz": 0.8
+            }
+          ]
+        },
+        {
+          "puppet": "spark",
+          "root": [
+            0.0,
+            1.35,
+            1.5
+          ],
+          "preset": "reachUp",
+          "energy": 0.85,
+          "pulse": [
+            {
+              "joint": "twist",
+              "amp": 0.1,
+              "hz": 0.6
+            }
+          ]
+        }
+      ]
+    }
+  ]
+};
+
+const POSES = {
+  neutral:    { torso:0, head:0, leftArm:-0.15, rightArm:0.15, leftForearm:-0.2, rightForearm:0.2, leftLeg:0.12, rightLeg:-0.12, leftShin:0, rightShin:0, twist:0 },
+  reachUp:   { torso:0.02, head:-0.05, leftArm:-2.35, rightArm:2.35, leftForearm:-0.45, rightForearm:0.45, leftLeg:0.05, rightLeg:-0.05, leftShin:0.12, rightShin:-0.12, twist:0 },
+  bow:       { torso:0.75, head:0.25, leftArm:-0.8, rightArm:0.8, leftForearm:-0.35, rightForearm:0.35, leftLeg:0.12, rightLeg:-0.12, leftShin:0.15, rightShin:-0.15, twist:0 },
+  swingLeft: { torso:-0.20, head:-0.10, leftArm:-1.4, rightArm:0.95, leftForearm:-0.7, rightForearm:0.45, leftLeg:-0.3, rightLeg:0.38, leftShin:0.3, rightShin:-0.2, twist:-0.22 },
+  swingRight:{ torso:0.20, head:0.10, leftArm:-0.95, rightArm:1.4, leftForearm:-0.45, rightForearm:0.7, leftLeg:-0.38, rightLeg:0.3, leftShin:0.2, rightShin:-0.3, twist:0.22 },
+  kick:      { torso:-0.06, head:0.0, leftArm:-0.7, rightArm:0.7, leftForearm:-0.25, rightForearm:0.25, leftLeg:-0.1, rightLeg:1.15, leftShin:0.1, rightShin:-0.65, twist:0 },
+  run:       { torso:0.08, head:0.0, leftArm:-0.85, rightArm:0.85, leftForearm:-0.55, rightForearm:0.55, leftLeg:-0.55, rightLeg:0.55, leftShin:0.28, rightShin:-0.28, twist:0 },
+  jazzHands: { torso:0.0, head:-0.06, leftArm:-1.85, rightArm:1.85, leftForearm:-1.0, rightForearm:1.0, leftLeg:0.35, rightLeg:-0.35, leftShin:-0.2, rightShin:0.2, twist:0 },
+  spin:      { torso:0.0, head:0, leftArm:-1.15, rightArm:1.15, leftForearm:-0.65, rightForearm:0.65, leftLeg:0.35, rightLeg:-0.35, leftShin:0.28, rightShin:-0.28, twist:0 },
+  finalLeft: { torso:-0.1, head:-0.05, leftArm:-2.25, rightArm:0.7, leftForearm:-0.5, rightForearm:0.35, leftLeg:-0.2, rightLeg:0.18, leftShin:0.05, rightShin:-0.05, twist:-0.25 },
+  finalRight:{ torso:0.1, head:0.05, leftArm:-0.7, rightArm:2.25, leftForearm:-0.35, rightForearm:0.5, leftLeg:-0.18, rightLeg:0.2, leftShin:0.05, rightShin:-0.05, twist:0.25 },
+  floorTwitch: { torso:1.22, head:0.22, leftArm:-1.05, rightArm:1.05, leftForearm:-0.85, rightForearm:0.85, leftLeg:1.05, rightLeg:-1.05, leftShin:-0.95, rightShin:0.95, twist:0.05 },
+  crawl:       { torso:0.88, head:0.10, leftArm:-1.25, rightArm:1.05, leftForearm:-0.75, rightForearm:0.55, leftLeg:0.75, rightLeg:-0.65, leftShin:-0.55, rightShin:0.45, twist:0.12 },
+  pushUp:     { torso:0.48, head:-0.08, leftArm:-1.65, rightArm:1.65, leftForearm:-1.05, rightForearm:1.05, leftLeg:0.82, rightLeg:-0.82, leftShin:-0.58, rightShin:0.58, twist:0 },
+  floorRise:  { torso:0.42, head:-0.05, leftArm:-1.35, rightArm:1.35, leftForearm:-0.85, rightForearm:0.85, leftLeg:0.52, rightLeg:-0.52, leftShin:-0.35, rightShin:0.35, twist:0 },
+  heelToe:    { torso:0.03, head:-0.03, leftArm:-0.75, rightArm:0.75, leftForearm:-0.42, rightForearm:0.42, leftLeg:-0.42, rightLeg:0.46, leftShin:0.58, rightShin:-0.44, twist:0.05 },
+  kneeDrive:  { torso:-0.04, head:0, leftArm:-0.95, rightArm:0.95, leftForearm:-0.48, rightForearm:0.48, leftLeg:-0.25, rightLeg:1.18, leftShin:0.25, rightShin:-0.82, twist:0.08 },
+  mobilityMarch:{ torso:0.02, head:0, leftArm:-0.95, rightArm:0.95, leftForearm:-0.45, rightForearm:0.45, leftLeg:-0.68, rightLeg:0.74, leftShin:0.55, rightShin:-0.55, twist:0 },
+  crossStep:  { torso:-0.06, head:-0.04, leftArm:-1.05, rightArm:1.05, leftForearm:-0.55, rightForearm:0.55, leftLeg:0.55, rightLeg:0.05, leftShin:-0.20, rightShin:-0.52, twist:-0.38 },
+  wildLegs:   { torso:0.08, head:0.02, leftArm:-1.25, rightArm:1.25, leftForearm:-0.62, rightForearm:0.62, leftLeg:-0.95, rightLeg:0.95, leftShin:0.82, rightShin:-0.82, twist:0.12 },
+  sweepKick:  { torso:-0.02, head:0.02, leftArm:-1.15, rightArm:1.20, leftForearm:-0.58, rightForearm:0.62, leftLeg:-0.18, rightLeg:1.35, leftShin:0.16, rightShin:-1.05, twist:0.34 },
+  splitReach: { torso:-0.10, head:-0.05, leftArm:-2.20, rightArm:2.20, leftForearm:-0.65, rightForearm:0.65, leftLeg:-0.78, rightLeg:0.78, leftShin:0.26, rightShin:-0.26, twist:0 },
+  watcherBounce:{ torso:0.04, head:-0.08, leftArm:-0.65, rightArm:0.65, leftForearm:-0.30, rightForearm:0.30, leftLeg:-0.18, rightLeg:0.18, leftShin:0.18, rightShin:-0.18, twist:0 },
+  finalMobilityLeft:{ torso:-0.08, head:-0.04, leftArm:-2.15, rightArm:0.85, leftForearm:-0.58, rightForearm:0.36, leftLeg:-0.62, rightLeg:0.32, leftShin:0.42, rightShin:-0.16, twist:-0.30 },
+  finalMobilityRight:{ torso:0.08, head:0.04, leftArm:-0.85, rightArm:2.15, leftForearm:-0.36, rightForearm:0.58, leftLeg:-0.32, rightLeg:0.62, leftShin:0.16, rightShin:-0.42, twist:0.30 }
+};
+
+const JOINTS = Object.keys(POSES.neutral);
+
+let scene, camera, renderer, controls, clock;
+let score = defaultScore;
+let puppets = new Map();
+let playing = false;
+let simTime = 0;
+let lastReal = 0;
+let maxDuration = 24;
+let stageGroup = new THREE.Group();
+let stringGroup = new THREE.Group();
+let relationshipHistory = new Map();
+let audioCtx = null;
+let masterGain = null;
+let musicEvents = [];
+let lastMusicScoreTime = -Infinity;
+let musicMuted = false;
+
+const $ = id => document.getElementById(id);
+const jsonBox = $("jsonBox");
+const status = $("status");
+
+function setStatus(text, good=true) {
+  status.style.borderColor = good ? "rgba(125,211,252,0.22)" : "rgba(255,122,144,0.65)";
+  status.style.background = good ? "rgba(125,211,252,0.08)" : "rgba(255,122,144,0.10)";
+  status.textContent = text;
+}
+
+function updateSliderLabels() {
+  $("speedVal").textContent = `${Number($("speed").value).toFixed(2)}×`;
+  if ($("musicVolVal")) $("musicVolVal").textContent = Number($("musicVol").value).toFixed(2);
+  $("gravityVal").textContent = Number($("gravity").value).toFixed(2);
+  $("tensionVal").textContent = Number($("tension").value).toFixed(2);
+  $("dampingVal").textContent = Number($("damping").value).toFixed(2);
+  $("scrubVal").textContent = `${simTime.toFixed(1)}s`;
+  updateMusicButton();
+}
+
+function initThree() {
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0e1117);
+  scene.fog = new THREE.Fog(0x0e1117, 13, 24);
+
+  camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+  camera.position.set(0, 4.4, 10.5);
+
+  renderer = new THREE.WebGLRenderer({ canvas: $("three"), antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.target.set(0, 1.6, 0);
+  controls.enableDamping = true;
+  controls.maxPolarAngle = Math.PI * 0.49;
+  controls.minDistance = 5;
+  controls.maxDistance = 18;
+
+  const hemi = new THREE.HemisphereLight(0xaac7ff, 0x1d2330, 1.0);
+  scene.add(hemi);
+
+  const key = new THREE.DirectionalLight(0xffffff, 2.1);
+  key.position.set(2.8, 8, 4.5);
+  key.castShadow = true;
+  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.camera.left = -8;
+  key.shadow.camera.right = 8;
+  key.shadow.camera.top = 8;
+  key.shadow.camera.bottom = -8;
+  scene.add(key);
+
+  const rim = new THREE.PointLight(0x8b5cf6, 0.65, 20);
+  rim.position.set(-5, 3.8, -4);
+  scene.add(rim);
+
+  scene.add(stageGroup);
+  scene.add(stringGroup);
+
+  window.addEventListener("resize", resize);
+  resize();
+  clock = new THREE.Clock();
+}
+
+function resize() {
+  const wrap = $("stageWrap");
+  const w = wrap.clientWidth || window.innerWidth;
+  const h = wrap.clientHeight || window.innerHeight;
+  camera.aspect = w/h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h, false);
+}
+
+function clearGroup(group) {
+  while(group.children.length) {
+    const obj = group.children.pop();
+    obj.traverse?.(child => {
+      if (child.geometry) child.geometry.dispose();
+      if (child.material) {
+        if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+        else child.material.dispose();
+      }
+    });
+  }
+}
+
+function createStage() {
+  clearGroup(stageGroup);
+  clearGroup(stringGroup);
+
+  const width = score.stage?.width || 10;
+  const depth = score.stage?.depth || 7;
+  const height = score.stage?.height || 5;
+
+  const floorGeo = new THREE.BoxGeometry(width, 0.08, depth);
+  const floorMat = new THREE.MeshStandardMaterial({ color: 0x171f2e, roughness: 0.82, metalness: 0.0 });
+  const floor = new THREE.Mesh(floorGeo, floorMat);
+  floor.position.y = -0.04;
+  floor.receiveShadow = true;
+  stageGroup.add(floor);
+
+  const grid = new THREE.GridHelper(width, width, 0x36506b, 0x223044);
+  grid.position.y = 0.01;
+  stageGroup.add(grid);
+
+  const railMat = new THREE.MeshStandardMaterial({ color: 0xd7e3f5, roughness: 0.35, metalness: 0.45 });
+  const railGeo = new THREE.BoxGeometry(width, 0.08, 0.08);
+  const backRail = new THREE.Mesh(railGeo, railMat);
+  backRail.position.set(0, height, -depth/2 + 0.3);
+  stageGroup.add(backRail);
+  const frontRail = backRail.clone();
+  frontRail.position.z = depth/2 - 0.3;
+  stageGroup.add(frontRail);
+
+  const sideRailGeo = new THREE.BoxGeometry(0.08, 0.08, depth);
+  const leftRail = new THREE.Mesh(sideRailGeo, railMat);
+  leftRail.position.set(-width/2 + 0.35, height, 0);
+  stageGroup.add(leftRail);
+  const rightRail = leftRail.clone();
+  rightRail.position.x = width/2 - 0.35;
+  stageGroup.add(rightRail);
+
+  for (const x of [-width/2 + 0.35, width/2 - 0.35]) {
+    for (const z of [-depth/2 + 0.3, depth/2 - 0.3]) {
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.04,0.04,height,12), railMat);
+      pole.position.set(x, height/2, z);
+      stageGroup.add(pole);
+    }
+  }
+
+  const back = new THREE.Mesh(
+    new THREE.PlaneGeometry(width, height),
+    new THREE.MeshStandardMaterial({ color: 0x101827, roughness: 1, metalness: 0 })
+  );
+  back.position.set(0, height/2, -depth/2);
+  stageGroup.add(back);
+}
+
+function cylinderBetween(a, b, radius, material) {
+  const dir = new THREE.Vector3().subVectors(b, a);
+  const len = dir.length();
+  const geo = new THREE.CylinderGeometry(radius, radius, Math.max(len, 0.001), 16);
+  const mesh = new THREE.Mesh(geo, material);
+  mesh.position.copy(a).add(b).multiplyScalar(0.5);
+  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir.normalize());
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
+class Puppet {
+  constructor(def, index) {
+    this.id = def.id || `p${index}`;
+    this.label = def.label || this.id;
+    this.color = new THREE.Color(def.color || "#7dd3fc");
+    this.mass = def.mass || 10;
+    this.root = v3(def.start || [0,1.18,0]);
+    const initialY = (Array.isArray(def.start) && Number.isFinite(Number(def.start[1]))) ? Number(def.start[1]) : 1.18;
+    this.root.y = initialY;
+    this.rootVel = new THREE.Vector3();
+    this.rootTarget = this.root.clone();
+    this.prevRootTargets = [];
+    this.energy = 1;
+    this.group = new THREE.Group();
+    scene.add(this.group);
+
+    this.lengths = {
+      torso: 1.15,
+      neck: 0.18,
+      head: 0.28,
+      upperArm: 0.62,
+      forearm: 0.56,
+      thigh: 0.72,
+      shin: 0.66
+    };
+    this.widths = { shoulder: 0.64, hip: 0.46 };
+
+    this.joints = {};
+    for (const name of JOINTS) {
+      const inertia = name.includes("Arm") || name.includes("Forearm") ? 0.18 :
+        name.includes("Leg") || name.includes("Shin") ? 0.32 :
+        name === "torso" ? 1.15 :
+        name === "twist" ? 1.8 : 0.12;
+      this.joints[name] = {
+        angle: POSES.neutral[name] || 0,
+        omega: 0,
+        target: POSES.neutral[name] || 0,
+        inertia,
+        lastTorque: 0,
+        angularMomentum: 0
+      };
+    }
+
+    this.parts = [];
+    this.jointMarkers = [];
+    this.strings = [];
+    this.nameSprite = null;
+    this.makeLabel();
+    this.renderSkeleton();
+  }
+
+  makeLabel() {
+    const canvas = document.createElement("canvas");
+    canvas.width = 256;
+    canvas.height = 64;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "rgba(0,0,0,0)";
+    ctx.fillRect(0,0,256,64);
+    ctx.font = "bold 28px system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "#ffffff";
+    ctx.shadowColor = "rgba(0,0,0,0.8)";
+    ctx.shadowBlur = 8;
+    ctx.fillText(this.label, 128, 32);
+    const tex = new THREE.CanvasTexture(canvas);
+    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+    const sp = new THREE.Sprite(mat);
+    sp.scale.set(1.4, 0.35, 1);
+    this.nameSprite = sp;
+    this.group.add(sp);
+  }
+
+  clearVisuals() {
+    for (const p of this.parts) {
+      this.group.remove(p);
+      p.geometry?.dispose();
+      if (p.material) p.material.dispose?.();
+    }
+    for (const m of this.jointMarkers) {
+      this.group.remove(m);
+      m.geometry?.dispose();
+      m.material?.dispose?.();
+    }
+    this.parts = [];
+    this.jointMarkers = [];
+  }
+
+  addMarker(pos, radius=0.055) {
+    const mat = new THREE.MeshStandardMaterial({ color: this.color.clone().multiplyScalar(1.1), roughness: 0.45 });
+    const mesh = new THREE.Mesh(new THREE.SphereGeometry(radius, 16, 12), mat);
+    mesh.position.copy(pos);
+    mesh.castShadow = true;
+    this.group.add(mesh);
+    this.jointMarkers.push(mesh);
+  }
+
+  addSegment(a, b, radius=0.055, color=this.color) {
+    const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.62, metalness: 0.02 });
+    const mesh = cylinderBetween(a, b, radius, mat);
+    this.group.add(mesh);
+    this.parts.push(mesh);
+  }
+
+  getPoseObject() {
+    const o = {};
+    for (const k of JOINTS) o[k] = this.joints[k].angle;
+    return o;
+  }
+
+  applyTargetPose(pose, tGlobal) {
+    for (const k of JOINTS) {
+      const base = pose[k];
+      if (typeof base === "number") this.joints[k].target = base;
+    }
+  }
+
+  simulate(dt, globals) {
+    const tension = globals.tension;
+    const grav = globals.gravity;
+    const damping = globals.damping;
+    const kpBase = 16 * tension * this.energy;
+    const kdBase = 2.5 + damping * 8;
+
+    for (const [name, j] of Object.entries(this.joints)) {
+      const error = angleDiff(j.target, j.angle);
+      const gTorque = (name === "torso" ? -Math.sin(j.angle) * grav * 1.2 : -Math.sin(j.angle) * grav * 0.12);
+      const springTorque = kpBase * error;
+      const dampTorque = -kdBase * j.omega;
+      const torque = springTorque + dampTorque + gTorque;
+      const alpha = torque / j.inertia;
+      j.omega += alpha * dt;
+      j.omega *= Math.exp(-damping * dt);
+      j.angle += j.omega * dt;
+      if (name !== "twist") j.angle = clamp(j.angle, -2.75, 2.75);
+      j.lastTorque = torque;
+      j.angularMomentum = j.inertia * j.omega;
+    }
+
+    const force = new THREE.Vector3().subVectors(this.rootTarget, this.root).multiplyScalar(9.0 * tension);
+    force.addScaledVector(this.rootVel, -(2.2 + damping * 4));
+    const acc = force.multiplyScalar(1 / Math.max(this.mass, 1));
+    this.rootVel.addScaledVector(acc, dt);
+    this.rootVel.y += (1.18 - this.root.y) * 7 * dt;
+    this.rootVel.multiplyScalar(Math.exp(-damping * 0.5 * dt));
+    this.root.addScaledVector(this.rootVel, dt);
+    this.root.y = clamp(this.root.y, 0.35, 2.60);
+  }
+
+  posePoint(base, len, angle, lateral=0, zExtra=0) {
+    const twist = this.joints.twist.angle;
+    const x = lateral + Math.sin(angle) * len;
+    const y = -Math.cos(angle) * len;
+    const z = zExtra + Math.sin(twist) * lateral * 0.65;
+    return base.clone().add(new THREE.Vector3(x, y, z));
+  }
+
+  kinematics() {
+    const p = {};
+    const torsoAngle = this.joints.torso.angle;
+    const twist = this.joints.twist.angle;
+    const root = this.root.clone();
+    p.hip = root.clone();
+    p.chest = root.clone().add(new THREE.Vector3(Math.sin(torsoAngle)*this.lengths.torso*0.28, this.lengths.torso, Math.sin(twist)*0.24));
+    p.neck = p.chest.clone().add(new THREE.Vector3(Math.sin(torsoAngle)*0.12, this.lengths.neck, 0));
+    p.head = p.neck.clone().add(new THREE.Vector3(Math.sin(this.joints.head.angle + torsoAngle)*0.05, this.lengths.head, Math.sin(twist)*0.05));
+
+    const sh = this.widths.shoulder / 2;
+    const hp = this.widths.hip / 2;
+    p.leftShoulder = p.chest.clone().add(new THREE.Vector3(-sh*Math.cos(twist), -0.05, sh*Math.sin(twist)));
+    p.rightShoulder = p.chest.clone().add(new THREE.Vector3(sh*Math.cos(twist), -0.05, -sh*Math.sin(twist)));
+    p.leftHip = p.hip.clone().add(new THREE.Vector3(-hp*Math.cos(twist), 0, hp*Math.sin(twist)));
+    p.rightHip = p.hip.clone().add(new THREE.Vector3(hp*Math.cos(twist), 0, -hp*Math.sin(twist)));
+
+    p.leftElbow = this.posePoint(p.leftShoulder, this.lengths.upperArm, this.joints.leftArm.angle + torsoAngle, -0.05, 0);
+    p.rightElbow = this.posePoint(p.rightShoulder, this.lengths.upperArm, this.joints.rightArm.angle + torsoAngle, 0.05, 0);
+    p.leftWrist = this.posePoint(p.leftElbow, this.lengths.forearm, this.joints.leftForearm.angle + this.joints.leftArm.angle + torsoAngle, 0, 0);
+    p.rightWrist = this.posePoint(p.rightElbow, this.lengths.forearm, this.joints.rightForearm.angle + this.joints.rightArm.angle + torsoAngle, 0, 0);
+
+    p.leftKnee = this.posePoint(p.leftHip, this.lengths.thigh, this.joints.leftLeg.angle, -0.03, 0);
+    p.rightKnee = this.posePoint(p.rightHip, this.lengths.thigh, this.joints.rightLeg.angle, 0.03, 0);
+    p.leftAnkle = this.posePoint(p.leftKnee, this.lengths.shin, this.joints.leftShin.angle + this.joints.leftLeg.angle, 0, 0);
+    p.rightAnkle = this.posePoint(p.rightKnee, this.lengths.shin, this.joints.rightShin.angle + this.joints.rightLeg.angle, 0, 0);
+
+    return p;
+  }
+
+  renderSkeleton() {
+    this.clearVisuals();
+    this.group.position.set(0,0,0);
+    const p = this.kinematics();
+    const wood = this.color;
+    const dark = this.color.clone().multiplyScalar(0.52);
+
+    this.addSegment(p.hip, p.chest, 0.095, wood);
+    this.addSegment(p.chest, p.neck, 0.055, wood);
+    this.addSegment(p.neck, p.head, 0.045, wood);
+
+    const head = new THREE.Mesh(
+      new THREE.SphereGeometry(0.23, 24, 16),
+      new THREE.MeshStandardMaterial({ color: wood.clone().lerp(new THREE.Color(0xffffff), 0.32), roughness: 0.55 })
+    );
+    head.position.copy(p.head);
+    head.castShadow = true;
+    this.group.add(head);
+    this.parts.push(head);
+
+    this.addSegment(p.leftShoulder, p.rightShoulder, 0.045, dark);
+    this.addSegment(p.leftHip, p.rightHip, 0.045, dark);
+
+    this.addSegment(p.leftShoulder, p.leftElbow, 0.05, wood);
+    this.addSegment(p.leftElbow, p.leftWrist, 0.043, wood);
+    this.addSegment(p.rightShoulder, p.rightElbow, 0.05, wood);
+    this.addSegment(p.rightElbow, p.rightWrist, 0.043, wood);
+
+    this.addSegment(p.leftHip, p.leftKnee, 0.058, wood);
+    this.addSegment(p.leftKnee, p.leftAnkle, 0.05, wood);
+    this.addSegment(p.rightHip, p.rightKnee, 0.058, wood);
+    this.addSegment(p.rightKnee, p.rightAnkle, 0.05, wood);
+
+    for (const key of ["chest","hip","leftShoulder","rightShoulder","leftElbow","rightElbow","leftWrist","rightWrist","leftKnee","rightKnee","leftAnkle","rightAnkle"]) {
+      this.addMarker(p[key], key.includes("Wrist") || key.includes("Ankle") ? 0.05 : 0.06);
+    }
+
+    this.nameSprite.position.copy(p.head).add(new THREE.Vector3(0, 0.55, 0));
+    this.updateStrings(p);
+  }
+
+  updateStrings(p) {
+    for (const s of this.strings) {
+      stringGroup.remove(s);
+      s.geometry.dispose();
+      s.material.dispose();
+    }
+    this.strings = [];
+    const topY = score.stage?.height || 5;
+    const anchors = [
+      ["head", p.head, 0.00],
+      ["leftWrist", p.leftWrist, -0.10],
+      ["rightWrist", p.rightWrist, 0.10],
+      ["leftKnee", p.leftKnee, -0.06],
+      ["rightKnee", p.rightKnee, 0.06]
+    ];
+    for (const [, end, off] of anchors) {
+      const start = new THREE.Vector3(end.x + off, topY, end.z - 0.20);
+      const geom = new THREE.BufferGeometry().setFromPoints([start, end]);
+      const mat = new THREE.LineBasicMaterial({ color: 0xdce9ff, transparent: true, opacity: 0.5 });
+      const line = new THREE.Line(geom, mat);
+      stringGroup.add(line);
+      this.strings.push(line);
+    }
+  }
+}
+
+function angleDiff(target, current) {
+  let d = target - current;
+  while (d > Math.PI) d -= TAU;
+  while (d < -Math.PI) d += TAU;
+  return d;
+}
+
+function loadScore(newScore, resetTime=true) {
+  score = normalizeScore(newScore);
+  maxDuration = score.duration || estimateDuration(score);
+  if ($("musicVol") && score.music && Number.isFinite(Number(score.music.volume))) {
+    $("musicVol").value = Number(score.music.volume);
+  }
+  prepareMusicEvents();
+  createStage();
+  for (const p of puppets.values()) {
+    scene.remove(p.group);
+    for (const s of p.strings) stringGroup.remove(s);
+  }
+  puppets.clear();
+  relationshipHistory.clear();
+  (score.puppets || []).forEach((def, i) => puppets.set(def.id, new Puppet(def, i)));
+  if (resetTime) {
+    simTime = 0;
+    playing = false;
+    $("playBtn").textContent = "Play";
+  }
+  $("scrub").max = String(Math.max(maxDuration, 1) * 10);
+  $("scrub").value = String(simTime * 10);
+  updateAtTime(simTime, 0.016);
+  setStatus(`Loaded "${score.title || "untitled"}" with ${puppets.size} puppet(s), ${(score.choreography||[]).length} cue(s), ${(score.relationships||[]).length} relationship rule(s).`);
+}
+
+function normalizeScore(s) {
+  const out = JSON.parse(JSON.stringify(s));
+  out.puppets = Array.isArray(out.puppets) ? out.puppets : [];
+  out.relationships = Array.isArray(out.relationships) ? out.relationships : [];
+  out.choreography = Array.isArray(out.choreography) ? out.choreography : [];
+  out.choreography.sort((a,b) => (a.t||0) - (b.t||0));
+  if (!out.duration) out.duration = estimateDuration(out);
+  return out;
+}
+
+function estimateDuration(s) {
+  let d = 0;
+  for (const c of (s.choreography || [])) d = Math.max(d, (c.t||0) + (c.duration || 0));
+  return Math.max(d, 12);
+}
+
+function activeCueAt(t) {
+  const cues = score.choreography || [];
+  let active = null, next = null, index = -1;
+  for (let i = 0; i < cues.length; i++) {
+    const c = cues[i];
+    const start = c.t || 0;
+    const end = start + (c.duration || 0.001);
+    if (t >= start && t < end) { active = c; index = i; next = cues[i+1] || null; break; }
+    if (t < start && !next) next = c;
+    if (t >= end) { active = c; index = i; }
+  }
+  if (!active && cues.length) { active = cues[0]; index = 0; }
+  return { active, next, index };
+}
+
+function poseFromMove(move, t, cueProgress) {
+  let pose = { ...POSES.neutral };
+  if (move.preset && POSES[move.preset]) pose = { ...pose, ...POSES[move.preset] };
+  if (move.pose && typeof move.pose === "object") pose = { ...pose, ...move.pose };
+  if (Array.isArray(move.pulse)) {
+    for (const p of move.pulse) {
+      if (!p.joint || !(p.joint in pose)) continue;
+      const hz = p.hz ?? 1;
+      const amp = p.amp ?? 0.1;
+      const phase = p.phase ?? 0;
+      pose[p.joint] += amp * Math.sin(TAU * hz * t + phase);
+    }
+  }
+  return pose;
+}
+
+function getMoveForPuppet(cue, id) {
+  return (cue?.moves || []).find(m => m.puppet === id || m.puppet === "all");
+}
+
+function applyMirrorPoseReferences(cue, targetPoses) {
+  for (const move of (cue?.moves || [])) {
+    if (typeof move.pose === "string" && move.pose.startsWith("mirror:")) {
+      const sourceId = move.pose.split(":")[1];
+      const source = targetPoses.get(sourceId);
+      if (!source) continue;
+      const mirrored = { ...source };
+      for (const k of Object.keys(mirrored)) {
+        if (k.includes("left")) {
+          const r = k.replace("left", "right");
+          if (r in source) mirrored[k] = -source[r];
+        } else if (k.includes("right")) {
+          const l = k.replace("right", "left");
+          if (l in source) mirrored[k] = -source[l];
+        } else if (k === "torso" || k === "head" || k === "twist") {
+          mirrored[k] = -source[k];
+        }
+      }
+      targetPoses.set(move.puppet, mirrored);
+    }
+  }
+}
+
+function computeTargets(t, dt) {
+  const { active: cue } = activeCueAt(t);
+  const targetPoses = new Map();
+  const targetRoots = new Map();
+  const cueStart = cue?.t || 0;
+  const cueDuration = cue?.duration || 1;
+  const q = clamp((t - cueStart) / Math.max(cueDuration, 0.001), 0, 1);
+  const e = ease(q);
+
+  for (const [id, puppet] of puppets) {
+    const move = getMoveForPuppet(cue, id);
+    puppet.energy = move?.energy || 1;
+    let pose = { ...POSES.neutral };
+    if (move) pose = poseFromMove(move, t, e);
+    targetPoses.set(id, pose);
+
+    if (move?.root) {
+      const desired = v3(move.root);
+      const baseY = (Array.isArray(move.root) && Number.isFinite(Number(move.root[1]))) ? Number(move.root[1]) : 1.18;
+      desired.y = baseY + (move.jump ? Math.sin(Math.PI * e) * move.jump : 0);
+      targetRoots.set(id, desired);
+    } else {
+      targetRoots.set(id, puppet.rootTarget.clone());
+    }
+  }
+
+  applyMirrorPoseReferences(cue, targetPoses);
+  applyRelationships(t, dt, cue, targetPoses, targetRoots);
+
+  for (const [id, puppet] of puppets) {
+    puppet.applyTargetPose(targetPoses.get(id) || POSES.neutral, t);
+    puppet.rootTarget.copy(targetRoots.get(id) || puppet.rootTarget);
+    puppet.prevRootTargets.push({ t, root: puppet.rootTarget.clone() });
+    if (puppet.prevRootTargets.length > 120) puppet.prevRootTargets.shift();
+  }
+}
+
+function allRules(cue) {
+  return [...(score.relationships || []), ...(cue?.relationshipOverrides || [])];
+}
+
+function applyRelationships(t, dt, cue, targetPoses, targetRoots) {
+  const rules = allRules(cue);
+
+  for (const rule of rules) {
+    if (rule.type === "mirror") {
+      const a = puppets.get(rule.a);
+      const b = puppets.get(rule.b);
+      if (!a || !b) continue;
+      const strength = rule.strength ?? 0.5;
+      const ar = targetRoots.get(rule.a)?.clone() || a.root.clone();
+      const br = targetRoots.get(rule.b)?.clone() || b.root.clone();
+      if (rule.axis === "x") {
+        br.x = lerp(br.x, -ar.x, strength);
+        br.z = lerp(br.z, ar.z, strength);
+      } else if (rule.axis === "z") {
+        br.z = lerp(br.z, -ar.z, strength);
+        br.x = lerp(br.x, ar.x, strength);
+      }
+      targetRoots.set(rule.b, br);
+
+      const ap = targetPoses.get(rule.a);
+      const bp = targetPoses.get(rule.b) || { ...POSES.neutral };
+      if (ap) {
+        for (const k of JOINTS) {
+          if (k.includes("left")) {
+            const r = k.replace("left", "right");
+            if (r in ap) bp[k] = lerp(bp[k], -ap[r], strength);
+          } else if (k.includes("right")) {
+            const l = k.replace("right", "left");
+            if (l in ap) bp[k] = lerp(bp[k], -ap[l], strength);
+          } else if (k === "torso" || k === "head" || k === "twist") {
+            bp[k] = lerp(bp[k], -ap[k], strength);
+          }
+        }
+        targetPoses.set(rule.b, bp);
+      }
+    }
+
+    if (rule.type === "follow") {
+      const leader = puppets.get(rule.leader);
+      const follower = puppets.get(rule.follower);
+      if (!leader || !follower) continue;
+      const lag = rule.lag ?? 0.4;
+      const strength = rule.strength ?? 0.5;
+      const history = leader.prevRootTargets;
+      let source = leader.rootTarget.clone();
+      for (let i = history.length - 1; i >= 0; i--) {
+        if (history[i].t <= t - lag) { source = history[i].root.clone(); break; }
+      }
+      const fr = targetRoots.get(rule.follower) || follower.rootTarget.clone();
+      fr.lerp(source, strength);
+      targetRoots.set(rule.follower, fr);
+    }
+
+    if (rule.type === "avoid") {
+      const ids = [...puppets.keys()];
+      const distance = rule.distance ?? 1.0;
+      const strength = rule.strength ?? 1.0;
+      for (let i = 0; i < ids.length; i++) for (let j = i+1; j < ids.length; j++) {
+        const a = puppets.get(ids[i]), b = puppets.get(ids[j]);
+        const ar = targetRoots.get(ids[i]) || a.rootTarget.clone();
+        const br = targetRoots.get(ids[j]) || b.rootTarget.clone();
+        const delta = new THREE.Vector3().subVectors(ar, br);
+        delta.y = 0;
+        const d = Math.max(delta.length(), 0.001);
+        if (d < distance) {
+          const push = delta.normalize().multiplyScalar((distance - d) * 0.5 * strength);
+          ar.add(push);
+          br.addScaledVector(push, -1);
+          targetRoots.set(ids[i], ar);
+          targetRoots.set(ids[j], br);
+        }
+      }
+    }
+
+    if (rule.type === "orbit") {
+      const group = rule.group || [...puppets.keys()];
+      const center = v3(rule.center || [0,0,0]);
+      center.y = 1.18;
+      const radius = rule.radius ?? 2;
+      const hz = rule.hz ?? 0.1;
+      const strength = rule.strength ?? 0.8;
+      group.forEach((id, idx) => {
+        if (!puppets.has(id)) return;
+        const phase = idx / Math.max(group.length, 1) * TAU;
+        const target = center.clone().add(new THREE.Vector3(
+          Math.cos(TAU*hz*t + phase) * radius,
+          0,
+          Math.sin(TAU*hz*t + phase) * radius
+        ));
+        const r = targetRoots.get(id) || puppets.get(id).rootTarget.clone();
+        r.lerp(target, strength);
+        targetRoots.set(id, r);
+      });
+    }
+
+    if (rule.type === "sync") {
+      const group = rule.group || [...puppets.keys()];
+      const joints = rule.joints || JOINTS;
+      const strength = rule.strength ?? 0.15;
+      for (const joint of joints) {
+        let sum = 0, n = 0;
+        for (const id of group) {
+          const p = targetPoses.get(id);
+          if (p && typeof p[joint] === "number") { sum += p[joint]; n++; }
+        }
+        if (!n) continue;
+        const avg = sum / n;
+        for (const id of group) {
+          const p = targetPoses.get(id);
+          if (p && typeof p[joint] === "number") p[joint] = lerp(p[joint], avg, strength);
+        }
+      }
+    }
+  }
+}
+
+function updateAtTime(t, dt) {
+  computeTargets(t, dt);
+  const globals = {
+    tension: Number($("tension").value),
+    gravity: Number($("gravity").value),
+    damping: Number($("damping").value)
+  };
+  for (const p of puppets.values()) {
+    p.simulate(dt, globals);
+    p.renderSkeleton();
+  }
+  updateHUD();
+}
+
+function updateHUD() {
+  const { active: cue, index } = activeCueAt(simTime);
+  $("lyrics").textContent = cue?.lyric || "No lyric for this cue.";
+  const start = cue?.t || 0;
+  const dur = cue?.duration || 1;
+  const pct = clamp((simTime - start) / Math.max(dur, 0.001), 0, 1) * 100;
+  $("cue").textContent = `${score.title || "untitled"} · cue ${Math.max(index+1,1)} · t = ${simTime.toFixed(1)}s / ${maxDuration.toFixed(1)}s`;
+  $("meterFill").style.width = `${pct}%`;
+  $("scrub").value = String(simTime * 10);
+  updateSliderLabels();
+
+  let lines = [];
+  const beat = (simTime / 60) * (score.bpm || 120);
+  const musicState = (score.music?.enabled && musicEvents.length) ? (musicMuted ? "muted" : "armed") : "none";
+  lines.push(`beat ${fmt(beat)} · bpm ${score.bpm || 120} · music ${musicState} · ${musicEvents.length} events`);
+  for (const p of puppets.values()) {
+    let totalL = 0, totalTorque = 0;
+    for (const j of Object.values(p.joints)) {
+      totalL += Math.abs(j.angularMomentum);
+      totalTorque += Math.abs(j.lastTorque);
+    }
+    const v = p.rootVel.length();
+    lines.push(`<div class="readPuppet"><strong>${escapeHtml(p.label)}</strong><br>root v ${fmt(v)} m/s<br>|Σ torque| ${fmt(totalTorque)} N·m<br>|Σ angular momentum| ${fmt(totalL)} kg·m²/s<br>target (${fmt(p.rootTarget.x)}, ${fmt(p.rootTarget.z)})</div>`);
+  }
+  $("physicsText").innerHTML = lines.join("");
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, ch => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;" }[ch]));
+}
+
+function animate(now) {
+  requestAnimationFrame(animate);
+  const realDt = Math.min(clock.getDelta(), 0.05);
+  const speed = Number($("speed").value);
+  if (playing) {
+    simTime += realDt * speed;
+    if (simTime > maxDuration) {
+      simTime = maxDuration;
+      playing = false;
+      $("playBtn").textContent = "Play";
+      silenceAudio();
+    }
+  }
+  if (playing) scheduleMusic(simTime, speed);
+  updateAtTime(simTime, Math.max(realDt * speed, 0.001));
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+
+function prepareMusicEvents() {
+  musicEvents = [];
+  const music = score.music || {};
+  if (!music.enabled) return;
+  const push = ev => {
+    if (!ev) return;
+    const t = Number(ev.t ?? ev.start ?? 0);
+    if (!Number.isFinite(t)) return;
+    musicEvents.push({
+      ...ev,
+      t,
+      duration: Number(ev.duration ?? 0.12),
+      gain: Number(ev.gain ?? 1)
+    });
+  };
+
+  for (const ev of (music.notes || [])) push(ev);
+  for (const clip of (music.clips || [])) {
+    const count = Math.max(0, Math.floor(Number(clip.count ?? 0)));
+    const every = Number(clip.every ?? 0);
+    const start = Number(clip.start ?? 0);
+    if (!count || !Number.isFinite(every) || every <= 0) continue;
+    for (let i = 0; i < count; i++) push({ ...clip, t: start + i * every });
+  }
+
+  for (const seq of (music.sequences || [])) {
+    const pattern = Array.isArray(seq.pattern) ? seq.pattern : [];
+    const repeats = Math.max(0, Math.floor(Number(seq.repeats ?? 1)));
+    const step = Number(seq.step ?? 0);
+    const start = Number(seq.start ?? 0);
+    if (!pattern.length || !repeats || !Number.isFinite(step) || step <= 0) continue;
+    for (let r = 0; r < repeats; r++) {
+      for (let i = 0; i < pattern.length; i++) {
+        const cell = pattern[i];
+        if (cell === null || cell === false || cell === "" || typeof cell === "undefined") continue;
+        const ev = typeof cell === "object" ? { ...seq, ...cell } : { ...seq, note: cell };
+        delete ev.pattern; delete ev.repeats; delete ev.step;
+        push({ ...ev, t: start + (r * pattern.length + i) * step });
+      }
+    }
+  }
+
+  musicEvents.sort((a,b) => a.t - b.t);
+  lastMusicScoreTime = simTime - 0.02;
+}
+
+function ensureAudio() {
+  if (!score.music?.enabled || musicMuted) return;
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    masterGain = audioCtx.createGain();
+    masterGain.connect(audioCtx.destination);
+  }
+  if (audioCtx.state === "suspended") audioCtx.resume();
+  updateMasterGain();
+}
+
+function updateMasterGain() {
+  if (!masterGain || !audioCtx) return;
+  const target = (musicMuted || !score.music?.enabled) ? 0 : Number($("musicVol")?.value ?? score.music?.volume ?? 0.35);
+  masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
+  masterGain.gain.setTargetAtTime(target, audioCtx.currentTime, 0.025);
+}
+
+function silenceAudio() {
+  if (!masterGain || !audioCtx) return;
+  masterGain.gain.cancelScheduledValues(audioCtx.currentTime);
+  masterGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.02);
+}
+
+function updateMusicButton() {
+  const btn = $("musicBtn");
+  if (!btn) return;
+  const available = !!(score?.music?.enabled && musicEvents.length);
+  btn.textContent = available ? (musicMuted ? "Music off" : "Music on") : "No music";
+  btn.style.opacity = available ? "1" : "0.55";
+}
+
+function noteToHz(note) {
+  if (typeof note === "number") return note;
+  const m = String(note || "C4").trim().match(/^([A-Ga-g])([#b]?)(-?\d)$/);
+  if (!m) return 261.63;
+  const names = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 };
+  let semi = names[m[1].toUpperCase()];
+  if (m[2] === "#") semi += 1;
+  if (m[2] === "b") semi -= 1;
+  const octave = Number(m[3]);
+  const midi = (octave + 1) * 12 + semi;
+  return 440 * Math.pow(2, (midi - 69) / 12);
+}
+
+function scheduleMusic(scoreTime, speed=1) {
+  if (!score.music?.enabled || musicMuted || !musicEvents.length) return;
+  ensureAudio();
+  if (!audioCtx || !masterGain) return;
+  const lookAheadScore = Math.max(0.18, 0.38 * speed);
+  const from = Math.max(0, lastMusicScoreTime);
+  const to = Math.min(maxDuration + 0.5, scoreTime + lookAheadScore);
+  const now = audioCtx.currentTime;
+  for (const ev of musicEvents) {
+    if (ev.t < from || ev.t > to) continue;
+    const audioTime = now + Math.max(0, (ev.t - scoreTime) / Math.max(speed, 0.1));
+    playMusicEvent(ev, audioTime);
+  }
+  lastMusicScoreTime = to;
+}
+
+function playMusicEvent(ev, when) {
+  const instrument = score.music?.instruments?.[ev.instrument] || {};
+  const type = ev.type || instrument.type || "synth";
+  if (type === "kick") return playKick(ev, instrument, when);
+  if (type === "noise") return playNoise(ev, instrument, when);
+  if (type === "hat") return playHat(ev, instrument, when);
+  return playSynth(ev, instrument, when);
+}
+
+function eventGain(ev, instrument, fallback=0.2) {
+  return clamp(Number(ev.gain ?? instrument.gain ?? fallback), 0, 2);
+}
+
+function playKick(ev, instrument, when) {
+  const dur = Math.max(0.05, Number(ev.duration ?? 0.12));
+  const gain = eventGain(ev, instrument, 0.8);
+  const osc = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(140, when);
+  osc.frequency.exponentialRampToValueAtTime(42, when + dur);
+  g.gain.setValueAtTime(0.0001, when);
+  g.gain.exponentialRampToValueAtTime(gain, when + 0.006);
+  g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+  osc.connect(g).connect(masterGain);
+  osc.start(when);
+  osc.stop(when + dur + 0.02);
+}
+
+function makeNoiseBuffer(seconds=0.12) {
+  const sr = audioCtx.sampleRate;
+  const buffer = audioCtx.createBuffer(1, Math.floor(sr * seconds), sr);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+  return buffer;
+}
+
+function playNoise(ev, instrument, when) {
+  const dur = Math.max(0.025, Number(ev.duration ?? 0.08));
+  const gain = eventGain(ev, instrument, 0.22);
+  const src = audioCtx.createBufferSource();
+  const filter = audioCtx.createBiquadFilter();
+  const g = audioCtx.createGain();
+  src.buffer = makeNoiseBuffer(dur + 0.03);
+  filter.type = (instrument.color === "clap" || ev.color === "clap") ? "bandpass" : "highpass";
+  filter.frequency.setValueAtTime((instrument.color === "wood" || ev.color === "wood") ? 950 : 1800, when);
+  filter.Q.setValueAtTime((instrument.color === "clap" || ev.color === "clap") ? 0.8 : 1.8, when);
+  g.gain.setValueAtTime(0.0001, when);
+  g.gain.exponentialRampToValueAtTime(gain, when + 0.004);
+  g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+  src.connect(filter).connect(g).connect(masterGain);
+  src.start(when);
+  src.stop(when + dur + 0.03);
+}
+
+function playHat(ev, instrument, when) {
+  const dur = Math.max(0.015, Number(ev.duration ?? 0.025));
+  const gain = eventGain(ev, instrument, 0.14);
+  const src = audioCtx.createBufferSource();
+  const filter = audioCtx.createBiquadFilter();
+  const g = audioCtx.createGain();
+  src.buffer = makeNoiseBuffer(dur + 0.02);
+  filter.type = "highpass";
+  filter.frequency.setValueAtTime(6500, when);
+  g.gain.setValueAtTime(gain, when);
+  g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+  src.connect(filter).connect(g).connect(masterGain);
+  src.start(when);
+  src.stop(when + dur + 0.02);
+}
+
+function playSynth(ev, instrument, when) {
+  const dur = Math.max(0.03, Number(ev.duration ?? 0.18));
+  const gain = eventGain(ev, instrument, 0.16);
+  const attack = Math.max(0.001, Number(ev.attack ?? instrument.attack ?? 0.008));
+  const release = Math.max(0.01, Number(ev.release ?? instrument.release ?? 0.14));
+  const osc = audioCtx.createOscillator();
+  const filter = audioCtx.createBiquadFilter();
+  const g = audioCtx.createGain();
+  osc.type = ev.waveform || instrument.waveform || "triangle";
+  osc.frequency.setValueAtTime(noteToHz(ev.note || instrument.note || "C4"), when);
+  if (ev.detune || instrument.detune) osc.detune.setValueAtTime(Number(ev.detune ?? instrument.detune), when);
+  filter.type = "lowpass";
+  filter.frequency.setValueAtTime(Number(ev.cutoff ?? instrument.cutoff ?? 1600), when);
+  filter.Q.setValueAtTime(Number(ev.q ?? instrument.q ?? 0.7), when);
+  g.gain.setValueAtTime(0.0001, when);
+  g.gain.exponentialRampToValueAtTime(gain, when + attack);
+  g.gain.setTargetAtTime(0.0001, when + dur, release);
+  osc.connect(filter).connect(g).connect(masterGain);
+  osc.start(when);
+  osc.stop(when + dur + release + 0.05);
+}
+
+function wireUI() {
+  jsonBox.value = JSON.stringify(defaultScore, null, 2);
+
+  $("loadBtn").addEventListener("click", () => {
+    try {
+      const parsed = JSON.parse(jsonBox.value);
+      loadScore(parsed, true);
+    } catch (err) {
+      setStatus(`JSON error: ${err.message}`, false);
+    }
+  });
+
+  $("playBtn").addEventListener("click", () => {
+    const willPlay = !playing;
+    if (willPlay && simTime >= maxDuration) simTime = 0;
+    playing = willPlay;
+    $("playBtn").textContent = playing ? "Pause" : "Play";
+    if (playing) {
+      lastMusicScoreTime = simTime - 0.02;
+      ensureAudio();
+    } else {
+      silenceAudio();
+    }
+  });
+
+  $("resetBtn").addEventListener("click", () => {
+    playing = false;
+    simTime = 0;
+    $("playBtn").textContent = "Play";
+    silenceAudio();
+    lastMusicScoreTime = simTime - 0.02;
+    loadScore(score, false);
+  });
+
+  $("sampleBtn").addEventListener("click", () => {
+    jsonBox.value = JSON.stringify(defaultScore, null, 2);
+    silenceAudio();
+    loadScore(defaultScore, true);
+  });
+
+  $("downloadBtn").addEventListener("click", () => {
+    const blob = new Blob([jsonBox.value], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = (score.title || "marionette_score").replace(/[^\w-]+/g, "_") + ".json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  $("scrub").addEventListener("input", e => {
+    simTime = Number(e.target.value) / 10;
+    playing = false;
+    $("playBtn").textContent = "Play";
+    silenceAudio();
+    lastMusicScoreTime = simTime - 0.02;
+    updateSliderLabels();
+  });
+
+  $("musicBtn").addEventListener("click", () => {
+    musicMuted = !musicMuted;
+    if (!musicMuted && playing) ensureAudio();
+    else updateMasterGain();
+    updateMusicButton();
+  });
+
+  for (const id of ["speed","gravity","tension","damping","musicVol"]) {
+    $(id).addEventListener("input", () => {
+      updateSliderLabels();
+      updateMasterGain();
+    });
+  }
+
+  $("togglePanel").addEventListener("click", () => $("left").classList.toggle("open"));
+}
+
+initThree();
+wireUI();
+loadScore(defaultScore, true);
+updateSliderLabels();
+requestAnimationFrame(animate);
+</script>
+</body>
+</html>
