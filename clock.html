@@ -1,0 +1,322 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Make a Clock: Prompt Ladder</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #172033;
+      background: linear-gradient(135deg, #fff36d, #7de3ff, #ff9fe8);
+      padding: 20px;
+    }
+    .wrap { max-width: 1250px; margin: 0 auto; }
+    header, .panel {
+      background: rgba(255,255,255,0.9);
+      border: 3px solid white;
+      border-radius: 22px;
+      box-shadow: 0 18px 45px rgba(0,0,0,0.14);
+    }
+    header { padding: 20px; margin-bottom: 16px; }
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(2rem, 5vw, 4.2rem);
+      line-height: 0.95;
+      letter-spacing: -0.055em;
+    }
+    p {
+      margin: 8px 0;
+      font-size: 1.04rem;
+      font-weight: 650;
+      line-height: 1.42;
+    }
+    .tiny { font-size: 0.9rem; opacity: 0.75; font-weight: 700; }
+    .ladder {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    details {
+      background: white;
+      border: 2px solid rgba(23,32,51,0.08);
+      border-radius: 16px;
+      padding: 12px;
+    }
+    summary {
+      cursor: pointer;
+      font-weight: 950;
+    }
+    .prompt {
+      width: 100%;
+      min-height: 105px;
+      margin-top: 10px;
+      border: 2px solid rgba(23,32,51,0.14);
+      border-radius: 14px;
+      padding: 12px;
+      background: #fffbe2;
+      color: #172033;
+      font: 700 0.92rem/1.42 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      resize: vertical;
+    }
+    .wild { min-height: 430px; background: #fff3f7; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+    @media (max-width: 880px) { .grid { grid-template-columns: 1fr; } }
+    .panel { padding: 16px; }
+    h2 { margin: 0 0 10px; font-size: 1.35rem; }
+    #code {
+      width: 100%;
+      height: 58vh;
+      min-height: 390px;
+      border: 2px solid rgba(23,32,51,0.14);
+      border-radius: 16px;
+      padding: 14px;
+      background: #101827;
+      color: #f8fbff;
+      font: 650 0.95rem/1.45 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      resize: vertical;
+      outline: none;
+    }
+    iframe {
+      width: 100%;
+      height: 58vh;
+      min-height: 390px;
+      border: 2px solid rgba(23,32,51,0.14);
+      border-radius: 16px;
+      background: white;
+    }
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 15px;
+      font-weight: 900;
+      font-size: 0.97rem;
+      cursor: pointer;
+      color: #172033;
+      background: #fff36d;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.13);
+    }
+    button:hover { transform: translateY(-1px); }
+    .run { background: #00d084; }
+    .download { background: #172033; color: white; }
+    .clear { background: white; }
+    .copy { background: #7de3ff; }
+    .footer {
+      text-align: center;
+      margin: 16px auto 0;
+      font-weight: 850;
+      opacity: 0.82;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Make a clock. Run it here.</h1>
+      <p>Try asking ChatGPT yourself first. Paste the code below. Press <b>Run</b>. If you like it, press <b>Download</b>.</p>
+      <p class="tiny">Only open the prompt examples if you get stuck or want to compare prompt power.</p>
+
+      <div class="ladder">
+        <details>
+          <summary>Prompt 1: crazy basic</summary>
+          <textarea class="prompt" id="p1" readonly>Make me a clock in HTML.</textarea>
+          <div class="buttons"><button class="copy" onclick="copyPrompt('p1')">Copy</button></div>
+        </details>
+
+        <details>
+          <summary>Prompt 2: medium</summary>
+          <textarea class="prompt" id="p2" readonly>Make a single HTML file with a working analog clock. It should show the current time on my computer with an hour hand, minute hand, and second hand. Make it bright, simple, and beginner friendly.</textarea>
+          <div class="buttons"><button class="copy" onclick="copyPrompt('p2')">Copy</button></div>
+        </details>
+
+        <details>
+          <summary>Prompt 3: deeply sophisticated</summary>
+          <textarea class="prompt" id="p3" readonly>Make a single self-contained HTML file with a polished analog clock.
+
+Requirements:
+- Uses the computer's local time.
+- Has hour, minute, and second hands.
+- Hour hand moves gradually between hour marks.
+- Minute hand moves gradually as seconds pass.
+- Includes a digital time display.
+- Has clean bright styling, not a dark tech look.
+- Uses clear comments explaining Date(), setInterval(), and CSS transform rotate().
+- Works by double-clicking the HTML file in a browser.
+- Do not use external libraries.</textarea>
+          <div class="buttons"><button class="copy" onclick="copyPrompt('p3')">Copy</button></div>
+        </details>
+
+        <details>
+          <summary>Prompt 4: meta-prompt — ask for the best prompt</summary>
+          <textarea class="prompt" id="p4" readonly>I want to learn AI-assisted coding with a tiny first project: a working analog clock in one HTML file.
+
+Before writing code, create the best possible prompt I should give you.
+
+The prompt should:
+- Be beginner friendly.
+- Ask for a working clock with hour, minute, and second hands.
+- Ask for bright design.
+- Ask for comments explaining the code.
+- Ask for one small extension idea.
+- Avoid overwhelming me.
+
+Then, after giving me the improved prompt, ask if I want you to generate the code.</textarea>
+          <div class="buttons"><button class="copy" onclick="copyPrompt('p4')">Copy</button></div>
+        </details>
+
+        <details>
+          <summary>Prompt 5: wild wild clock — real city/elevation/relativity/finance/alarm</summary>
+          <textarea class="prompt wild" id="p5" readonly>Make a single self-contained HTML file called The Wild Finance Relativity Clock.
+
+This must still be a real working analog clock using the user's computer time, but make it wildly advanced while remaining runnable as one HTML file.
+
+Core clock:
+- Working analog clock with hour, minute, and second hands.
+- Digital time display.
+- A large center readout inside the clock that can show calculated values to exactly 10 decimal places.
+- Bright, playful, joyful design.
+- No external libraries.
+
+Alarm:
+- Add an alarm feature.
+- User can choose alarm time.
+- When alarm triggers, flash the clock and play a simple browser-generated beep using the Web Audio API.
+- Include stop/snooze buttons.
+
+City/time-zone/elevation:
+- Let the user enter a city.
+- Look up the city latitude/longitude and estimated elevation using browser fetch calls to public no-key APIs when internet is available.
+- Also provide manual fallback fields for latitude, longitude, and elevation if lookup fails.
+- Let the user compare Eastern, Central, Mountain, Pacific, and local computer time.
+- Show the selected zone's current time.
+- Explain that JavaScript Date uses the computer/browser clock, while displayed zones are converted views of the same underlying instant.
+
+Real relativistic adjustments:
+- Calculate educational real-world relativistic clock-rate differences compared with sea level at the equator.
+- Include gravitational time dilation approximation:
+  fractional rate difference from elevation: Δf/f ≈ g*h/c²
+  where g = 9.80665 m/s², c = 299792458 m/s, and h is elevation in meters.
+- Include special relativistic correction from Earth's rotation:
+  v = Ω * R * cos(latitude)
+  where Ω = 7.2921159e-5 rad/s and R = 6371000 m.
+  fractional rate effect ≈ -v²/(2c²).
+- Compare the selected city to reference sea-level equator rotation.
+- Show:
+  1. elevation effect,
+  2. rotation/speed effect,
+  3. net fractional clock-rate difference,
+  4. accumulated nanoseconds per day,
+  5. accumulated microseconds per year.
+- Make clear this is educational and approximate, not a precision atomic-clock/geodesy tool.
+- Display the main relativistic result in the center of the clock to 10 decimal places.
+
+Finance / compounding calendar:
+- Add a finance panel.
+- Inputs:
+  starting amount,
+  monthly investment,
+  expected annual return percent,
+  monthly outflow,
+  number of years.
+- Correctly convert annual return to monthly equivalent:
+  monthlyRate = Math.pow(1 + annualRateDecimal, 1/12) - 1
+- Do NOT treat 6% annual as 6% monthly.
+- Sanity check:
+  $1,000 at 6% annual return, no deposits, no outflows, for one year should become about $1,060.
+- Show a month-by-month calendar of projected balances.
+- Show the selected month's projected balance in the middle of the clock to exactly 10 decimal places.
+- Allow toggling the center display between:
+  current time,
+  alarm countdown,
+  relativistic nanoseconds/day,
+  projected finance balance.
+
+Teaching:
+- Add small plain-English explanations beside each advanced feature.
+- Keep the interface fun and usable, not corporate.
+- Put all HTML, CSS, and JavaScript in one file.</textarea>
+          <div class="buttons"><button class="copy" onclick="copyPrompt('p5')">Copy</button></div>
+        </details>
+      </div>
+    </header>
+
+    <div class="grid">
+      <section class="panel">
+        <h2>Paste code here</h2>
+        <textarea id="code" spellcheck="false" placeholder="Paste the full HTML code from ChatGPT here..."></textarea>
+        <div class="buttons">
+          <button class="run" onclick="runCode()">Run</button>
+          <button class="download" onclick="downloadCode()">Download</button>
+          <button class="clear" onclick="clearCode()">Clear</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Result shows here</h2>
+        <iframe id="preview" title="HTML preview" sandbox="allow-scripts allow-downloads allow-forms"></iframe>
+      </section>
+    </div>
+
+    <p class="footer">Ask → paste → run → improve → download.</p>
+  </div>
+
+  <script>
+    function copyPrompt(id) {
+      const box = document.getElementById(id);
+      box.select();
+      navigator.clipboard.writeText(box.value).then(() => {
+        alert("Prompt copied.");
+      }).catch(() => {
+        alert("Copy failed. You can manually select and copy it.");
+      });
+    }
+
+    function runCode() {
+      const code = document.getElementById("code").value.trim();
+      if (!code) {
+        alert("Paste code first.");
+        return;
+      }
+      document.getElementById("preview").srcdoc = code;
+    }
+
+    function downloadCode() {
+      const code = document.getElementById("code").value.trim();
+      if (!code) {
+        alert("Nothing to download yet.");
+        return;
+      }
+
+      const blob = new Blob([code], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "my_clock.html";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function clearCode() {
+      document.getElementById("code").value = "";
+      document.getElementById("preview").srcdoc = "";
+    }
+  </script>
+</body>
+</html>
