@@ -1,0 +1,1509 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Jon's Robot — Tabletop Robot Arm Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#04070b; --panel:#0a1016; --raise:#0f1822; --raise2:#13202c;
+  --line:rgba(120,180,210,.16); --line-bright:rgba(56,225,255,.55);
+  --ink:#eaf5fb; --dim:#88a0b0; --faint:#56707f;
+  --cyan:#38e1ff; --cyan-deep:#0e5d77;
+  --good:#54f0b8; --warn:#ffc24b; --bad:#ff5d6c; --violet:#b69bff;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --disp:"Space Grotesk",system-ui,sans-serif;
+  --body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--void);color:var(--ink);font-family:var(--body);overflow:hidden;-webkit-font-smoothing:antialiased}
+button{font-family:var(--body)}
+.mono{font-family:var(--mono)}
+.app{height:100dvh;display:grid;grid-template-columns:320px minmax(520px,1fr) 392px;grid-template-rows:auto 1fr}
+
+header{grid-column:1/4;display:flex;gap:16px;align-items:center;padding:11px 18px;border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg,rgba(10,18,26,.96),rgba(6,11,17,.92));backdrop-filter:blur(12px);position:relative;z-index:5}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.logo{width:30px;height:30px;flex:none;border-radius:7px;border:1px solid var(--line-bright);
+  background:radial-gradient(circle at 35% 30%,rgba(56,225,255,.32),rgba(56,225,255,.05));display:grid;place-items:center}
+.logo svg{width:20px;height:20px}
+h1{font-family:var(--disp);font-size:16px;font-weight:600;margin:0;letter-spacing:.02em;white-space:nowrap}
+.tagline{font-size:11px;color:var(--dim);letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hspace{flex:1}
+.pill{font-family:var(--mono);font-size:11px;letter-spacing:.02em;border:1px solid var(--line);border-radius:999px;padding:5px 11px;color:var(--dim);white-space:nowrap;background:rgba(56,225,255,.04)}
+.pill b{color:var(--cyan);font-weight:700}
+.btn{appearance:none;border:1px solid var(--line);border-radius:9px;background:linear-gradient(180deg,rgba(56,225,255,.10),rgba(56,225,255,.02));
+  color:var(--ink);font-weight:600;padding:8px 12px;cursor:pointer;font-size:12.5px;transition:border-color .15s,background .15s,transform .05s;white-space:nowrap}
+.btn:hover{border-color:var(--line-bright);background:rgba(56,225,255,.14)}
+.btn:active{transform:translateY(1px)}
+.btn:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.btn.good{border-color:rgba(84,240,184,.5);background:rgba(84,240,184,.10)}
+.btn.good:hover{background:rgba(84,240,184,.18)}
+.btn.warn{border-color:rgba(255,194,75,.5);background:rgba(255,194,75,.10)}
+.btn.bad{border-color:rgba(255,93,108,.5);background:rgba(255,93,108,.12)}
+.btn.slim{padding:6px 9px;font-size:11.5px}
+
+aside,.right{overflow:auto;background:linear-gradient(180deg,rgba(11,18,26,.97),rgba(7,12,18,.99));scrollbar-width:thin;scrollbar-color:rgba(56,225,255,.25) transparent}
+aside{border-right:1px solid var(--line)}.right{border-left:1px solid var(--line)}
+aside::-webkit-scrollbar,.right::-webkit-scrollbar{width:9px}
+aside::-webkit-scrollbar-thumb,.right::-webkit-scrollbar-thumb{background:rgba(56,225,255,.18);border-radius:9px;border:2px solid transparent;background-clip:padding-box}
+.section{padding:14px 15px;border-bottom:1px solid var(--line)}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin:0 0 11px;display:flex;align-items:center;gap:8px}
+.eyebrow::before{content:"";width:14px;height:1px;background:var(--cyan);opacity:.7}
+.small{font-size:11.5px;color:var(--dim);line-height:1.45}
+.micro{font-size:10px;color:var(--faint);line-height:1.4;font-family:var(--mono);letter-spacing:.01em}
+.stack{display:grid;gap:9px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+
+input,select,textarea{width:100%;background:#060e16;color:#eafaff;border:1px solid var(--line);border-radius:9px;padding:8px;outline:none;font-family:var(--body);font-size:12.5px}
+textarea{font:11.5px/1.5 var(--mono);min-height:150px;resize:vertical}
+input:focus,textarea:focus{border-color:var(--line-bright)}
+input[type=range]{padding:0;accent-color:var(--cyan);height:22px}
+label{display:block;font-size:11px;color:#bfe6f6;margin:8px 0 3px;font-weight:500}
+.val{float:right;font-family:var(--mono);color:var(--cyan);font-weight:500}
+.kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px;background:rgba(56,225,255,.07);color:#cfeefb}
+
+.part{display:grid;grid-template-columns:50px 1fr;gap:10px;align-items:center;border:1px solid var(--line);background:rgba(56,225,255,.035);border-radius:12px;padding:9px;cursor:pointer;transition:.15s}
+.part:hover{border-color:var(--line-bright);background:rgba(56,225,255,.10)}
+.part.active{border-color:var(--cyan);background:rgba(56,225,255,.14);box-shadow:inset 0 0 0 1px rgba(56,225,255,.25)}
+.part svg{width:50px;height:40px;overflow:visible}
+.ptitle{font-family:var(--disp);font-weight:600;font-size:12.5px}
+.pdesc{font-size:10.5px;color:var(--dim);line-height:1.3;margin-top:2px}
+.detail{font-size:12px;white-space:pre-wrap;line-height:1.5;background:rgba(4,9,15,.55);border:1px solid var(--line);padding:11px;border-radius:11px;min-height:120px;color:#d2e8f3}
+
+.tabs{display:flex;gap:6px;margin-bottom:10px}
+.tab{flex:1;font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;padding:7px 4px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--dim);cursor:pointer;text-transform:uppercase}
+.tab:hover{border-color:var(--line-bright);color:var(--ink)}
+.tab.active{background:rgba(56,225,255,.12);border-color:var(--cyan);color:var(--cyan)}
+.bom-item{border:1px solid var(--line);border-radius:11px;background:rgba(4,9,15,.45);padding:10px;margin:8px 0}
+.bom-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.bom-name{font-family:var(--disp);font-size:12.5px;font-weight:600;line-height:1.25}
+.bom-name a{color:#cdeefb;text-decoration:none;border-bottom:1px dotted rgba(56,225,255,.45)}
+.bom-name a:hover{color:#fff;border-bottom-color:#fff}
+.price{font-family:var(--mono);font-size:12px;color:var(--good);white-space:nowrap;font-weight:500}
+.spec{font-family:var(--mono);font-size:10px;color:var(--cyan);margin-top:4px;letter-spacing:.01em}
+.bom-desc{font-size:11px;color:var(--dim);line-height:1.4;margin-top:4px}
+.tag{display:inline-block;font-family:var(--mono);font-size:9px;border:1px solid var(--line);border-radius:999px;padding:2px 7px;color:#bfe6f6;background:rgba(56,225,255,.05);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
+.subtotal{display:flex;justify-content:space-between;align-items:center;border-top:1px dashed var(--line);margin-top:10px;padding-top:10px;font-family:var(--mono);font-size:12px;color:var(--dim)}
+.subtotal b{color:var(--good);font-size:15px}
+
+main{position:relative;overflow:hidden;background:radial-gradient(120% 90% at 50% 8%,#10303f 0%,#0a1a25 40%,#050b11 78%,#03070b 100%)}
+#stage{position:absolute;inset:0;display:block;width:100%;height:100%}
+#nowebgl{position:absolute;inset:0;display:none;place-items:center;text-align:center;padding:40px;color:var(--dim);font-size:14px;line-height:1.6}
+.bezel{position:absolute;inset:10px;pointer-events:none;border:1px solid rgba(56,225,255,.10);border-radius:14px}
+.tick{position:absolute;width:16px;height:16px;border:0 solid var(--cyan);opacity:.55}
+.tick.tl{top:-1px;left:-1px;border-top-width:1.5px;border-left-width:1.5px;border-top-left-radius:14px}
+.tick.tr{top:-1px;right:-1px;border-top-width:1.5px;border-right-width:1.5px;border-top-right-radius:14px}
+.tick.bl{bottom:-1px;left:-1px;border-bottom-width:1.5px;border-left-width:1.5px;border-bottom-left-radius:14px}
+.tick.br{bottom:-1px;right:-1px;border-bottom-width:1.5px;border-right-width:1.5px;border-bottom-right-radius:14px}
+
+.overlay{position:absolute;background:rgba(5,11,18,.74);border:1px solid var(--line);border-radius:12px;backdrop-filter:blur(10px);box-shadow:0 14px 44px rgba(0,0,0,.35)}
+#status{left:22px;top:22px;padding:8px 13px;font-family:var(--mono);font-size:12px;display:flex;align-items:center;gap:9px;letter-spacing:.01em;max-width:60%}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--good);flex:none;box-shadow:0 0 9px var(--good)}
+.dot.run{background:var(--cyan);box-shadow:0 0 9px var(--cyan);animation:pulse 1s infinite}
+.dot.warn{background:var(--bad);box-shadow:0 0 9px var(--bad)}
+@keyframes pulse{50%{opacity:.4}}
+#hud{right:22px;top:22px;padding:9px 12px;font-family:var(--mono);font-size:10.5px;color:var(--dim);text-align:right;line-height:1.55;min-width:118px}
+#hud b{color:var(--cyan);font-weight:500}
+#fps b{color:var(--good)}
+
+#viewbar{left:50%;transform:translateX(-50%);bottom:22px;padding:6px;display:flex;gap:4px;align-items:center;flex-wrap:wrap;justify-content:center;max-width:92%}
+.vbtn{font-family:var(--mono);font-size:11px;letter-spacing:.03em;padding:7px 11px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--dim);cursor:pointer;transition:.12s}
+.vbtn:hover{border-color:var(--line-bright);color:var(--ink)}
+.vbtn.on{background:rgba(56,225,255,.14);border-color:var(--cyan);color:var(--cyan)}
+.vbtn:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+.vsep{width:1px;height:20px;background:var(--line);margin:0 3px}
+
+#legend{left:22px;bottom:22px;padding:9px 12px;font-size:10.5px;color:var(--dim);max-width:300px}
+.legend{display:flex;flex-wrap:wrap;gap:5px 12px}
+.legend span{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px}
+.sw{width:9px;height:9px;border-radius:2px;display:inline-block}
+.sw.link{background:#b7c3cd}.sw.ball{background:#ff8a3d}.sw.ok{background:var(--good)}.sw.bad{background:var(--bad)}.sw.cam{background:var(--violet)}
+.hint{margin-top:7px;color:var(--faint);font-size:10px;line-height:1.5}
+
+.camGrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.camBox{border:1px solid rgba(182,155,255,.3);background:#06040d;border-radius:11px;overflow:hidden;position:relative}
+.camBox canvas{display:block;width:100%;height:118px;background:#02040a}
+.camLabel{font-family:var(--mono);font-size:9.5px;padding:5px 8px;color:#cdc1ff;border-top:1px solid rgba(182,155,255,.22);display:flex;justify-content:space-between;gap:4px;background:rgba(12,8,22,.6)}
+.camLabel b{letter-spacing:.06em}
+.camTag{position:absolute;top:6px;left:7px;font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;color:rgba(205,193,255,.85);background:rgba(8,5,16,.55);border:1px solid rgba(182,155,255,.3);border-radius:4px;padding:1px 5px;pointer-events:none}
+.rec{position:absolute;top:6px;right:7px;display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:8.5px;color:#ff8a9a;pointer-events:none}
+.rec i{width:6px;height:6px;border-radius:50%;background:#ff5d6c;display:inline-block;animation:pulse 1.4s infinite}
+
+.telemetry{display:grid;gap:9px}
+.meter{background:rgba(4,9,15,.5);border:1px solid var(--line);border-radius:10px;padding:9px}
+.meter-title{display:flex;justify-content:space-between;align-items:baseline;color:#c8ecf8;font-size:11px;font-weight:600;margin-bottom:6px}
+.meter-title .read{font-family:var(--mono);font-weight:400;color:#eafaff;font-size:10.5px}
+.bar{height:6px;background:rgba(255,255,255,.07);border-radius:999px;overflow:hidden}
+.bar span{display:block;height:100%;width:0;border-radius:999px;transition:width .12s linear}
+.kv{font-family:var(--mono);font-size:10.5px;display:grid;grid-template-columns:1.15fr 1fr;gap:3px 8px}
+.kv .k{color:var(--faint)}.kv .v{color:#eafaff}
+
+.schemabox{font-family:var(--mono);font-size:10px;color:var(--cyan);background:rgba(4,9,15,.5);border:1px solid var(--line);border-radius:8px;padding:8px;line-height:1.5;overflow-x:auto;white-space:nowrap}
+
+.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,5,9,.66);z-index:50;backdrop-filter:blur(4px)}
+.modal.show{display:flex}
+.modalCard{width:min(940px,92vw);max-height:88vh;overflow:auto;background:#081420;border:1px solid var(--line-bright);border-radius:18px;box-shadow:0 40px 110px rgba(0,0,0,.6)}
+.modalHead{position:sticky;top:0;background:#081420;display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line);z-index:2}
+.modalHead h2{font-family:var(--disp);font-size:17px;margin:0;font-weight:600}
+.modalBody{padding:18px 22px 30px;font-size:13.5px;line-height:1.62;color:#dceef8}
+.modalBody h3{font-family:var(--disp);font-size:14.5px;color:var(--cyan);margin:22px 0 8px;font-weight:600}
+.modalBody h3:first-child{margin-top:4px}
+.modalBody code{font-family:var(--mono);background:#04101b;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:12px;color:#bfe6f6}
+.modalBody pre{font-family:var(--mono);white-space:pre-wrap;background:#04101b;border:1px solid var(--line);border-radius:11px;padding:13px;overflow:auto;font-size:12px;line-height:1.5;color:#cdeefb}
+.modalBody li{margin:5px 0}
+.modalBody table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;margin:6px 0}
+.modalBody th,.modalBody td{border:1px solid var(--line);padding:6px 9px;text-align:left}
+.modalBody th{color:var(--cyan);font-weight:500;background:rgba(56,225,255,.06)}
+.note{border-left:3px solid var(--warn);background:rgba(255,194,75,.07);padding:9px 13px;border-radius:0 9px 9px 0;margin:12px 0;font-size:12.5px}
+
+@media(max-width:1200px){.app{grid-template-columns:300px 1fr}.right{display:none}header{grid-column:1/3}}
+@media(max-width:880px){
+  .app{grid-template-columns:1fr;grid-template-rows:auto 46vh auto}
+  header{grid-column:1}aside{display:none}.right{display:block;border-left:0}
+  #viewbar{bottom:14px}#legend{display:none}
+}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;scroll-behavior:auto!important}}
+
+.wplist{display:grid;gap:5px;max-height:188px;overflow:auto;margin-bottom:8px}
+.wpempty{font-size:11px;color:var(--faint);line-height:1.5;padding:4px 2px}
+.wprow{display:grid;grid-template-columns:20px 1fr;gap:9px;align-items:center;border:1px solid var(--line);border-radius:9px;padding:6px 9px;cursor:pointer;background:rgba(56,225,255,.03);transition:.12s}
+.wprow:hover{border-color:var(--line-bright)}
+.wprow.sel{border-color:var(--cyan);background:rgba(56,225,255,.13)}
+.wpidx{font-family:var(--mono);font-size:11px;font-weight:700;text-align:center}
+.wpmeta{font-size:11px;color:#cfe6f2;display:flex;gap:8px;align-items:baseline}
+.wpmeta .act{font-family:var(--mono);font-size:10px;font-weight:600}
+.wpmeta .seg{color:var(--faint);font-family:var(--mono);font-size:10px}
+.wpmeta .unreach{color:var(--bad);font-family:var(--mono);font-size:9.5px}
+.wpeditor{border:1px solid var(--line);border-radius:11px;padding:11px;background:rgba(4,9,15,.5);margin-bottom:4px}
+.wphead{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
+.wphead span{font-family:var(--disp);font-weight:600;font-size:12.5px;color:#d6f0fb}
+.chiprow{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.achip,.segchip{font-family:var(--mono);font-size:10.5px;padding:6px 4px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--dim);cursor:pointer;transition:.12s}
+.achip:hover,.segchip:hover{border-color:var(--line-bright);color:var(--ink)}
+.achip.on,.segchip.on{background:rgba(56,225,255,.13);border-color:var(--cyan);color:var(--cyan)}
+.wprow{grid-template-columns:20px 1fr auto}
+.rowbtns{display:flex;gap:4px}
+.rowbtns button{font-family:var(--mono);font-size:11px;line-height:1;width:20px;height:20px;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--dim);cursor:pointer;padding:0}
+.rowbtns button:hover{border-color:var(--cyan);color:var(--cyan)}
+.rowbtns button.del:hover{border-color:var(--bad);color:var(--bad)}
+.stages{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:9px}
+.stage{font-family:var(--mono);font-size:10px;text-align:center;padding:7px 4px;border:1px solid var(--line);border-radius:8px;color:var(--dim);transition:.2s}
+.stage b{display:block;font-size:13px;color:var(--faint);margin-bottom:2px}
+.stage.on{border-color:var(--cyan);color:var(--cyan);background:rgba(56,225,255,.12)}
+.stage.on b{color:var(--cyan)}
+.stage.done{border-color:var(--good);color:var(--good)}
+.stage.done b{color:var(--good)}
+.stage.fail{border-color:var(--bad);color:var(--bad);background:rgba(255,93,108,.12)}
+.stage.fail b{color:var(--bad)}
+.reward{height:8px;border-radius:6px;background:rgba(56,225,255,.07);border:1px solid var(--line);overflow:hidden}
+.rewfill{height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--good));transition:width .8s ease}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <div class="brand">
+    <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#38e1ff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="19" r="2.2"/><path d="M5 17 L11 9"/><circle cx="11" cy="9" r="2"/><path d="M12.7 8 L19 5.5"/><path d="M19 4 v3.2 M17.6 5.5 h2.8"/></svg></div>
+    <div style="min-width:0">
+      <h1>Jon's Robot</h1>
+      <div class="tagline">Tabletop Robot Arm Lab &middot; 4-axis arm &middot; physically-simulated grip &amp; throw &middot; twin camera sensors</div>
+    </div>
+  </div>
+  <div class="hspace"></div>
+  <span class="pill">WebGL&nbsp;<b>3D</b></span>
+  <span class="pill">orbit&nbsp;&middot;&nbsp;<b>5 views</b></span>
+  <button id="readmeTop" class="btn good slim">Build guide</button>
+</header>
+
+<aside>
+  <div class="section">
+    <div class="eyebrow">Assembly &middot; click to inspect</div>
+    <div id="parts" class="stack"></div>
+  </div>
+  <div class="section">
+    <div class="eyebrow">Selected component</div>
+    <div id="partDetail" class="detail">Click any component to highlight it on the machine and frame the camera on it. The arm is a buildable tabletop architecture: base yaw, shoulder pitch, elbow pitch, wrist pitch, and a parallel-jaw servo gripper. Links and payload are blocked from passing through the table.</div>
+  </div>
+  <div class="section">
+    <div class="eyebrow">Real parts &middot; pick a build tier</div>
+    <div class="tabs">
+      <button class="tab active" data-tier="starter">Starter</button>
+      <button class="tab" data-tier="sensor">Sensor</button>
+      <button class="tab" data-tier="pro">Pro</button>
+    </div>
+    <div id="bomList"></div>
+    <div id="bomSub" class="subtotal"></div>
+    <div class="micro" style="margin-top:10px">Links go to real maker/vendor pages. Prices are approximate and change &mdash; confirm before buying. Target is a soft-ball tabletop demonstrator, not a person-safe industrial throwing machine.</div>
+  </div>
+</aside>
+
+<main>
+  <canvas id="stage"></canvas>
+  <div id="nowebgl">This lab needs WebGL.<br>Open it in a current desktop browser (Chrome, Edge, Firefox, or Safari) with hardware acceleration enabled.</div>
+  <div class="bezel"><i class="tick tl"></i><i class="tick tr"></i><i class="tick bl"></i><i class="tick br"></i></div>
+
+  <div id="status" class="overlay"><span class="dot" id="statusDot"></span><span id="statusText">Ready</span></div>
+  <div id="hud" class="overlay">
+    <div id="fps">FPS <b>&mdash;</b></div>
+    <div>YAW <b id="hYaw">0&deg;</b></div>
+    <div>SHO <b id="hSho">0&deg;</b> &middot; ELB <b id="hElb">0&deg;</b></div>
+    <div>WRI <b id="hWri">0&deg;</b> &middot; GRP <b id="hGrp">open</b></div>
+  </div>
+
+  <div id="viewbar" class="overlay">
+    <button class="vbtn on" data-view="iso">Iso</button>
+    <button class="vbtn" data-view="front">Front</button>
+    <button class="vbtn" data-view="side">Side</button>
+    <button class="vbtn" data-view="top">Top</button>
+    <span class="vsep"></span>
+    <button class="vbtn" id="wristView" data-view="wrist">Wrist cam</button>
+    <span class="vsep"></span>
+    <button class="vbtn" id="orbitToggle">Auto-orbit</button>
+    <button class="vbtn on" id="trajToggle">Predict throw</button>
+    <button class="vbtn" id="reachToggle">Kinesphere</button>
+  </div>
+
+  <div id="legend" class="overlay">
+    <div class="legend">
+      <span><i class="sw link"></i>links</span><span><i class="sw ball"></i>ball</span>
+      <span><i class="sw ok"></i>locked/valid</span><span><i class="sw bad"></i>over-torque</span>
+      <span><i class="sw cam"></i>camera</span>
+    </div>
+    <div class="hint">Drag the cyan puck to aim &middot; drag the basket to reposition it &middot; drag empty space to orbit &middot; scroll to zoom &middot; right-drag to pan &middot; <span class="kbd">Space</span> run &middot; <span class="kbd">R</span> reset</div>
+  </div>
+</main>
+
+<div class="right">
+  <div class="section">
+    <div class="eyebrow">Pose &amp; teach</div>
+    <label>Base &middot; yaw <span id="jvYaw" class="val"></span><input id="jYaw" type="range" min="-165" max="165" step="1" value="0"></label>
+    <label>Shoulder <span id="jvSho" class="val"></span><input id="jSho" type="range" min="5" max="150" step="1" value="55"></label>
+    <label>Elbow <span id="jvElb" class="val"></span><input id="jElb" type="range" min="-145" max="145" step="1" value="35"></label>
+    <label>Wrist <span id="jvWri" class="val"></span><input id="jWri" type="range" min="-105" max="105" step="1" value="-40"></label>
+    <label>Gripper <span id="jvGrp" class="val"></span><input id="jGrp" type="range" min="0" max="100" step="1" value="0"></label>
+    <label>Move time <span id="jvDur" class="val"></span><input id="jDur" type="range" min="0.2" max="2.5" step="0.05" value="0.8"></label>
+    <div class="grid3" style="margin-top:10px">
+      <button id="savePose" class="btn good slim">Save pose</button>
+      <button id="play" class="btn slim">Play</button>
+      <button id="reset" class="btn bad slim">Reset</button>
+    </div>
+    <div id="poseList" class="wplist" style="margin-top:10px"></div>
+    <div class="micro">Pose the arm with the sliders, then <b>Save pose</b> to add a keyframe. Play runs the saved poses in order, easing between them and limited by real joint torque. Click a pose to load it back into the sliders; the row buttons reorder or delete.</div>
+  </div>
+
+  <div class="section">
+    <div class="eyebrow">Scene</div>
+    <label>Ball mass <span id="mVal" class="val"></span><input id="bm" type="range" min="0.02" max="0.40" step="0.01" value="0.09"></label>
+    <div class="grid3" style="margin-top:9px">
+      <button id="placeBall" class="btn slim">Ball to cursor</button>
+      <button id="resetBall" class="btn slim">Reset ball</button>
+      <button id="learnPick" class="btn good slim">Pick &rarr; basket</button>
+    </div>
+    <div class="micro" style="margin-top:8px"><b>Pick &rarr; basket</b> builds the whole pick-up-and-drop motion as saved poses, then plays it. Edit or replay it afterward.</div>
+  </div>
+
+  <div class="section">
+    <div class="eyebrow">Curriculum learning</div>
+    <div class="stages">
+      <div class="stage" data-st="grab"><b>1</b>Grab</div>
+      <div class="stage" data-st="move"><b>2</b>Move</div>
+      <div class="stage" data-st="release"><b>3</b>Release</div>
+    </div>
+    <div class="reward"><div class="rewfill" id="rewFill"></div></div>
+    <div class="micro" id="curStatus" style="margin-top:6px">Idle &middot; it masters grab, then move, then release &mdash; then runs the whole learned skill on its own.</div>
+    <div class="grid2" style="margin-top:9px">
+      <button id="learnRun" class="btn good slim">Start learning</button>
+      <button id="learnStop" class="btn slim">Stop</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="eyebrow">Command program &middot; JSON</div>
+    <textarea id="jsonProgram" spellcheck="false"></textarea>
+    <div class="grid2" style="margin-top:8px">
+      <button id="loadJson" class="btn good slim">Load JSON</button>
+      <button id="exportJson" class="btn slim">Export current</button>
+    </div>
+    <div class="schemabox" style="margin-top:8px">{"commands":[{"cmd":"move","yaw":0,"shoulder":70,"elbow":40,"wrist":-20,"grip":0,"duration":0.8},{"cmd":"move","grip":1,"duration":0.4}]}</div>
+  </div>
+
+  <div class="section">
+    <div class="eyebrow">LLM prompt builder</div>
+    <label>Describe the task</label>
+    <input id="taskText" value="Pick up the ball gently, lift it, swing forward, and release it into the target zone." />
+    <div class="grid2" style="margin-top:8px">
+      <button id="makePrompt" class="btn good slim">Build prompt</button>
+      <button id="copyPrompt" class="btn slim">Copy</button>
+    </div>
+    <textarea id="promptOut" spellcheck="false" style="min-height:118px;margin-top:8px"></textarea>
+  </div>
+
+  <div class="section">
+    <div class="eyebrow">Camera sensors &middot; live</div>
+    <div class="camGrid">
+      <div class="camBox">
+        <canvas id="camA" width="360" height="236"></canvas>
+        <span class="camTag">CAM&middot;A OVERHEAD</span><span class="rec"><i></i>REC</span>
+        <div class="camLabel"><b>Overhead</b><span id="camAText" class="mono">range &mdash;</span></div>
+      </div>
+      <div class="camBox">
+        <canvas id="camB" width="360" height="236"></canvas>
+        <span class="camTag">CAM&middot;B WRIST</span><span class="rec"><i></i>REC</span>
+        <div class="camLabel"><b>Wrist</b><span id="camBText" class="mono">no ball</span></div>
+      </div>
+    </div>
+    <div class="small" style="margin-top:9px">A fixed overhead camera frames the table; a wrist camera looks down the gripper axis for final alignment. Both render the real scene and report ball bearing, range, and capture lock.</div>
+  </div>
+
+  <div class="section">
+    <div class="eyebrow">Live physics telemetry</div>
+    <div id="telemetry" class="telemetry"></div>
+  </div>
+</div>
+</div>
+
+<div id="readmeModal" class="modal">
+  <div class="modalCard">
+    <div class="modalHead"><h2>Build the real tabletop arm</h2><button id="closeReadme" class="btn slim">Close</button></div>
+    <div class="modalBody">
+      <p>A buildable 4-axis teaching rig: <b>base yaw &rarr; shoulder pitch &rarr; elbow pitch &rarr; wrist pitch &rarr; parallel-jaw gripper</b>, plus a fixed overhead camera, a wrist camera, and an optional ultrasonic range sensor. It can gently capture a foam ball and release it during a controlled swing. Treat the throw as a physics demonstration, never a weapon.</p>
+
+      <h3>Kinematics this simulator uses</h3>
+      <table>
+        <tr><th>Parameter</th><th>Value</th><th>Build note</th></tr>
+        <tr><td>Base height</td><td>75 mm</td><td>turntable + riser to shoulder axis</td></tr>
+        <tr><td>Upper arm (L1)</td><td>230 mm</td><td>shoulder &rarr; elbow</td></tr>
+        <tr><td>Forearm (L2)</td><td>200 mm</td><td>elbow &rarr; wrist</td></tr>
+        <tr><td>Wrist/gripper (L3)</td><td>105 mm</td><td>wrist &rarr; jaw root</td></tr>
+        <tr><td>Ball radius</td><td>35 mm</td><td>foam / ping-pong, &lt; 100 g</td></tr>
+        <tr><td>Reach (planar)</td><td>&asymp; 535 mm</td><td>L1+L2+L3, before limits</td></tr>
+      </table>
+      <p>Joint limits: yaw &plusmn;165&deg;, shoulder 5&ndash;150&deg;, elbow &plusmn;145&deg;, wrist &plusmn;105&deg;. Enter your measured link lengths into firmware so the inverse kinematics match the hardware.</p>
+
+      <h3>Electronics &amp; wiring</h3>
+      <ol>
+        <li>One microcontroller runs high-level commands and the JSON interpreter.</li>
+        <li>A PWM/servo driver or smart-servo bus drives the joints &mdash; <b>never</b> power servos from the microcontroller's 5 V pin.</li>
+        <li>Use a separate high-current servo supply (6&ndash;12 V depending on servo class) with an inline fuse. Tie all grounds together: supply, driver, and microcontroller.</li>
+        <li>Mount Camera A above/in front of the workspace; mount Camera B on the wrist looking along the gripper. USB-UVC cameras work with OpenCV / AprilTags / colour-blob tracking.</li>
+        <li>Wire an <b>emergency stop</b> that cuts servo power. Add software joint limits <em>and</em> mechanical hard stops.</li>
+      </ol>
+
+      <h3>Calibration sequence</h3>
+      <ol>
+        <li>Servo power OFF, place the arm in a safe home pose (shoulder up, elbow slightly bent, gripper above the table).</li>
+        <li>Power only the controller; confirm each joint reports a sane neutral.</li>
+        <li>Move one joint at a time at low speed; verify the positive direction of yaw, shoulder, elbow, wrist.</li>
+        <li>Measure exact link lengths; enter them into the interpreter.</li>
+        <li>Set soft limits so no link or jaw can reach below the table plane.</li>
+        <li>Close the jaws on the ball by hand; tune foam-pad spacing so it holds by gentle compression, not crushing.</li>
+        <li>Test slow pick-ups first. Only after repeatable gripping should you try a gentle release swing.</li>
+      </ol>
+
+      <h3>Command schema</h3>
+      <pre>{
+  "name": "pick and place",
+  "units": "meters/degrees/seconds",
+  "commands": [
+    {"cmd":"ball", "x":0.24, "y":0.10, "z":0.04, "mass":0.09},
+    {"cmd":"goto", "x":0.24, "y":0.10, "z":0.12, "wrist":-35, "duration":1.0},
+    {"cmd":"grip", "state":"close", "duration":0.3},
+    {"cmd":"wait", "duration":0.2},
+    {"cmd":"goto", "x":0.18, "y":0.05, "z":0.30, "wrist":0,  "duration":0.8},
+    {"cmd":"goto", "x":0.37, "y":-0.03,"z":0.24, "wrist":12, "duration":0.35},
+    {"cmd":"grip", "state":"open",  "duration":0.08}
+  ]
+}</pre>
+      <p>Also supported: <code>move</code> (direct joint angles), <code>wait</code>, and <code>settorque</code> (per-joint Nm limits, to model stronger actuators).</p>
+
+      <div class="note"><b>Safety.</b> Foam ball, low speeds, eye protection, a clear shield, and keep humans out of the swing plane. If a torque bar in the telemetry goes red, the real machine needs shorter links, lighter payload, gear reduction, a counterbalance spring, or stronger actuators <em>before</em> you build it.</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+var $=function(id){return document.getElementById(id);};
+var TAU=Math.PI*2, DEG=Math.PI/180;
+var clamp=function(v,a,b){return Math.max(a,Math.min(b,v));};
+var lerp=function(a,b,t){return a+(b-a)*t;};
+var fmt=function(n,d){d=(d===undefined?2:d);return Number.isFinite(n)?n.toFixed(d):'--';};
+
+/* sim-space vectors: x forward, y lateral, z up (table = z 0) */
+var v3=function(x,y,z){return {x:x||0,y:y||0,z:z||0};};
+var add=function(a,b){return v3(a.x+b.x,a.y+b.y,a.z+b.z);};
+var sub=function(a,b){return v3(a.x-b.x,a.y-b.y,a.z-b.z);};
+var mul=function(a,s){return v3(a.x*s,a.y*s,a.z*s);};
+var dot=function(a,b){return a.x*b.x+a.y*b.y+a.z*b.z;};
+var lenv=function(a){return Math.hypot(a.x,a.y,a.z);};
+var dist=function(a,b){return lenv(sub(a,b));};
+var wrap=function(a){while(a>Math.PI)a-=TAU;while(a<-Math.PI)a+=TAU;return a;};
+var rad=function(d){return d*DEG;}, deg=function(r){return r/DEG;};
+
+if(!window.THREE){ $('nowebgl').style.display='grid'; return; }
+
+/* ============================ ROBOT / SIM ============================ */
+var link={baseH:0.075, L1:0.23, L2:0.20, L3:0.105, rBall:0.035, ground:0};
+var BASKET={x:0.30,y:-0.13,inner:0.062,wall:0.075,rimZ:0.105,floorZ:0.006};
+var mass={L1:0.19,L2:0.15,L3:0.07,gripper:0.06,ball:0.09};
+var maxTorque={yaw:1.4,shoulder:2.9,elbow:1.65,wrist:0.55};
+var jointLimits={yaw:[-165,165],shoulder:[5,150],elbow:[-145,145],wrist:[-105,105]};
+
+var q={yaw:0,shoulder:55*DEG,elbow:35*DEG,wrist:-40*DEG};
+var qTarget={yaw:0,shoulder:55*DEG,elbow:35*DEG,wrist:-40*DEG};
+var qStart={yaw:0,shoulder:0,elbow:0,wrist:0};
+var grip=0, gripTarget=0, held=false;
+var ball={pos:v3(0.25,0.10,0.035),vel:v3(),mass:0.09};
+var target=v3(0.25,0.10,0.12), targetWrist=-25;
+var running=false, cmdIndex=0, activeCmd=null, activeT=0, queue=[];
+var last=performance.now(), gripPrev=v3(), gripVel=v3(), gripVelSm=v3(), warnings=[];
+var gravity=9.81, statusMsg='Ready', ballTrail=[];
+
+function clampAngles(a){return {
+  yaw:clamp(a.yaw,rad(jointLimits.yaw[0]),rad(jointLimits.yaw[1])),
+  shoulder:clamp(a.shoulder,rad(jointLimits.shoulder[0]),rad(jointLimits.shoulder[1])),
+  elbow:clamp(a.elbow,rad(jointLimits.elbow[0]),rad(jointLimits.elbow[1])),
+  wrist:clamp(a.wrist,rad(jointLimits.wrist[0]),rad(jointLimits.wrist[1]))};}
+
+function fk(qq){qq=qq||q;
+  var yaw=qq.yaw,sh=qq.shoulder,el=qq.elbow,wr=qq.wrist;
+  var dir=v3(Math.cos(yaw),Math.sin(yaw),0);
+  var p0=v3(0,0,0), p1=v3(0,0,link.baseH);
+  var r1=link.L1*Math.cos(sh), z1=link.baseH+link.L1*Math.sin(sh);
+  var p2=v3(dir.x*r1,dir.y*r1,z1);
+  var a2=sh+el, r2=r1+link.L2*Math.cos(a2), z2=z1+link.L2*Math.sin(a2);
+  var p3=v3(dir.x*r2,dir.y*r2,z2);
+  var a3=a2+wr, r3=r2+link.L3*Math.cos(a3), z3=z2+link.L3*Math.sin(a3);
+  var p4=v3(dir.x*r3,dir.y*r3,z3);
+  var gripDir=v3(dir.x*Math.cos(a3),dir.y*Math.cos(a3),Math.sin(a3));
+  return {p0:p0,p1:p1,p2:p2,p3:p3,p4:p4,dir:dir,gripDir:gripDir,absPitch:a3,radial:r3};
+}
+function minLinkZ(qq){var F=fk(qq||q);var m=Infinity;[F.p1,F.p2,F.p3,F.p4].forEach(function(p){if(p.z<m)m=p.z;});return m;}
+/* true if any arm link (or the gripper jaws) intrudes into the basket's solid cylinder.
+   the 0.02 margin stands in for the real thickness of the links and gripper. */
+function basketHit(qq){
+  qq=qq||q; var F=fk(qq), gp=gripWorld(F), tip=add(gp,mul(F.gripDir,0.03));
+  var segs=[[F.p1,F.p2],[F.p2,F.p3],[F.p3,F.p4],[F.p4,tip]];
+  var R=BASKET.wall+0.02, ZT=BASKET.rimZ+0.02;
+  for(var s=0;s<segs.length;s++){var a=segs[s][0],b=segs[s][1];
+    for(var i=0;i<=8;i++){var t=i/8,px=a.x+(b.x-a.x)*t,py=a.y+(b.y-a.y)*t,pz=a.z+(b.z-a.z)*t;
+      if(pz<ZT && pz>-0.02 && Math.hypot(px-BASKET.x,py-BASKET.y)<R)return true;}}
+  return false;
+}
+/* true if any link end or the gripper jaws would push below the table (z=0) */
+function floorPen(qq){
+  var F=fk(qq||q), gp=gripWorld(F), tip=add(gp,mul(F.gripDir,0.03));
+  var pts=[F.p2,F.p3,F.p4,gp,tip];   /* p1 is the fixed shoulder pivot, always clear */
+  for(var i=0;i<pts.length;i++) if(pts[i].z<0.003) return true;
+  return false;
+}
+function inverseGoto(x,y,z,wristDeg){
+  z=Math.max(z,link.rBall+0.012);
+  var yaw=Math.atan2(y,x), r=Math.hypot(x,y), wristAbs=rad(wristDeg||0);
+  var rw=r-link.L3*Math.cos(wristAbs), zw=z-link.baseH-link.L3*Math.sin(wristAbs);
+  var L1=link.L1,L2=link.L2; var D=(rw*rw+zw*zw-L1*L1-L2*L2)/(2*L1*L2); D=clamp(D,-0.999,0.999);
+  var cands=[];
+  [Math.acos(D),-Math.acos(D)].forEach(function(el){
+    var sh=Math.atan2(zw,rw)-Math.atan2(L2*Math.sin(el),L1+L2*Math.cos(el));
+    var wr=wristAbs-sh-el; var cand=clampAngles({yaw:yaw,shoulder:sh,elbow:el,wrist:wr});
+    var score=Math.abs(wrap(cand.yaw-q.yaw))+0.7*Math.abs(cand.shoulder-q.shoulder)+0.55*Math.abs(cand.elbow-q.elbow)+0.25*Math.abs(cand.wrist-q.wrist);
+    score+= minLinkZ(cand)<0.01?100:0; cands.push({cand:cand,score:score});
+  });
+  cands.sort(function(a,b){return a.score-b.score;});
+  var best=cands[0].cand;
+  for(var i=0;i<30 && minLinkZ(best)<0.018;i++){best.shoulder+=2*DEG;best=clampAngles(best);}
+  return best;
+}
+/* plain 2-link solve with NO ground-raising — used only to drive the failing trial straight down into the cup */
+function ikDown(xt,yt,zt,absPitchDeg){
+  var a3=rad(absPitchDeg), yaw=Math.atan2(yt,xt), r=Math.hypot(xt,yt);
+  var rw=r-link.L3*Math.cos(a3), zw=zt-link.baseH-link.L3*Math.sin(a3);
+  var D=(rw*rw+zw*zw-link.L1*link.L1-link.L2*link.L2)/(2*link.L1*link.L2); D=clamp(D,-0.999,0.999);
+  var el=-Math.acos(D);
+  var sh=Math.atan2(zw,rw)-Math.atan2(link.L2*Math.sin(el),link.L1+link.L2*Math.cos(el));
+  return clampAngles({yaw:yaw,shoulder:sh,elbow:el,wrist:a3-sh-el});
+}
+function coms(qq){qq=qq||q;
+  var F=fk(qq),sh=qq.shoulder,el=qq.elbow,wr=qq.wrist,dir=F.dir;
+  var point=function(r,z){return v3(dir.x*r,dir.y*r,z);};
+  var c1=point(0.5*link.L1*Math.cos(sh),link.baseH+0.5*link.L1*Math.sin(sh));
+  var a2=sh+el, rE=link.L1*Math.cos(sh), zE=link.baseH+link.L1*Math.sin(sh);
+  var c2=point(rE+0.5*link.L2*Math.cos(a2),zE+0.5*link.L2*Math.sin(a2));
+  var a3=a2+wr, rW=rE+link.L2*Math.cos(a2), zW=zE+link.L2*Math.sin(a2);
+  var c3=point(rW+0.5*link.L3*Math.cos(a3),zW+0.5*link.L3*Math.sin(a3));
+  return {c1:c1,c2:c2,c3:c3,F:F};
+}
+function gravityTorques(qq){qq=qq||q;
+  var sh=qq.shoulder,el=qq.elbow,wr=qq.wrist,a2=sh+el,a3=a2+wr,g=gravity;
+  var ballLoad=held?ball.mass:0;
+  var tShoulder=g*(mass.L1*(link.L1/2)*Math.cos(sh)+mass.L2*(link.L1*Math.cos(sh)+link.L2/2*Math.cos(a2))+(mass.L3+mass.gripper+ballLoad)*(link.L1*Math.cos(sh)+link.L2*Math.cos(a2)+link.L3/2*Math.cos(a3)));
+  var tElbow=g*(mass.L2*(link.L2/2)*Math.cos(a2)+(mass.L3+mass.gripper+ballLoad)*(link.L2*Math.cos(a2)+link.L3/2*Math.cos(a3)));
+  var tWrist=g*((mass.L3+mass.gripper+ballLoad)*(link.L3/2)*Math.cos(a3));
+  return {yaw:0,shoulder:Math.abs(tShoulder),elbow:Math.abs(tElbow),wrist:Math.abs(tWrist)};
+}
+function inertia(qq){qq=qq||q;
+  var C=coms(qq),items=[[C.c1,mass.L1],[C.c2,mass.L2],[C.c3,mass.L3+mass.gripper]];
+  if(held)items.push([ball.pos,ball.mass]);
+  var Iz=0.004;items.forEach(function(it){var p=it[0],m=it[1];Iz+=m*(p.x*p.x+p.y*p.y);});
+  return {yaw:Iz,shoulder:0.022,elbow:0.010,wrist:0.0028};
+}
+function lerpAngle(a,b,t){return a+wrap(b-a)*t;}
+function torqueLimitedStep(dt){
+  warnings=[]; var old={yaw:q.yaw,shoulder:q.shoulder,elbow:q.elbow,wrist:q.wrist};
+  var gt=gravityTorques(q), I=inertia(q), joints=['yaw','shoulder','elbow','wrist'];
+  var curBasket=basketHit(q);   /* already touching? then allow moves so it can back out */
+  joints.forEach(function(j){
+    var err=wrap(qTarget[j]-q[j]);
+    var maxSpeed={yaw:150,shoulder:115,elbow:145,wrist:180}[j]*DEG;
+    var desiredVel=clamp(err/dt,-maxSpeed,maxSpeed);
+    var inertial=Math.abs(I[j]*(desiredVel-(q[j]-old[j])/Math.max(dt,0.001))/Math.max(dt,0.001));
+    var demand=gt[j]+inertial*0.035, limit=maxTorque[j];
+    var margin=clamp(limit/(demand+0.0001),0.08,1);
+    var delta=clamp(err,-maxSpeed*dt*margin,maxSpeed*dt*margin);
+    var proposal={yaw:q.yaw,shoulder:q.shoulder,elbow:q.elbow,wrist:q.wrist}; proposal[j]=q[j]+delta;
+    if(floorPen(proposal) && (j==='shoulder'||j==='elbow'||j==='wrist')){warnings.push('ground lock');}
+    else if(!curBasket && basketHit(proposal)){warnings.push('basket hit');}
+    else q[j]=proposal[j];
+    if(demand>limit*0.94)warnings.push(j+' torque');
+  });
+  q=clampAngles(q);
+}
+function gripWorld(F){return add(F.p4,mul(F.gripDir,0.018));}
+function lerp3(a,b,t){return {x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t};}
+function bez2(a,c,b,t){var u=1-t;return {x:u*u*a.x+2*u*t*c.x+t*t*b.x,y:u*u*a.y+2*u*t*c.y+t*t*b.y,z:u*u*a.z+2*u*t*c.z+t*t*b.z};}
+function smooth(t){return t*t*(3-2*t);}
+var lastWrist=0;
+function updateCommand(dt){
+  if(!running)return;
+  if(!activeCmd){
+    if(cmdIndex>=queue.length){running=false;statusMsg='Program complete';return;}
+    activeCmd=queue[cmdIndex++]; activeT=0; qStart={yaw:q.yaw,shoulder:q.shoulder,elbow:q.elbow,wrist:q.wrist};
+    var cmd=activeCmd.cmd;
+    if(cmd==='goto'){qTarget=inverseGoto(activeCmd.x,activeCmd.y,activeCmd.z,activeCmd.wrist||0);}
+    if(cmd==='move'){qTarget=clampAngles({yaw:rad(activeCmd.yaw||0),shoulder:rad(activeCmd.shoulder||60),elbow:rad(activeCmd.elbow||20),wrist:rad(activeCmd.wrist||0)}); if(typeof activeCmd.grip==='number')gripTarget=clamp(activeCmd.grip,0,1);}
+    if(cmd==='line'||cmd==='arc'){
+      var F0=fk(q); activeCmd._A={x:F0.p4.x,y:F0.p4.y,z:F0.p4.z};
+      activeCmd._W0=(typeof lastWrist==='number')?lastWrist:deg(F0.absPitch);
+      if(cmd==='arc'){var Bx={x:activeCmd.x,y:activeCmd.y,z:activeCmd.z}, bulge=(activeCmd.bulge!==undefined?activeCmd.bulge:0.1);
+        activeCmd._C={x:(activeCmd._A.x+Bx.x)/2,y:(activeCmd._A.y+Bx.y)/2,z:(activeCmd._A.z+Bx.z)/2+bulge};}
+    }
+    if(cmd==='grip'){gripTarget=(activeCmd.state||'open')==='close'?1:0;activeCmd.duration=activeCmd.duration||0.25;}
+    if(cmd==='wait'){activeCmd.duration=activeCmd.duration||0.4;}
+    if(cmd==='ball'){ball.pos=v3(activeCmd.x||0.25,activeCmd.y||0,Math.max(activeCmd.z||0.04,link.rBall));ball.vel=v3();ball.mass=activeCmd.mass||ball.mass;mass.ball=ball.mass;activeCmd.duration=0.05;held=false;ballTrail.length=0;}
+    if(cmd==='settorque'){maxTorque.yaw=activeCmd.yaw||maxTorque.yaw;maxTorque.shoulder=activeCmd.shoulder||maxTorque.shoulder;maxTorque.elbow=activeCmd.elbow||maxTorque.elbow;maxTorque.wrist=activeCmd.wrist||maxTorque.wrist;activeCmd.duration=0.05;}
+  }
+  activeT+=dt; var dur=Math.max(activeCmd.duration||0.5,0.05); var cc=activeCmd.cmd;
+  if(cc==='goto'||cc==='move'){
+    var s=smooth(clamp(activeT/dur,0,1));
+    var ta=(cc==='goto')?inverseGoto(activeCmd.x,activeCmd.y,activeCmd.z,activeCmd.wrist||0):clampAngles({yaw:rad(activeCmd.yaw||0),shoulder:rad(activeCmd.shoulder||60),elbow:rad(activeCmd.elbow||20),wrist:rad(activeCmd.wrist||0)});
+    qTarget={yaw:lerpAngle(qStart.yaw,ta.yaw,s),shoulder:lerpAngle(qStart.shoulder,ta.shoulder,s),elbow:lerpAngle(qStart.elbow,ta.elbow,s),wrist:lerpAngle(qStart.wrist,ta.wrist,s)};
+  } else if(cc==='line'||cc==='arc'){
+    var s2=smooth(clamp(activeT/dur,0,1)), B2={x:activeCmd.x,y:activeCmd.y,z:activeCmd.z};
+    var P=(cc==='arc')?bez2(activeCmd._A,activeCmd._C,B2,s2):lerp3(activeCmd._A,B2,s2);
+    qTarget=inverseGoto(P.x,P.y,P.z,lerp(activeCmd._W0,(activeCmd.wrist||0),s2));
+  }
+  if(activeT>=dur){ if(cc==='goto'||cc==='line'||cc==='arc')lastWrist=(activeCmd.wrist||0); activeCmd=null; }
+}
+function updateGripAndBall(dt){
+  var F=fk(q), gp=gripWorld(F);
+  gripVel=mul(sub(gp,gripPrev),1/Math.max(dt,0.001)); gripPrev=gp;
+  gripVelSm=add(mul(gripVelSm,0.6),mul(gripVel,0.4));
+  grip+=clamp(gripTarget-grip,-dt*6,dt*6);
+  if(grip>0.65 && !held && dist(ball.pos,gp)<link.rBall+0.038){held=true;ball.vel=v3();}
+  if(grip<0.35 && held){held=false;ball.vel=add(gripVelSm,mul(F.gripDir,0.25));}
+  if(held){ball.pos=add(gp,mul(F.gripDir,0.010));ball.pos.z=Math.max(ball.pos.z,link.rBall+0.002);ball.vel=v3();ballTrail.length=0;return;}
+  ball.vel.z-=gravity*dt;
+  var drag=0.06; ball.vel=mul(ball.vel,1-drag*dt);
+  ball.pos=add(ball.pos,mul(ball.vel,dt));
+  if(ball.pos.z<link.rBall){ball.pos.z=link.rBall;if(ball.vel.z<0)ball.vel.z*=-0.36;ball.vel.x*=0.82;ball.vel.y*=0.82;if(Math.hypot(ball.vel.x,ball.vel.y)<0.01){ball.vel.x=0;ball.vel.y=0;}}
+  /* basket = cup that catches the ball: forgiving funnel into the mouth, solid outer wall, floor underneath */
+  var dbx=ball.pos.x-BASKET.x, dby=ball.pos.y-BASKET.y, dbr=Math.hypot(dbx,dby);
+  var nx=dbr>1e-6?dbx/dbr:1, ny=dbr>1e-6?dby/dbr:0;
+  var rIn=Math.max(0,BASKET.inner-link.rBall);   /* cavity radius for the ball centre */
+  var rOut=BASKET.wall+link.rBall;               /* outer-wall standoff               */
+  if(ball.pos.z<BASKET.rimZ){
+    if(dbr<BASKET.inner){                         /* over the mouth -> slide down into the cavity, rest on the floor */
+      if(dbr>rIn){ball.pos.x=BASKET.x+nx*rIn;ball.pos.y=BASKET.y+ny*rIn;var vi=ball.vel.x*nx+ball.vel.y*ny;if(vi>0){ball.vel.x-=1.2*vi*nx;ball.vel.y-=1.2*vi*ny;}}
+      if(ball.pos.z<BASKET.floorZ+link.rBall){ball.pos.z=BASKET.floorZ+link.rBall;if(ball.vel.z<0)ball.vel.z*=-0.3;ball.vel.x*=0.7;ball.vel.y*=0.7;}
+    } else if(dbr<rOut){                          /* outside the mouth, below the rim -> bounce off the outer wall   */
+      ball.pos.x=BASKET.x+nx*rOut;ball.pos.y=BASKET.y+ny*rOut;var vo=ball.vel.x*nx+ball.vel.y*ny;if(vo<0){ball.vel.x-=1.3*vo*nx;ball.vel.y-=1.3*vo*ny;}
+    }
+  }
+  var r=Math.hypot(ball.pos.x,ball.pos.y); if(r>0.7){ball.vel.x*=-0.4;ball.vel.y*=-0.4;ball.pos.x*=0.7/r;ball.pos.y*=0.7/r;}
+  if(lenv(ball.vel)>0.15){ballTrail.push(S2T(ball.pos));if(ballTrail.length>26)ballTrail.shift();} else if(ballTrail.length){ballTrail.length=0;}
+}
+function sampleProgram(){return {name:'gentle pick-up and throw demo',units:'meters/degrees/seconds',commands:[
+  {cmd:'ball',x:0.24,y:0.10,z:0.04,mass:parseFloat($('bm').value)||0.09},
+  {cmd:'goto',x:0.24,y:0.10,z:0.16,wrist:-45,duration:0.85},
+  {cmd:'goto',x:0.24,y:0.10,z:0.075,wrist:-60,duration:0.75},
+  {cmd:'grip',state:'close',duration:0.28},
+  {cmd:'wait',duration:0.20},
+  {cmd:'goto',x:0.18,y:0.06,z:0.26,wrist:-5,duration:0.75},
+  {cmd:'goto',x:-0.08,y:0.00,z:0.32,wrist:8,duration:0.55},
+  {cmd:'goto',x:0.37,y:-0.05,z:0.25,wrist:12,duration:0.32},
+  {cmd:'grip',state:'open',duration:0.08},
+  {cmd:'goto',x:0.30,y:0.00,z:0.31,wrist:0,duration:0.8}
+]};}
+function predictArc(){
+  if(!held)return [];
+  var F=fk(q), g0=gripWorld(F), p={x:g0.x,y:g0.y,z:g0.z};
+  var vsm=add(gripVelSm,mul(F.gripDir,0.25));
+  if(lenv(vsm)<0.25)return [];
+  var v={x:vsm.x,y:vsm.y,z:vsm.z}, pts=[], h=0.016;
+  for(var i=0;i<160;i++){pts.push(S2T(p));v.z-=gravity*h;v.x*=(1-0.06*h);v.y*=(1-0.06*h);p={x:p.x+v.x*h,y:p.y+v.y*h,z:p.z+v.z*h};if(p.z<=link.rBall){pts.push(S2T(v3(p.x,p.y,link.rBall)));break;}}
+  return pts;
+}
+
+/* ========================== THREE.JS SETUP ========================== */
+var THREE=window.THREE;
+/* sim(x fwd, y lat, z up) -> three(x, y up, z) */
+function S2T(p){return new THREE.Vector3(p.x, p.z, -p.y);}
+
+var stage=$('stage');
+var renderer=new THREE.WebGLRenderer({canvas:stage,antialias:true,alpha:true,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputEncoding=THREE.sRGBEncoding; renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.05;
+
+var scene=new THREE.Scene();
+scene.fog=new THREE.Fog(0x081822,2.0,5.4);
+
+var mainAspect=1;
+var camera=new THREE.PerspectiveCamera(42,1,0.05,60);
+var camOver=new THREE.PerspectiveCamera(52,1.5,0.05,40);
+camOver.position.set(0.02,1.05,0.42); camOver.lookAt(0.04,0.06,0.0);
+var camWrist=new THREE.PerspectiveCamera(60,1.5,0.012,40);
+
+/* procedural equirect environment -> PMREM (believable metal reflections, no external HDR) */
+(function(){
+  var c=document.createElement('canvas');c.width=1024;c.height=512;var x=c.getContext('2d');
+  var g=x.createLinearGradient(0,0,0,512);
+  g.addColorStop(0,'#0c2634');g.addColorStop(0.42,'#103040');g.addColorStop(0.58,'#0a1820');g.addColorStop(1,'#04080c');
+  x.fillStyle=g;x.fillRect(0,0,1024,512);
+  function soft(cx,cy,rr,col){var rg=x.createRadialGradient(cx,cy,2,cx,cy,rr);rg.addColorStop(0,col);rg.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=rg;x.fillRect(0,0,1024,512);}
+  soft(360,120,280,'rgba(170,230,255,.95)'); soft(760,150,210,'rgba(90,240,200,.55)'); soft(150,90,150,'rgba(120,200,255,.4)');
+  var tex=new THREE.CanvasTexture(c); tex.mapping=THREE.EquirectangularReflectionMapping; tex.encoding=THREE.sRGBEncoding;
+  var pmrem=new THREE.PMREMGenerator(renderer); pmrem.compileEquirectangularShader();
+  scene.environment=pmrem.fromEquirectangular(tex).texture; tex.dispose(); pmrem.dispose();
+})();
+
+/* lights */
+var hemi=new THREE.HemisphereLight(0x8fdfff,0x0a1418,0.55); scene.add(hemi);
+var key=new THREE.DirectionalLight(0xffffff,2.0);
+key.position.set(0.9,1.5,0.8); key.castShadow=true;
+key.shadow.mapSize.set(2048,2048); key.shadow.radius=4; key.shadow.bias=-0.0004;
+var sc=key.shadow.camera; sc.near=0.4; sc.far=4.5; sc.left=-1.0; sc.right=1.0; sc.top=1.0; sc.bottom=-1.0;
+scene.add(key); scene.add(key.target); key.target.position.set(0,0.2,0);
+var fill=new THREE.DirectionalLight(0x66bfff,0.5); fill.position.set(-1.0,0.7,-0.6); scene.add(fill);
+var rim=new THREE.DirectionalLight(0x9affd9,0.35); rim.position.set(-0.3,0.5,-1.1); scene.add(rim);
+
+/* materials (fresh instance each call -> independent highlight) */
+var MAT={
+  alu:function(){return new THREE.MeshStandardMaterial({color:0xb6c3cd,metalness:0.82,roughness:0.42,envMapIntensity:1.1});},
+  aluDk:function(){return new THREE.MeshStandardMaterial({color:0x8b99a5,metalness:0.8,roughness:0.5,envMapIntensity:1.0});},
+  anod:function(){return new THREE.MeshStandardMaterial({color:0x1f8fbf,metalness:0.85,roughness:0.3,envMapIntensity:1.25});},
+  blk:function(){return new THREE.MeshStandardMaterial({color:0x14171c,metalness:0.06,roughness:0.62});},
+  blk2:function(){return new THREE.MeshStandardMaterial({color:0x1f2932,metalness:0.12,roughness:0.55});},
+  steel:function(){return new THREE.MeshStandardMaterial({color:0xc6cfd7,metalness:1.0,roughness:0.28,envMapIntensity:1.2});},
+  rubber:function(){return new THREE.MeshStandardMaterial({color:0x0c0f12,metalness:0,roughness:0.95});},
+  foam:function(){return new THREE.MeshStandardMaterial({color:0xff7a33,metalness:0,roughness:0.95});},
+  pcb:function(){return new THREE.MeshStandardMaterial({color:0x0b6b3a,metalness:0.2,roughness:0.5});},
+  ledG:function(){return new THREE.MeshStandardMaterial({color:0x006622,emissive:0x33ffaa,emissiveIntensity:1.6,roughness:0.4});},
+  ledA:function(){return new THREE.MeshStandardMaterial({color:0x664400,emissive:0xffb020,emissiveIntensity:1.3,roughness:0.4});},
+  lens:function(){return new THREE.MeshStandardMaterial({color:0x0a1830,metalness:0.6,roughness:0.15,envMapIntensity:1.4});},
+  label:function(){return new THREE.MeshStandardMaterial({color:0x0e3a4a,metalness:0.2,roughness:0.6,emissive:0x0a2733,emissiveIntensity:0.4});}
+};
+
+/* table: optical-breadboard texture */
+(function(){
+  var c=document.createElement('canvas');c.width=512;c.height=512;var x=c.getContext('2d');
+  x.fillStyle='#0c141b';x.fillRect(0,0,512,512);
+  var N=16, step=512/N;
+  for(var i=0;i<N;i++)for(var j=0;j<N;j++){
+    var cx=step*(i+0.5),cy=step*(j+0.5);
+    var rg=x.createRadialGradient(cx-1.5,cy-1.5,0.5,cx,cy,7);
+    rg.addColorStop(0,'#02060a');rg.addColorStop(0.7,'#1b2832');rg.addColorStop(1,'#0c141b');
+    x.fillStyle=rg;x.beginPath();x.arc(cx,cy,6,0,TAU);x.fill();
+    x.strokeStyle='rgba(120,170,200,.10)';x.lineWidth=1;x.beginPath();x.arc(cx,cy,6,0,TAU);x.stroke();
+  }
+  var tex=new THREE.CanvasTexture(c); tex.wrapS=tex.wrapT=THREE.RepeatWrapping; tex.repeat.set(7,7);
+  tex.encoding=THREE.sRGBEncoding; tex.anisotropy=8;
+  var table=new THREE.Mesh(new THREE.PlaneGeometry(2.4,2.4),
+    new THREE.MeshStandardMaterial({map:tex,metalness:0.55,roughness:0.5,envMapIntensity:0.7}));
+  table.rotation.x=-Math.PI/2; table.position.y=0; table.receiveShadow=true; scene.add(table);
+})();
+
+/* rings */
+function ringMesh(rIn,rOut,color,op){
+  var m=new THREE.Mesh(new THREE.RingGeometry(rIn,rOut,96),
+    new THREE.MeshBasicMaterial({color:color,transparent:true,opacity:op,side:THREE.DoubleSide,depthWrite:false}));
+  m.rotation.x=-Math.PI/2; m.position.y=0.001; return m;
+}
+scene.add(ringMesh(0.495,0.5,0x38e1ff,0.5));
+scene.add(ringMesh(0.20,0.205,0x2a89a8,0.35));
+var zone=ringMesh(0.05,0.058,0x54f0b8,0.85); zone.position.set(0.42,0.001,0.05); scene.add(zone);
+var zoneFill=new THREE.Mesh(new THREE.CircleGeometry(0.05,48),new THREE.MeshBasicMaterial({color:0x54f0b8,transparent:true,opacity:0.10,depthWrite:false}));
+zoneFill.rotation.x=-Math.PI/2; zoneFill.position.set(0.42,0.0008,0.05); scene.add(zoneFill);
+
+/* part tagging / highlight */
+var partMeshes=[]; var highlight=null;
+function addPart(mesh,part,parent){
+  mesh.castShadow=true; mesh.receiveShadow=true; mesh.userData.part=part;
+  if(mesh.material){mesh.userData.baseE=mesh.material.emissive?mesh.material.emissive.getHex():0;mesh.userData.baseEI=mesh.material.emissiveIntensity||0;}
+  partMeshes.push(mesh); (parent||scene).add(mesh); return mesh;
+}
+function applyHighlight(p){
+  highlight=p;
+  partMeshes.forEach(function(m){
+    if(!m.material||!m.material.emissive)return;
+    if(p && m.userData.part===p){m.material.emissive.setHex(0x14506a);m.material.emissiveIntensity=0.95;}
+    else{m.material.emissive.setHex(m.userData.baseE);m.material.emissiveIntensity=m.userData.baseEI;}
+  });
+}
+
+/* geometry helpers */
+function box(w,h,d,mat){return new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);}
+function cyl(rt,rb,h,seg,mat){return new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,seg||24),mat);}
+function roundBar(L,H,r){
+  var s=new THREE.Shape();
+  s.moveTo(0,-H/2+r); s.lineTo(0,H/2-r); s.quadraticCurveTo(0,H/2,r,H/2);
+  s.lineTo(L-r,H/2); s.quadraticCurveTo(L,H/2,L,H/2-r); s.lineTo(L,-H/2+r);
+  s.quadraticCurveTo(L,-H/2,L-r,-H/2); s.lineTo(r,-H/2); s.quadraticCurveTo(0,-H/2,0,-H/2+r);
+  return s;
+}
+function linkPlate(L,H,T,holes){
+  var cr=Math.min(0.006,H/2);
+  var shape=roundBar(L,H,cr);
+  if(holes) holes.forEach(function(hx){var h=new THREE.Path();h.absarc(hx*L,0,H*0.28,0,TAU,true);shape.holes.push(h);});
+  var geo=new THREE.ExtrudeGeometry(shape,{depth:T,bevelEnabled:true,bevelThickness:0.0014,bevelSize:0.0014,bevelSegments:1,steps:1});
+  geo.translate(0,0,-T/2);
+  return new THREE.Mesh(geo,MAT.alu());
+}
+function makeServo(scale,part,parent,withGearbox){
+  var g=new THREE.Group();
+  var bw=0.042*scale, bh=0.038*scale, bd=0.022*scale;
+  var body=box(bw,bh,bd,MAT.blk()); body.position.y=bh/2; addPart(body,part,g);
+  var top=box(bw*0.96,0.004*scale,bd*0.96,MAT.blk2()); top.position.y=bh+0.001; addPart(top,part,g);
+  var tab1=box(0.012*scale,0.004*scale,bd,MAT.aluDk()); tab1.position.set(bw/2+0.005*scale,bh*0.62,0); addPart(tab1,part,g);
+  var tab2=box(0.012*scale,0.004*scale,bd,MAT.aluDk()); tab2.position.set(-(bw/2+0.005*scale),bh*0.62,0); addPart(tab2,part,g);
+  var boss=cyl(0.009*scale,0.009*scale,0.008*scale,20,MAT.aluDk()); boss.rotation.x=Math.PI/2; boss.position.set(bw*0.28,bh+0.004*scale,0); addPart(boss,part,g);
+  var horn=cyl(0.006*scale,0.006*scale,0.004*scale,18,MAT.steel()); horn.rotation.x=Math.PI/2; horn.position.set(bw*0.28,bh+0.009*scale,0); addPart(horn,part,g);
+  var lab=box(bw*0.7,0.0008,bd*0.5,MAT.label()); lab.position.set(-bw*0.05,bh*0.5,bd/2+0.0006); lab.rotation.x=Math.PI/2; addPart(lab,part,g);
+  var led=new THREE.Mesh(new THREE.SphereGeometry(0.0018*scale,12,12),MAT.ledG()); led.position.set(bw*0.36,bh*0.78,bd/2+0.001); addPart(led,part,g);
+  if(withGearbox){
+    var can=cyl(0.018*scale,0.02*scale,0.026*scale,28,MAT.aluDk()); can.rotation.x=Math.PI/2; can.position.set(bw*0.28,bh*0.55,bd/2+0.014*scale); addPart(can,part,g);
+    var pulley=new THREE.Mesh(new THREE.TorusGeometry(0.013*scale,0.0035*scale,12,28),MAT.anod()); pulley.position.set(bw*0.28,bh*0.55,bd/2+0.028*scale); addPart(pulley,part,g);
+  }
+  (parent||scene).add(g); return g;
+}
+function makeBracket(W,H,D,part,parent){
+  var g=new THREE.Group();
+  var base=box(W,0.006,D,MAT.alu()); base.position.y=0.003; addPart(base,part,g);
+  var s1=box(0.006,H,D,MAT.alu()); s1.position.set(W/2-0.003,H/2,0); addPart(s1,part,g);
+  var s2=box(0.006,H,D,MAT.alu()); s2.position.set(-(W/2-0.003),H/2,0); addPart(s2,part,g);
+  (parent||scene).add(g); return g;
+}
+function makeCable(pts,part,parent,rad){
+  var curve=new THREE.CatmullRomCurve3(pts.map(function(p){return new THREE.Vector3(p[0],p[1],p[2]);}));
+  var geo=new THREE.TubeGeometry(curve,18,rad||0.0028,8,false);
+  var m=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:0x101418,metalness:0.1,roughness:0.7}));
+  addPart(m,part,parent); return m;
+}
+
+/* ======================= BUILD THE MACHINE ======================= */
+var rootArm=new THREE.Group(); scene.add(rootArm);
+
+/* base (static) */
+var baseGroup=new THREE.Group(); rootArm.add(baseGroup);
+(function(){
+  var plate=box(0.26,0.02,0.26,MAT.aluDk()); plate.position.y=0.01; addPart(plate,'base',baseGroup);
+  var bevel=box(0.27,0.006,0.27,MAT.alu()); bevel.position.y=0.003; addPart(bevel,'base',baseGroup);
+  var off=0.105;[[off,off],[off,-off],[-off,off],[-off,-off]].forEach(function(c){
+    var foot=cyl(0.016,0.018,0.012,20,MAT.rubber()); foot.position.set(c[0],-0.006,c[1]); addPart(foot,'base',baseGroup);
+    var b=cyl(0.005,0.005,0.004,6,MAT.steel()); b.position.set(c[0]*0.78,0.021,c[1]*0.78); addPart(b,'base',baseGroup);
+  });
+  var ring=new THREE.Mesh(new THREE.TorusGeometry(0.05,0.012,16,40),MAT.anod()); ring.rotation.x=Math.PI/2; ring.position.y=0.028; addPart(ring,'base',baseGroup);
+})();
+
+/* overhead camera rig (static, mounted from base corner) */
+(function(){
+  var g=new THREE.Group(); baseGroup.add(g);
+  var foot=box(0.05,0.01,0.05,MAT.aluDk()); foot.position.set(-0.14,0.006,0.14); addPart(foot,'camera',g);
+  var post=cyl(0.008,0.008,0.62,16,MAT.aluDk()); post.position.set(-0.14,0.32,0.14); addPart(post,'camera',g);
+  var arm=cyl(0.007,0.007,0.34,16,MAT.aluDk()); arm.rotation.z=Math.PI/2.5; arm.position.set(-0.04,0.6,0.1); addPart(arm,'camera',g);
+  var head=box(0.04,0.03,0.034,MAT.blk()); head.position.set(0.06,0.55,0.06); addPart(head,'camera',g);
+  var lens=cyl(0.01,0.012,0.014,22,MAT.lens()); lens.position.set(0.06,0.535,0.06); addPart(lens,'camera',g);
+  var led=new THREE.Mesh(new THREE.SphereGeometry(0.0018,10,10),MAT.ledA()); led.position.set(0.078,0.565,0.07); addPart(led,'camera',g);
+})();
+
+/* yaw group */
+var yawGroup=new THREE.Group(); baseGroup.add(yawGroup);
+(function(){
+  var disc=cyl(0.046,0.05,0.014,40,MAT.alu()); disc.position.y=0.035; addPart(disc,'yaw',yawGroup);
+  var servo=makeServo(0.85,'yaw',yawGroup,false); servo.position.set(-0.02,0.041,0.0); servo.rotation.y=Math.PI/2;
+  var riser=cyl(0.022,0.028,link.baseH-0.049,28,MAT.aluDk()); riser.position.y=0.049+(link.baseH-0.049)/2; addPart(riser,'yaw',yawGroup);
+  var collar=new THREE.Mesh(new THREE.TorusGeometry(0.024,0.004,12,28),MAT.anod()); collar.rotation.x=Math.PI/2; collar.position.y=link.baseH-0.004; addPart(collar,'yaw',yawGroup);
+  makeCable([[-0.02,0.052,0.012],[0.0,0.06,0.02],[0.01,link.baseH-0.02,0.012]],'yaw',yawGroup);
+})();
+
+/* shoulder */
+var shoulderPivot=new THREE.Group(); shoulderPivot.position.y=link.baseH; yawGroup.add(shoulderPivot);
+var shoulderGroup=new THREE.Group(); shoulderPivot.add(shoulderGroup);
+(function(){
+  makeBracket(0.058,0.03,0.05,'shoulder',shoulderGroup);
+  var sv=makeServo(1.0,'shoulder',shoulderGroup,true); sv.position.set(-0.022,0.0,-0.026);
+  var axle=cyl(0.006,0.006,0.06,16,MAT.steel()); axle.rotation.x=Math.PI/2; axle.position.set(0,0,0); addPart(axle,'shoulder',shoulderGroup);
+  var hub=cyl(0.016,0.016,0.012,28,MAT.anod()); hub.rotation.x=Math.PI/2; hub.position.set(0,0,0.026); addPart(hub,'shoulder',shoulderGroup);
+  var plate=linkPlate(link.L1,0.04,0.012,[0.42,0.7]); plate.position.set(0,0,0); addPart(plate,'shoulder',shoulderGroup);
+  var plate2=linkPlate(link.L1,0.04,0.012,[0.42,0.7]); plate2.position.set(0,0,-0.024); addPart(plate2,'shoulder',shoulderGroup);
+  var stiff=box(link.L1*0.5,0.006,0.022,MAT.aluDk()); stiff.position.set(link.L1*0.35,0.024,-0.012); addPart(stiff,'shoulder',shoulderGroup);
+  makeCable([[0.0,0.03,-0.012],[0.06,0.038,-0.012],[link.L1*0.5,0.03,-0.012],[link.L1-0.02,0.02,-0.012]],'shoulder',shoulderGroup,0.0024);
+})();
+
+/* elbow */
+var elbowPivot=new THREE.Group(); elbowPivot.position.set(link.L1,0,0); shoulderGroup.add(elbowPivot);
+var elbowGroup=new THREE.Group(); elbowPivot.add(elbowGroup);
+(function(){
+  var sv=makeServo(0.8,'elbow',elbowGroup,false); sv.position.set(-0.018,-0.002,-0.03);
+  var hub=cyl(0.013,0.013,0.04,28,MAT.anod()); hub.rotation.x=Math.PI/2; hub.position.set(0,0,-0.005); addPart(hub,'elbow',elbowGroup);
+  var plate=linkPlate(link.L2,0.034,0.011,[0.45,0.74]); plate.position.set(0,0,-0.006); addPart(plate,'elbow',elbowGroup);
+  var plate2=linkPlate(link.L2,0.034,0.011,[0.45,0.74]); plate2.position.set(0,0,-0.026); addPart(plate2,'elbow',elbowGroup);
+  makeCable([[0.0,0.012,-0.016],[0.05,0.016,-0.016],[link.L2*0.5,0.012,-0.016],[link.L2-0.02,0.006,-0.016]],'elbow',elbowGroup,0.0022);
+})();
+
+/* wrist + gripper + wrist cam */
+var wristPivot=new THREE.Group(); wristPivot.position.set(link.L2,0,0); elbowGroup.add(wristPivot);
+var wristGroup=new THREE.Group(); wristPivot.add(wristGroup);
+var fingersGroup=new THREE.Group();
+(function(){
+  var sv=makeServo(0.62,'wrist',wristGroup,false); sv.position.set(-0.012,-0.001,-0.022);
+  var hub=cyl(0.011,0.011,0.03,24,MAT.anod()); hub.rotation.x=Math.PI/2; hub.position.set(0,0,-0.004); addPart(hub,'wrist',wristGroup);
+  var palm=box(link.L3*0.72,0.024,0.028,MAT.alu()); palm.position.set(link.L3*0.37,0,-0.006); addPart(palm,'wrist',wristGroup);
+  var palmCap=cyl(0.013,0.015,0.028,24,MAT.aluDk()); palmCap.rotation.z=Math.PI/2; palmCap.position.set(link.L3*0.73,0,-0.006); addPart(palmCap,'wrist',wristGroup);
+
+  /* gripper housing + parallel-jaw drive */
+  var housing=box(0.03,0.034,0.05,MAT.blk2()); housing.position.set(link.L3+0.002,0,0); addPart(housing,'gripper',wristGroup);
+  var gservo=box(0.026,0.02,0.02,MAT.blk()); gservo.position.set(link.L3-0.006,0,0.03); addPart(gservo,'gripper',wristGroup);
+  var gled=new THREE.Mesh(new THREE.SphereGeometry(0.0017,10,10),MAT.ledG()); gled.position.set(link.L3-0.006,0.012,0.03); addPart(gled,'gripper',wristGroup);
+  var rail=box(0.012,0.009,0.104,MAT.steel()); rail.position.set(link.L3+0.016,0,0); addPart(rail,'gripper',wristGroup);
+  var pinion=cyl(0.0055,0.0055,0.014,18,MAT.aluDk()); pinion.rotation.x=Math.PI/2; pinion.position.set(link.L3+0.01,0,0); addPart(pinion,'gripper',wristGroup);
+
+  /* finger: inner pad face sits at local z=0, body extends outward by sign */
+  function finger(sign){
+    var fg=new THREE.Group();
+    var car=box(0.016,0.026,0.016,MAT.aluDk()); car.position.set(0.006,0,sign*0.012); addPart(car,'gripper',fg);
+    var rack=box(0.02,0.006,0.004,MAT.steel()); rack.position.set(-0.003,0,sign*0.004); addPart(rack,'gripper',fg);
+    var spine=box(0.01,0.032,0.007,MAT.alu()); spine.position.set(0.012,0.003,sign*0.008); addPart(spine,'gripper',fg);
+    var blade=box(0.05,0.026,0.007,MAT.alu()); blade.position.set(0.034,0.006,sign*0.008); addPart(blade,'gripper',fg);
+    var pad=box(0.032,0.02,0.005,MAT.rubber()); pad.position.set(0.036,0.004,sign*0.0025); addPart(pad,'gripper',fg);
+    fg.userData.sign=sign; return fg;
+  }
+  var f1=finger(1), f2=finger(-1);
+  fingersGroup.add(f1); fingersGroup.add(f2);
+  fingersGroup.position.set(link.L3+0.004,0,0);
+  wristGroup.add(fingersGroup);
+  fingersGroup.userData.f1=f1; fingersGroup.userData.f2=f2;
+
+  var camG=new THREE.Group();
+  var cbody=box(0.022,0.018,0.016,MAT.blk()); addPart(cbody,'camera',camG);
+  var clens=cyl(0.006,0.007,0.01,20,MAT.lens()); clens.rotation.z=Math.PI/2; clens.position.x=0.014; addPart(clens,'camera',camG);
+  var cled=new THREE.Mesh(new THREE.SphereGeometry(0.0016,10,10),MAT.ledA()); cled.position.set(0.006,0.009,0.008); addPart(cled,'camera',camG);
+  camG.position.set(link.L3*0.5,0.022,0); wristGroup.add(camG);
+
+  camWrist.position.set(link.L3*0.5,0.022,0);
+  camWrist.rotation.set(0,-Math.PI/2,0); /* look along local +x = gripDir */
+  wristGroup.add(camWrist);
+})();
+
+/* controller + power box on table */
+(function(){
+  var g=new THREE.Group(); scene.add(g); g.position.set(-0.02,0,0.34);
+  var encl=box(0.13,0.045,0.09,MAT.blk2()); encl.position.y=0.0225; addPart(encl,'controller',g);
+  var pcb=box(0.11,0.002,0.07,MAT.pcb()); pcb.position.y=0.046; addPart(pcb,'controller',g);
+  var chip=box(0.018,0.004,0.018,MAT.blk()); chip.position.set(-0.02,0.049,0); addPart(chip,'controller',g);
+  for(var i=0;i<8;i++){var pin=box(0.0025,0.006,0.05,MAT.steel()); pin.position.set(0.02+i*0.006,0.05,0); addPart(pin,'controller',g);}
+  var l1=new THREE.Mesh(new THREE.SphereGeometry(0.002,10,10),MAT.ledG()); l1.position.set(-0.045,0.05,0.028); addPart(l1,'controller',g);
+  var l2=new THREE.Mesh(new THREE.SphereGeometry(0.002,10,10),MAT.ledA()); l2.position.set(-0.038,0.05,0.028); addPart(l2,'controller',g);
+  var brick=box(0.06,0.03,0.05,MAT.blk()); brick.position.set(0.11,0.015,0.0); addPart(brick,'controller',g);
+  makeCable([[-0.04,0.02,-0.045],[-0.02,0.02,-0.09],[0.0,0.012,-0.18],[0.0,0.01,-0.32]],'controller',g,0.0026);
+})();
+
+/* foam ball */
+var ballMesh=new THREE.Mesh(new THREE.SphereGeometry(link.rBall,40,28),
+  new THREE.MeshStandardMaterial({color:0xff8a3d,metalness:0.0,roughness:0.85,emissive:0x3a1604,emissiveIntensity:0.25}));
+ballMesh.castShadow=true; ballMesh.receiveShadow=false; scene.add(ballMesh);
+var ballSeam=new THREE.Mesh(new THREE.TorusGeometry(link.rBall*0.99,0.0012,8,40),new THREE.MeshStandardMaterial({color:0xd9692a,roughness:0.9}));
+ballMesh.add(ballSeam);
+
+/* draggable target puck */
+var puckGroup=new THREE.Group(); scene.add(puckGroup);
+(function(){
+  var disc=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,0.004,32),new THREE.MeshStandardMaterial({color:0x0a6c86,metalness:0.4,roughness:0.4,emissive:0x0a3a4a,emissiveIntensity:0.6,transparent:true,opacity:0.92}));
+  disc.position.y=0.002; puckGroup.add(disc);
+  var ring=new THREE.Mesh(new THREE.TorusGeometry(0.034,0.0025,12,32),new THREE.MeshStandardMaterial({color:0x38e1ff,emissive:0x1a8fbf,emissiveIntensity:0.8,metalness:0.6,roughness:0.3}));
+  ring.rotation.x=Math.PI/2; ring.position.y=0.004; puckGroup.add(ring);
+  var pin=new THREE.Mesh(new THREE.CylinderGeometry(0.0035,0.0035,0.09,16),new THREE.MeshStandardMaterial({color:0x38e1ff,emissive:0x1a8fbf,emissiveIntensity:0.7,metalness:0.6,roughness:0.3}));
+  pin.position.y=0.047; puckGroup.add(pin);
+  var tip=new THREE.Mesh(new THREE.SphereGeometry(0.006,16,16),new THREE.MeshStandardMaterial({color:0x9af0ff,emissive:0x38e1ff,emissiveIntensity:1.2,roughness:0.3}));
+  tip.position.y=0.095; puckGroup.add(tip);
+})();
+
+/* trajectory + trail lines */
+var trajGeo=new THREE.BufferGeometry();
+var trajLine=new THREE.Line(trajGeo,new THREE.LineBasicMaterial({color:0x54f0b8,transparent:true,opacity:0.6}));
+trajLine.visible=false; scene.add(trajLine);
+var landMark=ringMesh(0.02,0.026,0x54f0b8,0.85); landMark.visible=false; scene.add(landMark);
+var trailGeo=new THREE.BufferGeometry();
+var trailLine=new THREE.Line(trailGeo,new THREE.LineBasicMaterial({color:0xff9b6b,transparent:true,opacity:0.55}));
+trailLine.visible=false; scene.add(trailLine);
+
+/* ======================== CAMERA CONTROLS ======================== */
+var camTarget=new THREE.Vector3(0,0.16,0), camTargetTo=camTarget.clone();
+var sph={r:1.2,theta:-0.85,phi:1.0}, sphTo={r:1.2,theta:-0.85,phi:1.0};
+var mainView='orbit', autoOrbit=false, lastInteract=performance.now(), showTraj=true;
+var reduceMotion=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+function applySph(){
+  var r=sph.r,t=sph.theta,p=clamp(sph.phi,0.1,1.53);
+  camera.position.set(camTarget.x+r*Math.sin(p)*Math.sin(t),camTarget.y+r*Math.cos(p),camTarget.z+r*Math.sin(p)*Math.cos(t));
+  camera.lookAt(camTarget);
+}
+var views={
+  iso:{r:1.2,theta:-0.85,phi:1.0,tx:0,ty:0.16,tz:0},
+  front:{r:1.15,theta:0,phi:1.22,tx:0,ty:0.18,tz:0},
+  side:{r:1.15,theta:-Math.PI/2,phi:1.18,tx:0,ty:0.18,tz:0},
+  top:{r:1.25,theta:-0.6,phi:0.16,tx:0,ty:0.05,tz:0}
+};
+function markViewBtn(name){document.querySelectorAll('.vbtn[data-view]').forEach(function(b){b.classList.toggle('on',b.dataset.view===name);});}
+function setView(name){
+  applyHighlight(null); setActivePart(null);
+  if(name==='wrist'){mainView='wrist';markViewBtn('wrist');return;}
+  mainView='orbit'; var v=views[name]||views.iso;
+  sphTo.r=v.r;sphTo.theta=v.theta;sphTo.phi=v.phi; camTargetTo.set(v.tx,v.ty,v.tz); markViewBtn(name); userInteracted();
+}
+function userInteracted(){lastInteract=performance.now();}
+function pan(dx,dy){
+  var rightV=new THREE.Vector3().setFromMatrixColumn(camera.matrix,0);
+  var upV=new THREE.Vector3().setFromMatrixColumn(camera.matrix,1);
+  var k=sph.r*0.0016; camTargetTo.addScaledVector(rightV,-dx*k); camTargetTo.addScaledVector(upV,dy*k); camTarget.copy(camTargetTo);
+}
+var raycaster=new THREE.Raycaster(), ndc=new THREE.Vector2(), groundPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+function setNDC(e){var r=stage.getBoundingClientRect();ndc.x=((e.clientX-r.left)/r.width)*2-1;ndc.y=-((e.clientY-r.top)/r.height)*2+1;}
+function hitPuck(e){setNDC(e);raycaster.setFromCamera(ndc,camera);return raycaster.intersectObject(puckGroup,true).length>0;}
+function hitBasket(e){setNDC(e);raycaster.setFromCamera(ndc,camera);return basketGroup&&raycaster.intersectObject(basketGroup,true).length>0;}
+function moveBasketToPointer(e){
+  setNDC(e);raycaster.setFromCamera(ndc,camera);var pt=new THREE.Vector3();
+  if(raycaster.ray.intersectPlane(groundPlane,pt)){
+    var x=pt.x,y=-pt.z,r=Math.hypot(x,y); if(r<1e-4){x=0.3;y=0;r=0.3;}
+    var rr=clamp(r,0.20,0.40);                /* keep it reachable for the drop */
+    BASKET.x=x/r*rr; BASKET.y=y/r*rr; basketGroup.position.set(BASKET.x,0,-BASKET.y);
+  }
+}
+function moveTargetToPointer(e){
+  setNDC(e);raycaster.setFromCamera(ndc,camera);var pt=new THREE.Vector3();
+  if(raycaster.ray.intersectPlane(groundPlane,pt)){cursor.x=clamp(pt.x,-0.42,0.42);cursor.y=clamp(-pt.z,-0.35,0.35);}
+}
+var dragging=null,lastX=0,lastY=0,pointers={},pinchD0=0;
+function ptCount(){return Object.keys(pointers).length;}
+function ptDist(){var k=Object.keys(pointers);if(k.length<2)return 0;var a=pointers[k[0]],b=pointers[k[1]];return Math.hypot(a.x-b.x,a.y-b.y);}
+stage.addEventListener('pointerdown',function(e){
+  stage.setPointerCapture(e.pointerId); pointers[e.pointerId]={x:e.clientX,y:e.clientY};
+  if(ptCount()===2){dragging='pinch';pinchD0=ptDist();return;}
+  if(mainView==='orbit' && e.button===0 && !e.shiftKey && hitPuck(e)){dragging='target';moveTargetToPointer(e);}
+  else if(mainView==='orbit' && e.button===0 && !e.shiftKey && hitBasket(e)){dragging='basket';moveBasketToPointer(e);}
+  else if(e.button===2||e.shiftKey){dragging='pan';}
+  else {dragging='orbit';}
+  lastX=e.clientX;lastY=e.clientY;
+});
+stage.addEventListener('pointermove',function(e){
+  if(pointers[e.pointerId])pointers[e.pointerId]={x:e.clientX,y:e.clientY};
+  if(dragging==='pinch'){var d=ptDist();if(pinchD0>0&&d>0){sphTo.r=clamp(sphTo.r*(pinchD0/d),0.5,2.6);sph.r=lerp(sph.r,sphTo.r,0.5);pinchD0=d;userInteracted();}return;}
+  if(dragging==='target'){moveTargetToPointer(e);return;}
+  if(dragging==='basket'){moveBasketToPointer(e);return;}
+  if(mainView!=='orbit')return;
+  var dx=e.clientX-lastX,dy=e.clientY-lastY;lastX=e.clientX;lastY=e.clientY;
+  if(dragging==='orbit'){sphTo.theta-=dx*0.008;sphTo.phi=clamp(sphTo.phi-dy*0.008,0.1,1.53);sph.theta=sphTo.theta;sph.phi=sphTo.phi;userInteracted();}
+  else if(dragging==='pan'){pan(dx,dy);userInteracted();}
+});
+function endPointer(e){if(pointers[e.pointerId])delete pointers[e.pointerId];if(ptCount()<2)dragging=ptCount()===1?'orbit':null;if(ptCount()===0)dragging=null;}
+stage.addEventListener('pointerup',endPointer); stage.addEventListener('pointercancel',endPointer);
+stage.addEventListener('contextmenu',function(e){e.preventDefault();});
+stage.addEventListener('wheel',function(e){e.preventDefault();sphTo.r=clamp(sphTo.r*(e.deltaY>0?1.08:0.93),0.5,2.6);sph.r=lerp(sph.r,sphTo.r,0.5);userInteracted();},{passive:false});
+
+/* ========================== SENSORS ========================== */
+var srend=new THREE.WebGLRenderer({antialias:true,alpha:true});
+srend.setPixelRatio(1.4); srend.setSize(360,236,false);
+srend.outputEncoding=THREE.sRGBEncoding; srend.toneMapping=THREE.ACESFilmicToneMapping; srend.toneMappingExposure=1.05;
+var camAc=$('camA'),camAx=camAc.getContext('2d'),camBc=$('camB'),camBx=camBc.getContext('2d');
+var sB={visible:false,lock:false};
+function computeSensorReadouts(){
+  var F=fk(q),gp=gripWorld(F);
+  var rangeA=Math.hypot(ball.pos.x,ball.pos.y);
+  var rel=sub(ball.pos,gp),forward=dot(rel,F.gripDir),side=dot(rel,v3(-F.dir.y,F.dir.x,0)),up=rel.z-forward*F.gripDir.z;
+  var visible=forward>-0.03&&forward<0.6&&Math.abs(side)<0.25&&Math.abs(up)<0.22;
+  var ld=dist(ball.pos,gp),lock=visible&&ld<link.rBall+0.05;
+  sB.visible=visible;sB.lock=lock;
+  $('camAText').textContent='range '+fmt(rangeA,2)+' m';
+  $('camBText').textContent=visible?((lock?'LOCK ':'track ')+fmt(ld,2)+' m'):'no ball';
+}
+function drawSensorHUD(x,c,which){
+  var w=c.width,h=c.height,cx=w/2,cy=h/2;
+  x.save();
+  x.strokeStyle='rgba(150,120,255,0.08)';x.lineWidth=1;
+  for(var yy=0;yy<h;yy+=6){x.beginPath();x.moveTo(0,yy+0.5);x.lineTo(w,yy+0.5);x.stroke();}
+  x.strokeStyle='rgba(182,155,255,0.7)';x.lineWidth=2;var t=Math.round(w*0.04);
+  [[7,7,1,1],[w-7,7,-1,1],[7,h-7,1,-1],[w-7,h-7,-1,-1]].forEach(function(k){x.beginPath();x.moveTo(k[0],k[1]+k[3]*t);x.lineTo(k[0],k[1]);x.lineTo(k[0]+k[2]*t,k[1]);x.stroke();});
+  x.strokeStyle='rgba(182,155,255,0.45)';x.lineWidth=1;var g=Math.round(w*0.022),L=Math.round(w*0.05);
+  x.beginPath();x.moveTo(cx-L,cy);x.lineTo(cx-g,cy);x.moveTo(cx+g,cy);x.lineTo(cx+L,cy);x.moveTo(cx,cy-L);x.lineTo(cx,cy-g);x.moveTo(cx,cy+g);x.lineTo(cx,cy+L);x.stroke();
+  if(which==='B'){
+    var col=sB.lock?'#54f0b8':(sB.visible?'#ffc24b':'rgba(182,155,255,0.5)');
+    x.strokeStyle=col;x.lineWidth=2;var s=Math.round(w*0.07);x.strokeRect(cx-s,cy-s,2*s,2*s);
+    x.fillStyle=col;x.font='700 '+Math.round(w*0.035)+'px monospace';x.fillText(sB.lock?'LOCK':(sB.visible?'TRACK':'SCAN'),cx-s,cy-s-5);
+  }
+  x.restore();
+}
+function renderSensors(){
+  camOver.aspect=camAc.width/camAc.height; camOver.updateProjectionMatrix();
+  srend.setSize(camAc.width,camAc.height,false); srend.render(scene,camOver);
+  camAx.clearRect(0,0,camAc.width,camAc.height); camAx.drawImage(srend.domElement,0,0,camAc.width,camAc.height); drawSensorHUD(camAx,camAc,'A');
+  camWrist.aspect=camBc.width/camBc.height; camWrist.updateProjectionMatrix();
+  srend.setSize(camBc.width,camBc.height,false); srend.render(scene,camWrist);
+  camBx.clearRect(0,0,camBc.width,camBc.height); camBx.drawImage(srend.domElement,0,0,camBc.width,camBc.height); drawSensorHUD(camBx,camBc,'B');
+}
+
+/* ============================ LOOP ============================ */
+var frames=0,fpsT=performance.now(),sensorTick=0;
+function tick(now){
+  var dt=clamp((now-last)/1000,0.001,0.033); last=now;
+  frames++; if(now-fpsT>500){$('fps').innerHTML='FPS <b>'+Math.round(frames*1000/(now-fpsT))+'</b>';frames=0;fpsT=now;}
+  if(autoOrbit&&!reduceMotion&&mainView==='orbit'&&!dragging)sphTo.theta-=0.0016;
+
+  updateCommand(dt); torqueLimitedStep(dt); updateGripAndBall(dt);
+
+  yawGroup.rotation.y=q.yaw; shoulderGroup.rotation.z=q.shoulder; elbowGroup.rotation.z=q.elbow; wristGroup.rotation.z=q.wrist;
+  var jawHalf=lerp(0.052,0.022,grip); if(held)jawHalf=Math.max(jawHalf,link.rBall+0.001);
+  fingersGroup.userData.f1.position.z=jawHalf; fingersGroup.userData.f2.position.z=-jawHalf;
+
+  ballMesh.position.copy(S2T(ball.pos));
+  ballMesh.material.color.setHex(held?0x5cf0b8:0xff8a3d); ballMesh.material.emissive.setHex(held?0x0a3a2a:0x3a1604);
+  editFrame();
+
+  if(showTraj){var pts=predictArc();if(pts.length>1){trajGeo.setFromPoints(pts);trajLine.visible=true;var lp=pts[pts.length-1];landMark.position.set(lp.x,0.001,lp.z);landMark.visible=true;}else{trajLine.visible=false;landMark.visible=false;}}
+  else{trajLine.visible=false;landMark.visible=false;}
+  if(ballTrail.length>1){trailGeo.setFromPoints(ballTrail);trailLine.visible=true;}else trailLine.visible=false;
+
+  sph.r=lerp(sph.r,sphTo.r,0.12); sph.theta=lerp(sph.theta,sphTo.theta,0.18); sph.phi=lerp(sph.phi,sphTo.phi,0.18);
+  camTarget.lerp(camTargetTo,0.15); applySph();
+
+  if(mainView==='wrist'){camWrist.aspect=mainAspect;camWrist.updateProjectionMatrix();renderer.render(scene,camWrist);}
+  else renderer.render(scene,camera);
+
+  sensorTick=(sensorTick+1)%2; if(sensorTick===0){try{renderSensors();}catch(e){}}
+  computeSensorReadouts(); updateTelemetry(); updateHUD();
+  requestAnimationFrame(tick);
+}
+
+/* ========================== TELEMETRY/HUD ========================== */
+function barColor(v){return v<0.6?'#54f0b8':(v<0.88?'#ffc24b':'#ff5d6c');}
+function updateTelemetry(){
+  var tq=gravityTorques(q),sp=lenv(ball.vel),ke=0.5*ball.mass*sp*sp,F=fk(q),gp=gripWorld(F),cap=dist(ball.pos,gp);
+  var bars=[
+    ['Yaw inertia',Math.min(0.95,Math.abs(qTarget.yaw-q.yaw)/Math.PI),fmt(deg(q.yaw),0)+'\u00b0'],
+    ['Shoulder torque',tq.shoulder/maxTorque.shoulder,fmt(tq.shoulder,2)+' / '+fmt(maxTorque.shoulder,2)+' Nm'],
+    ['Elbow torque',tq.elbow/maxTorque.elbow,fmt(tq.elbow,2)+' / '+fmt(maxTorque.elbow,2)+' Nm'],
+    ['Wrist torque',tq.wrist/maxTorque.wrist,fmt(tq.wrist,2)+' / '+fmt(maxTorque.wrist,2)+' Nm'],
+    ['Ball speed',Math.min(sp/3,1),fmt(sp,2)+' m/s \u00b7 KE '+fmt(ke,2)+' J'],
+    ['Gripper capture',Math.max(0,1-cap/0.12),fmt(cap,3)+' m']
+  ];
+  var html=bars.map(function(b){var v=clamp(b[1],0,1);return '<div class="meter"><div class="meter-title"><span>'+b[0]+'</span><span class="read">'+b[2]+'</span></div><div class="bar"><span style="width:'+(v*100)+'%;background:'+barColor(v)+'"></span></div></div>';}).join('');
+  html+='<div class="meter"><div class="kv"><div class="k">Ground clearance</div><div class="v">'+fmt(minLinkZ(q),3)+' m</div><div class="k">Payload held</div><div class="v">'+(held?fmt(ball.mass,2)+' kg':'\u2014')+'</div><div class="k">End effector</div><div class="v">'+fmt(F.p4.x,2)+', '+fmt(F.p4.y,2)+', '+fmt(F.p4.z,2)+'</div><div class="k">Warnings</div><div class="v" style="color:'+(warnings.length?'#ff5d6c':'#54f0b8')+'">'+(warnings.length?warnings.slice(0,2).join(', '):'none')+'</div></div></div>';
+  $('telemetry').innerHTML=html;
+}
+function updateHUD(){
+  $('hYaw').textContent=fmt(deg(q.yaw),0)+'\u00b0';
+  $('hSho').textContent=fmt(deg(q.shoulder),0)+'\u00b0';
+  $('hElb').textContent=fmt(deg(q.elbow),0)+'\u00b0';
+  $('hWri').textContent=fmt(deg(q.wrist),0)+'\u00b0';
+  $('hGrp').textContent=grip>0.6?(held?'holding':'closed'):'open';
+  var dot=$('statusDot'),txt=$('statusText');
+  if(running){dot.className='dot run';txt.textContent='Running '+Math.min(cmdIndex,queue.length)+'/'+queue.length;}
+  else if(warnings.length){dot.className='dot warn';txt.textContent='Paused \u00b7 '+warnings.slice(0,2).join(', ');}
+  else{dot.className='dot';txt.textContent=statusMsg||'Ready';}
+}
+
+/* ====================== BLUEPRINT PARTS UI ====================== */
+function svgIcon(type){
+  var c='stroke="#38e1ff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"';
+  var f='fill="rgba(56,225,255,.12)" stroke="#38e1ff" stroke-width="2"';
+  var m={
+    base:'<svg viewBox="0 0 60 45"><ellipse cx="30" cy="34" rx="24" ry="7" '+f+'/><rect x="22" y="16" width="16" height="18" rx="3" '+f+'/><path d="M18 16h24" '+c+'/></svg>',
+    yaw:'<svg viewBox="0 0 60 45"><ellipse cx="30" cy="30" rx="20" ry="8" '+f+'/><path d="M14 26a16 6 0 0 0 32 0" '+c+'/><path d="M30 22v-9M26 15l4-3 4 3" '+c+'/></svg>',
+    shoulder:'<svg viewBox="0 0 60 45"><circle cx="16" cy="30" r="9" '+f+'/><path d="M23 27 L48 13" '+c+'/><circle cx="48" cy="13" r="4" '+f+'/></svg>',
+    elbow:'<svg viewBox="0 0 60 45"><path d="M8 31 L28 17 L52 26" '+c+'/><circle cx="28" cy="17" r="7" '+f+'/></svg>',
+    wrist:'<svg viewBox="0 0 60 45"><path d="M8 26 L34 20 L50 12" '+c+'/><circle cx="34" cy="20" r="6" '+f+'/><path d="M48 7v10" '+c+'/></svg>',
+    gripper:'<svg viewBox="0 0 60 45"><path d="M8 23h28" '+c+'/><path d="M36 23l13-10M36 23l13 10M49 13l5 4M49 33l5-4" '+c+'/><circle cx="44" cy="23" r="5" fill="#ff8a3d"/></svg>',
+    camera:'<svg viewBox="0 0 60 45"><rect x="8" y="12" width="26" height="18" rx="3" '+f+'/><circle cx="21" cy="21" r="5" '+c+'/><path d="M34 18l15-8v22l-15-8" '+c+'/></svg>',
+    controller:'<svg viewBox="0 0 60 45"><rect x="10" y="9" width="40" height="27" rx="4" '+f+'/><path d="M17 16h10M17 22h20M17 28h8M43 14v18" '+c+'/><circle cx="43" cy="18" r="2" fill="#54f0b8"/><circle cx="43" cy="27" r="2" fill="#ffc24b"/></svg>'
+  };
+  return m[type]||m.base;
+}
+var parts=[
+ {id:'base',title:'Base plate & feet',desc:'Alloy/ply plate, rubber feet, bolted bearing mount',svg:'base',detail:'BASE PLATE & FEET\n\nA wide, heavy base keeps the arm from tipping during fast moves. Bolt a slewing/lazy-Susan bearing to a plywood or aluminium plate and add rubber feet.\n\nWhy it matters: yaw inertia and throw recoil try to spin and rock the whole machine. Wider + heavier = steadier. Mount the emergency-stop here.'},
+ {id:'yaw',title:'Yaw turntable',desc:'Slewing ring + yaw servo; gives 3D reach',svg:'yaw',detail:'YAW TURNTABLE\n\nThe turntable rotates the whole arm about vertical. Drive it from a servo below the deck via direct horn, belt, or gear.\n\nGravity torque about yaw is ~0, but inertia is real during a throw. Keep the column short and stiff so the shoulder axis does not wobble.'},
+ {id:'shoulder',title:'Shoulder joint',desc:'Highest-torque pitch joint; use reduction',svg:'shoulder',detail:'SHOULDER JOINT\n\nThis is the critical joint: it carries the whole arm plus payload. Use a high-torque smart servo, a gearmotor, or a belt/cycloidal reduction, and add a counterbalance spring if you can.\n\nRule: if the shoulder torque bar in telemetry goes red, shorten links or add reduction before building.'},
+ {id:'elbow',title:'Elbow link',desc:'Second pitch joint; lighter, still loaded',svg:'elbow',detail:'ELBOW LINK\n\nThe elbow carries the forearm, wrist, gripper and ball. Support the joint with bearings on both sides, not one lonely servo horn.\n\nBuildable trick: place the elbow actuator near the shoulder and drive the elbow by belt or cable to cut distal weight and inertia.'},
+ {id:'wrist',title:'Wrist pitch',desc:'Aims the gripper; sets release angle',svg:'wrist',detail:'WRIST PITCH\n\nThe wrist sets the gripper approach and release angle. Keep it light. The simulator enforces a table plane so the wrist and ball cannot pass through it.\n\nFor a throw, opening the jaws transfers the gripper\u2019s current velocity to the ball \u2014 watch the predicted arc.'},
+ {id:'gripper',title:'Parallel-jaw gripper',desc:'Two foam-padded fingers capture the ball',svg:'gripper',detail:'PARALLEL-JAW GRIPPER\n\nA small two-finger servo gripper with soft foam pads. Capture happens only when the jaws are closing and the ball centre is inside the capture radius.\n\nTune jaw spacing so the ball is held by gentle compression, never crushed or wedged.'},
+ {id:'camera',title:'Camera sensors',desc:'Overhead + wrist USB cameras',svg:'camera',detail:'CAMERA SENSORS\n\nCamera A (overhead) frames the table, ball and target zone. Camera B (wrist) looks down the gripper axis for final alignment and a lock signal.\n\nBoth panels render the real 3D scene. A hardware build would use UVC cameras with OpenCV, AprilTags, or colour-blob tracking.'},
+ {id:'controller',title:'Controller & power',desc:'MCU, servo driver, separate supply, E-stop',svg:'controller',detail:'CONTROLLER & POWER\n\nA microcontroller runs the program; a servo driver or smart-servo bus drives the joints. NEVER power servos from the MCU \u2014 use a separate high-current supply with a common ground, an inline fuse and an emergency stop.\n\nBeginner: Arduino + PCA9685. Intermediate: Pololu Maestro. Advanced: Dynamixel bus with feedback.'}
+];
+var activePart=null;
+function setActivePart(id){activePart=id;document.querySelectorAll('.part').forEach(function(d){d.classList.toggle('active',d.dataset.id===id);});}
+function frameOnPart(tag){
+  var c=new THREE.Vector3(),n=0,wp=new THREE.Vector3();
+  scene.updateMatrixWorld(true);
+  partMeshes.forEach(function(m){if(m.userData.part===tag){m.getWorldPosition(wp);c.add(wp);n++;}});
+  if(n){c.multiplyScalar(1/n);camTargetTo.copy(c);sphTo.r=0.5;userInteracted();if(mainView==='wrist'){mainView='orbit';markViewBtn('iso');}}
+}
+function selectPart(p){setActivePart(p.id);$('partDetail').textContent=p.detail;applyHighlight(p.id);frameOnPart(p.id);}
+(function initParts(){
+  var host=$('parts');host.innerHTML='';
+  parts.forEach(function(p){
+    var d=document.createElement('div');d.className='part';d.dataset.id=p.id;
+    d.innerHTML=svgIcon(p.svg)+'<div><div class="ptitle">'+p.title+'</div><div class="pdesc">'+p.desc+'</div></div>';
+    d.onclick=function(){selectPart(p);};
+    host.appendChild(d);
+  });
+})();
+
+/* ============================ BOM ============================ */
+var bom={
+ starter:[
+  ['CONTROL','Arduino UNO R4 WiFi','RA4M1 32-bit \u00b7 USB-C \u00b7 Wi-Fi/BLE','Friendly first controller; runs the JSON interpreter.','https://store-usa.arduino.cc/products/uno-r4-wifi',1,27.5],
+  ['DRIVER','Adafruit PCA9685 16-ch PWM/servo driver','I2C \u00b7 16 ch \u00b7 12-bit','Drives all five servos over two I2C pins; chainable.','https://www.adafruit.com/product/815',1,14.95],
+  ['SERVO','DS3235 35 kg\u00b7cm digital servo \u00d72','\u2248 3.4 N\u00b7m @8.4V \u00b7 metal gear','Shoulder + elbow. Coreless, metal-gear, strong for the price.','https://www.amazon.com/DIYmall-Digital-Coreless-Waterproof-Steering/dp/B0CCNFQC6S',2,19],
+  ['SERVO','Standard metal-gear servo (MG996R class) \u00d72','\u2248 10 kg\u00b7cm \u00b7 4.8\u20137.2V','Yaw + wrist; lighter joints don\u2019t need the big servos.','https://www.adafruit.com/product/1142',2,11],
+  ['GRIPPER','Metal 2-finger claw + servo','aluminium jaws \u00b7 foam-pad ready','Add foam pads so a soft ball is held, not crushed.','https://www.amazon.com/Mechanical-Robotics-Accessory-Raspberry-Education/dp/B09KL42BT9',1,16],
+  ['FRAME','Lazy-Susan bearing, alloy channel, plywood, M3/M4 + bearings','100 mm turntable \u00b7 fasteners','Light + stiff beats heavy + powerful. Buy locally where you can.','#readme',1,40],
+  ['POWER','6 V 10 A supply + inline fuse + E-stop switch','separate servo rail \u00b7 common ground','Never power servos from the MCU. Fuse it; wire an E-stop.','#readme',1,24],
+  ['PAYLOAD','Foam / ping-pong balls (set)','\u2264 100 g \u00b7 r \u2248 35 mm','Start light and slow. The ball is the only thing that should fly.','#readme',1,6]
+ ],
+ sensor:[
+  ['CONTROL','Arduino UNO R4 WiFi (+ Raspberry Pi for vision)','MCU drives motion, Pi runs OpenCV','Vision pipelines run better on a Pi/PC; MCU still drives motion.','https://store-usa.arduino.cc/products/uno-r4-wifi',1,27.5],
+  ['DRIVER','Pololu Mini Maestro 12-ch USB servo controller','scriptable \u00b7 USB/serial','Clean PC/serial servo control with built-in sequencing.','https://www.pololu.com/product/1352',1,29.95],
+  ['SERVO','Hiwonder LX-16A serial bus servo \u00d74','position + load feedback \u00b7 daisy-chain','Feedback servos report angle and load \u2014 great for a lab.','https://www.hiwonder.com/products/lx-16a',4,19],
+  ['GRIPPER','Hiwonder metal picking gripper','aluminium \u00b7 parallel grip','Sturdy parallel jaws; add foam for the ball.','https://www.hiwonder.com/products/metal-picking-gripper',1,22],
+  ['CAMERA','Arducam UVC USB camera module \u00d72','UVC \u00b7 overhead + wrist','One fixed overhead, one wrist-mounted; standard webcam drivers.','https://www.arducam.com/uvc-usb-camera-module.html',2,30],
+  ['SENSOR','Adafruit HC-SR04 ultrasonic distance sensor','2\u2013400 cm \u00b7 backup range','Cheap fallback for table/ball distance when vision is unsure.','https://www.adafruit.com/product/3942',1,3.95],
+  ['POWER','7.4 V 15 A supply + fuse + E-stop + ground bus','common-ground servo rail','Separate, current-limited servo power; tie all grounds together.','#readme',1,32]
+ ],
+ pro:[
+  ['SERVO','Dynamixel XM430-W350-T (shoulder)','4.1 N\u00b7m stall \u00b7 contactless encoder \u00b7 12V','The throwing joint. Position/velocity/current control + feedback.','https://www.robotis.us/dynamixel-xm430-w350-t/',1,310],
+  ['SERVO','Dynamixel XL330-M288-T \u00d73','0.52 N\u00b7m \u00b7 18 g \u00b7 5V \u00b7 compact','Elbow, wrist, yaw. Tiny, light smart servos with feedback.','https://www.robotis.us/dynamixel-xl330-m288-t/',3,24],
+  ['DRIVER','Dynamixel U2D2 + power hub','USB\u2194TTL/RS-485 \u00b7 bus power','Talks to the whole Dynamixel chain from a PC.','https://www.robotis.us/u2d2/',1,60],
+  ['CAMERA','Arducam global-shutter USB camera \u00d72','global shutter \u00b7 no motion smear','Global shutter beats rolling shutter for a fast-moving arm.','https://www.arducam.com/uvc-usb-camera-module.html',2,70],
+  ['FRAME','Belt / cycloidal reduction + counterbalance spring','torque multiplier \u00b7 gravity assist','Make the shoulder mechanically strong before adding speed.','#readme',1,55],
+  ['SAFETY','Polycarbonate shield + E-stop + current-limited PSU','required before real throws','Simulate first. Keep humans out of the swing plane.','#readme',1,90]
+ ]
+};
+function renderBOM(tier){
+  tier=tier||'starter';
+  var items=bom[tier], total=0, count=0;
+  $('bomList').innerHTML=items.map(function(it){
+    var tag=it[0],name=it[1],spec=it[2],desc=it[3],url=it[4],qty=it[5],price=it[6];
+    total+=qty*price; count+=qty;
+    var link=url.charAt(0)==='#'?('<a href="#" data-readme="1">'+name+'</a>'):('<a href="'+url+'" target="_blank" rel="noopener">'+name+'</a>');
+    var qtxt=qty>1?(' <span class="qty">\u00d7'+qty+'</span>'):'';
+    return '<div class="bom-item"><div class="bom-top"><div><span class="tag">'+tag+'</span><div class="bom-name">'+link+qtxt+'</div></div><div class="price">$'+(qty*price).toFixed(2)+'</div></div><div class="spec">'+spec+'</div><div class="bom-desc">'+desc+'</div></div>';
+  }).join('');
+  $('bomSub').innerHTML='<span>'+count+' parts \u00b7 approx build cost</span><b>\u2248 $'+Math.round(total)+'</b>';
+}
+renderBOM('starter');
+document.querySelectorAll('.tab').forEach(function(b){b.onclick=function(){document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('active');});b.classList.add('active');renderBOM(b.dataset.tier);};});
+$('bomList').addEventListener('click',function(e){var a=e.target.closest('a[data-readme]');if(a){e.preventDefault();$('readmeModal').classList.add('show');}});
+
+
+/* ===================== POSE TEACHER + BASKET ===================== */
+var cursor=v3(0.32,0.10,0.12);
+var BALL0=v3(cursor.x,cursor.y,link.rBall);
+function reachable(x,y,z){z=Math.max(z,link.rBall);var tries=[-90,-60,-30,0,30];for(var i=0;i<tries.length;i++){var qq=inverseGoto(x,y,z,tries[i]),F=fk(qq);if(Math.hypot(F.p4.x-x,F.p4.y-y,F.p4.z-z)<0.02 && minLinkZ(qq)>-0.001)return true;}return false;}
+function clampToReach(p){var z=Math.max(p.z,link.rBall);var r=Math.hypot(p.x,p.y);if(r<1e-4)return v3(0.30,0,z);var ux=p.x/r,uy=p.y/r,rr=clamp(r,0.20,0.44);var pp=v3(ux*rr,uy*rr,z);for(var k=0;k<12 && !reachable(pp.x,pp.y,pp.z);k++)pp.z=Math.min(0.22,pp.z+0.014);return pp;}
+function rnd(v){return Math.round(v*1000)/1000;}
+
+/* reach dome (kinesphere) */
+var showReach=false;
+var reachDome=new THREE.Mesh(new THREE.SphereGeometry(link.L1+link.L2+link.L3,40,24,0,TAU,0,Math.PI*0.52),new THREE.MeshBasicMaterial({color:0x38e1ff,wireframe:true,transparent:true,opacity:0.10}));
+reachDome.position.set(0,link.baseH,0); reachDome.visible=false; scene.add(reachDome);
+
+var basketGroup;
+/* basket (drop target) — draggable; sits centred on its violet target ring */
+(function(){
+  var bg=new THREE.Group(); basketGroup=bg;
+  var wall=new THREE.Mesh(new THREE.CylinderGeometry(BASKET.wall,BASKET.wall*0.9,BASKET.rimZ,40,1,true),new THREE.MeshStandardMaterial({color:0xb69bff,metalness:0.35,roughness:0.45,transparent:true,opacity:0.42,side:THREE.DoubleSide,envMap:scene.environment,envMapIntensity:0.6}));
+  wall.position.set(0,BASKET.rimZ/2,0); wall.receiveShadow=true; bg.add(wall);
+  var floor=new THREE.Mesh(new THREE.CircleGeometry(BASKET.wall*0.9,40),new THREE.MeshStandardMaterial({color:0x2a2440,metalness:0.3,roughness:0.6}));
+  floor.rotation.x=-Math.PI/2; floor.position.set(0,BASKET.floorZ,0); floor.receiveShadow=true; bg.add(floor);
+  var rim=new THREE.Mesh(new THREE.TorusGeometry(BASKET.wall,0.004,12,44),new THREE.MeshStandardMaterial({color:0xc7b3ff,emissive:0x4a2a7a,emissiveIntensity:0.45,metalness:0.6,roughness:0.3}));
+  rim.rotation.x=Math.PI/2; rim.position.set(0,BASKET.rimZ,0); bg.add(rim);
+  for(var i=0;i<12;i++){var a=i/12*TAU;var bar=new THREE.Mesh(new THREE.CylinderGeometry(0.0017,0.0017,BASKET.rimZ,8),new THREE.MeshStandardMaterial({color:0x9a86d8,metalness:0.5,roughness:0.4}));bar.position.set(Math.cos(a)*BASKET.wall,BASKET.rimZ/2,Math.sin(a)*BASKET.wall);bar.castShadow=true;bg.add(bar);}
+  var base=new THREE.Mesh(new THREE.CylinderGeometry(BASKET.wall*0.5,BASKET.wall*0.62,0.01,28),new THREE.MeshStandardMaterial({color:0x4a3f7a,metalness:0.4,roughness:0.5}));
+  base.position.set(0,0.005,0); bg.add(base);
+  /* the basket circle: a violet target ring on the table, the drop-side twin of the cyan ring under the ball */
+  var circ=new THREE.Mesh(new THREE.RingGeometry(BASKET.wall+0.013,BASKET.wall+0.028,72),new THREE.MeshBasicMaterial({color:0xb69bff,transparent:true,opacity:0.9,side:THREE.DoubleSide,depthWrite:false}));
+  circ.rotation.x=-Math.PI/2; circ.position.y=0.0013; bg.add(circ);
+  var circFill=new THREE.Mesh(new THREE.CircleGeometry(BASKET.wall+0.013,48),new THREE.MeshBasicMaterial({color:0xb69bff,transparent:true,opacity:0.07,depthWrite:false}));
+  circFill.rotation.x=-Math.PI/2; circFill.position.y=0.001; bg.add(circFill);
+  bg.position.set(BASKET.x,0,-BASKET.y);
+  scene.add(bg);
+})();
+
+/* pose keyframes */
+var poses=[]; var selPose=-1;
+function readPose(){return {yaw:+$('jYaw').value,shoulder:+$('jSho').value,elbow:+$('jElb').value,wrist:+$('jWri').value,grip:(+$('jGrp').value)/100,dur:+$('jDur').value};}
+function updateSliderLabels(){
+  $('jvYaw').textContent=Math.round($('jYaw').value)+'\u00b0';
+  $('jvSho').textContent=Math.round($('jSho').value)+'\u00b0';
+  $('jvElb').textContent=Math.round($('jElb').value)+'\u00b0';
+  $('jvWri').textContent=Math.round($('jWri').value)+'\u00b0';
+  $('jvGrp').textContent=Math.round($('jGrp').value)+'%';
+  $('jvDur').textContent=(+$('jDur').value).toFixed(2)+'s';
+}
+function setQFromSliders(){qTarget=clampAngles({yaw:rad(+$('jYaw').value),shoulder:rad(+$('jSho').value),elbow:rad(+$('jElb').value),wrist:rad(+$('jWri').value)});gripTarget=(+$('jGrp').value)/100;}
+['jYaw','jSho','jElb','jWri','jGrp'].forEach(function(id){$(id).addEventListener('input',function(){updateSliderLabels();if(!running)setQFromSliders();});});
+$('jDur').addEventListener('input',updateSliderLabels);
+
+function renderPoseList(){
+  var host=$('poseList');
+  if(!poses.length){host.innerHTML='<div class="wpempty">No poses yet. Pose the arm with the sliders and press <b>Save pose</b> \u2014 or tap <b>Pick \u2192 basket</b>.</div>';return;}
+  host.innerHTML=poses.map(function(p,i){
+    var closed=p.grip>0.5, col=closed?'#54f0b8':'#38e1ff';
+    var jt='S'+Math.round(p.shoulder)+' E'+Math.round(p.elbow)+' W'+Math.round(p.wrist);
+    return '<div class="wprow'+(i===selPose?' sel':'')+'" data-i="'+i+'"><div class="wpidx" style="color:'+col+'">'+(i+1)+'</div><div class="wpmeta"><span class="act" style="color:'+col+'">grip '+Math.round(p.grip*100)+'%</span><span class="seg">'+jt+'</span><span class="seg">'+p.dur.toFixed(1)+'s</span></div><div class="rowbtns"><button data-i="'+i+'" data-a="up">\u2191</button><button data-i="'+i+'" data-a="dn">\u2193</button><button class="del" data-i="'+i+'" data-a="del">\u2715</button></div></div>';
+  }).join('');
+  Array.prototype.forEach.call(host.querySelectorAll('.wprow'),function(r){r.onclick=function(e){if(e.target.closest('.rowbtns'))return;selectPose(+r.dataset.i);};});
+  Array.prototype.forEach.call(host.querySelectorAll('.rowbtns button'),function(b){b.onclick=function(e){e.stopPropagation();var i=+b.dataset.i,a=b.dataset.a;
+    if(a==='del'){poses.splice(i,1);if(selPose>=poses.length)selPose=poses.length-1;}
+    else if(a==='up'&&i>0){var t=poses[i];poses[i]=poses[i-1];poses[i-1]=t;selPose=i-1;}
+    else if(a==='dn'&&i<poses.length-1){var t2=poses[i];poses[i]=poses[i+1];poses[i+1]=t2;selPose=i+1;}
+    renderPoseList();syncJSON();};});
+}
+function selectPose(i){selPose=i;var p=poses[i];$('jYaw').value=p.yaw;$('jSho').value=p.shoulder;$('jElb').value=p.elbow;$('jWri').value=p.wrist;$('jGrp').value=Math.round(p.grip*100);$('jDur').value=p.dur;updateSliderLabels();if(!running)setQFromSliders();renderPoseList();}
+$('savePose').onclick=function(){poses.push(readPose());selPose=poses.length-1;renderPoseList();syncJSON();statusMsg='Pose '+poses.length+' saved';};
+
+/* per-frame edit updates (called from loop) */
+function editFrame(){
+  puckGroup.position.set(cursor.x,0,-cursor.y);
+  puckGroup.visible=(mainView!=='wrist');
+  reachDome.visible=showReach;
+  if(running){$('jYaw').value=Math.round(deg(q.yaw));$('jSho').value=Math.round(deg(q.shoulder));$('jElb').value=Math.round(deg(q.elbow));$('jWri').value=Math.round(deg(q.wrist));$('jGrp').value=Math.round(grip*100);updateSliderLabels();}
+  if(CUR.active && running && warnings.indexOf('basket hit')>=0)curriculumFail();
+  if(CUR.active && !running && !activeCmd){
+    if(CUR.resumeAt && performance.now()<CUR.resumeAt){/* hold briefly so the failed trial is visible */}
+    else{CUR.resumeAt=0;curriculumStep();}
+  }
+}
+
+/* JSON round-trip (joint poses) */
+function compilePoses(){return poses.map(function(p){return {cmd:'move',yaw:Math.round(p.yaw),shoulder:Math.round(p.shoulder),elbow:Math.round(p.elbow),wrist:Math.round(p.wrist),grip:rnd(p.grip),duration:p.dur};});}
+function decompilePoses(cmds){
+  var out=[], pg=0;
+  cmds.forEach(function(c){
+    if(c.cmd==='move'){var last=out.length?out[out.length-1]:{yaw:0,shoulder:55,elbow:35,wrist:-40};var g=(typeof c.grip==='number')?c.grip:pg;pg=g;
+      out.push({yaw:(c.yaw!==undefined?c.yaw:last.yaw),shoulder:(c.shoulder!==undefined?c.shoulder:last.shoulder),elbow:(c.elbow!==undefined?c.elbow:last.elbow),wrist:(c.wrist!==undefined?c.wrist:last.wrist),grip:g,dur:c.duration||0.6});}
+    else if(c.cmd==='goto'||c.cmd==='line'||c.cmd==='arc'){var qq=inverseGoto(c.x||0,c.y||0,Math.max(c.z||0.12,0.04),c.wrist||0);out.push({yaw:deg(qq.yaw),shoulder:deg(qq.shoulder),elbow:deg(qq.elbow),wrist:deg(qq.wrist),grip:pg,dur:c.duration||0.7});}
+    else if(c.cmd==='grip'){pg=((c.state||'open')==='close')?1:0;if(out.length)out[out.length-1].grip=pg;}
+    else if(c.cmd==='wait'){if(out.length){var l=out[out.length-1];out.push({yaw:l.yaw,shoulder:l.shoulder,elbow:l.elbow,wrist:l.wrist,grip:l.grip,dur:c.duration||0.4});}}
+    else if(c.cmd==='ball'){ball.pos=clampToReach(v3(c.x||0.24,c.y||0.1,Math.max(c.z||0.04,link.rBall)));ball.vel=v3();ball.mass=c.mass||ball.mass;mass.ball=ball.mass;held=false;}
+  });
+  return out;
+}
+function syncJSON(){$('jsonProgram').value=JSON.stringify({name:'taught poses',units:'degrees/seconds',commands:compilePoses()},null,2);}
+function loadJSONText(txt){var obj;try{obj=JSON.parse(txt);}catch(e){alert('JSON parse error: '+e.message);return false;}if(!obj.commands||!Array.isArray(obj.commands)){alert('JSON needs a "commands" array.');return false;}poses=decompilePoses(obj.commands);selPose=-1;renderPoseList();return true;}
+$('loadJson').onclick=function(){if(loadJSONText($('jsonProgram').value))statusMsg='JSON loaded';};
+$('exportJson').onclick=function(){syncJSON();statusMsg='Exported to JSON';};
+
+/* playback */
+function play(){if(running){running=false;statusMsg='Paused';return;}if(!poses.length){statusMsg='No poses to play';return;}queue=compilePoses();cmdIndex=0;activeCmd=null;running=true;statusMsg='Playing';}
+$('play').onclick=play;
+function homeSliders(){$('jYaw').value=0;$('jSho').value=55;$('jElb').value=35;$('jWri').value=-40;$('jGrp').value=0;$('jDur').value=0.8;updateSliderLabels();}
+function reset(){
+  q={yaw:0,shoulder:55*DEG,elbow:35*DEG,wrist:-40*DEG};
+  qTarget={yaw:q.yaw,shoulder:q.shoulder,elbow:q.elbow,wrist:q.wrist};
+  grip=0;gripTarget=0;held=false;
+  ball={pos:clampToReach(BALL0),vel:v3(),mass:parseFloat($('bm').value)||0.09}; mass.ball=ball.mass;
+  ballTrail.length=0; running=false; cmdIndex=0; activeCmd=null; gripVelSm=v3(); statusMsg='Ready'; homeSliders();
+}
+$('reset').onclick=reset;
+
+/* scene */
+$('bm').addEventListener('input',function(){$('mVal').textContent=parseFloat(this.value).toFixed(2)+'kg';mass.ball=parseFloat(this.value);if(!held)ball.mass=mass.ball;});
+$('placeBall').onclick=function(){ball.pos=clampToReach(v3(cursor.x,cursor.y,link.rBall));ball.vel=v3();held=false;ballTrail.length=0;};
+$('resetBall').onclick=function(){ball.pos=clampToReach(BALL0);ball.vel=v3();held=false;ballTrail.length=0;};
+
+/* learn a pick-and-drop into the basket as saved poses, then play it */
+function poseIK(x,y,z,wristDeg,grip,dur){var qq=inverseGoto(x,y,z,wristDeg);return {yaw:deg(qq.yaw),shoulder:deg(qq.shoulder),elbow:deg(qq.elbow),wrist:deg(qq.wrist),grip:grip,dur:dur};}
+/* straight-down pose over the current basket (no ground-raising) — clears the basket at any reachable position */
+function poseDown(z,grip,dur){var qq=ikDown(BASKET.x,BASKET.y,z,-88);return {yaw:deg(qq.yaw),shoulder:deg(qq.shoulder),elbow:deg(qq.elbow),wrist:deg(qq.wrist),grip:grip,dur:dur};}
+function learnPick(){
+  var b=clampToReach(BALL0); ball.pos=v3(b.x,b.y,link.rBall); ball.vel=v3(); held=false; ballTrail.length=0;
+  var mx=(b.x+BASKET.x)/2, my=(b.y+BASKET.y)/2;
+  poses=[
+    poseIK(b.x,b.y,link.rBall+0.13,-35,0,0.9),
+    poseIK(b.x,b.y,link.rBall+0.02,-48,0,0.7),
+    poseIK(b.x,b.y,link.rBall+0.02,-48,1,0.45),
+    poseIK(b.x,b.y,link.rBall+0.17,-22,1,0.7),
+    poseIK(mx,my,0.30,2,1,0.85),
+    poseIK(BASKET.x,BASKET.y,0.30,8,1,0.7),
+    poseIK(BASKET.x,BASKET.y,BASKET.rimZ+0.10,14,1,0.7),
+    poseIK(BASKET.x,BASKET.y,BASKET.rimZ+0.10,14,0,0.5),
+    poseIK(BASKET.x,BASKET.y,0.30,0,0,0.7)
+  ];
+  selPose=-1; renderPoseList(); syncJSON(); play(); statusMsg='Learned pick \u2192 basket';
+}
+$('learnPick').onclick=learnPick;
+
+/* view + toggles */
+document.querySelectorAll('.vbtn[data-view]').forEach(function(b){b.onclick=function(){setView(b.dataset.view);};});
+$('orbitToggle').onclick=function(){autoOrbit=!autoOrbit;this.classList.toggle('on',autoOrbit);if(autoOrbit&&reduceMotion){autoOrbit=false;this.classList.remove('on');}};
+$('trajToggle').onclick=function(){showTraj=!showTraj;this.classList.toggle('on',showTraj);};
+$('reachToggle').onclick=function(){showReach=!showReach;this.classList.toggle('on',showReach);};
+
+/* keyboard */
+addEventListener('keydown',function(e){
+  var tag=(e.target&&e.target.tagName)||''; if(tag==='INPUT'||tag==='TEXTAREA')return;
+  if(e.code==='Space'){e.preventDefault();play();}
+  else if(e.key==='r'||e.key==='R'){reset();}
+  else if(e.key==='s'||e.key==='S'){poses.push(readPose());selPose=poses.length-1;renderPoseList();syncJSON();}
+  else if((e.key==='Delete'||e.key==='Backspace')&&selPose>=0){e.preventDefault();poses.splice(selPose,1);if(selPose>=poses.length)selPose=poses.length-1;renderPoseList();syncJSON();}
+  else if(e.key==='1'){setView('iso');} else if(e.key==='2'){setView('front');}
+  else if(e.key==='3'){setView('side');} else if(e.key==='4'){setView('top');} else if(e.key==='5'){setView('wrist');}
+});
+
+/* LLM prompt */
+$('makePrompt').onclick=function(){
+  var task=$('taskText').value.trim()||'Pick up the ball and drop it into the basket.';
+  $('promptOut').value=`You are programming a small tabletop 4-axis robot arm simulator. Output ONLY valid JSON, no markdown.
+
+Task: ${task}
+
+Each "move" command poses the arm by joint angles (degrees) and the gripper (0 = open, 1 = closed), held for "duration" seconds; the arm eases smoothly from the previous pose.
+{
+  "name": "short name",
+  "units": "degrees/seconds",
+  "commands": [
+    {"cmd":"move", "yaw":0, "shoulder":70, "elbow":40, "wrist":-20, "grip":0, "duration":0.8},
+    {"cmd":"move", "shoulder":96, "elbow":52, "wrist":-46, "grip":0, "duration":0.6},
+    {"cmd":"move", "grip":1, "duration":0.4},
+    {"cmd":"move", "shoulder":62, "elbow":30, "wrist":-12, "grip":1, "duration":0.7},
+    {"cmd":"move", "grip":0, "duration":0.4}
+  ]
+}
+
+Rules:
+- Joint limits: yaw -165..165, shoulder 5..150, elbow -145..145, wrist -105..105 degrees.
+- Omit a joint to keep its previous value. Larger shoulder/elbow reach the arm out and down.
+- Close the grip (1) while the jaws are on the ball to pick it up; open (0) to release.
+- Durations 0.2..2.5 s. Output only the JSON.
+- Advanced: {"cmd":"goto","x":..,"y":..,"z":..,"wrist":..,"duration":..} moves to a Cartesian point (metres) instead of joint angles, if that is easier.`;
+};
+$('copyPrompt').onclick=function(){if(navigator.clipboard)navigator.clipboard.writeText($('promptOut').value);};
+
+/* readme */
+$('readmeTop').onclick=function(){$('readmeModal').classList.add('show');};
+$('closeReadme').onclick=function(){$('readmeModal').classList.remove('show');};
+$('readmeModal').onclick=function(e){if(e.target===$('readmeModal'))$('readmeModal').classList.remove('show');};
+
+/* resize */
+function resize(){
+  var w=stage.clientWidth||(stage.parentElement?stage.parentElement.clientWidth:0);
+  var h=stage.clientHeight||(stage.parentElement?stage.parentElement.clientHeight:0);
+  if(w&&h){renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();mainAspect=w/h;}
+  [camAc,camBc].forEach(function(c){var r=c.getBoundingClientRect();if(r.width){c.width=Math.max(2,Math.round(r.width*1.4));c.height=Math.max(2,Math.round(r.height*1.4));}});
+}
+addEventListener('resize',resize);
+if(window.ResizeObserver){try{new ResizeObserver(resize).observe(stage.parentElement||stage);}catch(e){}}
+
+/* curriculum learning: master grab, then move, then release as sub-skills,
+   keep the refined motion as poses, then run the whole learned skill back as an exam */
+var CUR={active:false,exam:false,lessons:[],i:-1,start:null,resumeAt:0};
+var STAGE_ORDER=['grab','move','release'];
+function cmdIK(x,y,z,w,g,d){var qq=inverseGoto(x,y,z,w);return {cmd:'move',yaw:deg(qq.yaw),shoulder:deg(qq.shoulder),elbow:deg(qq.elbow),wrist:deg(qq.wrist),grip:g,duration:d};}
+/* a move that points the jaws straight down at the current basket (used to demo the failing 'drop into the cup') */
+function downCmd(z,g,d){var qq=ikDown(BASKET.x,BASKET.y,z,-88);return {cmd:'move',yaw:deg(qq.yaw),shoulder:deg(qq.shoulder),elbow:deg(qq.elbow),wrist:deg(qq.wrist),grip:g,duration:d};}
+function poseToCmd(p){return {cmd:'move',yaw:p.yaw,shoulder:p.shoulder,elbow:p.elbow,wrist:p.wrist,grip:p.grip,duration:p.dur};}
+function setStages(active){Array.prototype.forEach.call(document.querySelectorAll('.stage'),function(el){var st=el.dataset.st,ai=STAGE_ORDER.indexOf(active),mi=STAGE_ORDER.indexOf(st);el.classList.remove('fail');el.classList.toggle('on',st===active);el.classList.toggle('done',ai>=0&&mi<ai);});}
+function markStagesDone(){Array.prototype.forEach.call(document.querySelectorAll('.stage'),function(el){el.classList.remove('on');el.classList.add('done');});}
+function clearStages(){Array.prototype.forEach.call(document.querySelectorAll('.stage'),function(el){el.classList.remove('on','done');});}
+function buildCurriculum(){
+  /* pick the ball up from wherever the cyan cursor (and the ball) sit */
+  var b=clampToReach(v3(cursor.x,cursor.y,link.rBall));
+  CUR.start={x:b.x,y:b.y};
+  ball.pos=v3(b.x,b.y,link.rBall); ball.vel=v3(); held=false; ballTrail.length=0;
+  poses=[]; selPose=-1; renderPoseList(); syncJSON();
+  var rB=link.rBall;
+  var A=poseIK(b.x,b.y,rB+0.14,-35,0,0.8);                       /* approach above ball */
+  var D=poseIK(b.x,b.y,rB+0.02,-50,0,0.6);                       /* descend onto ball   */
+  var G={yaw:D.yaw,shoulder:D.shoulder,elbow:D.elbow,wrist:D.wrist,grip:1,dur:0.45}; /* close jaws */
+  var L=poseIK(b.x,b.y,rB+0.18,-22,1,0.7);                       /* lift                */
+  var C=poseDown(0.32,1,0.85);                                   /* carry: centred over the mouth, straight down, high */
+  var Lo=poseDown(0.20,1,0.6);                                   /* lower straight down to just above the rim           */
+  var O={yaw:Lo.yaw,shoulder:Lo.shoulder,elbow:Lo.elbow,wrist:Lo.wrist,grip:0,dur:0.5}; /* release */
+  CUR.lessons=[
+    {st:'grab',label:'Grab \u00b7 trial \u2014 exploring near the ball',rew:0.42,commit:null,cmds:[
+      cmdIK(b.x+0.08,b.y-0.04,rB+0.15,-28,0,0.6), cmdIK(b.x+0.05,b.y-0.02,rB+0.05,-44,0,0.5), cmdIK(b.x,b.y,rB+0.15,-30,0,0.5)]},
+    {st:'grab',label:'Grab \u00b7 refined \u2014 ball captured \u2713',rew:0.96,commit:[A,D,G],cmds:[poseToCmd(A),poseToCmd(D),poseToCmd(G)]},
+    {st:'move',label:'Move \u00b7 trial \u2014 wobbly lift',rew:0.5,commit:null,cmds:[
+      cmdIK(b.x,b.y,rB+0.11,-26,1,0.5), cmdIK(b.x+0.03,b.y+0.02,rB+0.16,-20,1,0.5), cmdIK(b.x,b.y,rB+0.18,-22,1,0.45)]},
+    {st:'move',label:'Move \u00b7 refined \u2014 carried to the basket \u2713',rew:0.93,commit:[L,C],cmds:[poseToCmd(L),poseToCmd(C)]},
+    {st:'release',label:'Release \u00b7 trial \u2014 lowering the jaws into the cup',rew:0.4,commit:null,cmds:[
+      downCmd(0.20,1,0.7), downCmd(0.085,1,0.8)]},
+    {st:'release',label:'Release \u00b7 refined \u2014 dropped from above the rim \u2713',rew:0.97,commit:[Lo,O],cmds:[poseToCmd(Lo),poseToCmd(O)]}
+  ];
+  CUR.i=-1; CUR.exam=false; CUR.resumeAt=0;
+}
+/* advance through the lessons; after the last one, run an exam pass of the saved skill */
+function curriculumStep(){
+  if(CUR.exam){curriculumDone();return;}                         /* exam pass finished       */
+  CUR.i++;
+  if(CUR.i>=CUR.lessons.length){curriculumExam();return;}        /* all sub-skills mastered  */
+  var Ls=CUR.lessons[CUR.i];
+  if(Ls.commit){Ls.commit.forEach(function(p){poses.push(p);});renderPoseList();syncJSON();}
+  queue=Ls.cmds.slice(); cmdIndex=0; activeCmd=null; running=true;
+  $('curStatus').textContent=Ls.label; $('rewFill').style.background=''; $('rewFill').style.width=Math.round(Ls.rew*100)+'%'; setStages(Ls.st);
+}
+/* a trial that rams the basket: stop it, flag the stage red, pause, then move on to the refined attempt */
+function curriculumFail(){
+  running=false; queue=[]; activeCmd=null;
+  var st=(CUR.lessons[CUR.i]||{}).st;
+  Array.prototype.forEach.call(document.querySelectorAll('.stage'),function(el){if(el.dataset.st===st){el.classList.remove('on','done');el.classList.add('fail');}});
+  $('curStatus').textContent='\u2717 Collision with the basket \u2014 trial failed, adjusting the approach \u2026';
+  $('rewFill').style.background='var(--bad)'; $('rewFill').style.width='16%';
+  CUR.resumeAt=performance.now()+1400;
+}
+/* exam: reset the ball to the start, then replay the learned poses straight through */
+function curriculumExam(){
+  CUR.exam=true; markStagesDone();
+  var s=CUR.start||{x:BALL0.x,y:BALL0.y};
+  ball.pos=clampToReach(v3(s.x,s.y,link.rBall)); ball.vel=v3(); held=false; ballTrail.length=0;
+  grip=0; gripTarget=0;
+  queue=compilePoses(); cmdIndex=0; activeCmd=null; running=true;
+  $('curStatus').textContent='Exam \u00b7 running the learned skill end-to-end \u2026'; $('rewFill').style.background=''; $('rewFill').style.width='100%';
+}
+function curriculumDone(){CUR.active=false;CUR.exam=false;running=false;$('curStatus').textContent='Learned the full skill \u2713 \u2014 it now picks, carries & drops on its own. Reset ball, then Play to repeat.';$('rewFill').style.background='';$('rewFill').style.width='100%';markStagesDone();}
+$('learnRun').onclick=function(){if(CUR.active)return;buildCurriculum();CUR.active=true;clearStages();curriculumStep();};
+$('learnStop').onclick=function(){CUR.active=false;CUR.exam=false;CUR.resumeAt=0;running=false;$('rewFill').style.background='';$('curStatus').textContent='Stopped';};
+
+/* START */
+reset(); updateSliderLabels(); setQFromSliders(); renderPoseList(); syncJSON();
+$('mVal').textContent=parseFloat($('bm').value).toFixed(2)+'kg';
+resize(); applySph();
+requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
