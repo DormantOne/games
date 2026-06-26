@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RHC·SIM — Right Heart Catheterization Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#06080d; --panel:#0b0f17; --panel2:#10151f; --bezel:#1a2130;
+    --grid-pink:rgba(255,64,84,.10); --grid-pink-x:rgba(255,64,84,.17);
+    --grid-cool:rgba(110,195,255,.06); --grid-cool-x:rgba(110,195,255,.12);
+    --ecg:#43f581; --ecg-dim:#1d6e3f;
+    --pa:#ffce3a; --pa-dim:#6f5511;
+    --atrial:#46d4ff;
+    --cath:#ff4d6d;
+    --danger:#ff3b4e; --caution:#ffae34; --good:#43f581; --okc:#46d4ff;
+    --text:#e2e8f2; --muted:#7c879a; --faint:#39414f;
+    --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+    --sans:'IBM Plex Sans',ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:
+      radial-gradient(120% 90% at 50% -10%, #0d1320 0%, var(--ink) 60%) fixed;
+      color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+  body{padding:18px 16px 40px;min-height:100vh}
+  .console{max-width:1200px;margin:0 auto}
+
+  /* ---------- device header ---------- */
+  .topbar{display:flex;align-items:center;gap:14px;padding:10px 14px;
+    background:linear-gradient(180deg,var(--panel2),var(--panel));
+    border:1px solid var(--bezel);border-radius:12px 12px 0 0;border-bottom:none}
+  .brand{display:flex;align-items:baseline;gap:9px}
+  .brand b{font-family:var(--mono);font-weight:700;letter-spacing:.06em;font-size:16px;color:#fff}
+  .brand .sub{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+  .topbar .spacer{flex:1}
+  .pill{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:13px;
+    padding:5px 11px;border:1px solid var(--bezel);border-radius:999px;background:#0a0e15;color:var(--muted)}
+  .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--danger);box-shadow:0 0 8px var(--danger);
+    animation:beat 1s ease-in-out infinite}
+  @keyframes beat{0%,100%{transform:scale(.8);opacity:.65}18%{transform:scale(1.25);opacity:1}}
+  .pill b{color:var(--text);font-weight:600}
+  .iconbtn{font-family:var(--mono);font-size:12px;letter-spacing:.04em;color:var(--muted);
+    background:#0a0e15;border:1px solid var(--bezel);border-radius:8px;padding:6px 11px;cursor:pointer}
+  .iconbtn[aria-pressed="true"]{color:var(--ink);background:var(--okc);border-color:var(--okc)}
+  .iconbtn:hover{border-color:#2c3a52}
+
+  /* ---------- alarm banner ---------- */
+  .alarm{display:flex;align-items:center;gap:12px;padding:9px 16px;
+    border-left:1px solid var(--bezel);border-right:1px solid var(--bezel);
+    background:#0a0e15;font-family:var(--mono);font-size:13.5px;letter-spacing:.02em;
+    min-height:42px;transition:background .2s,color .2s}
+  .alarm .badge{font-weight:700;letter-spacing:.14em;font-size:11px;padding:3px 8px;border-radius:5px;
+    text-transform:uppercase;white-space:nowrap}
+  .alarm .msg{flex:1}
+  .alarm.ok{color:var(--muted)} .alarm.ok .badge{background:#16202c;color:var(--muted)}
+  .alarm.good{color:var(--good)} .alarm.good .badge{background:rgba(67,245,129,.15);color:var(--good)}
+  .alarm.caution{color:var(--caution)} .alarm.caution .badge{background:rgba(255,174,52,.16);color:var(--caution)}
+  .alarm.danger{color:#fff;background:rgba(255,59,78,.14)} .alarm.danger .badge{background:var(--danger);color:#fff}
+  .alarm.danger.flash{animation:flash .85s steps(1) infinite}
+  @keyframes flash{50%{background:rgba(255,59,78,.34)}}
+
+  /* ---------- main grid ---------- */
+  .grid{display:grid;grid-template-columns:minmax(0,1.18fr) minmax(0,.92fr);gap:0;
+    border:1px solid var(--bezel);border-top:none;border-radius:0 0 12px 12px;overflow:hidden}
+  .monitor{background:#070a10;padding:14px;border-right:1px solid var(--bezel)}
+  .rightcol{background:linear-gradient(180deg,#090d14,#070a10);padding:14px;display:flex;flex-direction:column;gap:14px}
+
+  /* ---------- trace channels ---------- */
+  .channel{display:grid;grid-template-columns:1fr 128px;gap:0;margin-bottom:12px;
+    border:1px solid #141a26;border-radius:9px;overflow:hidden;background:#05070c}
+  .channel:last-child{margin-bottom:0}
+  .trace-wrap{position:relative}
+  .trace-wrap canvas{display:block;width:100%;height:100%}
+  .chan-tag{position:absolute;left:10px;top:8px;font-family:var(--mono);font-size:11px;
+    letter-spacing:.14em;text-transform:uppercase;opacity:.9}
+  .readout{border-left:1px solid #141a26;padding:8px 10px;display:flex;flex-direction:column;justify-content:center;
+    background:linear-gradient(180deg,#0a0e16,#070a10)}
+  .readout .lab{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  .readout .big{font-family:var(--mono);font-weight:600;line-height:.98;font-variant-numeric:tabular-nums}
+  .readout .unit{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.06em}
+  .ecg-num .big{font-size:46px;color:var(--ecg);text-shadow:0 0 16px rgba(67,245,129,.35)}
+  .pa-num .big{font-size:34px;color:var(--pa);text-shadow:0 0 16px rgba(255,206,58,.3)}
+  .pa-num .mean{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:3px;font-variant-numeric:tabular-nums}
+  .atrial-tint .big{color:var(--atrial);text-shadow:0 0 16px rgba(70,212,255,.3)}
+
+  /* status strip */
+  .status{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:10px;margin-top:2px}
+  .stat{border:1px solid #141a26;border-radius:9px;background:#05070c;padding:9px 11px}
+  .stat .lab{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  .stat .val{font-family:var(--mono);font-size:16px;font-weight:600;margin-top:3px;font-variant-numeric:tabular-nums}
+  #posVal{font-size:14px;letter-spacing:.02em}
+  .depthbar{height:6px;border-radius:4px;background:#10161f;margin-top:8px;overflow:hidden}
+  .depthbar i{display:block;height:100%;width:10%;background:linear-gradient(90deg,var(--atrial),var(--pa),var(--cath));transition:width .08s linear}
+  .balloon-on{color:var(--cath)!important}
+
+  /* ---------- schematic ---------- */
+  .heart{border:1px solid #141a26;border-radius:11px;background:
+    radial-gradient(120% 100% at 60% 25%, #0c121d, #06080d);padding:6px;position:relative}
+  .heart svg{width:100%;height:auto;display:block}
+  .heart .cap{position:absolute;left:14px;bottom:10px;font-family:var(--mono);font-size:10px;
+    letter-spacing:.13em;text-transform:uppercase;color:var(--faint)}
+  .chamber{fill-opacity:.06;stroke:#2a3447;stroke-width:1.4;transition:fill-opacity .25s,stroke .25s,filter .25s}
+  .vessel{fill:none;stroke:#2a3447;stroke-width:9;stroke-linecap:round;transition:stroke .25s,filter .25s}
+  .lbl{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.06em;fill:#56627a;text-transform:uppercase}
+  .lbl.dim{font-size:10px;fill:#3f4a5e}
+  .route{fill:none;stroke:#243049;stroke-width:2.2;stroke-dasharray:2 6;opacity:.6}
+  .cath{fill:none;stroke:var(--cath);stroke-width:4.4;stroke-linecap:round;
+    filter:drop-shadow(0 0 6px rgba(255,77,109,.55))}
+  .tip{fill:#fff;filter:drop-shadow(0 0 6px var(--cath))}
+  .bln{fill:rgba(255,210,225,.32);stroke:rgba(255,120,150,.8);stroke-width:1.4;
+    filter:drop-shadow(0 0 7px rgba(255,90,130,.6));transition:r .18s ease}
+
+  /* ---------- controls ---------- */
+  .deck{border:1px solid #141a26;border-radius:11px;background:#070a10;padding:13px}
+  .deck h3{margin:0 0 11px;font-family:var(--mono);font-size:11px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--muted);font-weight:600}
+  .move{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px}
+  .btn{font-family:var(--mono);font-weight:600;font-size:13px;letter-spacing:.05em;color:var(--text);
+    background:linear-gradient(180deg,#141b27,#0d121b);border:1px solid #28324a;border-radius:9px;
+    padding:13px 10px;cursor:pointer;user-select:none;touch-action:manipulation;transition:transform .05s,border-color .15s,background .15s}
+  .btn:hover{border-color:#3a486a}
+  .btn:active,.btn.held{transform:translateY(1px);background:#1a2435;border-color:var(--okc);
+    box-shadow:inset 0 0 0 1px rgba(70,212,255,.25)}
+  .btn .arrow{font-size:15px;margin:0 4px}
+  .btn.balloon[aria-pressed="true"]{background:linear-gradient(180deg,#3a1622,#2a0f19);border-color:var(--cath);color:#ffd5df;
+    box-shadow:inset 0 0 14px rgba(255,77,109,.25)}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .btn.ghost{background:#0a0e15;border-color:#202a3d;color:var(--muted);font-size:12px;padding:11px 10px}
+  .btn:focus-visible{outline:2px solid var(--okc);outline-offset:2px}
+  .hint{font-family:var(--mono);font-size:11px;color:var(--faint);margin-top:11px;line-height:1.5}
+  kbd{font-family:var(--mono);background:#10161f;border:1px solid #222c3f;border-bottom-width:2px;
+    border-radius:4px;padding:0 5px;font-size:10.5px;color:var(--muted)}
+
+  /* guide */
+  details.guide{margin-top:14px;border:1px solid var(--bezel);border-radius:11px;background:#080c12;overflow:hidden}
+  details.guide>summary{cursor:pointer;list-style:none;padding:12px 16px;font-family:var(--mono);
+    font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
+  details.guide>summary::-webkit-details-marker{display:none}
+  details.guide>summary::before{content:"▸";color:var(--okc);transition:transform .2s}
+  details.guide[open]>summary::before{transform:rotate(90deg)}
+  .guide-body{padding:4px 18px 18px;font-size:13.5px;line-height:1.62;color:#c3ccda}
+  .guide-body p{margin:.5em 0}
+  .guide-body b{color:var(--text)}
+  table.ref{width:100%;border-collapse:collapse;margin:12px 0 4px;font-size:12.5px}
+  table.ref th,table.ref td{text-align:left;padding:6px 8px;border-bottom:1px solid #141c28}
+  table.ref th{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  table.ref td:first-child{color:var(--text);font-weight:600}
+  table.ref td.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+  .disc{font-size:11.5px;color:var(--faint);line-height:1.5;margin-top:14px;text-align:center}
+
+  /* ---------- diagnostic case panel ---------- */
+  .case-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 13px}
+  .case-status{flex:1;min-width:200px;font-family:var(--mono);font-size:12.5px;color:#c3ccda;line-height:1.5}
+  .case-status b{color:#fff}
+  .btn.sm{padding:9px 13px;font-size:12px;flex:0 0 auto}
+  .btn.case-new{background:linear-gradient(180deg,#16233a,#0e1626);border-color:#28406a;color:#cfe4ff}
+  .btn.case-new:hover{border-color:var(--okc)}
+  .dx-data{display:grid;grid-template-columns:repeat(auto-fit,minmax(74px,1fr));gap:8px;margin:4px 0 12px}
+  .dx-cell{border:1px solid #141c28;border-radius:8px;background:#05070c;padding:7px 9px}
+  .dx-cell .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .dx-cell .v{font-family:var(--mono);font-size:16px;font-weight:600;margin-top:3px;font-variant-numeric:tabular-nums;color:var(--text)}
+  .dx-cell.flow .v{color:var(--atrial)}
+  .dx-cell.calc .v{color:var(--pa)}
+  .dx-hint{font-family:var(--mono);font-size:11px;color:var(--faint);margin:0 0 14px;line-height:1.55}
+  .dx-hint b{color:var(--muted)}
+  .dx-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .dxbtn{font-family:var(--mono);font-size:12px;font-weight:500;letter-spacing:.01em;text-align:left;color:var(--text);
+    background:#0a0e15;border:1px solid #222c3f;border-radius:8px;padding:10px 11px;cursor:pointer;
+    transition:border-color .15s,background .15s,opacity .15s}
+  .dxbtn:hover:not(:disabled){border-color:#3a486a;background:#0d1320}
+  .dxbtn:disabled{cursor:default;opacity:.5}
+  .dxbtn.correct{border-color:var(--good);background:rgba(67,245,129,.14);color:#bdf6cf;opacity:1}
+  .dxbtn.wrong{border-color:var(--danger);background:rgba(255,59,78,.13);color:#ffc3cb;opacity:1}
+  .dxbtn.reveal{border-color:var(--good);background:rgba(67,245,129,.1);color:#bdf6cf;opacity:1;
+    box-shadow:inset 0 0 0 1px rgba(67,245,129,.3)}
+  .dx-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:11px}
+  .dx-why{display:none;margin-top:13px;border:1px solid #1c2740;border-radius:9px;
+    background:linear-gradient(180deg,#0b1018,#080c12);padding:12px 14px}
+  .dx-why .why-h{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--okc);margin-bottom:8px}
+  .dx-why ul{margin:0 0 10px;padding-left:18px}
+  .dx-why li{font-size:12.5px;line-height:1.55;color:#cbd4e2;margin:3px 0}
+  .dx-why p{margin:0;font-size:13px;line-height:1.62;color:#c3ccda}
+
+  @media (max-width:920px){
+    .grid{grid-template-columns:1fr}
+    .monitor{border-right:none;border-bottom:1px solid var(--bezel)}
+    .ecg-num .big{font-size:38px}.pa-num .big{font-size:30px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .alarm.danger.flash{animation:none;background:rgba(255,59,78,.26)}
+    .pill .dot{animation:none}
+  }
+</style>
+</head>
+<body>
+<div class="console">
+
+  <div class="topbar">
+    <div class="brand"><b>RHC·SIM</b><span class="sub">Hemodynamic Monitor</span></div>
+    <div class="spacer"></div>
+    <div class="pill"><span class="dot"></span>HR <b id="hrPill">78</b></div>
+    <div class="pill">⏱ <b id="clkPill">00:00</b></div>
+    <button class="iconbtn" id="soundBtn" aria-pressed="false" title="Toggle monitor audio">♪ sound</button>
+  </div>
+
+  <div class="alarm ok" id="alarm" role="status" aria-live="polite">
+    <span class="badge" id="alarmBadge">Standby</span>
+    <span class="msg" id="alarmMsg">All channels nominal. Advance the catheter to begin.</span>
+  </div>
+
+  <div class="grid">
+    <!-- LEFT: monitor -->
+    <div class="monitor">
+      <div class="channel">
+        <div class="trace-wrap" id="ecgWrap">
+          <span class="chan-tag" style="color:var(--ecg)">ECG&nbsp;&nbsp;II</span>
+          <canvas id="ecg"></canvas>
+        </div>
+        <div class="readout ecg-num">
+          <span class="lab">HR</span>
+          <span class="big" id="hrVal">78</span>
+          <span class="unit">bpm</span>
+        </div>
+      </div>
+
+      <div class="channel">
+        <div class="trace-wrap" id="presWrap">
+          <span class="chan-tag" id="presTag" style="color:var(--pa)">PA&nbsp;&nbsp;mmHg</span>
+          <canvas id="pres"></canvas>
+        </div>
+        <div class="readout pa-num" id="presReadout">
+          <span class="lab" id="presLab">PA</span>
+          <span class="big" id="presVal">--</span>
+          <span class="mean" id="presMean">mean --</span>
+        </div>
+      </div>
+
+      <div class="status">
+        <div class="stat">
+          <div class="lab">Catheter tip</div>
+          <div class="val" id="posVal">VENA CAVA</div>
+          <div class="depthbar"><i id="depthFill"></i></div>
+        </div>
+        <div class="stat">
+          <div class="lab">Depth</div>
+          <div class="val"><span id="depthVal">6</span> <span style="font-size:11px;color:var(--muted)">cm</span></div>
+        </div>
+        <div class="stat">
+          <div class="lab">Balloon</div>
+          <div class="val" id="blnVal">DOWN</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: schematic + controls -->
+    <div class="rightcol">
+      <div class="heart">
+        <svg viewBox="0 0 440 430" xmlns="http://www.w3.org/2000/svg" aria-label="Right heart schematic with catheter">
+          <!-- faint aortic arch for context -->
+          <path d="M250,118 C250,70 300,52 332,72 C360,90 360,150 360,196" fill="none" stroke="#1c2433" stroke-width="7" stroke-linecap="round" opacity=".5"/>
+          <text class="lbl dim" x="338" y="64">AO</text>
+
+          <!-- SVC -->
+          <path class="vessel" id="svc" d="M176,16 C176,52 174,82 172,116"/>
+          <text class="lbl dim" x="186" y="40">SVC</text>
+
+          <!-- chambers -->
+          <ellipse class="chamber" id="ch-RA" cx="178" cy="142" rx="48" ry="50"/>
+          <ellipse class="chamber" id="ch-RV" cx="160" cy="256" rx="78" ry="88" transform="rotate(-8 160 256)"/>
+          <!-- PA trunk + right branch as a vessel -->
+          <path class="vessel" id="ch-PA" d="M250,124 C258,116 296,128 342,150 C372,162 398,180 416,196"/>
+          <circle class="chamber" id="ch-WEDGE" cx="404" cy="190" r="13"/>
+
+          <!-- labels -->
+          <text class="lbl" x="150" y="138">RA</text>
+          <text class="lbl" x="130" y="262">RV</text>
+          <text class="lbl" x="276" y="120">PA</text>
+          <text class="lbl dim" x="356" y="214">WEDGE</text>
+
+          <!-- catheter route guide + inserted catheter -->
+          <path class="route" id="route" d="M176,14 C176,50 174,80 172,116 C170,145 176,158 190,172 C214,198 188,256 150,292 C168,262 200,236 220,212 C236,192 244,152 250,124 C258,116 296,128 342,150 C372,162 398,180 416,196"/>
+          <path class="cath" id="cath" d="M176,14 C176,50 174,80 172,116 C170,145 176,158 190,172 C214,198 188,256 150,292 C168,262 200,236 220,212 C236,192 244,152 250,124 C258,116 296,128 342,150 C372,162 398,180 416,196"/>
+          <circle class="bln" id="bln" r="3" cx="176" cy="14"/>
+          <circle class="tip" id="tip" r="3.4" cx="176" cy="14"/>
+        </svg>
+        <span class="cap">stylized schematic · not to scale</span>
+      </div>
+
+      <div class="deck">
+        <h3>Catheter control</h3>
+        <div class="move">
+          <button class="btn" id="withdrawBtn"><span class="arrow">◀</span>Withdraw</button>
+          <button class="btn" id="advanceBtn">Advance<span class="arrow">▶</span></button>
+        </div>
+        <button class="btn balloon" id="balloonBtn" aria-pressed="false" style="width:100%;margin-bottom:9px">Inflate balloon</button>
+        <div class="row2">
+          <button class="btn ghost" id="resetBtn">Reset</button>
+          <button class="btn ghost" id="guideBtn">Open guide</button>
+        </div>
+        <div class="hint">Hold <kbd>◀</kbd>/<kbd>▶</kbd> or arrow keys to move · <kbd>B</kbd> balloon · <kbd>R</kbd> reset</div>
+      </div>
+    </div>
+  </div>
+
+  <details class="guide case" id="casebox" open>
+    <summary>Diagnostic case · identify the hemodynamic profile</summary>
+    <div class="guide-body">
+      <div class="case-row">
+        <button class="btn case-new sm" id="newCaseBtn">🎲 New random case</button>
+        <button class="btn ghost sm" id="measureBtn" disabled>Measure CO (thermodilution)</button>
+        <div class="case-status" id="caseStatus">Press “New random case” to load a hidden hemodynamic profile, then read the pressures and decide.</div>
+      </div>
+
+      <div class="dx-data">
+        <div class="dx-cell flow"><div class="k">RA mean</div><div class="v" id="mRA">—</div></div>
+        <div class="dx-cell"><div class="k">RV s/d</div><div class="v" id="mRV">—</div></div>
+        <div class="dx-cell"><div class="k">PA s/d</div><div class="v" id="mPA">—</div></div>
+        <div class="dx-cell flow"><div class="k">PCWP</div><div class="v" id="mPCWP">—</div></div>
+        <div class="dx-cell calc"><div class="k">mPAP</div><div class="v" id="mMPAP">—</div></div>
+        <div class="dx-cell calc"><div class="k">TPG</div><div class="v" id="mTPG">—</div></div>
+        <div class="dx-cell"><div class="k">HR</div><div class="v" id="mHR">—</div></div>
+        <div class="dx-cell"><div class="k">CO L/min</div><div class="v" id="mCO">—</div></div>
+        <div class="dx-cell"><div class="k">CI</div><div class="v" id="mCI">—</div></div>
+        <div class="dx-cell"><div class="k">SVR</div><div class="v" id="mSVR">—</div></div>
+        <div class="dx-cell"><div class="k">PVR wu</div><div class="v" id="mPVR">—</div></div>
+      </div>
+      <div class="dx-hint">Read RA · RV · PA · PCWP off the catheter as you advance, then press <b>Measure CO</b> for output &amp; resistances. The call usually turns on three things: the <b>wedge</b>, the <b>PA-diastolic-to-wedge gap (TPG)</b>, and <b>CO vs SVR</b>.</div>
+
+      <div class="dx-btns">
+        <button class="dxbtn" data-dx="normal" disabled>Normal study</button>
+        <button class="dxbtn" data-dx="chf" disabled>Left heart failure (CHF)</button>
+        <button class="dxbtn" data-dx="pah" disabled>Pulmonary arterial HTN</button>
+        <button class="dxbtn" data-dx="tamponade" disabled>Cardiac tamponade</button>
+        <button class="dxbtn" data-dx="hypovolemia" disabled>Hypovolemia</button>
+        <button class="dxbtn" data-dx="septic" disabled>Septic / distributive shock</button>
+        <button class="dxbtn" data-dx="rvinfarct" disabled style="grid-column:1/-1">RV infarction</button>
+      </div>
+      <div class="dx-actions">
+        <button class="btn ghost sm" id="revealBtn" disabled>Reveal answer &amp; explain</button>
+      </div>
+      <div class="dx-why" id="dxWhy"></div>
+      <p class="disc">Cases use simplified, idealized hemodynamics chosen to be teachable and well-separated; real patients overlap and blur these patterns. Educational only — not a medical device.</p>
+    </div>
+  </details>
+
+  <details class="guide" id="guide">
+    <summary>How to drive it &amp; what you're seeing</summary>
+    <div class="guide-body">
+      <p><b>Goal:</b> float the balloon-tipped catheter from the vena cava → right atrium → right ventricle → pulmonary artery, then obtain a <b>wedge (PCWP)</b> tracing. Watch each waveform change as the tip crosses a valve, and respond to alarms.</p>
+      <p><b>Technique that keeps the patient safe:</b> advance to the RA, <b>inflate the balloon</b>, then advance — the balloon floats the tip across the tricuspid and pulmonary valves and reduces ventricular irritation. <b>Deflate before withdrawing.</b> Don't linger in the RV, and don't over-advance once wedged.</p>
+      <table class="ref">
+        <tr><th>Position</th><th>Normal pressure</th><th>Waveform</th></tr>
+        <tr><td>RA / CVP</td><td class="mono">2–6 mean</td><td>low a, c, v waves</td></tr>
+        <tr><td>RV</td><td class="mono">15–30 / 0–8</td><td>tall systole, diastole near zero</td></tr>
+        <tr><td>PA</td><td class="mono">15–30 / 8–15</td><td>diastolic step-up, dicrotic notch</td></tr>
+        <tr><td>PCWP (wedge)</td><td class="mono">6–12 mean</td><td>damped atrial a, c, v waves</td></tr>
+      </table>
+      <p><b>Transitions to recognize:</b> RA→RV the systolic pressure jumps; RV→PA the <b>diastolic pressure rises</b> and a dicrotic notch appears; PA→wedge the trace loses pulsatility and damps to a low atrial pattern.</p>
+      <p><b>Alarms model real complications:</b> ventricular ectopy / VT from a catheter loitering in the RV, over-wedge (pulmonary-artery rupture risk) from advancing too far with the balloon up, and spontaneous wedge / infarction risk from a tip that has migrated too distal.</p>
+      <p class="disc">Educational simulation with simplified physiology and idealized waveforms. Not a medical device and not for clinical use, training credentialing, or patient care.</p>
+    </div>
+  </details>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------------- state ---------------- */
+  const DMIN=0, DMAX=58, MOVE=6.8;          // cm, cm/s
+  let depth=6, balloon=false, holdDir=0;     // -1 withdraw, +1 advance
+  let clock=0, prevClock=0;
+  let baseRR=60/78;
+  let rr=baseRR, beatStart=-0.25, beatType='sinus', pendingPause=false, hrEMA=78;
+  let newBeatFlag=false;
+  let zone='SVC', prevZone='', zoneEnter=0;
+  let vtActive=false, vtStart=0;
+  let ectopyProb=0;
+  let wedgeActive=false, wedgeEnter=0, wedgeDwell=0;
+  let owPressure=0;
+  let mode='SVC', modeIsAtrial=true;
+  let curP=4;
+  const presBuf=[];                          // {t,p} rolling for sys/dia/mean
+  let sweepFrac=0; const W=5.0;              // seconds across canvas width
+
+  /* ---------------- hemodynamic case model ---------------- */
+  let PMAX=40, modeName='SVC', modeEnter=0;
+  const HEMO={ra:4, rvS:26, rvD:4, paS:26, paD:12, pcwp:9, hr:78, co:5.2, ci:2.9, svr:1050, pvr:1.4};
+  const caseState={active:null, answered:false, correct:false, revealed:false, coMeasured:false,
+                   measured:{ra:null,rv:null,pa:null,pcwp:null}};
+  const CONDITIONS=[
+    { id:'normal', name:'Normal study',
+      hemo:{ra:4, rvS:26, rvD:4, paS:26, paD:12, pcwp:9, hr:78, co:5.2, ci:2.9, svr:1050, pvr:1.4},
+      findings:['RA 4 · RV 26/4 · PA 26/12 · PCWP 9 — all within normal limits',
+                'mPAP ~17, transpulmonary gradient ~8 (normal)',
+                'CO 5.2, CI 2.9, SVR 1050, PVR 1.4 — all normal'],
+      why:'Every pressure, the cardiac output, the SVR and the PVR sit within normal limits. A normal wedge, a normal mean PA, and a normal transpulmonary gradient mean there is neither a left-sided (post-capillary) nor a pulmonary-vascular (pre-capillary) problem. This is simply a normal hemodynamic profile.' },
+
+    { id:'chf', name:'Left heart failure (cardiogenic)',
+      hemo:{ra:10, rvS:50, rvD:10, paS:50, paD:26, pcwp:25, hr:96, co:3.3, ci:1.8, svr:1550, pvr:2.7},
+      findings:['PCWP high at ~25 mmHg — the central finding',
+                'PA diastolic (~26) tracks the wedge, so TPG stays small (~9)',
+                'PA pressure elevated passively (~50/26)',
+                'Cardiac output low (3.3) with compensatory high SVR (1550)'],
+      why:'The wedge is high and the PA-diastolic pressure tracks it closely, so the transpulmonary gradient stays small — this is post-capillary (left-heart) pulmonary hypertension: pressure is backing up from a failing left ventricle, not from pulmonary vascular disease. The low cardiac output with a compensatory high SVR confirms a cardiogenic, low-output state.' },
+
+    { id:'pah', name:'Pulmonary arterial hypertension',
+      hemo:{ra:11, rvS:80, rvD:9, paS:80, paD:34, pcwp:10, hr:88, co:3.6, ci:2.0, svr:1300, pvr:10.8},
+      findings:['PA pressure very high (~80/34, mPAP ~49)',
+                'PCWP NORMAL (~10) — the key contrast with left heart failure',
+                'Wide transpulmonary gradient (~39) and high PVR (~11 Wood units)',
+                'RV and RA elevated from pressure overload'],
+      why:'Markedly elevated PA pressure with a NORMAL wedge defines pre-capillary pulmonary hypertension — the resistance lives in the pulmonary arterioles, not the left heart. The large transpulmonary gradient (mPAP minus PCWP) and the high PVR confirm pulmonary vascular disease. The raised RV and RA pressures reflect the right ventricle straining against that load.' },
+
+    { id:'tamponade', name:'Cardiac tamponade',
+      hemo:{ra:18, rvS:30, rvD:18, paS:30, paD:19, pcwp:19, hr:112, co:3.0, ci:1.7, svr:1400, pvr:1.6},
+      findings:['Diastolic pressures equalize: RA 18 ≈ RV-dia 18 ≈ PA-dia 19 ≈ PCWP 19',
+                'Sinus tachycardia (~110)',
+                'Low cardiac output (3.0)',
+                'Blunted RA y-descent (impaired filling)'],
+      why:'The hallmark is equalization of diastolic pressures — RA, RV end-diastole, PA diastole and wedge all fall within a few mmHg of one another and are elevated. An external fluid collection compresses every chamber equally, so they share a single diastolic pressure. Tachycardia and a low output complete the picture, and the blunted y descent reflects impaired diastolic filling.' },
+
+    { id:'hypovolemia', name:'Hypovolemia',
+      hemo:{ra:1, rvS:17, rvD:1, paS:16, paD:6, pcwp:4, hr:114, co:3.3, ci:1.8, svr:1650, pvr:1.3},
+      findings:['All filling pressures low: RA 1, PCWP 4',
+                'PA pressure low (~16/6)',
+                'SVR high (1650), sinus tachycardia',
+                'Low cardiac output (3.3)'],
+      why:'Pressures are low in every chamber — an under-filled circulation. The compensatory response is intense vasoconstriction (high SVR) and tachycardia to defend the output. Low right- and left-sided filling pressures together point to an empty tank rather than a pump or vascular problem; this is the profile that responds to volume.' },
+
+    { id:'septic', name:'Septic / distributive shock',
+      hemo:{ra:3, rvS:24, rvD:3, paS:24, paD:10, pcwp:8, hr:116, co:8.0, ci:4.4, svr:480, pvr:1.4},
+      findings:['Cardiac output HIGH (~8) — hyperdynamic',
+                'SVR very LOW (~480) — the signature finding',
+                'Filling pressures normal-to-low (RA 3, PCWP 8)',
+                'Sinus tachycardia'],
+      why:'A high cardiac output combined with a very low SVR is the signature of distributive (septic) shock — profound vasodilation rather than pump failure or hypovolemia. Filling pressures are normal or low and the heart compensates by running fast and hard. Contrast this with cardiogenic shock, where the output is low and the SVR is high.' },
+
+    { id:'rvinfarct', name:'RV infarction',
+      hemo:{ra:16, rvS:28, rvD:14, paS:24, paD:10, pcwp:9, hr:96, co:3.1, ci:1.7, svr:1450, pvr:1.5},
+      findings:['RA high (16) out of proportion to PCWP (9): RA:PCWP > 0.8',
+                'RV diastolic elevated, but PA and wedge near-normal',
+                'No diastolic equalization (PA-dia and PCWP stay low)',
+                'Low cardiac output'],
+      why:'Right-sided filling pressure (RA) is disproportionately high while the left-sided wedge stays normal or low — the failing right ventricle backs up into the RA but cannot push blood through to fill the left side. The high RA:PCWP ratio, and crucially the fact that the PA-diastolic and wedge are NOT elevated, separate this from tamponade or constriction, where all diastolic pressures equalize.' },
+  ];
+
+  /* ---------------- math helpers ---------------- */
+  const gauss=(t,a,mu,sg)=>a*Math.exp(-((t-mu)*(t-mu))/(2*sg*sg));
+  function pulse(t,t0,t1){ if(t<=t0||t>=t1) return 0; return 0.5*(1-Math.cos(2*Math.PI*(t-t0)/(t1-t0))); }
+  const resp=()=>Math.sin(2*Math.PI*0.2*clock);   // ~12 breaths/min
+  const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+
+  /* ---------------- ECG morphology ---------------- */
+  function ekgSinus(ts){
+    return gauss(ts,0.12,0.10,0.018)+gauss(ts,-0.06,0.188,0.0075)
+         +gauss(ts,1.00,0.205,0.010)+gauss(ts,-0.20,0.223,0.010)
+         +gauss(ts,0.30,0.35,0.038);
+  }
+  function ekgPVC(ts){
+    return gauss(ts,0.92,0.18,0.024)+gauss(ts,-0.55,0.238,0.030)+gauss(ts,-0.42,0.40,0.055);
+  }
+  function ekgAt(t){
+    let ts=t-beatStart; if(ts<0) ts=0; if(ts>rr) ts=rr;
+    const wander=0.02*Math.sin(2*Math.PI*0.2*t);
+    return (beatType==='pvc'?ekgPVC(ts):ekgSinus(ts))+wander;
+  }
+
+  /* ---------------- pressure morphology ---------------- */
+  function pressureAt(t){
+    if(mode==='OVERWEDGE') return owPressure + 0.3*Math.sin(t*9);
+    const ts=t-beatStart, r=resp(), pvc=(beatType==='pvc');
+    let p;
+    switch(mode){
+      case 'SVC':
+        p=(HEMO.ra-1) + gauss(ts,1.0,0.12,0.03)+gauss(ts,0.7,0.25,0.025)+gauss(ts,1.3,0.52,0.06)+0.8*r; break;
+      case 'RA':
+        p=HEMO.ra + gauss(ts,2.4,0.13,0.03)+gauss(ts,1.0,0.255,0.02)+gauss(ts,2.6,0.54,0.06)+0.9*r; break;
+      case 'RV':{
+        const peak=HEMO.rvS*(pvc?0.65:1), dia=HEMO.rvD;
+        p=dia+(peak-dia)*pulse(ts,0.16,0.46)+gauss(ts,1.2,0.86,0.08)+0.6*r; break; }
+      case 'PA':{
+        const sysTop=HEMO.paS*(pvc?0.72:1);
+        const f=clamp(ts/Math.max(0.32,rr),0,1), dia=HEMO.paD+2.2*(1-f);
+        const sys=Math.max(0,sysTop-dia)*pulse(ts,0.16,0.44);
+        const notch=(ts>0.40)?(gauss(ts,-2.0,0.45,0.012)+gauss(ts,2.4,0.50,0.022)):0;
+        p=dia+sys+notch+0.6*r; break; }
+      case 'WEDGE':
+        p=HEMO.pcwp + gauss(ts,2.6,0.22,0.05)+gauss(ts,1.0,0.345,0.04)+gauss(ts,2.8,0.63,0.08)+0.8*r; break;
+      default: p=HEMO.ra;
+    }
+    return p;
+  }
+
+  /* ---------------- zone / mode logic ---------------- */
+  function zoneFor(d){
+    if(d<15) return 'SVC'; if(d<25) return 'RA'; if(d<35) return 'RV';
+    if(d<45) return 'PA';  if(d<=52) return 'WEDGE'; return 'DISTAL';
+  }
+  const zoneName={SVC:'VENA CAVA / SVC',RA:'RIGHT ATRIUM',RV:'RIGHT VENTRICLE',
+    PA:'PULMONARY ARTERY',WEDGE:'DISTAL PA',DISTAL:'DISTAL PA · TOO FAR'};
+
+  /* ---------------- simulation update ---------------- */
+  function update(dt){
+    // movement
+    if(holdDir) depth=clamp(depth+holdDir*MOVE*dt, DMIN, DMAX);
+    clock+=dt;
+
+    zone=zoneFor(depth);
+    if(zone!==prevZone){ zoneEnter=clock; prevZone=zone; }
+    const dwell=clock-zoneEnter;
+
+    // ectopy / VT (RV irritation)
+    ectopyProb=0;
+    if(zone==='RV'){
+      ectopyProb=(balloon?0.02:0.06)+Math.min(0.45, dwell*0.03);
+      if(!balloon && dwell>9 && !vtActive){ vtActive=true; vtStart=clock; }
+    }
+    if(vtActive && (zone!=='RV' || clock-vtStart>3.6)) vtActive=false;
+
+    // wedge / over-wedge state
+    const wedged   = balloon && depth>=44 && depth<=52;
+    const overwedge= balloon && depth>52;
+    const spont    = !balloon && depth>52;
+    if(wedged||spont){ if(!wedgeActive){wedgeActive=true;wedgeEnter=clock;} }
+    else wedgeActive=false;
+    wedgeDwell = wedgeActive?clock-wedgeEnter:0;
+
+    if(overwedge){ owPressure=(owPressure||13)+12*dt; if(owPressure>78)owPressure=78; }
+    else owPressure=0;
+
+    // effective display mode
+    if(overwedge) mode='OVERWEDGE';
+    else if(wedged||spont) mode='WEDGE';
+    else if(zone==='WEDGE') mode='PA';      // distal PA, balloon down → still PA tracing
+    else mode=zone;                          // SVC/RA/RV/PA
+    modeIsAtrial=(mode==='SVC'||mode==='RA'||mode==='WEDGE'||mode==='OVERWEDGE');
+    if(mode!==modeName){ modeName=mode; modeEnter=clock; }
+
+    // beat scheduler
+    let guard=0;
+    while(clock>=beatStart+rr && guard++<20){
+      beatStart+=rr;
+      if(vtActive){ beatType='pvc'; rr=60/178; }
+      else if(pendingPause){ beatType='sinus'; rr=baseRR*1.28; pendingPause=false; }
+      else if(Math.random()<ectopyProb){ beatType='pvc'; rr=baseRR*0.52; pendingPause=true; }
+      else { beatType='sinus'; rr=baseRR*(0.96+0.08*Math.random()); }
+      hrEMA = hrEMA*0.78 + (60/rr)*0.22;
+      newBeatFlag=true;
+    }
+
+    // representative pressure sample + rolling buffer
+    curP=pressureAt(clock);
+    presBuf.push({t:clock,p:curP});
+    while(presBuf.length && clock-presBuf[0].t>2.6) presBuf.shift();
+
+    evaluateAlarms({wedged,overwedge,spont,dwell});
+    prevClock=clock;
+  }
+
+  /* ---------------- alarms ---------------- */
+  let alarmState='ok';
+  function evaluateAlarms(s){
+    const dangers=[], cautions=[];
+    if(s.overwedge) dangers.push('Over-wedge — pulmonary artery rupture risk. Deflate the balloon and pull back.');
+    if(s.spont)     dangers.push('Catheter too distal — spontaneous wedge. Pulmonary infarction risk. Withdraw.');
+    if(vtActive)    dangers.push('Ventricular tachycardia from RV irritation. Withdraw the catheter from the ventricle now.');
+    if(s.wedged && wedgeDwell>14) dangers.push('Prolonged wedge — pulmonary infarction risk. Deflate the balloon now.');
+    else if(s.wedged && wedgeDwell>8) cautions.push('Prolonged wedge. Deflate the balloon and confirm a PA tracing.');
+    if(zone==='RV' && !vtActive && !balloon && s.dwell>4)
+      cautions.push('Ventricular ectopy in the RV. Inflate the balloon and advance to the PA, or pull back.');
+    if(balloon && holdDir<0) cautions.push('Deflate the balloon before withdrawing.');
+    if(!balloon && depth>=25 && depth<44)
+      cautions.push('Inflate the balloon to float the catheter forward and reduce arrhythmia risk.');
+
+    const goodWedge = s.wedged && !s.overwedge && wedgeDwell<8;
+    let badge,msg,cls;
+    if(dangers.length){ cls='danger'; badge='Alarm'; msg=dangers[0]; }
+    else if(cautions.length){ cls='caution'; badge='Caution'; msg=cautions[0]; }
+    else if(goodWedge){ cls='good'; badge='Wedge'; msg='Wedge obtained — PCWP ≈ '+Math.round(stat().mean)+' mmHg. Deflate when your reading is done.'; }
+    else { cls='ok'; badge='Nominal'; msg = depth<6.5?'All channels nominal. Advance the catheter to begin.':'All channels nominal.'; }
+
+    alarmState=cls;
+    const el=ELS.alarm;
+    el.className='alarm '+cls+((cls==='danger'&&!reduceMotion)?' flash':'');
+    ELS.alarmBadge.textContent=badge;
+    ELS.alarmMsg.textContent=msg;
+  }
+
+  /* ---------------- rolling stats ---------------- */
+  function stat(){
+    if(!presBuf.length) return {min:curP,max:curP,mean:curP};
+    let mn=Infinity,mx=-Infinity,sum=0;
+    for(const s of presBuf){ if(s.p<mn)mn=s.p; if(s.p>mx)mx=s.p; sum+=s.p; }
+    return {min:mn,max:mx,mean:sum/presBuf.length};
+  }
+
+  /* ---------------- canvas traces ---------------- */
+  const ELS={};
+  ['alarm','alarmBadge','alarmMsg','hrPill','clkPill','hrVal','presVal','presMean','presLab',
+   'presReadout','presTag','posVal','depthVal','depthFill','blnVal'].forEach(id=>ELS[id]=document.getElementById(id));
+
+  function makeTrace(canvas, baseline){
+    const st={canvas, ctx:canvas.getContext('2d'), arr:null, lastCol:0, w:0, h:0, dpr:1, baseline};
+    function resize(){
+      const r=canvas.parentElement.getBoundingClientRect();
+      st.w=Math.max(80,Math.floor(r.width)); st.h=Math.floor(r.height);
+      st.dpr=Math.min(window.devicePixelRatio||1,2);
+      canvas.width=st.w*st.dpr; canvas.height=st.h*st.dpr;
+      st.ctx.setTransform(st.dpr,0,0,st.dpr,0,0);
+      st.arr=new Float32Array(st.w).fill(baseline); st.lastCol=0;
+    }
+    st.resize=resize; resize();
+    return st;
+  }
+  // fixed CSS heights via attribute? set via style; we read parent height -> set canvas css height
+  function sizeWrap(wrap,h){ wrap.style.height=h+'px'; }
+
+  let ecgT, presT;
+
+  function fillTrace(st, fn){
+    const target=Math.floor(sweepFrac*st.w);
+    const count=((target-st.lastCol)%st.w+st.w)%st.w;
+    for(let j=1;j<=count;j++){
+      const c=(st.lastCol+j)%st.w;
+      const tt=prevClock+(clock-prevClock)*(j/count||1);
+      st.arr[c]=fn(tt);
+    }
+    st.lastCol=target;
+  }
+
+  function gridECG(st){
+    const c=st.ctx,W2=st.w,H=st.h; c.clearRect(0,0,W2,H);
+    c.lineWidth=1;
+    c.strokeStyle=getCss('--grid-pink');
+    for(let x=(W2%10);x<W2;x+=10){c.beginPath();c.moveTo(x+.5,0);c.lineTo(x+.5,H);c.stroke();}
+    for(let y=(H%10);y<H;y+=10){c.beginPath();c.moveTo(0,y+.5);c.lineTo(W2,y+.5);c.stroke();}
+    c.strokeStyle=getCss('--grid-pink-x');
+    for(let x=(W2%50);x<W2;x+=50){c.beginPath();c.moveTo(x+.5,0);c.lineTo(x+.5,H);c.stroke();}
+    for(let y=(H%50);y<H;y+=50){c.beginPath();c.moveTo(0,y+.5);c.lineTo(W2,y+.5);c.stroke();}
+  }
+  function gridPres(st){
+    const c=st.ctx,W2=st.w,H=st.h; c.clearRect(0,0,W2,H);
+    c.lineWidth=1; c.strokeStyle=getCss('--grid-cool');
+    for(let x=(W2%50);x<W2;x+=50){c.beginPath();c.moveTo(x+.5,0);c.lineTo(x+.5,H);c.stroke();}
+    // pressure gridlines at 0/10/20/30/40
+    c.strokeStyle=getCss('--grid-cool-x');
+    c.fillStyle='#46556b'; c.font='10px '+getCss('--mono');
+    const step = PMAX<=40?10:20;
+    for(let mm=0;mm<=PMAX;mm+=step){
+      const y=pY(mm,H);
+      c.beginPath();c.moveTo(0,y+.5);c.lineTo(W2,y+.5);c.stroke();
+      c.fillText(mm, 4, y-3<8?y+11:y-3);
+    }
+  }
+  const pY=(mm,H)=> H-6 - (mm/PMAX)*(H-14);
+
+  function drawTrace(st, color, midOrPres){
+    const c=st.ctx,W2=st.w,H=st.h,gap=16,head=st.lastCol;
+    c.lineWidth=2; c.strokeStyle=color; c.shadowColor=color; c.shadowBlur=8;
+    c.lineJoin='round'; c.lineCap='round';
+    c.beginPath(); let pen=false;
+    for(let x=0;x<W2;x++){
+      const inGap=((x-head+W2)%W2)<gap;
+      if(inGap){ pen=false; continue; }
+      const y = midOrPres==='ecg'
+        ? (H*0.5) - st.arr[x]*(H*0.40)
+        : pY(clamp(st.arr[x],-2,PMAX), H);
+      if(!pen){ c.moveTo(x,y); pen=true; } else c.lineTo(x,y);
+    }
+    c.stroke(); c.shadowBlur=0;
+  }
+
+  function renderTraces(){
+    gridECG(ecgT);  fillTrace(ecgT, ekgAt);    drawTrace(ecgT, getCss('--ecg'),'ecg');
+    gridPres(presT);fillTrace(presT, pressureAt);drawTrace(presT, presColor(),'pres');
+  }
+  function presColor(){
+    if(alarmState==='danger') return getCss('--danger');
+    if(modeIsAtrial) return getCss('--atrial');
+    return getCss('--pa');
+  }
+
+  /* ---------------- schematic ---------------- */
+  const cathPath=document.getElementById('cath');
+  const routePath=document.getElementById('route');
+  const tipEl=document.getElementById('tip'), blnEl=document.getElementById('bln');
+  const totalLen=routePath.getTotalLength();
+  const dBreaks=[0,15,25,35,45,52,58], fBreaks=[0.015,0.20,0.34,0.56,0.71,0.89,1.0];
+  function fracForDepth(d){
+    for(let i=0;i<dBreaks.length-1;i++){
+      if(d<=dBreaks[i+1]){ const t=(d-dBreaks[i])/(dBreaks[i+1]-dBreaks[i]); return fBreaks[i]+t*(fBreaks[i+1]-fBreaks[i]); }
+    }
+    return 1;
+  }
+  const chambers={RA:document.getElementById('ch-RA'),RV:document.getElementById('ch-RV'),
+                  PA:document.getElementById('ch-PA'),WEDGE:document.getElementById('ch-WEDGE')};
+  const chamberGlow={RA:'--atrial',RV:'--ecg',PA:'--pa',WEDGE:'--atrial'};
+  function highlightChamber(){
+    let active = (zone==='RA')?'RA':(zone==='RV')?'RV':(zone==='PA')?'PA':
+                 (zone==='WEDGE'||zone==='DISTAL')?'WEDGE':null;
+    for(const k in chambers){
+      const el=chambers[k], on=(k===active);
+      if(el.classList.contains('vessel')){
+        el.style.stroke = on?getCss(chamberGlow[k]):'#2a3447';
+        el.style.filter = on?('drop-shadow(0 0 9px '+getCss(chamberGlow[k])+')'):'none';
+      }else{
+        el.style.fillOpacity = on?'0.20':'0.06';
+        el.style.stroke = on?getCss(chamberGlow[k]):'#2a3447';
+        el.style.filter = on?('drop-shadow(0 0 10px '+getCss(chamberGlow[k])+')'):'none';
+      }
+    }
+  }
+  function updateSchematic(){
+    const len=clamp(fracForDepth(depth),0,1)*totalLen;
+    cathPath.setAttribute('stroke-dasharray', len+' '+(totalLen+12));
+    const pt=routePath.getPointAtLength(len);
+    tipEl.setAttribute('cx',pt.x); tipEl.setAttribute('cy',pt.y);
+    blnEl.setAttribute('cx',pt.x); blnEl.setAttribute('cy',pt.y);
+    blnEl.setAttribute('r', balloon?9:3);
+    blnEl.style.opacity = balloon?1:0;
+    cathPath.style.stroke = alarmState==='danger'?getCss('--danger'):getCss('--cath');
+    highlightChamber();
+  }
+
+  /* ---------------- readouts ---------------- */
+  let lastTxt=0;
+  function updateReadouts(){
+    if(clock-lastTxt<0.12) return; lastTxt=clock;
+    const hr=Math.round(hrEMA);
+    ELS.hrVal.textContent=hr; ELS.hrPill.textContent=hr;
+    const s=stat();
+    if(modeIsAtrial){
+      ELS.presReadout.classList.add('atrial-tint');
+      ELS.presLab.textContent = mode==='WEDGE'?'PCWP':(mode==='OVERWEDGE'?'PA*':'CVP');
+      ELS.presVal.textContent = Math.round(s.mean);
+      ELS.presMean.textContent = mode==='OVERWEDGE'?'rising — over-wedge':'mean';
+      ELS.presTag.textContent = (mode==='WEDGE'?'PCWP':'CVP')+'   mmHg';
+      ELS.presTag.style.color=getCss('--atrial');
+    }else{
+      ELS.presReadout.classList.remove('atrial-tint');
+      ELS.presLab.textContent=mode; // RV or PA
+      ELS.presVal.textContent = Math.round(s.max)+'/'+Math.round(Math.max(0,s.min));
+      ELS.presMean.textContent='mean '+Math.round(s.mean);
+      ELS.presTag.textContent=mode+'   mmHg';
+      ELS.presTag.style.color=getCss('--pa');
+    }
+    ELS.posVal.textContent=zoneName[zone];
+    ELS.depthVal.textContent=depth.toFixed(0);
+    ELS.depthFill.style.width=(depth/DMAX*100).toFixed(1)+'%';
+    ELS.blnVal.textContent=balloon?'UP':'DOWN';
+    ELS.blnVal.classList.toggle('balloon-on',balloon);
+    const t=Math.floor(clock); ELS.clkPill.textContent=
+      String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');
+    captureCase(); paintCaseLive();
+  }
+
+  /* ---------------- audio (opt-in) ---------------- */
+  let actx=null, soundOn=false, lastAlarmBeep=0;
+  function beep(freq,dur,gain){
+    if(!actx) return;
+    const o=actx.createOscillator(), g=actx.createGain();
+    o.type='sine'; o.frequency.value=freq; o.connect(g); g.connect(actx.destination);
+    const t=actx.currentTime; g.gain.setValueAtTime(0,t);
+    g.gain.linearRampToValueAtTime(gain,t+0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.start(t); o.stop(t+dur+0.02);
+  }
+  function audioTick(){
+    if(!soundOn||!actx) return;
+    if(newBeatFlag) beep(beatType==='pvc'?660:880,0.06,0.05);
+    if(alarmState==='danger' && clock-lastAlarmBeep>0.55){ lastAlarmBeep=clock; beep(1320,0.09,0.06); setTimeout(()=>beep(990,0.09,0.05),110); }
+  }
+
+  /* ---------------- util ---------------- */
+  function getCss(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+  /* ---------------- main loop ---------------- */
+  let last=performance.now();
+  function frame(now){
+    let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05;
+    sweepFrac+=dt/W; if(sweepFrac>=1) sweepFrac-=Math.floor(sweepFrac);
+    newBeatFlag=false;
+    update(dt);
+    renderTraces();
+    updateSchematic();
+    updateReadouts();
+    audioTick();
+    requestAnimationFrame(frame);
+  }
+
+  /* ---------------- controls ---------------- */
+  function bindHold(btn,dir){
+    const start=e=>{e.preventDefault(); holdDir=dir; btn.classList.add('held');};
+    const stop =()=>{ if(holdDir===dir){holdDir=0;} btn.classList.remove('held');};
+    btn.addEventListener('pointerdown',start);
+    ['pointerup','pointerleave','pointercancel'].forEach(ev=>btn.addEventListener(ev,stop));
+  }
+  bindHold(document.getElementById('advanceBtn'),+1);
+  bindHold(document.getElementById('withdrawBtn'),-1);
+
+  const balloonBtn=document.getElementById('balloonBtn');
+  function toggleBalloon(){
+    balloon=!balloon;
+    balloonBtn.setAttribute('aria-pressed',balloon);
+    balloonBtn.textContent=balloon?'Deflate balloon':'Inflate balloon';
+  }
+  balloonBtn.addEventListener('click',toggleBalloon);
+
+  /* ---------------- diagnostic cases ---------------- */
+  const caseEl=id=>document.getElementById(id);
+  const caseboxEl=caseEl('casebox'), caseStatusEl=caseEl('caseStatus'), dxWhyEl=caseEl('dxWhy');
+  const newCaseBtn=caseEl('newCaseBtn'), measureBtn=caseEl('measureBtn'), revealBtn=caseEl('revealBtn');
+  const dxButtons=[...document.querySelectorAll('.dxbtn')];
+  function setHR(bpm){ baseRR=60/clamp(bpm,30,200); }
+  function setHemo(h){ for(const k in h) HEMO[k]=h[k]; }
+  function pmaxFor(){ return Math.max(40, Math.ceil(Math.max(HEMO.paS,HEMO.rvS)/10)*10 + 10); }
+
+  function resetCatheter(){
+    depth=6; balloon=false; holdDir=0; vtActive=false; wedgeActive=false; owPressure=0;
+    presBuf.length=0; clock=0; prevClock=0; beatStart=-0.25; rr=baseRR; beatType='sinus';
+    pendingPause=false; zoneEnter=0; prevZone=''; modeName='SVC'; modeEnter=0;
+    hrEMA = caseState.active ? caseState.active.hemo.hr : 78;
+    balloonBtn.setAttribute('aria-pressed','false'); balloonBtn.textContent='Inflate balloon';
+    if(ecgT){ecgT.arr.fill(0);ecgT.lastCol=0;} if(presT){presT.arr.fill(HEMO.ra);presT.lastCol=0;}
+  }
+  function clearMeasured(){ caseState.measured={ra:null,rv:null,pa:null,pcwp:null}; }
+  function doReset(){ resetCatheter(); clearMeasured(); paintCaseLive(); paintCase(); }
+
+  function newCase(){
+    const pool = CONDITIONS.filter(c=>!caseState.active || c.id!==caseState.active.id);
+    const cond = pool[Math.floor(Math.random()*pool.length)];
+    caseState.active=cond; caseState.answered=false; caseState.correct=false;
+    caseState.revealed=false; caseState.coMeasured=false;
+    setHemo(cond.hemo); setHR(cond.hemo.hr); PMAX=pmaxFor();
+    clearMeasured();
+    dxButtons.forEach(b=>{ b.classList.remove('correct','wrong','reveal'); b.disabled=false; });
+    measureBtn.disabled=false; measureBtn.textContent='Measure CO (thermodilution)';
+    revealBtn.disabled=false;
+    resetCatheter();
+    if(caseboxEl && !caseboxEl.open) caseboxEl.open=true;
+    paintCaseLive(); paintCase();
+  }
+
+  function captureCase(){
+    if(!caseState.active) return;
+    if((clock-modeEnter)<1.0 || presBuf.length<16) return;
+    const m=caseState.measured, s=stat();
+    if(mode==='RA') m.ra=Math.round(s.mean);
+    else if(mode==='RV') m.rv={s:Math.round(s.max), d:Math.round(Math.max(0,s.min))};
+    else if(mode==='PA') m.pa={s:Math.round(s.max), d:Math.round(Math.max(0,s.min))};
+    else if(mode==='WEDGE') m.pcwp=Math.round(s.mean);
+  }
+
+  function guessDx(id){
+    if(!caseState.active || caseState.answered) return;
+    const btn=dxButtons.find(b=>b.dataset.dx===id); if(!btn||btn.disabled) return;
+    if(id===caseState.active.id){
+      caseState.answered=true; caseState.correct=true;
+      btn.classList.add('correct');
+      dxButtons.forEach(b=>{ if(b!==btn) b.disabled=true; });
+    }else{
+      btn.classList.add('wrong'); btn.disabled=true;
+    }
+    paintCase();
+  }
+  function revealCase(){
+    if(!caseState.active) return;
+    caseState.revealed=true;
+    const cb=dxButtons.find(b=>b.dataset.dx===caseState.active.id);
+    if(cb && !cb.classList.contains('correct')) cb.classList.add('reveal');
+    dxButtons.forEach(b=>b.disabled=true);
+    paintCase();
+  }
+  function measureCO(){
+    if(!caseState.active) return;
+    caseState.coMeasured=true; measureBtn.disabled=true; measureBtn.textContent='CO measured ✓';
+    paintCaseLive();
+  }
+
+  function setC(id,v){ const e=caseEl(id); if(e) e.textContent=v; }
+  function paintCaseLive(){
+    const c=caseState.active, m=caseState.measured;
+    setC('mRA', m.ra!=null? m.ra : '—');
+    setC('mRV', m.rv? m.rv.s+'/'+m.rv.d : '—');
+    setC('mPA', m.pa? m.pa.s+'/'+m.pa.d : '—');
+    setC('mPCWP', m.pcwp!=null? m.pcwp : '—');
+    setC('mHR', c? Math.round(hrEMA) : '—');
+    const co=(c&&caseState.coMeasured);
+    setC('mCO', co? c.hemo.co.toFixed(1):'—');
+    setC('mCI', co? c.hemo.ci.toFixed(1):'—');
+    setC('mSVR', co? c.hemo.svr:'—');
+    setC('mPVR', co? c.hemo.pvr.toFixed(1):'—');
+    let mpap='—',tpg='—';
+    if(m.pa){ const v=Math.round((m.pa.s+2*m.pa.d)/3); mpap=v; if(m.pcwp!=null) tpg=v-m.pcwp; }
+    setC('mMPAP', mpap); setC('mTPG', tpg);
+  }
+  function paintCase(){
+    const c=caseState.active;
+    if(!c){ caseStatusEl.innerHTML='Press <b>“New random case”</b> to load a hidden hemodynamic profile, then read the pressures and decide.'; }
+    else if(caseState.answered){ caseStatusEl.innerHTML='✓ <b>Correct</b> — '+c.name+'.'; }
+    else if(caseState.revealed){ caseStatusEl.innerHTML='Answer: <b>'+c.name+'</b>.'; }
+    else { caseStatusEl.innerHTML='Mystery case loaded. Walk the catheter <b>RA → RV → PA → wedge</b>, measure CO, then choose the diagnosis.'; }
+    if(c && (caseState.answered||caseState.revealed)){
+      dxWhyEl.style.display='block';
+      dxWhyEl.innerHTML='<div class="why-h">'+c.name+'</div><ul>'+
+        c.findings.map(f=>'<li>'+f+'</li>').join('')+'</ul><p>'+c.why+'</p>';
+    }else{ dxWhyEl.style.display='none'; dxWhyEl.innerHTML=''; }
+  }
+  document.getElementById('resetBtn').addEventListener('click',doReset);
+
+  const guide=document.getElementById('guide'), guideBtn=document.getElementById('guideBtn');
+  guideBtn.addEventListener('click',()=>{ guide.open=!guide.open;
+    guideBtn.textContent=guide.open?'Close guide':'Open guide';
+    if(guide.open) guide.scrollIntoView({behavior:'smooth',block:'nearest'}); });
+
+  const soundBtn=document.getElementById('soundBtn');
+  soundBtn.addEventListener('click',()=>{
+    soundOn=!soundOn; soundBtn.setAttribute('aria-pressed',soundOn);
+    soundBtn.textContent=soundOn?'♪ sound on':'♪ sound';
+    if(soundOn && !actx){ try{ actx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+    if(soundOn && actx && actx.state==='suspended') actx.resume();
+  });
+
+  // diagnostic case wiring
+  newCaseBtn.addEventListener('click',newCase);
+  measureBtn.addEventListener('click',measureCO);
+  revealBtn.addEventListener('click',revealCase);
+  dxButtons.forEach(b=>b.addEventListener('click',()=>guessDx(b.dataset.dx)));
+  paintCaseLive(); paintCase();
+
+  // keyboard
+  const held={right:false,left:false};
+  window.addEventListener('keydown',e=>{
+    if(e.repeat && (e.key==='b'||e.key==='r')) return;
+    switch(e.key){
+      case 'ArrowRight': case 'ArrowUp': holdDir=1; held.right=true; e.preventDefault(); break;
+      case 'ArrowLeft':  case 'ArrowDown': holdDir=-1; held.left=true; e.preventDefault(); break;
+      case 'b': case 'B': toggleBalloon(); break;
+      case 'r': case 'R': doReset(); break;
+    }
+  });
+  window.addEventListener('keyup',e=>{
+    if(['ArrowRight','ArrowUp'].includes(e.key)){held.right=false; if(holdDir===1)holdDir=0;}
+    if(['ArrowLeft','ArrowDown'].includes(e.key)){held.left=false; if(holdDir===-1)holdDir=0;}
+  });
+
+  /* ---------------- init / resize ---------------- */
+  function initCanvases(){
+    sizeWrap(document.getElementById('ecgWrap'),168);
+    sizeWrap(document.getElementById('presWrap'),168);
+    ecgT=makeTrace(document.getElementById('ecg'),0);
+    presT=makeTrace(document.getElementById('pres'),5);
+  }
+  initCanvases();
+  let rT;
+  window.addEventListener('resize',()=>{ clearTimeout(rT); rT=setTimeout(()=>{ ecgT.resize(); presT.resize(); },120); });
+
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
