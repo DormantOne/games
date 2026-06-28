@@ -1,0 +1,1555 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Living Transformer — see a language model think, then learn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --void:#04060d; --void2:#070b16; --panel:rgba(146,182,236,.045); --panel2:rgba(146,182,236,.08);
+    --line:rgba(150,190,255,.12); --line2:rgba(150,190,255,.22);
+    --text:#E9F0FF; --muted:#93A4C6; --faint:#5E6E92;
+    --cyan:#5FE7FF; --amber:#FFB74A; --red:#FF5D5D; --mint:#58E1A5; --orange:#FF7A4D; --magenta:#FF6B9D; --violet:#B58CFF; --steel:#B9C5E8;
+    --disp:'Chakra Petch', ui-sans-serif, system-ui, sans-serif;
+    --sans:'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+    --shadow:0 24px 70px rgba(0,0,0,.55);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; min-height:100vh; overflow-x:hidden; color:var(--text); font-family:var(--sans);
+    background:
+      radial-gradient(1200px 540px at 14% -10%, rgba(95,231,255,.10), transparent 60%),
+      radial-gradient(1100px 520px at 90% -8%, rgba(181,140,255,.10), transparent 60%),
+      radial-gradient(900px 460px at 60% 116%, rgba(255,93,93,.06), transparent 60%),
+      linear-gradient(180deg,#04060d,#06090f 46%,#04050b);
+    letter-spacing:.005em;
+  }
+  .fx{position:fixed; inset:0; pointer-events:none; z-index:1;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,.015) 0 1px, transparent 1px 3px);
+    mix-blend-mode:overlay; opacity:.5}
+  .vig{position:fixed; inset:0; pointer-events:none; z-index:1; box-shadow:inset 0 0 240px rgba(0,0,0,.6)}
+  .wrap{position:relative; z-index:2; max-width:1760px; margin:0 auto; padding:18px 20px 60px}
+
+  .mast{display:flex; justify-content:space-between; align-items:flex-end; gap:22px; margin-bottom:14px; flex-wrap:wrap}
+  .kicker{font-family:var(--mono); font-size:10.5px; letter-spacing:.34em; text-transform:uppercase; color:var(--faint); margin-bottom:9px}
+  h1{margin:0; font-family:var(--disp); font-weight:700; font-size:clamp(26px,3vw,44px); line-height:.95; letter-spacing:.01em; text-transform:uppercase}
+  h1 .thin{display:block; font-family:var(--sans); font-weight:400; text-transform:none; letter-spacing:0; color:var(--muted); font-size:clamp(12px,1.2vw,15px); margin-top:9px; max-width:680px; line-height:1.5}
+  .pills{display:flex; gap:7px; flex-wrap:wrap; justify-content:flex-end}
+  .pill{font-family:var(--mono); font-size:10.5px; color:#dbe8ff; border:1px solid var(--line); background:rgba(146,182,236,.05); border-radius:999px; padding:6px 10px; letter-spacing:.04em}
+  .pill b{color:var(--cyan); font-weight:600}
+
+  .hud{display:flex; gap:6px; border:1px solid var(--line); border-radius:16px; padding:7px; background:linear-gradient(180deg,var(--panel2),var(--panel)); box-shadow:var(--shadow); margin-bottom:13px; overflow:hidden; position:relative}
+  .hud .scan{position:absolute; inset:0; opacity:.5; pointer-events:none; transition:background .5s}
+  .tab{flex:1; position:relative; display:flex; align-items:center; gap:11px; padding:11px 13px; border-radius:11px; border:1px solid transparent; background:transparent; cursor:pointer; transition:.16s; min-width:0}
+  .tab:hover{background:rgba(146,182,236,.06)}
+  .tab .ix{font-family:var(--mono); font-size:11px; color:var(--faint); flex:none}
+  .tab .nm{font-family:var(--disp); font-weight:600; font-size:14px; letter-spacing:.04em; text-transform:uppercase; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .tab .sub{font-family:var(--mono); font-size:10px; color:var(--faint); white-space:nowrap}
+  .tab .arrow{position:absolute; right:-4px; top:50%; transform:translateY(-50%); color:var(--faint); font-size:14px; opacity:.5}
+  .tab:last-child .arrow{display:none}
+  .tab.on{border-color:var(--tabc,var(--cyan)); background:color-mix(in srgb, var(--tabc,var(--cyan)) 12%, transparent); box-shadow:0 0 22px -6px var(--tabc,var(--cyan)) inset}
+  .tab.on .nm{color:var(--tabc,var(--cyan))}
+  .tab.on .ix{color:var(--tabc,var(--cyan))}
+  .tab .dot{width:8px;height:8px;border-radius:50%; background:var(--tabc,var(--cyan)); box-shadow:0 0 12px var(--tabc); opacity:0; transition:.2s; flex:none}
+  .tab.on .dot{opacity:1}
+
+  .bar{display:flex; align-items:center; gap:10px; flex-wrap:wrap; border:1px solid var(--line); border-radius:14px; padding:10px 13px; background:linear-gradient(180deg,var(--panel2),var(--panel)); box-shadow:var(--shadow); margin-bottom:12px}
+  .bar .lab{font-family:var(--mono); font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--faint)}
+  .chips{display:flex; gap:6px; flex-wrap:wrap}
+  .chip{font-family:var(--mono); font-size:10.5px; color:#dde8ff; padding:6px 9px; border-radius:999px; border:1px solid var(--line); background:rgba(146,182,236,.05); cursor:pointer; transition:.13s; white-space:nowrap}
+  .chip:hover{border-color:var(--line2); transform:translateY(-1px)}
+  button{font:inherit; cursor:pointer; color:var(--text); border:1px solid var(--line2); background:rgba(146,182,236,.06); border-radius:11px; padding:9px 12px; font-size:13px; transition:.14s; box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+  button:hover{transform:translateY(-1px); border-color:var(--cyan); background:rgba(95,231,255,.10)}
+  button:focus-visible{outline:2px solid var(--cyan); outline-offset:2px}
+  button:disabled{opacity:.4; cursor:not-allowed; transform:none}
+  button.go{background:linear-gradient(135deg,rgba(95,231,255,.26),rgba(181,140,255,.20)); border-color:rgba(95,231,255,.5); font-weight:600}
+  button.fire{background:linear-gradient(135deg,rgba(255,122,77,.30),rgba(255,93,93,.22)); border-color:rgba(255,122,77,.5); font-weight:600}
+  .slider{display:flex; align-items:center; gap:7px; font-family:var(--mono); font-size:11px; color:var(--muted); white-space:nowrap}
+  .slider input[type=range]{width:96px; accent-color:var(--cyan)}
+  .slider b{color:var(--cyan); min-width:30px; display:inline-block}
+  .spacer{flex:1}
+  .transport{margin-bottom:14px}
+  .tbtn{width:40px; height:38px; padding:0; display:inline-flex; align-items:center; justify-content:center; font-size:15px}
+  .tlabel{font-family:var(--mono); font-size:12px; color:var(--text); background:rgba(0,0,0,.34); border:1px solid var(--line); border-radius:10px; padding:7px 11px; white-space:nowrap}
+  .tlabel b{color:var(--amber)}
+
+  .grid{display:grid; grid-template-columns:minmax(640px,1fr) 500px; gap:15px; align-items:start}
+  .card{border:1px solid var(--line); border-radius:18px; background:linear-gradient(180deg,var(--panel2),var(--panel)); box-shadow:var(--shadow)}
+  .stagewrap{position:relative; overflow:hidden; border-radius:18px}
+  canvas.stage{display:block; width:100%; height:600px; border-radius:18px 18px 0 0;
+    background:radial-gradient(120% 95% at 48% 0%, #0e1326 0%, #090c1a 55%, #05070f 100%)}
+  .corner{position:absolute; width:18px; height:18px; border:1.5px solid var(--cyan); opacity:.5; pointer-events:none}
+  .corner.tl{left:11px; top:11px; border-right:0; border-bottom:0}
+  .corner.tr{right:11px; top:11px; border-left:0; border-bottom:0}
+  .corner.bl{left:11px; bottom:78px; border-right:0; border-top:0}
+  .corner.br{right:11px; bottom:78px; border-left:0; border-top:0}
+  .stagetag{position:absolute; left:18px; top:18px; font-family:var(--mono); font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:#cfe0ff; background:rgba(0,0,0,.42); border:1px solid var(--line); border-radius:999px; padding:5px 10px; pointer-events:none}
+  .stagereadout{position:absolute; right:18px; top:16px; font-family:var(--mono); font-size:10.5px; color:var(--muted); text-align:right; pointer-events:none; line-height:1.5}
+  .stagereadout b{color:var(--cyan)}
+  .ctrlstrip{display:flex; align-items:center; gap:9px; flex-wrap:wrap; padding:11px 14px; border-top:1px solid var(--line); min-height:54px}
+  .seg{display:inline-flex; border:1px solid var(--line); border-radius:10px; overflow:hidden}
+  .seg button{border:0; border-radius:0; background:transparent; padding:7px 10px; font-size:12px; box-shadow:none}
+  .seg button.on{background:color-mix(in srgb, var(--tabc,var(--cyan)) 20%, transparent); color:#fff}
+  .seg button:hover{transform:none; background:rgba(146,182,236,.08)}
+  .toggle{display:inline-flex; align-items:center; gap:6px; font-family:var(--mono); font-size:11px; color:var(--muted)}
+  .legend{display:flex; gap:5px 14px; flex-wrap:wrap; padding:11px 14px; border-top:1px solid var(--line); color:var(--muted); font-size:11px}
+  .lk{display:flex; align-items:center; gap:6px}.swatch{width:9px;height:9px;border-radius:50%}
+
+  .assay{display:grid; gap:15px}
+  .panel{padding:14px 15px}
+  .panel h2{margin:0; font-family:var(--disp); font-size:12.5px; letter-spacing:.1em; text-transform:uppercase; color:#cdd9f6; font-weight:600; display:flex; align-items:center; gap:8px}
+  .panel h2 .tag{font-family:var(--mono); font-size:9.5px; color:var(--faint); letter-spacing:.06em; text-transform:none; margin-left:auto}
+  .panel .sub{font-family:var(--mono); font-size:11px; color:var(--faint); margin:4px 0 12px}
+  .empty{color:var(--faint); font-size:12.5px; line-height:1.55; font-style:italic}
+
+  .vec{display:grid; gap:3px; font-family:var(--mono); font-size:10.5px}
+  .vrow{display:grid; grid-template-columns:74px 1fr 52px; gap:8px; align-items:center}
+  .vrow .vn{color:var(--faint); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .vbar{position:relative; height:11px; border-radius:3px; background:rgba(146,182,236,.08); overflow:hidden}
+  .vbar .mid{position:absolute; left:50%; top:0; bottom:0; width:1px; background:rgba(255,255,255,.18)}
+  .vbar i{position:absolute; top:0; bottom:0; border-radius:3px}
+  .vrow .vv{text-align:right; color:#dbe6ff}
+
+  .math{font-family:var(--mono); font-size:11.5px; line-height:1.62; color:#d6e0f6; white-space:pre-wrap; word-break:break-word; background:rgba(0,0,0,.26); border:1px solid var(--line); border-radius:12px; padding:11px 12px; overflow-x:auto}
+  .math .k{color:var(--cyan)} .math .v{color:var(--amber)} .math .d{color:var(--faint)} .math .r{color:var(--magenta)} .math .g{color:var(--mint)}
+  .formula{font-family:var(--mono); font-size:11px; color:var(--muted); background:rgba(146,182,236,.045); border:1px dashed var(--line); border-radius:10px; padding:8px 10px; line-height:1.5}
+  .formula b{color:var(--text)}
+
+  .heatwrap{overflow:auto; border:1px solid var(--line); border-radius:12px; background:rgba(0,0,0,.2)}
+  table.heat{border-collapse:collapse; font-family:var(--mono); font-size:10px}
+  .heat th,.heat td{border:1px solid rgba(150,190,255,.06); padding:0; text-align:center}
+  .heat th{color:var(--faint); font-weight:500; padding:3px 5px; background:rgba(146,182,236,.03); white-space:nowrap}
+  .heat td{width:30px; height:26px; cursor:pointer; color:#eaf2ff; position:relative}
+  .heat td.sel{box-shadow:inset 0 0 0 2px var(--text)}
+  .heat td.mask{color:var(--faint); background:repeating-linear-gradient(45deg,rgba(255,93,93,.06) 0 4px,transparent 4px 8px)!important}
+
+  .heads{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+  .headcard{border:1px solid var(--line); border-radius:12px; padding:9px 10px; cursor:pointer; transition:.13s; background:rgba(146,182,236,.03)}
+  .headcard:hover,.headcard.sel{border-color:var(--red); background:rgba(255,93,93,.07)}
+  .headcard .ht{display:flex; justify-content:space-between; font-family:var(--disp); font-weight:600; font-size:13px}
+  .headcard .hs{font-family:var(--mono); font-size:10.5px; color:var(--muted); margin-top:5px; line-height:1.4}
+  .meter{height:6px; border-radius:999px; background:rgba(146,182,236,.1); overflow:hidden; margin-top:7px}
+  .meter i{display:block; height:100%; border-radius:999px}
+
+  .probs{display:grid; gap:6px}
+  .prow{display:grid; grid-template-columns:84px 1fr 50px; gap:8px; align-items:center; font-size:12px; cursor:pointer; border-radius:8px; padding:2px 4px}
+  .prow:hover{background:rgba(146,182,236,.06)}
+  .prow.samp{background:rgba(255,179,74,.1)}
+  .ptok{font-family:var(--mono); color:#fff; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .pbar{height:11px; border-radius:999px; background:rgba(146,182,236,.1); overflow:hidden}
+  .pbar i{display:block; height:100%; border-radius:999px; background:linear-gradient(90deg,var(--magenta),var(--amber))}
+  .pval{font-family:var(--mono); color:var(--muted); text-align:right}
+
+  .callout{border-left:3px solid var(--violet); padding:9px 12px; background:rgba(181,140,255,.06); border-radius:0 10px 10px 0; font-size:12.5px; line-height:1.55; color:#dbe2f6}
+  .callout b{color:#fff}
+  .callout .h{font-family:var(--disp); font-weight:600; letter-spacing:.05em; text-transform:uppercase; font-size:11px; color:var(--violet); display:block; margin-bottom:4px}
+
+  .about{margin-top:15px}
+  details summary{cursor:pointer; font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); list-style:none}
+  details summary::-webkit-details-marker{display:none}
+  details summary:before{content:'> '; color:var(--cyan)}
+  details[open] summary:before{content:'v '}
+  .aboutbody{font-size:12.5px; line-height:1.6; color:#cdd7ef; margin-top:11px}
+  .aboutbody b{color:#fff} .aboutbody code{font-family:var(--mono); color:var(--amber); background:rgba(0,0,0,.3); padding:1px 5px; border-radius:5px; font-size:11px}
+  .aboutgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-top:12px}
+  .acard{border:1px solid var(--line); border-radius:12px; padding:11px; background:rgba(146,182,236,.03)}
+  .acard .at{font-family:var(--mono); font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); margin-bottom:6px}
+  .acard .ad{font-size:12px; color:#dde4f6; line-height:1.45}
+
+  .tip{position:fixed; z-index:60; pointer-events:none; max-width:320px; opacity:0; transform:translate(12px,12px); transition:opacity .08s; background:rgba(6,9,18,.96); border:1px solid var(--line2); border-radius:13px; padding:10px 12px; box-shadow:0 18px 50px rgba(0,0,0,.6); backdrop-filter:blur(12px)}
+  .tip.show{opacity:1}
+  .tip .tag{display:inline-block; font-family:var(--mono); font-size:9px; letter-spacing:.08em; text-transform:uppercase; color:#cdd7f2; border:1px solid var(--line); border-radius:999px; padding:2px 7px; margin-bottom:6px}
+  .tip b{display:block; font-family:var(--disp); font-size:13px; margin-bottom:4px}
+  .tip span{display:block; color:var(--muted); font-size:12px; line-height:1.42}
+  .tip .mm{font-family:var(--mono); font-size:11px; color:var(--amber); margin-top:6px; white-space:pre-wrap}
+
+  .scrim{position:fixed; inset:0; z-index:80; background:rgba(3,5,11,.74); backdrop-filter:blur(6px); display:none; align-items:center; justify-content:center; padding:24px}
+  .scrim.show{display:flex}
+  .modal{width:min(760px,100%); max-height:88vh; overflow:auto; border:1px solid var(--line2); border-radius:18px; background:linear-gradient(180deg,#0c1122,#080c19); box-shadow:0 42px 120px rgba(0,0,0,.65)}
+  .modalhead{display:flex; justify-content:space-between; align-items:center; padding:15px 19px; border-bottom:1px solid var(--line)}
+  .modalhead .t{font-family:var(--mono); font-size:11px; letter-spacing:.22em; text-transform:uppercase; color:var(--magenta)}
+  .report{font-family:var(--mono); white-space:pre-wrap; font-size:11.5px; line-height:1.6; color:#d7e0f5; padding:16px 19px}
+  .report .hl{color:var(--cyan)} .report .dim{color:var(--faint)} .report .am{color:var(--amber)}
+  .modalfoot{display:flex; justify-content:flex-end; gap:10px; padding:0 19px 17px}
+  .examine{padding:4px 19px 8px; border-top:1px solid var(--line)}
+  .examine .exhead{font-family:var(--disp); font-weight:600; font-size:13px; color:var(--magenta); margin:12px 0 3px}
+  .examine .exsub{font-size:11.5px; color:#8c9bc0; line-height:1.45; margin-bottom:9px}
+  .exmode{display:inline-flex; gap:0; margin:10px 0 8px; border:1px solid var(--line2); border-radius:9px; overflow:hidden}
+  .exmode button{font-family:var(--mono); font-size:11px; color:#9fb0d8; background:transparent; border:0; padding:6px 12px; cursor:pointer; transition:.13s}
+  .exmode button.on{background:var(--magenta); color:#120208; font-weight:700}
+  .exsteps{font-size:11px; color:#8c9bc0; line-height:1.5; margin:10px 0 2px}
+  .exq{width:100%; box-sizing:border-box; resize:vertical; border:1px solid var(--line); border-radius:11px; color:var(--text); background:rgba(0,0,0,.32); padding:9px 11px; font:13px/1.45 var(--sans)}
+  .exq:focus{outline:2px solid var(--magenta); outline-offset:1px}
+  .exrow{display:flex; flex-wrap:wrap; gap:7px; margin-top:9px}
+  .exbtn{font-family:var(--mono); font-size:11.5px; color:#eef3ff; padding:7px 12px; border-radius:10px; border:1px solid var(--line2); background:rgba(146,182,236,.06); cursor:pointer; transition:.13s}
+  .exbtn:hover{border-color:var(--magenta); color:#fff; background:rgba(255,107,157,.1); transform:translateY(-1px)}
+  .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px); z-index:90; background:rgba(88,225,165,.16); border:1px solid rgba(88,225,165,.5); color:#d8ffe9; font-size:13px; padding:10px 16px; border-radius:12px; opacity:0; transition:.25s; pointer-events:none}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+
+  @media (max-width:1200px){ .grid{grid-template-columns:1fr} }
+  @media (max-width:720px){
+    .wrap{padding:13px}
+    canvas.stage{height:460px}
+    .tab .sub{display:none} .tab .nm{font-size:12px}
+    .heads{grid-template-columns:1fr}
+    .slider input[type=range]{width:72px}
+    h1 .thin{font-size:12px}
+  }
+  /* sentence strip */
+  .sentencebar{padding:13px 16px; align-items:center}
+  .sentence{display:flex; flex-wrap:wrap; gap:4px 5px; align-items:baseline; font-family:var(--disp); font-size:clamp(17px,2vw,25px); font-weight:500; line-height:1.45; flex:1; min-width:200px}
+  .sword{padding:2px 9px; border-radius:9px; color:#9fabca; cursor:pointer; transition:.14s; border:1px solid transparent}
+  .sword:hover{color:#fff; background:rgba(146,182,236,.08)}
+  .sword.active{color:#04060d; background:linear-gradient(180deg,var(--cyan),#3fcef0); box-shadow:0 0 24px -5px var(--cyan); font-weight:700}
+  .sword.qy.active{background:linear-gradient(180deg,var(--amber),#f59e2e); box-shadow:0 0 24px -5px var(--amber)}
+  .sword.future{opacity:.32}
+  .sword.keyhi{box-shadow:inset 0 0 0 1.5px var(--cyan); color:#dff2ff}
+  .sword.ghost{color:var(--magenta); border:1px dashed rgba(255,107,157,.55); background:rgba(255,107,157,.07); font-style:italic; opacity:.85; cursor:default}
+  .sword.ghost::before{content:"⟶ "; opacity:.6; font-style:normal}
+  .sword.fresh{animation:pop .5s ease}
+  @keyframes pop{0%{transform:translateY(-10px) scale(.6);opacity:0}60%{transform:translateY(0) scale(1.12)}100%{transform:none;opacity:1}}
+  .editinput{flex:1; min-width:220px; border:1px solid var(--line); border-radius:11px; color:var(--text); background:rgba(0,0,0,.34); padding:10px 12px; font:16px/1.3 var(--sans)}
+  .editinput:focus{outline:2px solid var(--cyan); outline-offset:1px}
+  @media (prefers-reduced-motion: reduce){ *{scroll-behavior:auto} .sword.fresh{animation:none} }
+</style>
+</head>
+<body>
+<div class="fx"></div><div class="vig"></div>
+<div class="wrap">
+  <div class="mast">
+    <div>
+      <div class="kicker">Toy transformer · live forward pass · gradient descent</div>
+      <h1>Living Transformer<span class="thin">Watch words become vectors, route through attention, get reshaped, and resolve into a next-token prediction — then watch a network learn by backprop. Every number on screen is real and traceable.</span></h1>
+    </div>
+    <div class="pills">
+      <span class="pill">d_model <b>8</b></span>
+      <span class="pill">heads <b>2</b></span>
+      <span class="pill">d_ff <b>16</b></span>
+      <span class="pill">block 1 · real math</span>
+    </div>
+  </div>
+
+  <nav class="hud" id="hud"><div class="scan" id="hudscan"></div></nav>
+
+  <div class="bar transport" id="transport">
+    <span class="lab" id="transLab">move through the words</span>
+    <button class="tbtn" id="tFirst" title="first word">|&lt;</button>
+    <button class="tbtn" id="tPrev" title="previous word">&lt;</button>
+    <button class="tbtn go" id="tPlay" title="play / pause">&#9654;</button>
+    <button class="tbtn" id="tNext" title="next word">&gt;</button>
+    <button class="tbtn" id="tLast" title="last word">&gt;|</button>
+    <button class="tbtn" id="tReset" title="reset to the starting sentence">&#8635;</button>
+    <span class="tlabel" id="transReadout">word <b>-</b></span>
+    <div class="slider">speed<input type="range" id="speedSlider" min="0.3" max="3" step="0.01" value="1.0"></div>
+    <div class="spacer"></div>
+    <button class="fire" id="inspectBtn">&#8982; Trace this computation</button>
+  </div>
+
+  <div class="bar sentencebar" id="sentencebar">
+    <div class="sentence" id="sentence"></div>
+    <button class="go" id="genBtn" style="display:none">predict next word &#9660;</button>
+    <button id="editBtn" title="type your own sentence">&#9998; edit</button>
+    <input id="editInput" class="editinput" spellcheck="false" style="display:none" value="The cat sat on the mat">
+    <button class="go" id="editApply" style="display:none">set</button>
+    <button id="editCancel" style="display:none">cancel</button>
+    <div class="chips" id="chips" style="display:none"></div>
+  </div>
+
+  <div class="grid">
+    <section class="card">
+      <div class="stagewrap">
+        <canvas id="stage" class="stage" width="1180" height="600" aria-label="Transformer visualizer"></canvas>
+        <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+        <div class="stagetag" id="stagetag">embedding space</div>
+        <div class="stagereadout" id="stagereadout"></div>
+      </div>
+      <div class="ctrlstrip" id="ctrlstrip"></div>
+      <div class="legend" id="legend"></div>
+    </section>
+    <aside class="assay" id="assay"></aside>
+  </div>
+
+  <section class="card panel about">
+    <details>
+      <summary>About this model — what's real, what's a toy</summary>
+      <div class="aboutbody">
+        This is a genuine transformer forward pass, written out small enough to watch. It is <b>not</b> a trained language model and its answers carry no authority — it exists to make the machinery legible.
+        <div class="aboutgrid" id="aboutgrid"></div>
+        <p style="margin-top:13px">The attention and feed-forward weights are <b>randomly initialized</b> and frozen, so you are watching the <i>mechanism</i>, not learned skill &mdash; an untrained attention head routes more or less arbitrarily, which is itself the point of the Learn tab. The <b>output layer was trained by gradient descent</b> on a dozen example sentences (the same algorithm shown in <b>Learn</b>), which is why the next-token guesses land on-theme instead of random. Real models run this same arithmetic with billions of weights, dozens of blocks, thousands of hidden dimensions, and a trained tokenizer.</p>
+      </div>
+    </details>
+  </section>
+</div>
+
+<div class="tip" id="tip"><span class="tag"></span><b></b><span></span><span class="mm"></span></div>
+<div class="scrim" id="scrim">
+  <div class="modal">
+    <div class="modalhead"><span class="t" id="modalT">Trace &amp; examine</span><button id="closeModal">Close</button></div>
+    <div class="report" id="report"></div>
+    <div class="examine">
+      <div class="exhead">Examine this with another AI</div>
+      <div class="exmode" id="exMode"><button data-m="ask" class="on">Ask a question</button><button data-m="teach">Teach it back</button></div>
+      <div class="exsub" id="exSub"></div>
+      <textarea id="exQuestion" class="exq" rows="3" spellcheck="false"></textarea>
+      <div class="exsteps">Pick a model below → your text + the full system state is <b>copied to your clipboard</b> and the model opens in a new tab → <b>paste</b> it in (⌘V / Ctrl-V) and send.</div>
+      <div class="exrow" id="exProviders"></div>
+    </div>
+    <div class="modalfoot"><button id="copyPayload">Copy payload</button><button class="fire" id="copyReport">Copy trace</button></div>
+  </div>
+</div>
+<div class="toast" id="toast">Copied.</div>
+
+<script>
+"use strict";
+(() => {
+/* ===== 0. UTILITIES + VERIFIED MATH ===== */
+const $=id=>document.getElementById(id);
+const TAU=Math.PI*2;
+const clamp=(x,a=0,b=1)=>x<a?a:x>b?b:x;
+const lerp=(a,b,t)=>a+(b-a)*t;
+const smooth=(a,b,x)=>{const t=clamp((x-a)/(b-a||1e-9));return t*t*(3-2*t);};
+const fmt=(x,n=3)=>(x<0?'':' ')+x.toFixed(n);
+const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const dot=(a,b)=>{let s=0;for(let i=0;i<a.length;i++)s+=a[i]*b[i];return s;};
+const addv=(a,b)=>a.map((x,i)=>x+b[i]);
+const mulv=(a,k)=>a.map(x=>x*k);
+const normv=a=>{const n=Math.sqrt(dot(a,a))||1;return a.map(x=>x/n);};
+function softmax(arr){const m=Math.max(...arr);const ex=arr.map(x=>Math.exp(x-m));const s=ex.reduce((p,q)=>p+q,0)||1;return ex.map(x=>x/s);}
+function gelu(x){return 0.5*x*(1+Math.tanh(0.7978845608*(x+0.044715*x*x*x)));}
+function mulberry32(seed){let a=seed>>>0;return function(){a|=0;a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return ((t^(t>>>14))>>>0)/4294967296;};}
+function gauss(rng){let u=0,v=0;while(u===0)u=rng();while(v===0)v=rng();return Math.sqrt(-2*Math.log(u))*Math.cos(TAU*v);}
+function randMat(rng,r,c,s){const m=[];for(let i=0;i<r;i++){const row=[];for(let j=0;j<c;j++)row.push(gauss(rng)*s);m.push(row);}return m;}
+function matvec(M,x){return M.map(row=>dot(row,x));}
+function layerNorm(x){const m=x.reduce((a,b)=>a+b,0)/x.length;const v=x.reduce((a,b)=>a+(b-m)*(b-m),0)/x.length;const d=Math.sqrt(v+1e-5);return{out:x.map(z=>(z-m)/d),mean:m,var:v,std:d};}
+function hash(str){let h=2166136261>>>0;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
+
+/* ===== 1. TOY TRANSFORMER ===== */
+const DMODEL=8, NHEADS=2, DHEAD=4, DFF=16, LOGIT_SCALE=4.0, SEED=21;
+const DIMS=['medical','nature','cognition','finance','severity','function','sensory','valence'];
+const DIMCOL=['#5FE7FF','#58E1A5','#B58CFF','#FFB74A','#FF5D5D','#93A4C6','#FF6B9D','#9FE0B0'];
+const SEM={
+ the:[0,0,0,0,0,1,0,0],a:[0,0,0,0,0,1,0,0],saw:[0,0,.4,0,0,.6,.1,0],because:[0,0,.3,0,0,.8,0,0],
+ and:[0,0,0,0,0,.95,0,0],was:[0,0,0,0,0,.85,0,.05],is:[0,0,0,0,0,.85,0,.05],
+ doctor:[.95,0,.25,0,.1,0,0,.2],patient:[.9,0,.15,0,.25,0,0,0],nurse:[.85,0,.25,0,.1,0,0,.2],
+ clinic:[.8,0,.15,0,.05,.1,0,.1],pulse:[.7,.1,.05,0,.15,0,.15,0],rash:[.85,0,0,0,.35,0,.45,-.35],
+ fever:[.85,0,0,0,.55,0,.25,-.35],infected:[.8,0,0,0,.6,0,.35,-.5],itchy:[.65,0,0,0,.35,0,.55,-.3],
+ severe:[.35,0,.1,0,.95,0,.25,-.45],mild:[.25,0,.1,0,-.6,0,.1,.35],benign:[.55,0,.2,0,-.55,0,-.1,.55],
+ urgent:[.4,0,.2,0,.85,0,.15,-.35],river:[0,.95,0,0,0,0,.1,.1],water:[0,.9,0,.1,0,0,.1,.15],
+ boat:[0,.75,0,0,0,.1,.15,.1],fish:[0,.7,.1,0,0,0,.25,.15],cold:[0,.25,0,0,.2,0,.45,-.1],
+ calm:[0,.3,.1,0,-.45,0,0,.55],clear:[0,.3,.2,0,-.2,0,.25,.45],quiet:[0,.3,.1,0,-.3,.1,0,.35],
+ bank:[.1,.5,0,.6,.05,.1,0,0],money:[0,0,0,.95,.1,0,0,.15],loan:[0,0,.1,.9,.2,0,0,-.1],
+ customer:[0,0,.2,.65,0,0,0,.15],account:[0,0,.1,.75,0,.1,0,0],approved:[0,0,.25,.5,0,.45,0,.35],
+ model:[0,0,.9,0,0,0,0,.15],question:[0,0,.85,0,0,0,0,0],answer:[0,0,.85,0,0,0,0,.25],
+ idea:[0,0,.8,0,0,0,.1,.25],careful:[.1,0,.8,0,.1,.1,0,.15],likely:[0,0,.45,.1,.15,.35,0,.15],
+ important:[.25,0,.45,.1,.35,.2,.1,.25],red:[0,0,0,0,.1,0,.95,-.1],blue:[0,.2,0,0,0,0,.9,.1],
+ warm:[.1,0,0,0,.2,0,.55,.15],better:[.3,0,.1,0,-.35,.2,0,.6],worse:[.3,0,.1,0,.55,.2,0,-.6],
+ gone:[.2,0,0,0,-.2,.35,0,.25],strange:[0,0,.4,0,.2,0,.2,-.15],
+ cat:[0,.55,.05,0,0,0,.45,.35],dog:[0,.6,.05,0,.1,0,.4,.4],fox:[0,.62,.08,0,.1,0,.4,.2],hen:[0,.55,0,0,0,0,.4,.3],bird:[0,.6,.05,0,0,0,.45,.35],
+ sat:[0,0,.15,0,0,.55,0,.1],ran:[0,.1,.15,0,.2,.5,0,.15],hid:[0,.15,.2,0,.1,.45,0,-.1],jumped:[0,.1,.2,0,.3,.45,0,.25],
+ big:[0,0,.05,0,.7,0,.3,.1],small:[0,0,.05,0,-.55,0,.25,.15],fast:[0,0,.1,0,.5,0,.15,.2],soft:[0,.1,0,0,-.3,0,.45,.4],hot:[.1,0,0,0,.4,0,.55,-.05],
+ sun:[0,.55,0,0,.3,0,.7,.4],mat:[0,.2,0,0,0,.1,.35,.05],hat:[0,.1,0,0,0,.1,.5,.15],hill:[0,.6,0,0,.2,0,.3,.1],log:[0,.6,0,0,0,0,.3,.05],ball:[0,.2,0,0,0,0,.55,.35],
+ on:[0,0,0,0,0,.95,0,0],in:[0,0,0,0,0,.95,0,0],to:[0,0,0,0,0,.95,0,0],
+ '.':[0,0,0,0,0,1,0,0]
+};
+const VOCAB=Object.keys(SEM); const VIDX={}; VOCAB.forEach((t,i)=>VIDX[t]=i);
+const embedCache={};
+function embedOf(tok){const t=tok.toLowerCase();if(embedCache[t])return embedCache[t];
+  let v; if(SEM[t]) v=normv(SEM[t]); else {const rng=mulberry32(hash(t));const a=[];for(let i=0;i<DMODEL;i++)a.push(gauss(rng));v=normv(a);}
+  embedCache[t]=v; return v;}
+function isKnown(tok){return SEM[tok.toLowerCase()]!==undefined;}
+function posEnc(pos){const v=[];for(let i=0;i<DMODEL/2;i++){const w=1/Math.pow(10000,(2*i)/DMODEL);v.push(Math.sin(pos*w));v.push(Math.cos(pos*w));}return v;}
+
+const rngW=mulberry32(SEED);
+const Wq=randMat(rngW,DMODEL,DMODEL,0.7),Wk=randMat(rngW,DMODEL,DMODEL,0.7),
+      Wv=randMat(rngW,DMODEL,DMODEL,0.7),Wo=randMat(rngW,DMODEL,DMODEL,0.6),
+      W1=randMat(rngW,DFF,DMODEL,0.7),b1=Array.from({length:DFF},()=>gauss(rngW)*0.05),
+      W2=randMat(rngW,DMODEL,DFF,0.7),b2=Array.from({length:DMODEL},()=>gauss(rngW)*0.05);
+const U=VOCAB.map(()=>new Array(DMODEL).fill(0));
+
+function forward(tokens,temp){
+  const n=tokens.length, scale=Math.sqrt(DMODEL);
+  const emb=tokens.map(embedOf);
+  const pe=tokens.map((_,i)=>posEnc(i));
+  const x0=tokens.map((_,i)=>addv(mulv(emb[i],scale),pe[i]));
+  const ln1=x0.map(layerNorm);
+  const xn=ln1.map(o=>o.out);
+  const Q=xn.map(v=>matvec(Wq,v)),K=xn.map(v=>matvec(Wk,v)),V=xn.map(v=>matvec(Wv,v));
+  const heads=[];
+  const attnOut=x0.map(()=>new Array(DMODEL).fill(0));
+  for(let h=0;h<NHEADS;h++){
+    const o=h*DHEAD; const scores=[],A=[];
+    for(let i=0;i<n;i++){
+      const sr=[]; for(let j=0;j<n;j++){let s=0;for(let d=0;d<DHEAD;d++)s+=Q[i][o+d]*K[j][o+d];s/=Math.sqrt(DHEAD);if(j>i)s=-Infinity;sr.push(s);}
+      scores.push(sr); A.push(softmax(sr));
+    }
+    heads.push({scores,A});
+    for(let i=0;i<n;i++){for(let d=0;d<DHEAD;d++){let m=0;for(let j=0;j<n;j++)m+=A[i][j]*V[j][o+d];attnOut[i][o+d]=m;}}
+  }
+  const projected=attnOut.map(v=>matvec(Wo,v));
+  const x1=x0.map((v,i)=>addv(v,projected[i]));
+  const ln2=x1.map(layerNorm);
+  const x1n=ln2.map(o=>o.out);
+  const preact=x1n.map(v=>matvec(W1,v).map((z,k)=>z+b1[k]));
+  const hidden=preact.map(z=>z.map(gelu));
+  const mlpOut=hidden.map(v=>matvec(W2,v).map((o,k)=>o+b2[k]));
+  const x2=x1.map((v,i)=>addv(v,mlpOut[i]));
+  const lnF=x2.map(layerNorm);
+  const last=lnF[n-1].out;
+  const logits=VOCAB.map(t=>dot(last,U[VIDX[t]])*LOGIT_SCALE);
+  const probs=softmax(logits.map(z=>z/temp));
+  return {n,tokens,emb,pe,x0,ln1,xn,Q,K,V,heads,attnOut,projected,x1,ln2,x1n,preact,hidden,mlpOut,x2,lnF,last,logits,probs};
+}
+const CORPUS=[
+ "the doctor saw the patient because the rash was red","the doctor saw the patient because the rash was itchy",
+ "the patient was severe and the rash was infected","the nurse checked the pulse and the patient was calm",
+ "the rash was benign and the patient was better","the river bank was calm and the water was clear",
+ "the river was cold and the water was clear","the bank approved the loan because the customer was important",
+ "the bank approved the loan and the money was gone","the model gave the answer because the question was important",
+ "the model was careful and the answer was clear","the fever was severe and the patient was worse",
+ "the cat sat on the mat","the big dog ran fast","the small cat hid in the log","the red sun was hot","the dog jumped on the ball","the fox ran to the hill"
+];
+let trainLossHistory=[];
+function trainOutputLayer(){
+  for(let v=0;v<VOCAB.length;v++)for(let k=0;k<DMODEL;k++)U[v][k]=gauss(mulberry32(99+v*7+k))*0.1;
+  const P=[]; for(const s of CORPUS){const w=s.split(/\s+/);for(let i=1;i<w.length;i++){if(VIDX[w[i]]!==undefined)P.push({f:forward(w.slice(0,i),1.0).last,t:VIDX[w[i]]});}}
+  const lr=2.0, steps=500;
+  for(let s=0;s<steps;s++){
+    const gU=U.map(r=>r.map(()=>0)); let loss=0;
+    for(const ex of P){const lg=U.map(row=>dot(row,ex.f)*LOGIT_SCALE);const p=softmax(lg);
+      loss+=-Math.log(Math.max(1e-12,p[ex.t]));
+      for(let v=0;v<VOCAB.length;v++){const g=(p[v]-(v===ex.t?1:0))*LOGIT_SCALE;for(let k=0;k<DMODEL;k++)gU[v][k]+=g*ex.f[k];}}
+    for(let v=0;v<VOCAB.length;v++)for(let k=0;k<DMODEL;k++)U[v][k]-=lr*gU[v][k]/P.length;
+    if(s%25===0) trainLossHistory.push(loss/P.length);
+  }
+}
+
+/* ===== 2. BACKPROP NETWORK (Learn tab): 1 -> 6 -> 1, tanh, MSE ===== */
+const HID=4;
+const GATES={
+  and:{name:'AND', t:[0,0,0,1], sep:true},
+  or:{name:'OR', t:[0,1,1,1], sep:true},
+  xor:{name:'XOR', t:[0,1,1,0], sep:false},
+  xnor:{name:'XNOR',t:[1,0,0,1], sep:false}
+};
+const XIN=[[0,0],[0,1],[1,0],[1,1]];
+const LN={ net:null, vel:null, gate:'xor', lr:0.5, mom:0.9, epoch:0, step:0, active:1, lossHist:[], last:null };
+function lnSig(z){return 1/(1+Math.exp(-z));}
+function lnTgt(i){return GATES[LN.gate].t[i];}
+function lnInit(seed){
+  const rng=mulberry32(seed||((Math.random()*1e9)|0));
+  LN.net={W1:Array.from({length:HID},()=>[gauss(rng),gauss(rng)]),b1:Array.from({length:HID},()=>gauss(rng)*0.5),W2:Array.from({length:HID},()=>gauss(rng)),b2:gauss(rng)*0.5};
+  LN.vel={W1:LN.net.W1.map(()=>[0,0]),b1:LN.net.b1.map(()=>0),W2:LN.net.W2.map(()=>0),b2:0};
+  LN.epoch=0; LN.step=0; LN.active=1; LN.last=null; LN.lossHist=[lnLoss()];
+}
+function lnFwd(x){const z1=LN.net.W1.map((w,k)=>w[0]*x[0]+w[1]*x[1]+LN.net.b1[k]);const a1=z1.map(Math.tanh);const z2=a1.reduce((s,a,k)=>s+a*LN.net.W2[k],LN.net.b2);return{z1,a1,z2,y:lnSig(z2)};}
+function lnBack(x,t){const f=lnFwd(x);const{a1,y}=f;const dy=y-t;const delta2=dy*y*(1-y);const gW2=a1.map(a=>delta2*a);const gb2=delta2;const delta1=LN.net.W2.map((w,k)=>delta2*w*(1-a1[k]*a1[k]));const gW1=delta1.map(d=>[d*x[0],d*x[1]]);const gb1=delta1.slice();return Object.assign({},f,{t,dy,delta2,gW2,gb2,delta1,gW1,gb1,loss:0.5*dy*dy});}
+function lnLoss(){if(!LN.net)return 0;let L=0;for(let i=0;i<4;i++)L+=0.5*(lnFwd(XIN[i]).y-lnTgt(i))**2;return L/4;}
+function lnMSE(){return lnLoss();}
+function lnAcc(){let c=0;for(let i=0;i<4;i++)if((lnFwd(XIN[i]).y>=0.5?1:0)===lnTgt(i))c++;return c;}
+function lnApply(g){const n=LN.net,v=LN.vel,lr=LN.lr,m=LN.mom;for(let k=0;k<HID;k++){for(let j=0;j<2;j++){v.W1[k][j]=m*v.W1[k][j]-lr*g.gW1[k][j];n.W1[k][j]+=v.W1[k][j];}v.b1[k]=m*v.b1[k]-lr*g.gb1[k];n.b1[k]+=v.b1[k];v.W2[k]=m*v.W2[k]-lr*g.gW2[k];n.W2[k]+=v.W2[k];}v.b2=m*v.b2-lr*g.gb2;n.b2+=v.b2;}
+function lnPush(){LN.lossHist.push(lnLoss());if(LN.lossHist.length>600)LN.lossHist.shift();}
+function lnStep(){const i=LN.active,x=XIN[i],t=lnTgt(i);const yB=lnFwd(x).y;const g=lnBack(x,t);lnApply(g);const yA=lnFwd(x).y;LN.last={i,x,t,g,yB,yA};LN.step++;if(LN.step%4===0)LN.epoch++;LN.active=(LN.active+1)%4;lnPush();}
+function lnEpoch(){for(let i=0;i<4;i++){const x=XIN[i],t=lnTgt(i);const g=lnBack(x,t);lnApply(g);LN.last={i,x,t,g};}LN.epoch++;lnPush();}
+
+/* ===== 3. STATE ===== */
+const TABS=[
+  {id:'embed', nm:'Embed', sub:'words to vectors', col:'#5FE7FF', tag:'embedding space'},
+  {id:'attend',nm:'Attend',sub:'routing over time', col:'#FF5D5D', tag:'attention routing'},
+  {id:'forge', nm:'Forge', sub:'reshape per token', col:'#FF7A4D', tag:'feed-forward block'},
+  {id:'predict',nm:'Predict',sub:'logits to softmax', col:'#FF6B9D', tag:'next-token vocabulary'},
+  {id:'learn', nm:'Learn', sub:'backprop', col:'#B58CFF', tag:'gradient descent'},
+  {id:'scale', nm:'Scale', sub:'the real thing', col:'#F2C66B', tag:'orders of magnitude'}
+];
+const S={
+  tab:'embed', tokens:[], fwd:null, temp:0.80, speed:1.0,
+  cursor:0, head:0, selTok:null, cell:null, selNeuron:0, selCand:null,
+  selWeight:null, playing:false,
+  rotY:0.6, rotX:-0.32, dragging:false,
+  cubeX:0, cubeY:3, cubeZ:1, showPos:true,
+  sampledTok:null, genCount:0, showLogits:false
+};
+const SAMPLES=[
+ 'The cat sat on the',
+ 'The big dog ran very fast and',
+ 'The doctor saw the patient and the rash looked',
+ 'The river was cold and the water was very'
+];
+const DEFAULT_SENTENCE='The doctor saw the patient and the rash looked';
+const WINDOW=10;
+const GEN={active:false, word:'', t:0, targetIdx:0};
+
+/* ===== SCALE data — this toy vs real models (public figures; frontier & Mythos undisclosed→estimated) ===== */
+const TOY_TOKENS=CORPUS.reduce((a,s)=>a+s.trim().split(/\s+/).length,0);
+function toyParams(){const D=DMODEL,F=DFF,V=VOCAB.length;return V*D + (4*D*D) + ((D*F+F)+(F*D+D)) + (2*(2*D)+2*D) + V*D;}
+const MODELS=[
+  {id:'toy',     name:'this toy',       P:toyParams(), d:DMODEL, L:1,   h:NHEADS, ff:DFF,  V:VOCAB.length, ctx:WINDOW,  yr:'now',    train:TOY_TOKENS, est:false, note:'what you have been watching',
+     emg:'predicts a plausible next word from its tiny vocabulary', emgList:['picks a sensible next word','no real grammar, facts, or reasoning']},
+  {id:'gpt2s',   name:'GPT-2 small',    P:124e6,  d:768,   L:12,  h:12,  ff:3072, V:50257,  ctx:1024,   yr:'2019',   train:10e9,  est:false, note:'ran on a single GPU',
+     emg:'fluent grammar, but loses the thread after a sentence or two', emgList:['grammatical English','short-range coherence','confabulates freely']},
+  {id:'gpt2xl',  name:'GPT-2 XL',       P:1.5e9,  d:1600,  L:48,  h:25,  ff:6400, V:50257,  ctx:1024,   yr:'2019',   train:10e9,  est:false, note:'"too dangerous to release"',
+     emg:'coherent paragraphs and style imitation; still drifts', emgList:['multi-sentence coherence','imitates tone and style','weak on facts']},
+  {id:'gpt3',    name:'GPT-3',          P:175e9,  d:12288, L:96,  h:96,  ff:49152,V:50257,  ctx:2048,   yr:'2020',   train:300e9, est:false, note:'few-shot learning emerged',
+     emg:'in-context (few-shot) learning, basic arithmetic, translation', emgList:['learns a task from examples in the prompt','simple arithmetic & translation','basic code generation']},
+  {id:'llama70', name:'Llama 3.1 70B',  P:70e9,   d:8192,  L:80,  h:64,  ff:28672,V:128256, ctx:131072, yr:'2024',   train:15e12, est:false, note:'open weights · 128K context',
+     emg:'multi-step reasoning, coding, tool use, many languages', emgList:['chained reasoning','competent coding','tool / function calling','strong multilingual']},
+  {id:'llama405',name:'Llama 3.1 405B', P:405e9,  d:16384, L:126, h:128, ff:53248,V:128256, ctx:131072, yr:'2024',   train:15e12, est:false, note:'largest open model',
+     emg:'reasoning & coding rivaling closed models; long-context recall', emgList:['frontier reasoning (open weights)','strong coding','recall across 128K tokens']},
+  {id:'frontier',name:'frontier class', P:1.5e12, d:18432, L:128, h:144, ff:73728,V:200000, ctx:1000000,yr:'2023+',  train:20e12, est:true,  note:'sizes not disclosed · estimated',
+     emg:'complex reasoning and agentic, multi-step task execution', emgList:['deep multi-step reasoning','agentic task execution','broad expert knowledge']},
+  {id:'mythos',  name:'Claude Mythos',  P:5e12,   d:24576, L:160, h:192, ff:98304,V:256000, ctx:2000000,yr:'newest',  train:40e12, est:true,  note:'Anthropic\u2019s top tier · figures not public',
+     emg:'frontier-tier reasoning and autonomy (specifics not public)', emgList:['top-tier reasoning & autonomy','exact capabilities undisclosed']}
+];
+const SCALE={sel:'gpt3', layer:null, zoom:null, scroll:0};  // selected model · scroll position through the behemoth
+const CMP_IDS=['toy','gpt2s','gpt2xl','gpt3','llama70','llama405','frontier','mythos'];  // click-through set
+const WORDS_PER_SCHOOL_YEAR=10e6;                 // ~1,000 h of class/yr at normal speaking pace
+const READ_WORDS_PER_YEAR=200*60*24*365;          // 200 wpm, nonstop
+function modelById(id){return MODELS.find(m=>m.id===id);}
+function layerParams(m){return 4*m.d*m.d + 2*m.d*m.ff + 4*m.d;}                 // attn QKVO + MLP + 2 LN
+function partsParams(m){const emb=m.V*m.d, per=layerParams(m);return {emb,per,layers:m.L*per,unemb:m.V*m.d,fln:2*m.d};}
+function fmtP(n){if(n>=1e12)return (n/1e12).toFixed(n>=1e13?0:1)+'T';if(n>=1e9)return (n/1e9).toFixed(n>=1e11?0:1)+'B';if(n>=1e6)return (n/1e6).toFixed(n>=1e8?0:1)+'M';if(n>=1e3)return (n/1e3).toFixed(1)+'k';return ''+Math.round(n);}
+function fmtBig(n){if(n>=1e12)return (n/1e12).toFixed(1)+' trillion';if(n>=1e9)return (n/1e9).toFixed(1)+' billion';if(n>=1e6)return (n/1e6).toFixed(1)+' million';if(n>=1e3)return Math.round(n).toLocaleString();return ''+Math.round(n);}
+function schoolYears(tok){return tok/WORDS_PER_SCHOOL_YEAR;}
+function fmtYears(y){if(y>=1e6)return (y/1e6).toFixed(1)+'M years';if(y>=1000)return Math.round(y).toLocaleString()+' years';if(y>=1)return y.toFixed(y>=10?0:1)+' years';if(y>=1/52)return Math.round(y*52)+' weeks';if(y>=1/365)return Math.max(1,Math.round(y*365))+' days';return 'minutes';}
+const cv=$('stage'), ctx=cv.getContext('2d');
+let DPR=1, CW=0, CH=0;
+const tip=$('tip'), tipTag=tip.querySelector('.tag'), tipB=tip.querySelector('b');
+const tipSpans=tip.querySelectorAll('span'), tipS=tipSpans[1], tipMM=tip.querySelector('.mm');
+let mouse={x:-9999,y:-9999,cx:0,cy:0,down:false,lx:0,ly:0}; let hoverItems=[]; let hoverHit=null;
+let simT=0;
+
+// choose the 3 most informative axes for the current sentence (largest spread across its words)
+function dimSpread(){const n=S.tokens.length, sp=[];for(let d=0;d<DMODEL;d++){let mn=1e9,mx=-1e9;for(let i=0;i<n;i++){const v=S.fwd.emb[i][d];if(v<mn)mn=v;if(v>mx)mx=v;}sp.push({d,range:mx-mn});}return sp;}
+function pickAxes(){const r=dimSpread().sort((a,b)=>b.range-a.range);const t=r.slice(0,3).map(o=>o.d);S.cubeX=t[0];S.cubeY=t[1]!==undefined?t[1]:(t[0]+1)%DMODEL;S.cubeZ=t[2]!==undefined?t[2]:(t[0]+2)%DMODEL;}
+function topNext(){let bi=0,bp=-1;for(let i=0;i<VOCAB.length;i++){if(S.fwd.probs[i]>bp){bp=S.fwd.probs[i];bi=i;}}return {tok:VOCAB[bi],p:bp};}
+
+function setTokens(str){
+  const toks=(str.match(/[A-Za-z0-9']+|[.,!?;:()]/g)||[]).slice(0,WINDOW+3);
+  S.tokens=toks.length?toks:['the'];
+  S.fwd=forward(S.tokens,S.temp);
+  S.cursor=S.tokens.length-1; S.cell=[S.tokens.length-1,S.tokens.length-1];
+  S.selNeuron=0; S.selCand=null; S.sampledTok=null; S.genCount=0;
+  S.base=detok(S.tokens); pickAxes();
+}
+function recompute(){ S.fwd=forward(S.tokens,S.temp); }
+function detok(toks){let s='';toks.forEach((t,i)=>{const p=/^[.,!?;:]$/.test(t);s+=(i===0||p?'':' ')+t;});return s;}
+function renderSentence(freshIdx){
+  const el=$('sentence'); if(!el) return;
+  const keyHi=(S.tab==='attend'&&S.cell)?S.cell[1]:-1;
+  let html=S.tokens.map((t,i)=>'<span class="sword'+(S.tab==='attend'?' qy':'')+(i===S.cursor?' active':'')+(S.tab==='attend'&&i===keyHi&&i!==S.cursor&&i<=S.cursor?' keyhi':'')+(S.tab==='attend'&&i>S.cursor?' future':'')+(i===freshIdx?' fresh':'')+'" data-i="'+i+'">'+esc(t)+'</span>').join('');
+  if(S.cursor===S.tokens.length-1 && (S.tab==='predict'||S.tab==='attend')){const nx=topNext();html+='<span class="sword ghost" title="most likely next word">'+esc(nx.tok)+'</span>';}
+  el.innerHTML=html;
+  el.querySelectorAll('.sword[data-i]').forEach(s=>s.addEventListener('click',()=>{S.cursor=+s.dataset.i;if(S.tab==='attend')S.cell=[S.cursor,Math.min(S.cell?S.cell[1]:0,S.cursor)];renderSentence();renderAssay();updateTransportReadout();}));
+}
+function refreshAll(freshIdx){ recompute(); if(S.cursor>S.tokens.length-1)S.cursor=S.tokens.length-1; const ei=$('editInput'); if(ei&&ei.style.display==='none')ei.value=detok(S.tokens); renderSentence(freshIdx); renderAssay(); updateTransportReadout(); if(S.tab==='embed')buildCtrlstrip(); }
+function resetSentence(){ if(S.tab==='learn'){lnInit();assayDirty=true;updateTransportReadout();return;} S.playing=false; updatePlayBtn(); GEN.active=false; setTokens(S.base||DEFAULT_SENTENCE); const ei=$('editInput'); if(ei)ei.value=detok(S.tokens); renderSentence(); renderAssay(); updateTransportReadout(); if(S.tab==='embed')buildCtrlstrip(); }
+function startGen(){ if(GEN.active) return; recompute(); GEN.word=topNext().tok; GEN.active=true; GEN.t=0; GEN.targetIdx=Math.min(S.tokens.length, WINDOW-1); }
+function commitGen(){ S.tokens.push(GEN.word); let fresh=S.tokens.length-1; if(S.tokens.length>WINDOW){S.tokens.shift(); fresh=S.tokens.length-1;} GEN.active=false; S.cursor=S.tokens.length-1; S.cell=[S.cursor,0]; S.sampledTok=GEN.word; S.genCount++; refreshAll(fresh); }
+
+/* ===== 4. CANVAS HELPERS ===== */
+function resize(){
+  const r=cv.getBoundingClientRect(); DPR=Math.min(2,window.devicePixelRatio||1);
+  CW=Math.max(360,r.width); CH=r.height;
+  cv.width=Math.round(CW*DPR); cv.height=Math.round(CH*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function txt(s,x,y,size,color,align,font,weight){ctx.fillStyle=color;ctx.font=(weight||'')+' '+size+'px '+(font==='mono'?'ui-monospace,SFMono-Regular,Menlo,monospace':font==='disp'?"'Chakra Petch',sans-serif":"'Inter',system-ui,sans-serif");ctx.textAlign=align||'center';ctx.textBaseline='middle';ctx.fillText(s,x,y);}
+function lineC(x1,y1,x2,y2,color,w,a){ctx.save();ctx.globalAlpha=a==null?1:a;ctx.strokeStyle=color;ctx.lineWidth=w||1;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.restore();}
+function curveC(x1,y1,x2,y2,color,w,a,lift){ctx.save();ctx.globalAlpha=a;ctx.strokeStyle=color;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(x1,y1);const mx=(x1+x2)/2;ctx.quadraticCurveTo(mx,Math.min(y1,y2)-lift,x2,y2);ctx.stroke();ctx.restore();}
+function withAlpha(hex,a){const n=parseInt(hex.slice(1),16);return'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')';}
+function hov(x,y,r,tag,title,body,mm,sel){hoverItems.push({x,y,r,tag,title,body,mm,sel});}
+function grid(){ctx.save();ctx.strokeStyle='rgba(150,190,255,.035)';ctx.lineWidth=1;
+  for(let x=44;x<CW;x+=44){ctx.beginPath();ctx.moveTo(x,40);ctx.lineTo(x,CH-30);ctx.stroke();}
+  for(let y=52;y<CH-20;y+=44){ctx.beginPath();ctx.moveTo(34,y);ctx.lineTo(CW-34,y);ctx.stroke();}ctx.restore();}
+function ptSeg(px,py,x1,y1,x2,y2){const dx=x2-x1,dy=y2-y1;const L=dx*dx+dy*dy||1;let t=((px-x1)*dx+(py-y1)*dy)/L;t=clamp(t,0,1);const cx=x1+t*dx,cy=y1+t*dy;return Math.hypot(px-cx,py-cy);}
+function blend(h1,h2,t){const a=parseInt(h1.slice(1),16),b=parseInt(h2.slice(1),16);return 'rgb('+Math.round(lerp((a>>16)&255,(b>>16)&255,t))+','+Math.round(lerp((a>>8)&255,(b>>8)&255,t))+','+Math.round(lerp(a&255,b&255,t))+')';}
+function weightColor(w){w=clamp(w);return w<0.5?blend('#6a5566','#FF5D5D',w/0.5):blend('#FF5D5D','#FFE6A0',(w-0.5)/0.5);}
+function cubic(a,b,c,d,t){const u=1-t;return u*u*u*a+3*u*u*t*b+3*u*t*t*c+t*t*t*d;}
+
+/* ===== 5. EMBED — rotating multi-dim cube ===== */
+function rotPt(p){
+  let {x,y,z}=p;
+  const cx=Math.cos(S.rotY),sx=Math.sin(S.rotY); let x1=x*cx+z*sx, z1=-x*sx+z*cx;
+  const cy=Math.cos(S.rotX),sy=Math.sin(S.rotX); let y1=y*cy-z1*sy, z2=y*sy+z1*cy;
+  return {x:x1,y:y1,z:z2};
+}
+function project(p3,cx,cy,scale){const f=3.4;const pp=f/(f-p3.z);return{x:cx+p3.x*scale*pp,y:cy-p3.y*scale*pp,depth:p3.z,pp};}
+function drawEmbed(){
+  grid();
+  const cx=CW*0.5, cy=CH*0.46, scale=Math.min(CW,CH)*0.37;
+  const O=project(rotPt({x:0,y:0,z:0}),cx,cy,scale);
+  // subtle axes through origin (no boxed cube) with labels at the +ends
+  ctx.save();
+  [[{x:1.25,y:0,z:0},S.cubeX],[{x:0,y:1.25,z:0},S.cubeY],[{x:0,y:0,z:1.25},S.cubeZ]].forEach(([v,dim])=>{
+    const p=project(rotPt(v),cx,cy,scale), m=project(rotPt({x:-v.x,y:-v.y,z:-v.z}),cx,cy,scale);
+    lineC(m.x,m.y,p.x,p.y,withAlpha(DIMCOL[dim],.26),1,1);
+    txt('dim '+dim+' · '+DIMS[dim],p.x,p.y-9,10,DIMCOL[dim],'center','mono','600');
+  });
+  ctx.strokeStyle='rgba(150,190,255,.3)';ctx.beginPath();ctx.arc(O.x,O.y,3,0,TAU);ctx.stroke();
+  ctx.restore();
+  const active=clamp(S.cursor,0,S.tokens.length-1);
+  const projs=S.tokens.map((tok,i)=>({i,tok,p:project(rotPt({x:S.fwd.emb[i][S.cubeX],y:S.fwd.emb[i][S.cubeY],z:S.fwd.emb[i][S.cubeZ]}),cx,cy,scale),known:isKnown(tok)})).sort((a,b)=>a.p.depth-b.p.depth);
+  const aP=projs.find(P=>P.i===active);
+  // address vector (origin -> active) and optional +position offset
+  if(aP){
+    ctx.save();ctx.globalAlpha=.55;ctx.strokeStyle=withAlpha('#5FE7FF',.55);ctx.setLineDash([4,4]);ctx.lineWidth=1.3;ctx.beginPath();ctx.moveTo(O.x,O.y);ctx.lineTo(aP.p.x,aP.p.y);ctx.stroke();ctx.setLineDash([]);ctx.restore();
+    if(S.showPos){const xin=normv(S.fwd.x0[active]);const pp=project(rotPt({x:xin[S.cubeX],y:xin[S.cubeY],z:xin[S.cubeZ]}),cx,cy,scale);
+      ctx.save();ctx.globalAlpha=.7;ctx.strokeStyle='#FFB74A';ctx.setLineDash([3,3]);ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(aP.p.x,aP.p.y);ctx.lineTo(pp.x,pp.y);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#FFB74A';ctx.beginPath();ctx.arc(pp.x,pp.y,3,0,TAU);ctx.fill();ctx.restore();
+      txt('+position',pp.x,pp.y-9,9,'#FFB74A','center','mono');}
+  }
+  projs.forEach(P=>{
+    const act=P.i===active, dep=clamp((P.p.depth+1)/2,0,1);
+    const r=(act?10:4.6)*P.p.pp*(0.78+dep*0.42);
+    ctx.save();
+    if(act){ctx.shadowColor='#5FE7FF';ctx.shadowBlur=26;ctx.fillStyle='#EAFBFF';}
+    else{ctx.shadowColor='#FF7A4D';ctx.shadowBlur=7+dep*7;ctx.fillStyle=withAlpha('#FF7A4D',.5+dep*.4);}
+    ctx.globalAlpha=act?1:(0.42+dep*0.5);
+    ctx.beginPath();ctx.arc(P.p.x,P.p.y,r,0,TAU);ctx.fill();
+    if(act){ctx.globalAlpha=1;ctx.strokeStyle='#5FE7FF';ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(P.p.x,P.p.y,r+6,0,TAU);ctx.stroke();}
+    ctx.restore();
+    ctx.globalAlpha=act?1:clamp(0.5+dep*0.45,.5,.95);
+    txt(P.tok,P.p.x,P.p.y-r-9,act?13:10,act?'#fff':withAlpha('#FFD9B8',.92),'center','mono',act?'600':'');
+    ctx.globalAlpha=1;
+    hov(P.p.x,P.p.y,r+9,'token','"'+P.tok+'" · word '+P.i,(P.known?'A curated embedding; its direction is its meaning.':'Unknown word: a pseudo-embedding built from its letters.')+' Click to make it the active word.','address ≈ ['+S.fwd.emb[P.i].slice(0,3).map(v=>fmt(v,2).trim()).join(', ')+' ...]',{kind:'tok',idx:P.i});
+  });
+  if(aP){const e=S.fwd.emb[active];
+    txt('"'+S.tokens[active]+'"  address →   '+DIMS[S.cubeX]+' '+fmt(e[S.cubeX],2).trim()+'    '+DIMS[S.cubeY]+' '+fmt(e[S.cubeY],2).trim()+'    '+DIMS[S.cubeZ]+' '+fmt(e[S.cubeZ],2).trim(),CW*0.5,CH-40,11,'#9fb0d8','center','mono');}
+  txt('drag to rotate the space · pick the 3 axes below',CW*0.5,CH-22,9.5,'#5E6E92','center','mono');
+}
+
+/* ===== 6. ATTEND — tiered: keys on top, query in front, output lowest ===== */
+function drawAttend(){
+  grid();
+  const n=S.tokens.length, q=clamp(S.cursor,0,n-1), Hd=S.fwd.heads[S.head], o=S.head*DHEAD;
+  const pad=66, kY=84, qY=CH*0.47, oY=CH-86, qx=CW*0.5;
+  const kx=i=> n===1?qx : lerp(pad,CW-pad,i/(n-1));
+  // edges query -> keys (under the nodes), width + colour proportional to weight; each is a hover/click target
+  for(let j=0;j<=q;j++){
+    const w=Hd.A[q][j], col=weightColor(w);
+    ctx.save();ctx.globalAlpha=clamp(0.14+w*0.82,.12,.96);ctx.strokeStyle=col;ctx.lineWidth=1+w*12;
+    ctx.beginPath();ctx.moveTo(qx,qY-24);ctx.bezierCurveTo(qx,(qY+kY)/2,kx(j),(qY+kY)/2,kx(j),kY+17);ctx.stroke();ctx.restore();
+    if(!reduceMotion && w>0.03){const tt=1-((simT*0.55+j*0.17)%1);
+      const bx=cubic(qx,qx,kx(j),kx(j),tt), by=cubic(qY-24,(qY+kY)/2,(qY+kY)/2,kY+17,tt);
+      ctx.save();ctx.globalAlpha=clamp(w*1.3,.15,.9);ctx.fillStyle='#58E1A5';ctx.shadowColor='#58E1A5';ctx.shadowBlur=6;ctx.beginPath();ctx.arc(bx,by,2+w*5,0,TAU);ctx.fill();ctx.restore();}
+    const mxp=cubic(qx,qx,kx(j),kx(j),0.5), myp=cubic(qY-24,(qY+kY)/2,(qY+kY)/2,kY+17,0.5);
+    const Qi=S.fwd.Q[q].slice(o,o+DHEAD), Kj=S.fwd.K[j].slice(o,o+DHEAD); let raw=0; for(let d=0;d<DHEAD;d++)raw+=Qi[d]*Kj[d];
+    hov(mxp,myp,13,'connection','q'+q+' "'+S.tokens[q]+'"  →  k'+j+' "'+S.tokens[j]+'"','Q·K = '+raw.toFixed(2)+'   ÷√d_head = '+(raw/Math.sqrt(DHEAD)).toFixed(2)+'   → softmax weight '+(w*100).toFixed(1)+'%. Click for the full matrix and term-by-term math.','score = Σ qd·kd / √d_head  → softmax',{kind:'keyclick',idx:j});
+  }
+  // key / value row (top)
+  txt('KEYS · VALUES    (K = Wk · x ,   V = Wv · x)',qx,kY-30,10.5,'#5FE7FF','center','disp','600');
+  S.tokens.forEach((tok,i)=>{const x=kx(i),masked=i>q;
+    ctx.save();if(masked)ctx.globalAlpha=.32;ctx.shadowColor='#5FE7FF';ctx.shadowBlur=6;
+    rr(x-29,kY-15,58,30,10);ctx.fillStyle=withAlpha('#5FE7FF',.07);ctx.fill();ctx.strokeStyle=withAlpha('#5FE7FF',.42);ctx.lineWidth=1;ctx.stroke();ctx.restore();
+    ctx.globalAlpha=masked?.4:1;txt(tok,x,kY,Math.max(9,12.5-Math.max(0,tok.length-7)*.5),'#dff2ff');
+    txt('K V',x,kY+21,8,'#6f86b0');ctx.globalAlpha=1;
+    hov(x,kY,24,'key',(masked?'masked · ':'key/value · ')+'"'+tok+'"',masked?'A future word, hidden from the query by the causal mask.':'Offers a Key (for matching) and a Value (the info it sends). Weight from the query: '+(Hd.A[q][i]*100).toFixed(1)+'%. Click to inspect this pair.','K = Wk·x ,  V = Wv·x',{kind:'keyclick',idx:i});});
+  // operation band (hover for the matrix-multiply math)
+  txt('score = Q · Kⱼ / √d_head        softmax  →  weights aⱼ',qx,(kY+qY)/2-2,10.5,'#FFB74A','center','mono');
+  hov(qx,(kY+qY)/2-2,30,'operation','Q · Kᵀ  →  softmax','This middle layer multiplies the query\u2019s Q vector against every key\u2019s K vector (a row of the matrix), divides by √d_head, and softmaxes to weights. Hover any connection for its numbers; the full matrix is in the panel.','scores = Q · Kᵀ / √d_head  →  softmax',null);
+  // query node (in front / lower)
+  ctx.save();ctx.shadowColor='#FFB74A';ctx.shadowBlur=22;rr(qx-70,qY-26,140,52,15);ctx.fillStyle=withAlpha('#FFB74A',.14);ctx.fill();ctx.strokeStyle='#FFB74A';ctx.lineWidth=1.8;ctx.stroke();ctx.restore();
+  ctx.save();ctx.strokeStyle='#FFB74A';ctx.globalAlpha=.7;ctx.lineWidth=1.3;const rs=Math.sin(simT*2)*2;
+  [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx,sy])=>{const bx=qx+sx*(82+rs),by=qY+sy*34;ctx.beginPath();ctx.moveTo(bx,by-sy*10);ctx.lineTo(bx,by);ctx.lineTo(bx-sx*10,by);ctx.stroke();});ctx.restore();
+  txt('"'+S.tokens[q]+'"',qx,qY-6,16,'#fff','center','disp','700');
+  txt('QUERY  =  Wq · x',qx,qY+13,10,'#FFB74A');
+  hov(qx,qY,60,'query','Query · "'+S.tokens[q]+'"','The current word\u2019s question. Its Q is compared with every Key to decide how much to read from each. Move the transport to change the query.','Q = Wq·x',null);
+  // weight row = this query's row of the attention matrix
+  const gw=Math.min(CW-150,n*34), gx0=qx-gw/2, cw2=gw/n, gyr=qY+38;
+  for(let j=0;j<n;j++){const w=Hd.A[q][j],masked=j>q,c2=gx0+j*cw2;
+    ctx.save();ctx.globalAlpha=masked?.5:1;ctx.fillStyle=masked?'rgba(255,93,93,.05)':weightColor(w);rr(c2+1.5,gyr,cw2-3,17,4);ctx.fill();ctx.restore();
+    txt(masked?'·':w.toFixed(2),c2+cw2/2,gyr+8.5,8.5,(!masked&&w>0.45)?'#1a0d0d':'#cfd8f4');}
+  txt('attention weights aⱼ  —  this query\u2019s row of the matrix (sums to 1)',qx,gyr+30,9.5,'#93A4C6','center','mono');
+  // arrow to output
+  ctx.save();ctx.strokeStyle=withAlpha('#58E1A5',.6);ctx.lineWidth=2;ctx.setLineDash([3,4]);ctx.beginPath();ctx.moveTo(qx,gyr+22);ctx.lineTo(qx,oY-30);ctx.stroke();ctx.setLineDash([]);ctx.restore();
+  txt('mix:  Σ aⱼ · Vⱼ',qx+12,(gyr+22+oY-30)/2,10,'#58E1A5','left','mono');
+  // output node (lowest) — show the actual numbers fed onward
+  const headMix=[]; for(let d=0;d<DHEAD;d++){let m=0;for(let j=0;j<=q;j++)m+=Hd.A[q][j]*S.fwd.V[j][o+d];headMix.push(m);}
+  const fed=S.fwd.attnOut[q];
+  ctx.save();ctx.shadowColor='#58E1A5';ctx.shadowBlur=18;rr(qx-118,oY-30,236,60,15);ctx.fillStyle=withAlpha('#58E1A5',.12);ctx.fill();ctx.strokeStyle='#58E1A5';ctx.lineWidth=1.6;ctx.stroke();ctx.restore();
+  txt('OUTPUT  =  Σ aⱼ · Vⱼ',qx,oY-12,12.5,'#fff','center','disp','600');
+  txt('[ '+headMix.map(v=>fmt(v,2).trim()).join(',   ')+' ]',qx,oY+8,11.5,'#7DF0C0','center','mono');
+  txt('this vector is promoted → fed into the next layer',qx,oY+42,9.5,'#9fdcc0','center','mono');
+  hov(qx,oY,110,'output','Attention output for "'+S.tokens[q]+'"','Each value vector × its weight, summed → this head\u2019s '+DHEAD+'-number context vector (shown). All '+NHEADS+' heads are concatenated and projected to the '+DMODEL+'-number vector that is added to the residual stream and fed onward.','fed to next layer = ['+fed.map(v=>fmt(v,2).trim()).join(', ')+']',null);
+  // generation drop animation
+  if(GEN.active){const t=clamp(GEN.t);const sx=qx,sy=oY+8,ex=kx(GEN.targetIdx),ey=kY;const bx=lerp(sx,ex,t),by=lerp(sy,ey,t)-Math.sin(t*Math.PI)*26;
+    ctx.save();ctx.globalAlpha=clamp(1.1-Math.max(0,t-0.85)/0.15,0,1);ctx.shadowColor='#FFB74A';ctx.shadowBlur=22;rr(bx-32,by-15,64,30,10);ctx.fillStyle=withAlpha('#FFB74A',.22);ctx.fill();ctx.strokeStyle='#FFB74A';ctx.lineWidth=1.6;ctx.stroke();ctx.fillStyle='#fff';ctx.font="600 13px 'Chakra Petch',sans-serif";ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(GEN.word,bx,by);ctx.restore();
+    txt('new word joins the sentence',qx,oY+40,9.5,'#FFB74A','center','mono');}
+}
+
+/* ===== 7. FORGE — MLP + residual + layernorm ===== */
+function nodeColumn(values,xc,yTop,yBot,maxAbs){
+  const n=values.length, pts=[];
+  for(let i=0;i<n;i++){const y=n===1?(yTop+yBot)/2:lerp(yTop,yBot,i/(n-1));const v=values[i];pts.push({x:xc,y,v,mag:clamp(Math.abs(v)/maxAbs,0,1)});}
+  return pts;
+}
+function drawForge(){
+  grid();
+  const i=S.cursor, F=S.fwd, cx=CW*0.5, k=S.selNeuron;
+  const x1=F.x1[i], xh=F.ln2[i].out, z=F.preact[i], a=F.hidden[i], dlt=F.mlpOut[i], x2=F.x2[i];
+  const rows=[
+    {v:x1, lab:'x1', col:'#B9C5E8', note:'← from Attend  (x0 + attention)', orig:true, tip:['Block input  x1','The word\u2019s vector after attention — it carries the attention output added onto the word\u2019s own value. A list of '+DMODEL+' numbers.','from Attend']},
+    {v:xh, lab:'x̂',  col:'#5FE7FF', note:'normalised: mean 0, spread 1', tip:['After LayerNorm  x̂','The same '+DMODEL+' numbers, rescaled so they sit on a common footing before the MLP reads them.','x̂ = (x1 − mean) / sd']},
+    {v:z,  lab:'z',  col:'#FF7A4D', note:'signal arriving at each of 16 units', hidden:true, tip:['Pre-activation  z  (into the unit)','16 numbers — each is the total signal arriving at one hidden neuron: a weighted sum of all '+DMODEL+' inputs plus a bias. Click a chip to see its sum.','z = W1·x̂ + b1']},
+    {v:a,  lab:'a',  col:'#FFA86B', note:'what each unit fires out (after GELU)', hidden:true, tip:['Activation  a  (out of the unit)','What each neuron fires out: its z bent through the GELU curve, one number at a time.','a = GELU(z)']},
+    {v:dlt,lab:'Δ',  col:'#FF7A4D', note:'the change the MLP proposes', tip:['MLP output  Δ','The 16 hidden numbers combined back down to '+DMODEL+' — the change the block proposes.','Δ = W2·a + b2']},
+    {v:x2, lab:'x2', col:'#58E1A5', note:'→ up to the next layer', tip:['Block output  x2','The input with the change added back on. This rises to the next layer (here: final LayerNorm → Predict).','x2 = x1 + Δ']}
+  ];
+  const boxes=[
+    {t:'LayerNorm',          c:'subtract the mean, divide by the spread — all '+DMODEL+' together', s:DMODEL+' → '+DMODEL,  col:'#5FE7FF', mm:'x̂ = (x − mean) / √(var+ε)', body:'Rescales the whole list so the numbers are comparable before the MLP reads them. It uses the mean and variance of these '+DMODEL+' values — so every number depends on the others here.'},
+    {t:'×  W1  +  b1',       c:'each of 16 units = a weighted sum of all '+DMODEL+' inputs', s:DMODEL+' → '+DFF, col:'#FF7A4D', mm:'zₖ = Σⱼ x̂ⱼ · W1[k][j] + b1', body:'The up-projection: '+DMODEL+' numbers fan out to '+DFF+'. Every output is a weighted blend of all '+DMODEL+' inputs, with its own row of weights. Select a unit to see its '+DMODEL+' incoming wires.'},
+    {t:'GELU',               c:'one number at a time — bend each through the curve', s:DFF+' → '+DFF, col:'#FF7A4D', mm:'aₖ = GELU(zₖ)', body:'The neuron firing: z arrives, a leaves. The only non-linear step, applied to each number on its own — it pushes negatives toward zero and lets positives through. Without this bend, stacking layers would collapse to a single linear map.'},
+    {t:'×  W2  +  b2',       c:'combine the 16 back down to '+DMODEL, s:DFF+' → '+DMODEL, col:'#FF7A4D', mm:'Δ = W2·a + b2', body:'The down-projection: the '+DFF+' hidden numbers collapse back to '+DMODEL+' — the proposed change to the word\u2019s vector.'},
+    {t:'+  x1   (residual)', c:'add the change onto the original — edit, never overwrite', s:DMODEL+' → '+DMODEL, col:'#58E1A5', mm:'x2 = x1 + Δ', body:'The residual add: the block never replaces the vector, it adds a correction. That is why information survives across many layers.'}
+  ];
+  const top=50, bottom=CH-26, rowH=20, boxH=34;
+  const gap=clamp((bottom-top-(rows.length*rowH+boxes.length*boxH))/(rows.length+boxes.length-1),6,20);
+  const rowY=[],boxY=[]; let y=top;
+  for(let r=0;r<rows.length;r++){rowY[r]=y+rowH/2; y+=rowH+gap; if(r<boxes.length){boxY[r]=y+boxH/2; y+=boxH+gap;}}
+  const lay=n=>{const W=Math.min(CW-210, n>8?Math.min(n*44,740):n*72); const cw=W/n, x0=cx-W/2; return {W,x0,cw,chipW:Math.min(cw-6,54),x:idx=>x0+cw*(idx+0.5)};};
+  const chip=(xc,yc,w,val,base,mxv,sel)=>{const mag=Math.min(Math.abs(val)/mxv,1), fill=val>=0?base:'#FF5D5D';
+    ctx.save();if(sel){ctx.shadowColor=base;ctx.shadowBlur=16;}ctx.globalAlpha=sel?1:.32+mag*.58;ctx.fillStyle=fill;rr(xc-w/2,yc-9,w,18,5);ctx.fill();
+    if(sel){ctx.globalAlpha=1;ctx.lineWidth=1.4;ctx.strokeStyle='#fff';rr(xc-w/2-2,yc-11,w+4,22,6);ctx.stroke();}ctx.restore();
+    ctx.fillStyle=(mag>.5||sel)?'#0a0e16':'#dde6f8';ctx.font='600 '+(w<34?7.6:8.6)+"px ui-monospace,monospace";ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(fmt(val,2).trim(),xc,yc);};
+  // fan wires for the selected hidden unit (behind everything)
+  if(k!=null){const Lx=lay(xh.length),Zx=lay(z.length),Ax=lay(a.length),Dx=lay(dlt.length);
+    for(let j=0;j<xh.length;j++){const w=W1[k][j];ctx.strokeStyle=w>=0?withAlpha('#5FE7FF',clamp(Math.abs(w)*.5,.06,.6)):withAlpha('#FF5D5D',clamp(Math.abs(w)*.5,.06,.6));ctx.lineWidth=clamp(Math.abs(w)*1.4,.4,2.4);ctx.beginPath();ctx.moveTo(Lx.x(j),rowY[1]+9);ctx.lineTo(Zx.x(k),rowY[2]-9);ctx.stroke();}
+    for(let m=0;m<dlt.length;m++){const w=W2[m][k];ctx.strokeStyle=w>=0?withAlpha('#58E1A5',clamp(Math.abs(w)*.5,.06,.55)):withAlpha('#FF5D5D',clamp(Math.abs(w)*.5,.06,.55));ctx.lineWidth=clamp(Math.abs(w)*1.3,.4,2.2);ctx.beginPath();ctx.moveTo(Ax.x(k),rowY[3]+9);ctx.lineTo(Dx.x(m),rowY[4]-9);ctx.stroke();}}
+  // boxes + connecting arrows
+  const boxW=Math.min(CW*0.5,386);
+  boxes.forEach((b,bi)=>{const by=boxY[bi];
+    lineC(cx,rowY[bi]+9,cx,by-boxH/2,withAlpha(b.col,.32),1.2,1);
+    ctx.save();rr(cx-boxW/2,by-boxH/2,boxW,boxH,10);ctx.fillStyle=withAlpha(b.col,.09);ctx.fill();ctx.strokeStyle=withAlpha(b.col,.5);ctx.lineWidth=1.2;ctx.stroke();ctx.restore();
+    txt(b.t,cx-boxW/2+14,by-6,11.5,b.col,'left','disp','700');
+    txt(b.c,cx-boxW/2+14,by+10,9.2,'#aeb9d6','left','mono');
+    ctx.save();rr(cx+boxW/2-66,by-11,54,22,7);ctx.fillStyle='rgba(0,0,0,.3)';ctx.fill();ctx.restore();
+    txt(b.s,cx+boxW/2-39,by,9.3,'#e7eefc','center','mono','700');
+    const ny=rowY[bi+1]-9; lineC(cx,by+boxH/2,cx,ny,withAlpha(b.col,.55),1.4,1);
+    ctx.save();ctx.fillStyle=withAlpha(b.col,.75);ctx.beginPath();ctx.moveTo(cx-4,ny-5);ctx.lineTo(cx+4,ny-5);ctx.lineTo(cx,ny);ctx.closePath();ctx.fill();ctx.restore();
+    hov(cx,by,boxW/2,'step',b.t,b.body,b.mm,null);
+  });
+  if(k!=null) drawGeluCurve(cx+boxW/2+92, boxY[2], 132, 60, z[k]);
+  // number rows
+  rows.forEach((rw,ri)=>{const L=lay(rw.v.length), mxv=Math.max(...rw.v.map(v=>Math.abs(v)),1e-6), yc=rowY[ri];
+    txt(rw.lab,L.x0-12,yc-4,13,rw.col,'right','disp','700');
+    txt('['+rw.v.length+']',L.x0-12,yc+9,8.5,'#7f8db0','right','mono');
+    for(let d=0; d<rw.v.length; d++){const sel=rw.hidden&&d===k; chip(L.x(d),yc,L.chipW,rw.v[d],rw.col,mxv,sel);
+      if(rw.hidden)hov(L.x(d),yc,Math.max(9,L.chipW/2),'neuron','hidden unit '+d,'z = '+fmt(z[d],2).trim()+'   →   GELU   →   a = '+fmt(a[d],2).trim()+'. Click for the full weighted sum.',null,{kind:'neuron',idx:d});}
+    txt(rw.note,L.x0+L.W+12,yc,9.2,rw.orig?'#FFB74A':'#8c9bc0','left','mono');
+    if(rw.tip&&!rw.hidden)hov(cx,yc,L.W/2,'vector',rw.tip[0],rw.tip[1],rw.tip[2],null);
+  });
+}
+function drawGeluCurve(cx,cy,w,h,mark){
+  ctx.save();
+  rr(cx-w/2,cy-h/2,w,h,12);ctx.fillStyle='rgba(146,182,236,.03)';ctx.fill();ctx.strokeStyle='rgba(150,190,255,.12)';ctx.stroke();
+  const x0=cx-w/2+8,x1=cx+w/2-8,y0=cy+h/2-8,y1=cy-h/2+8,ymid=(y0+y1)/2;
+  lineC(x0,ymid,x1,ymid,'rgba(150,190,255,.15)',1,1); lineC(cx,y0,cx,y1,'rgba(150,190,255,.15)',1,1);
+  ctx.strokeStyle='#FF7A4D';ctx.lineWidth=1.6;ctx.beginPath();
+  for(let p=0;p<=40;p++){const zx=lerp(-3.2,3.2,p/40);const px=lerp(x0,x1,(zx+3.2)/6.4);const py=lerp(ymid,y1,gelu(zx)/3.2);p?ctx.lineTo(px,py):ctx.moveTo(px,py);}
+  ctx.stroke();
+  if(mark!=null){const zc=clamp(mark,-3.2,3.2);const px=lerp(x0,x1,(zc+3.2)/6.4);const py=lerp(ymid,y1,gelu(zc)/3.2);ctx.fillStyle='#fff';ctx.shadowColor='#FF7A4D';ctx.shadowBlur=10;ctx.beginPath();ctx.arc(px,py,4,0,TAU);ctx.fill();ctx.shadowBlur=0;}
+  txt('GELU activation',cx,cy-h/2-9,9.5,'#FF7A4D','center','mono');
+  ctx.restore();
+}
+
+/* ===== 8. PREDICT — logits to softmax ===== */
+function topProbs(k){return VOCAB.map((t,i)=>({t,p:S.fwd.probs[i],logit:S.fwd.logits[i],idx:i})).sort((a,b)=>b.p-a.p).slice(0,k);}
+function entropy(){let e=0;for(const p of S.fwd.probs)if(p>1e-12)e-=p*Math.log2(p);return e;}
+function drawPredict(){
+  grid();
+  const top=topProbs(13);
+  const x0=CW*0.30, x1=CW*0.86, maxP=Math.max(...top.map(o=>o.p))||1;
+  const y0=96, dy=Math.min(34,(CH-200)/top.length);
+  txt('next-token distribution  · top 13 of '+VOCAB.length,CW*0.5,58,11,'#FF6B9D','center','disp','600');
+  top.forEach((o,k)=>{
+    const y=y0+k*dy, w=(x1-x0)*(o.p/maxP), sampd=o.t===S.sampledTok, selc=o.idx===S.selCand;
+    txt(o.t,x0-10,y,12,sampd?'#FFB74A':'#fff','right','mono');
+    ctx.save();ctx.fillStyle='rgba(146,182,236,.08)';rr(x0,y-8,x1-x0,16,5);ctx.fill();ctx.restore();
+    const grd=ctx.createLinearGradient(x0,y,x0+w,y);grd.addColorStop(0,'#FF6B9D');grd.addColorStop(1,'#FFB74A');
+    ctx.save();ctx.shadowColor='#FF6B9D';ctx.shadowBlur=sampd?16:6;ctx.fillStyle=grd;rr(x0,y-8,Math.max(3,w),16,5);ctx.fill();ctx.restore();
+    if(selc){ctx.strokeStyle='#fff';ctx.lineWidth=1.4;rr(x0-1,y-9,(x1-x0)+2,18,6);ctx.stroke();}
+    txt((o.p*100).toFixed(1)+'%',x0+w+8,y,10.5,'#93A4C6','left','mono');
+    hov((x0+x1)/2,y,Math.max(120,w/2),'candidate','"'+o.t+'"','Probability '+(o.p*100).toFixed(2)+'% at temperature '+S.temp.toFixed(2)+'. Click for the logit math.','logit '+fmt(o.logit,2).trim(),{kind:'cand',idx:o.idx});
+  });
+  if(S.sampledTok){
+    ctx.save();ctx.globalAlpha=.9;ctx.shadowColor='#FFB74A';ctx.shadowBlur=14;
+    rr(CW*0.5-110,CH-92,220,40,13);ctx.fillStyle=withAlpha('#FFB74A',.12);ctx.fill();ctx.strokeStyle=withAlpha('#FFB74A',.6);ctx.lineWidth=1.2;ctx.stroke();ctx.restore();
+    txt('sampled →  "'+S.sampledTok+'"',CW*0.5,CH-72,15,'#FFB74A','center','disp','700');
+  } else {
+    txt('press Sample, or hit play to autoregress',CW*0.5,CH-74,10.5,'#5E6E92','center','mono');
+  }
+}
+
+/* ===== 9. LEARN — backprop on a 1->6->1 net ===== */
+let pulseT=0;
+function drawLearn(){
+  grid();
+  pulseT=(pulseT+(reduceMotion?0.004:0.016))%1;
+  const i=LN.active, x=XIN[i], t=lnTgt(i), bk=lnBack(x,t), err=t-bk.y;
+  // ---- banner: current example + last nudge ----
+  const bx=CW*0.05, bw=CW*0.90, by=40, bh=34;
+  ctx.save();rr(bx,by,bw,bh,11);ctx.fillStyle=withAlpha('#B58CFF',.07);ctx.fill();ctx.strokeStyle=withAlpha('#B58CFF',.35);ctx.lineWidth=1;ctx.stroke();ctx.restore();
+  txt('NOW SHOWING',bx+15,by+bh/2,9,'#B58CFF','left','disp','700'); const cx=bx+112;
+  [0,1].forEach(j=>{ctx.save();ctx.fillStyle=x[j]?'#FFB74A':'rgba(255,183,74,.18)';rr(cx+j*23,by+bh/2-9,18,18,5);ctx.fill();ctx.restore();txt(''+x[j],cx+j*23+9,by+bh/2,10,x[j]?'#120a02':'#FFB74A','center','mono','700');});
+  txt('→ want',cx+52,by+bh/2,9.5,'#9aa9cf','left','mono');
+  ctx.save();ctx.fillStyle=t?'#5FE7FF':'#FF5D5D';rr(cx+102,by+bh/2-9,18,18,5);ctx.fill();ctx.restore();txt(''+t,cx+111,by+bh/2,10,'#06121a','center','mono','700');
+  txt('got '+bk.y.toFixed(2),cx+128,by+bh/2,10,'#FF6B9D','left','mono','700');
+  const ec=Math.abs(err)>0.3?'#FF5D5D':Math.abs(err)>0.1?'#FFB74A':'#58E1A5';
+  txt('error '+(err>=0?'+':'')+err.toFixed(2),cx+206,by+bh/2,10,ec,'left','mono','700');
+  if(LN.last){const Lz=LN.last,moved=Lz.yA-Lz.yB,good=(moved>0)===((Lz.t-Lz.yB)>0);
+    txt('last nudge ('+Lz.x[0]+','+Lz.x[1]+'):  '+Lz.yB.toFixed(3)+' → '+Lz.yA.toFixed(3)+'  toward '+Lz.t+(good?'   ✓':''),bx+bw-15,by+bh/2,9.5,good?'#58E1A5':'#9aa9cf','right','mono');}
+  else txt('press ▶ to auto-train slowly, or ›  for one small step',bx+bw-15,by+bh/2,9.5,'#7f8db0','right','mono');
+  // ---- regions ----
+  drawNet(22, CW*0.47, 96, 388, x, t, bk);
+  drawContrib(22, CW*0.47, 408, CH-34, bk);
+  drawTruth(CW*0.49, 96, CW-22-220, 300);
+  drawSurface(CW-22-204, 96, CW-22, 300);
+  drawLossPlot(CW*0.49, 318, CW-22, CH-34);
+}
+function drawContrib(x0,x1,y0,y1,bk){
+  ctx.save();rr(x0,y0,x1-x0,y1-y0,12);ctx.fillStyle='rgba(146,182,236,.03)';ctx.fill();ctx.strokeStyle='rgba(150,190,255,.12)';ctx.stroke();ctx.restore();
+  txt('who caused this error?',x0+12,y0-9,10.5,'#FF8da0','left','disp','600');
+  txt('bar = share of blame (|gradient|)  ·  ◀▶ = nudge',x1-10,y0-9,8.8,'#7f8db0','right','mono');
+  const items=[];
+  for(let k=0;k<HID;k++)items.push({lab:'h'+k+' → y',g:bk.gW2[k],sel:{kind:'w2',k}});
+  for(let k=0;k<HID;k++)for(let j=0;j<2;j++)items.push({lab:'x'+j+' → h'+k,g:bk.gW1[k][j],sel:{kind:'w1',k,j}});
+  const mx=Math.max(1e-6,...items.map(it=>Math.abs(it.g)));
+  items.sort((a,b)=>Math.abs(b.g)-Math.abs(a.g));
+  const top=items.slice(0,8), padT=12, rowH=(y1-y0-padT*2)/top.length, bxs=x0+92, bxe=x1-104;
+  top.forEach((it,r)=>{const ry=y0+padT+r*rowH+rowH/2, frac=Math.abs(it.g)/mx;
+    const isSel=S.selWeight&&S.selWeight.kind===it.sel.kind&&S.selWeight.k===it.sel.k&&(it.sel.j===undefined||S.selWeight.j===it.sel.j);
+    txt(it.lab,x0+12,ry,9.5,isSel?'#fff':'#cdd7f2','left','mono',isSel?'700':'400');
+    const bw2=Math.max(2,frac*(bxe-bxs));
+    ctx.save();ctx.fillStyle=isSel?'#FFB74A':withAlpha('#FF5D5D',.5+frac*.45);rr(bxs,ry-6,bw2,12,3);ctx.fill();ctx.restore();
+    txt(it.g>0?'◀':'▶',bxs+bw2+9,ry,10,'#FFB74A','left','mono','700');
+    txt(fmt(it.g,3).trim(),x1-46,ry,8.5,'#9aa9cf','left','mono');
+    hov((x0+x1)/2,ry,(x1-x0)/2,'weight',it.lab+'   gradient '+fmt(it.g,3).trim(),'This wire\u2019s share of the blame for the current error. Its nudge this step = −lr·grad = '+fmt(-LN.lr*it.g,3).trim()+'. Click to inspect.',null,it.sel);});
+}
+function drawNet(x0,x1,yTop,yBot,x,t,bk){
+  const N=LN.net, xin=x0+58, xhid=(x0+x1)/2+6, xout=x1-54, outY=(yTop+yBot)/2;
+  const inY=[lerp(yTop+70,yBot-70,0.32),lerp(yTop+70,yBot-70,0.68)];
+  const hidY=Array.from({length:HID},(_,k)=>lerp(yTop+46,yBot-46,HID===1?0.5:k/(HID-1)));
+  const gmax=Math.max(0.01,Math.max(...bk.gW1.flat().map(Math.abs),...bk.gW2.map(Math.abs)));
+  for(let k=0;k<HID;k++)for(let j=0;j<2;j++){const w=N.W1[k][j],g=bk.gW1[k][j];const sel=S.selWeight&&S.selWeight.kind==='w1'&&S.selWeight.k===k&&S.selWeight.j===j;
+    ctx.strokeStyle=w>=0?withAlpha('#5FE7FF',sel?.95:clamp(Math.abs(w)*0.45,.08,.7)):withAlpha('#FF5D5D',sel?.95:clamp(Math.abs(w)*0.45,.08,.7));
+    ctx.lineWidth=sel?3:clamp(Math.abs(w)*1.5,.5,3.2);ctx.beginPath();ctx.moveTo(xin+13,inY[j]);ctx.lineTo(xhid-13,hidY[k]);ctx.stroke();
+    if(!reduceMotion){const tt=1-((pulseT+k*0.07+j*0.03)%1);const bxp=lerp(xin+13,xhid-13,tt),byp=lerp(inY[j],hidY[k],tt);const sz=1.1+clamp(Math.abs(g)/gmax,0,1)*3.4;ctx.save();ctx.globalAlpha=.5;ctx.fillStyle='#FF5D5D';ctx.beginPath();ctx.arc(bxp,byp,sz,0,TAU);ctx.fill();ctx.restore();}
+    hov((xin+xhid)/2,(inY[j]+hidY[k])/2,11,'weight','W1  in'+j+' → h'+k,'forward weight '+fmt(w,2).trim()+'  ·  error contribution ∂L/∂w = '+fmt(g,3).trim()+'. Click to see the update.',null,{kind:'w1',k,j});}
+  for(let k=0;k<HID;k++){const w=N.W2[k],g=bk.gW2[k];const sel=S.selWeight&&S.selWeight.kind==='w2'&&S.selWeight.k===k;
+    ctx.strokeStyle=w>=0?withAlpha('#58E1A5',sel?.95:clamp(Math.abs(w)*0.45,.08,.7)):withAlpha('#FF5D5D',sel?.95:clamp(Math.abs(w)*0.45,.08,.7));
+    ctx.lineWidth=sel?3:clamp(Math.abs(w)*1.5,.5,3.2);ctx.beginPath();ctx.moveTo(xhid+13,hidY[k]);ctx.lineTo(xout-13,outY);ctx.stroke();
+    if(!reduceMotion){const tt=1-((pulseT+k*0.08)%1);const bxp=lerp(xhid+13,xout-13,tt),byp=lerp(hidY[k],outY,tt);const sz=1.1+clamp(Math.abs(g)/gmax,0,1)*3.4;ctx.save();ctx.globalAlpha=.5;ctx.fillStyle='#FF5D5D';ctx.beginPath();ctx.arc(bxp,byp,sz,0,TAU);ctx.fill();ctx.restore();}
+    hov((xhid+xout)/2,(hidY[k]+outY)/2,11,'weight','W2  h'+k+' → out','forward weight '+fmt(w,2).trim()+'  ·  error contribution ∂L/∂w = '+fmt(g,3).trim()+'. Click to see the update.',null,{kind:'w2',k});}
+  const node=(nx,ny,r,col,fillv,lab,val)=>{ctx.save();ctx.shadowColor=col;ctx.shadowBlur=10;ctx.fillStyle=withAlpha(col,.12+clamp(Math.abs(fillv||0),0,1)*.5);ctx.beginPath();ctx.arc(nx,ny,r,0,TAU);ctx.fill();ctx.strokeStyle=col;ctx.lineWidth=1.6;ctx.stroke();ctx.restore();txt(lab,nx,ny-2,11,'#fff','center','mono','700');if(val!=null)txt(val,nx,ny+9,7.6,'#dfe7fb','center','mono');};
+  [0,1].forEach(j=>{node(xin,inY[j],17,'#FFB74A',x[j],'x'+j,''+x[j]);hov(xin,inY[j],18,'input','input x'+j,'This example feeds '+x[j]+' in here.',null,null);});
+  for(let k=0;k<HID;k++){const sel=S.selWeight&&S.selWeight.kind==='node'&&S.selWeight.k===k;node(xhid,hidY[k],15,sel?'#fff':'#B58CFF',bk.a1[k],'h'+k,fmt(bk.a1[k],2).trim());
+    txt('δ '+fmt(bk.delta1[k],2).trim(),xhid,hidY[k]+26,8,'#FF8da0','center','mono');
+    hov(xhid,hidY[k],16,'neuron','hidden h'+k,'a = tanh(z) = '+fmt(bk.a1[k],2).trim()+'   ·   error signal δ = '+fmt(bk.delta1[k],3).trim()+' coming back. Click to inspect.',null,{kind:'node',k});}
+  node(xout,outY,17,'#FF6B9D',bk.y,'y',bk.y.toFixed(2));
+  txt('δ '+fmt(bk.delta2,2).trim(),xout,outY+27,8,'#FF8da0','center','mono');
+  txt('target '+t,xout,outY-27,9,t?'#5FE7FF':'#FF5D5D','center','mono','700');
+  hov(xout,outY,18,'output','output y','y = sigmoid(z) = '+bk.y.toFixed(3)+'  ·  target '+t+'  ·  output error signal δ = (y−t)·y·(1−y) = '+fmt(bk.delta2,3).trim()+'.',null,null);
+  txt('INPUT',xin,yTop+12,9.5,'#FFB74A','center','disp','700');
+  txt('HIDDEN · tanh',xhid,yTop+12,9.5,'#B58CFF','center','disp','700');
+  txt('OUTPUT · sigmoid',xout,yTop+12,9.5,'#FF6B9D','center','disp','700');
+  txt('forward  →     ←  error flows back (red dots, size ∝ that wire\u2019s gradient)',(x0+x1)/2,yBot-12,9.3,'#8c9bc0','center','mono');
+}
+function drawTruth(x0,y0,x1,y1){
+  ctx.save();rr(x0,y0,x1-x0,y1-y0,12);ctx.fillStyle='rgba(146,182,236,.03)';ctx.fill();ctx.strokeStyle='rgba(150,190,255,.12)';ctx.stroke();ctx.restore();
+  txt('all 4 cases · '+GATES[LN.gate].name,x0+12,y0-9,10.5,'#B58CFF','left','disp','600');
+  txt('in → tgt',x0+14,y0+15,8.3,'#7f8db0','left','mono'); txt('out',x1-120,y0+15,8.3,'#7f8db0','left','mono'); txt('error',x1-58,y0+15,8.3,'#7f8db0','left','mono');
+  const rowH=(y1-y0-28)/4;
+  for(let i=0;i<4;i++){const ry=y0+28+i*rowH+rowH/2,f=lnFwd(XIN[i]),t=lnTgt(i),err=t-f.y,ok=(f.y>=0.5?1:0)===t,act=i===LN.active;
+    if(act){ctx.save();ctx.fillStyle='rgba(181,140,255,.13)';rr(x0+4,ry-rowH/2+2,x1-x0-8,rowH-4,6);ctx.fill();ctx.restore();}
+    txt('('+XIN[i][0]+','+XIN[i][1]+') → '+t,x0+14,ry,10,act?'#fff':'#cdd7f2','left','mono');
+    txt(f.y.toFixed(3),x1-120,ry,9.5,'#FF6B9D','left','mono');
+    ctx.save();ctx.fillStyle=ok?'#58E1A5':'#FF5D5D';ctx.globalAlpha=.85;rr(x1-58,ry-5,Math.max(2,Math.abs(err)*46),10,3);ctx.fill();ctx.restore();
+    txt(ok?'✓':'✗',x1-15,ry,10,ok?'#58E1A5':'#FF5D5D','center','mono','700');
+    hov((x0+x1)/2,ry,(x1-x0)/2,'case','case ('+XIN[i][0]+','+XIN[i][1]+')','target '+t+' · output '+f.y.toFixed(3)+' · '+(ok?'correct':'wrong')+'. Click to load this example into the network.',null,{kind:'case',i});}
+}
+function drawSurface(x0,y0,x1,y1){
+  const w=x1-x0,h=y1-y0,lo=-0.18,hi=1.18,G=24;
+  ctx.save();rr(x0,y0,w,h,12);ctx.clip();
+  for(let a=0;a<G;a++)for(let b=0;b<G;b++){const gx=lo+(hi-lo)*(a+0.5)/G,gy=lo+(hi-lo)*(b+0.5)/G,yv=lnFwd([gx,gy]).y;
+    const px=lerp(x0,x1,(gx-lo)/(hi-lo)),py=lerp(y1,y0,(gy-lo)/(hi-lo));
+    ctx.globalAlpha=.5;ctx.fillStyle=blend('#FF5D5D','#5FE7FF',yv);ctx.fillRect(px-w/G/2-1,py-h/G/2-1,w/G+2,h/G+2);}
+  ctx.globalAlpha=1;
+  for(let i=0;i<4;i++){const gx=XIN[i][0],gy=XIN[i][1],t=lnTgt(i),f=lnFwd([gx,gy]),ok=(f.y>=0.5?1:0)===t;
+    const px=lerp(x0,x1,(gx-lo)/(hi-lo)),py=lerp(y1,y0,(gy-lo)/(hi-lo));
+    ctx.save();ctx.fillStyle=t?'#5FE7FF':'#FF5D5D';ctx.strokeStyle=ok?'#fff':'#FFB74A';ctx.lineWidth=ok?1.5:2.6;ctx.beginPath();ctx.arc(px,py,6,0,TAU);ctx.fill();ctx.stroke();ctx.restore();}
+  ctx.restore();
+  ctx.save();rr(x0,y0,w,h,12);ctx.strokeStyle='rgba(150,190,255,.12)';ctx.stroke();ctx.restore();
+  txt('decision surface',x0+10,y0-9,10.5,'#B58CFF','left','disp','600');
+  txt(GATES[LN.gate].sep?'a single straight cut can split this':'no straight line splits XOR — the hidden layer bends it',x0+8,y1+12,8.6,'#8c9bc0','left','mono');
+}
+function drawLossPlot(x0,y0,x1,y1){
+  ctx.save();rr(x0,y0,x1-x0,y1-y0,12);ctx.fillStyle='rgba(146,182,236,.03)';ctx.fill();ctx.strokeStyle='rgba(150,190,255,.12)';ctx.stroke();ctx.clip();
+  const Hh=LN.lossHist,n=Hh.length,mx=Math.max(...Hh,0.001);
+  const PX=i=>lerp(x0+12,x1-12,n<2?1:i/(n-1)), PY=v=>lerp(y1-12,y0+12,clamp(v/mx));
+  ctx.strokeStyle='#FF6B9D';ctx.lineWidth=2;ctx.shadowColor='#FF6B9D';ctx.shadowBlur=8;ctx.beginPath();
+  for(let i=0;i<n;i++){i?ctx.lineTo(PX(i),PY(Hh[i])):ctx.moveTo(PX(i),PY(Hh[i]));}
+  ctx.stroke();ctx.shadowBlur=0;
+  if(n){const lx=PX(n-1),ly=PY(Hh[n-1]);ctx.save();ctx.shadowColor='#FF6B9D';ctx.shadowBlur=12;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(lx,ly,3.6,0,TAU);ctx.fill();ctx.restore();}
+  ctx.restore();
+  const acc=lnAcc();
+  txt('training error  (loss, lower = better)  ↓',x0+10,y0-9,10.5,'#FF6B9D','left','disp','600');
+  txt('error '+(n?Hh[n-1].toFixed(4):'—')+'  ·  epoch '+Math.floor(LN.epoch)+'  ·  '+acc+'/4 correct'+(acc===4?'   ✓ solved':''),x1-10,y0-9,9.5,acc===4?'#58E1A5':'#93A4C6','right','mono');
+}
+
+/* ===== 9b. SCALE — toy vs real models, made tangible ===== */
+function timeStr(sec){const y=sec/31557600;if(y>=1)return (y>=1000?Math.round(y).toLocaleString():y.toFixed(y>=10?0:1))+' years';const d=sec/86400;if(d>=1)return d.toFixed(1)+' days';const h=sec/3600;if(h>=1)return h.toFixed(1)+' hours';const m=sec/60;if(m>=1)return Math.round(m)+' minutes';return Math.round(sec)+' seconds';}
+function fmtBytes(n){const u=['bytes','KB','MB','GB','TB','PB'];let i=0;while(n>=1024&&i<u.length-1){n/=1024;i++;}return (n<10&&i>0?n.toFixed(1):Math.round(n))+' '+u[i];}
+const SHORT={toy:'this toy',gpt2s:'GPT-2 S',gpt2xl:'GPT-2 XL',gpt3:'GPT-3',llama70:'Llama-70B',llama405:'Llama-405B',frontier:'frontier',mythos:'Mythos'};
+function scaleCol(m){return m.id==='toy'?'#5FE7FF':(m.est?'#C9A6FF':'#F2C66B');}
+let behemothCanvas=null, behemothGeo=null, behemothView=null;
+function neuronsOf(m){return m.L*(m.d+m.ff);}
+/* If every parameter were a 1940s vacuum tube, built at ENIAC's density (17,468 tubes · 167 m² · 27 t · 150 kW) */
+const ENIAC={tubes:17468, area:167, vol:167*2.4, mass:27000, power:150000};
+const TUBE={area:ENIAC.area/ENIAC.tubes, vol:ENIAC.vol/ENIAC.tubes, mass:ENIAC.mass/ENIAC.tubes, power:ENIAC.power/ENIAC.tubes};
+function tubePhysics(m){const t=m.P, vol=t*TUBE.vol; return {tubes:t, area:t*TUBE.area, vol, mass:t*TUBE.mass, power:t*TUBE.power, side:Math.cbrt(vol)};}
+const HEIGHTREFS=[{n:'a person',m:1.8,t:'human'},{n:'a house',m:9,t:'house'},{n:'the Statue of Liberty',m:93,t:'liberty'},{n:'the Eiffel Tower',m:330,t:'eiffel'},{n:'the Burj Khalifa',m:828,t:'burj'},{n:'Mount Everest',m:8849,t:'everest'}];
+const AREAREFS=[{n:'a parking space',v:12},{n:'a tennis court',v:261},{n:'a football pitch',v:7140},{n:'Central Park',v:3.41e6},{n:'Manhattan',v:59e6},{n:'Greater London',v:1572e6},{n:'Greater Tokyo',v:13500e6}];
+const MASSREFS=[{n:'a car',v:1500},{n:'a blue whale',v:1.5e5},{n:'the Eiffel Tower',v:1.01e7},{n:'the Empire State Building',v:3.65e8},{n:'the Great Pyramid',v:5.9e9}];
+const POWERREFS=[{n:'a home',v:1200},{n:'a town of 10k homes',v:1.2e7},{n:'a city of 1M homes',v:1.2e9},{n:'the U.S. power grid',v:1.2e12}];
+function bestRef(val,list){let r=list[0];for(const x of list){if(x.v<=val)r=x;}return {ref:r,mult:val/r.v};}
+function multStr(x){return x>=100?Math.round(x).toLocaleString():x>=10?x.toFixed(0):x>=2?x.toFixed(1):x.toFixed(2);}
+function cmp(val,list){const o=bestRef(val,list); if(o.mult>=1.15)return '\u2248 '+multStr(o.mult)+'\u00d7 '+o.ref.n; if(o.mult>=0.8)return '\u2248 '+o.ref.n; return multStr(o.mult)+'\u00d7 '+o.ref.n;}
+function fmtLen(m){return m>=1000?(m/1000).toFixed(m>=10000?0:1)+' km':m>=1?(m>=100?Math.round(m):m.toFixed(1))+' m':(m*100).toFixed(0)+' cm';}
+function fmtArea(a){return a>=1e6?Math.round(a/1e6).toLocaleString()+' km\u00b2':a>=1e4?(a/1e4).toFixed(1)+' ha':Math.round(a)+' m\u00b2';}
+function fmtMass(kg){return kg>=1e9?(kg/1e9).toFixed(1)+' Mt':kg>=1e6?(kg/1e6).toFixed(1)+' kt':kg>=1e3?(kg/1e3).toFixed(1)+' t':Math.round(kg)+' kg';}
+function fmtPow(w){return w>=1e12?(w/1e12).toFixed(1)+' TW':w>=1e9?Math.round(w/1e9)+' GW':w>=1e6?Math.round(w/1e6)+' MW':w>=1e3?Math.round(w/1e3)+' kW':Math.round(w)+' W';}
+function niceStep(mx){const p=Math.pow(10,Math.floor(Math.log10(mx))),n=mx/p,s=n<1.5?0.2:n<3?0.5:n<7?1:2;return s*p;}
+function hsh(x,y){const s=Math.sin(x*12.9898+y*78.233)*43758.5453;return s-Math.floor(s);}
+function drawScale(){
+  grid();
+  pulseT=(pulseT+(reduceMotion?0.004:0.02))%1;
+  const sel=modelById(SCALE.sel);
+  const bx=CW*0.04, bw=CW*0.92, by=24, bh=26;
+  ctx.save();rr(bx,by,bw,bh,9);ctx.fillStyle=withAlpha('#F2C66B',.07);ctx.fill();ctx.strokeStyle=withAlpha('#F2C66B',.3);ctx.lineWidth=1;ctx.stroke();ctx.restore();
+  txt('THE BEHEMOTH',bx+14,by+bh/2,9.6,'#F2C66B','left','disp','700');
+  txt('one vacuum tube per parameter, packed like ENIAC',bx+bw-14,by+bh/2,9,'#9aa9cf','right','mono');
+  drawMiniBar(150, CW-42, 76);
+  drawTubes(40, 98, CW-40, CH-26, sel);
+}
+function drawMiniBar(x0,x1,y){
+  const logMin=3,logMax=12.85,X=p=>lerp(x0,x1,(Math.log10(p)-logMin)/(logMax-logMin));
+  txt('where it sits',44,y,9,'#7f8db0','left','disp','600');
+  lineC(x0,y,x1,y,'rgba(150,190,255,.18)',1.2,1);
+  [3,6,9,12].forEach(e=>{const px=X(Math.pow(10,e));lineC(px,y-4,px,y+4,'rgba(150,190,255,.22)',1,1);txt('10^'+e,px,y+12,7.4,'#5E6E92','center','mono');});
+  MODELS.forEach(m=>{const px=X(m.P),isSel=m.id===SCALE.sel,isToy=m.id==='toy',col=scaleCol(m);
+    const r=isSel?6:(isToy?5:3.5),pulse=isToy?(1+Math.sin(pulseT*TAU)*0.25):1;
+    ctx.save();ctx.shadowColor=col;ctx.shadowBlur=isSel?12:5;ctx.globalAlpha=m.est?.85:1;ctx.fillStyle=isSel?'#fff':col;ctx.beginPath();ctx.arc(px,y,r*pulse,0,TAU);ctx.fill();ctx.restore();
+    if(isSel){const lab=SHORT[m.id]+' · '+(m.est?'~':'')+fmtP(m.P), lx=clamp(px,x0+46,x1-46); txt(lab,lx,y-13,8.6,'#fff','center','disp','700');}
+    hov(px,y,9,(m.est?'estimated':m.yr),m.name+' · '+(m.est?'~':'')+fmtP(m.P)+' params','emerges: '+m.emg,null,{kind:'model',id:m.id});});
+}
+function drawRef(r,cx,gy,ppm){
+  const h=r.m*ppm, col=r.t==='toycube'?'rgba(242,198,107,.72)':'rgba(160,196,255,.62)';
+  ctx.save();ctx.fillStyle=col;ctx.strokeStyle=col;ctx.lineWidth=1.2;
+  if(h<3){ctx.globalAlpha=.85;ctx.fillRect(cx-1,gy-Math.max(2,h),2,Math.max(2,h));}
+  else if(r.t==='human'){ctx.beginPath();ctx.arc(cx,gy-h*0.88,Math.max(1,h*0.12),0,TAU);ctx.fill();ctx.fillRect(cx-h*0.07,gy-h*0.76,Math.max(1,h*0.14),h*0.76);}
+  else if(r.t==='house'){const w=h*0.95;ctx.fillRect(cx-w/2,gy-h*0.6,w,h*0.6);ctx.beginPath();ctx.moveTo(cx-w*0.55,gy-h*0.58);ctx.lineTo(cx,gy-h);ctx.lineTo(cx+w*0.55,gy-h*0.58);ctx.closePath();ctx.fill();}
+  else if(r.t==='liberty'){const w=h*0.42;
+    ctx.fillRect(cx-w*0.5,gy-h*0.24,w,h*0.24); ctx.fillRect(cx-w*0.32,gy-h*0.4,w*0.64,h*0.16);
+    ctx.beginPath();ctx.moveTo(cx-w*0.22,gy-h*0.4);ctx.lineTo(cx-w*0.1,gy-h*0.76);ctx.lineTo(cx+w*0.1,gy-h*0.76);ctx.lineTo(cx+w*0.22,gy-h*0.4);ctx.closePath();ctx.fill();
+    ctx.beginPath();ctx.arc(cx-w*0.02,gy-h*0.8,h*0.04,0,TAU);ctx.fill();
+    for(let k=-2;k<=2;k++){const a=cx-w*0.02+k*w*0.05;ctx.beginPath();ctx.moveTo(a,gy-h*0.83);ctx.lineTo(a,gy-h*0.9);ctx.stroke();}
+    ctx.lineWidth=Math.max(1.2,h*0.02);ctx.beginPath();ctx.moveTo(cx+w*0.06,gy-h*0.72);ctx.lineTo(cx+w*0.2,gy-h*0.97);ctx.stroke();
+    ctx.beginPath();ctx.arc(cx+w*0.2,gy-h,h*0.035,0,TAU);ctx.fill();}
+  else if(r.t==='toycube'){const s=Math.max(2,h),dp=s*0.3;
+    ctx.fillStyle=withAlpha('#F2C66B',.16);ctx.beginPath();ctx.moveTo(cx-s/2,gy-s);ctx.lineTo(cx+s/2,gy-s);ctx.lineTo(cx+s/2+dp,gy-s-dp);ctx.lineTo(cx-s/2+dp,gy-s-dp);ctx.closePath();ctx.fill();
+    ctx.fillStyle=withAlpha('#F2C66B',.28);ctx.fillRect(cx-s/2,gy-s,s,s);ctx.strokeStyle=withAlpha('#F2C66B',.7);ctx.strokeRect(cx-s/2,gy-s,s,s);
+    if(s>7){for(let yy=gy-s+1;yy<gy;yy+=3)for(let xx=cx-s/2+1;xx<cx+s/2;xx+=3){ctx.globalAlpha=.55;ctx.fillStyle='#FFE196';ctx.fillRect(xx,yy,1,1);}}}
+  else if(r.t==='eiffel'){ctx.beginPath();ctx.moveTo(cx-h*0.26,gy);ctx.lineTo(cx,gy-h);ctx.lineTo(cx+h*0.26,gy);ctx.closePath();ctx.stroke();ctx.beginPath();ctx.moveTo(cx-h*0.15,gy-h*0.42);ctx.lineTo(cx+h*0.15,gy-h*0.42);ctx.stroke();}
+  else if(r.t==='burj'){ctx.beginPath();ctx.moveTo(cx-h*0.085,gy);ctx.lineTo(cx-h*0.03,gy-h*0.8);ctx.lineTo(cx,gy-h);ctx.lineTo(cx+h*0.03,gy-h*0.8);ctx.lineTo(cx+h*0.085,gy);ctx.closePath();ctx.fill();}
+  else if(r.t==='everest'){ctx.beginPath();ctx.moveTo(cx-h*0.72,gy);ctx.lineTo(cx,gy-h);ctx.lineTo(cx+h*0.72,gy);ctx.closePath();ctx.fill();ctx.fillStyle='rgba(255,255,255,.55)';ctx.beginPath();ctx.moveTo(cx-h*0.2,gy-h*0.72);ctx.lineTo(cx,gy-h);ctx.lineTo(cx+h*0.2,gy-h*0.72);ctx.closePath();ctx.fill();}
+  ctx.restore();
+  txt(r.n,cx,gy+11,7.6,'#9aa9cf','center','mono');
+  txt(fmtLen(r.m),cx,gy+21,7.4,'#5E6E92','center','mono');
+}
+function drawTubes(x0,y0,x1,y1,m){
+  const groundY=y1-30, P=tubePhysics(m), side=P.side;
+  const availTop=y0+132, availH=Math.max(40,groundY-availTop);
+  let cubePx=availH*0.74, depth=Math.min(cubePx*0.3,110);
+  if(cubePx+depth>availH)cubePx=availH-depth;
+  const ppm=cubePx/side, byTop=groundY-cubePx;
+  const toySide=tubePhysics(MODELS[0]).side;
+  const cands=(m.id==='toy'?[]:[{n:'our toy',m:toySide,t:'toycube'}]).concat(HEIGHTREFS);
+  let drawn=cands.filter(r=>r.m<=side*1.02 && r.m>=side/600).slice(-3);
+  ['human','toycube'].forEach(tt=>{const gr=cands.find(r=>r.t===tt); if(gr && gr.m<=side*1.02 && !drawn.some(r=>r.t===tt)) drawn=[gr].concat(drawn);});
+  drawn=drawn.slice(0,5);
+  lineC(x0,groundY,x1,groundY,'rgba(150,190,255,.25)',1.2,1);
+  const rx=x0+58, step=niceStep(side);
+  for(let v=0; v<=side*1.001; v+=step){const ty=groundY-v*ppm; lineC(rx-5,ty,rx+5,ty,'rgba(150,190,255,.2)',1,1); txt(fmtLen(v),rx-8,ty,7.4,'#5E6E92','right','mono');}
+  lineC(rx,groundY,rx,byTop,'rgba(150,190,255,.18)',1,1);
+  const bx=x0+78;
+  ctx.save();
+  ctx.strokeStyle=withAlpha('#F2C66B',.5);ctx.lineWidth=1;
+  ctx.fillStyle=withAlpha('#F2C66B',.16);ctx.beginPath();ctx.moveTo(bx,byTop);ctx.lineTo(bx+cubePx,byTop);ctx.lineTo(bx+cubePx+depth,byTop-depth);ctx.lineTo(bx+depth,byTop-depth);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.fillStyle=withAlpha('#F2C66B',.10);ctx.beginPath();ctx.moveTo(bx+cubePx,byTop);ctx.lineTo(bx+cubePx+depth,byTop-depth);ctx.lineTo(bx+cubePx+depth,groundY-depth);ctx.lineTo(bx+cubePx,groundY);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.fillStyle=withAlpha('#F2C66B',.20);ctx.fillRect(bx,byTop,cubePx,cubePx);ctx.strokeRect(bx,byTop,cubePx,cubePx);
+  ctx.beginPath();ctx.rect(bx,byTop,cubePx,cubePx);ctx.clip();
+  for(let yy=byTop+2; yy<groundY; yy+=4) for(let xx=bx+2; xx<bx+cubePx; xx+=4){ctx.globalAlpha=0.16+0.5*hsh(xx,yy);ctx.fillStyle='#FFE196';ctx.fillRect(xx,yy,1,1);}
+  ctx.restore();
+  txt(m.name+' (to scale)',bx+cubePx/2,groundY+11,7.8,'#f6dca0','center','mono','700');
+  txt('a cube '+fmtLen(side)+' on a side',bx+cubePx/2,groundY+21,7.4,'#7f8db0','center','mono');
+  const rStart=bx+cubePx+depth+46, rEnd=x1-16, slot=(rEnd-rStart)/Math.max(1,drawn.length);
+  drawn.forEach((r,i)=>drawRef(r, rStart+slot*(i+0.5), groundY, ppm));
+  ctx.save();rr(x0+10,y0+8,Math.min(x1-x0-20,492),120,9);ctx.fillStyle='rgba(6,10,20,.8)';ctx.fill();ctx.strokeStyle='rgba(150,190,255,.18)';ctx.lineWidth=1;ctx.stroke();ctx.restore();
+  txt(m.name,x0+22,y0+25,15,'#fff','left','disp','800');
+  txt('built from '+(m.est?'~':'')+fmtP(P.tubes)+' vacuum tubes — one per parameter:',x0+22,y0+43,8.8,'#9aa9cf','left','mono');
+  txt('cube',x0+22,y0+61,8.4,'#7f8db0','left','mono');txt(fmtLen(side)+' on a side  ·  '+cmp(side,HEIGHTREFS.map(r=>({n:r.n,v:r.m}))),x0+76,y0+61,9,'#f6dca0','left','mono','700');
+  txt('floor',x0+22,y0+78,8.4,'#7f8db0','left','mono');txt(fmtArea(P.area)+'  ·  '+cmp(P.area,AREAREFS),x0+76,y0+78,9,'#cdd7f2','left','mono');
+  txt('weight',x0+22,y0+95,8.4,'#7f8db0','left','mono');txt(fmtMass(P.mass)+'  ·  '+cmp(P.mass,MASSREFS),x0+76,y0+95,9,'#cdd7f2','left','mono');
+  txt('power',x0+22,y0+112,8.4,'#7f8db0','left','mono');txt(fmtPow(P.power)+'  ·  '+cmp(P.power,POWERREFS),x0+76,y0+112,9,'#cdd7f2','left','mono');
+  txt('one tube \u2248 a small light bulb (3\u00d710 cm); ENIAC packed them at ~23 L each — that density sets the cube. real chips use nanometre transistors, not tubes.',x0+(x1-x0)/2, y1-8, 8,'#5E6E92','center','mono');
+}
+function renderScaleAssay(){
+  const s=modelById(SCALE.sel), toy=MODELS[0], parts=partsParams(s), P=tubePhysics(s); let H='';
+  H+=panel('Built from vacuum tubes','ENIAC density',
+    '<div class="sub">one 1940s tube per parameter, packed like ENIAC (17,468 tubes · 167 m² · 27 t · 150 kW)</div>'
+    +'<div class="math"><span class="d">tubes</span>   <span class="v">'+(s.est?'~':'')+fmtP(P.tubes)+'</span>\n<span class="d">cube</span>    <span class="g">'+fmtLen(P.side)+'</span> / side  ·  '+cmp(P.side,HEIGHTREFS.map(r=>({n:r.n,v:r.m})))+'\n<span class="d">floor</span>   '+fmtArea(P.area)+'  ·  '+cmp(P.area,AREAREFS)+'\n<span class="d">weight</span>  '+fmtMass(P.mass)+'  ·  '+cmp(P.mass,MASSREFS)+'\n<span class="d">power</span>   '+fmtPow(P.power)+'  ·  '+cmp(P.power,POWERREFS)+'</div>'
+    +'<div class="sub" style="margin-top:6px">A single tube is ~3 cm × 10 cm — a small light bulb, ~0.07 L of glass. Packed with its socket, wiring and cooling it takes <b>~23 L of machine</b> per tube (ENIAC\u2019s 167 m² × 2.4 m ÷ 17,468 tubes). That density sets the cube.</div>'
+    +'<div class="sub" style="margin-top:6px">A thought experiment about sheer count — real models run on chips with billions of nanometre transistors, not tubes.</div>');
+  H+=panel('The leap','toy → '+SHORT[s.id],
+    '<div class="sub">same architecture as the toy — only the size changes</div>'
+    +'<div class="math"><span class="d">toy</span>        <span class="v">'+fmtP(toy.P)+'</span> parameters\n<span class="d">'+s.name+'</span>  <span class="g">'+(s.est?'~':'')+fmtP(s.P)+'</span> parameters\n<span class="d">ratio</span>      <span class="r">×'+fmtP(s.P/toy.P)+'</span> more numbers</div>'
+    +'<div class="formula" style="margin-top:10px">A single '+SHORT[s.id]+' layer holds <b>'+(s.est?'~':'\u2248')+fmtP(parts.per)+'</b> parameters — about <b>×'+fmtP(parts.per/toy.P)+'</b> the whole toy. There are <b>'+s.L+'</b> of them, plus embeddings and an output head. <span style="opacity:.7">(per-layer is approximate — attention/MLP detail varies by model)</span></div>');
+  H+=panel('Trained on',s.est?'estimated':s.yr,
+    '<div class="math"><span class="d">text</span>     <span class="v">'+(s.est?'~':'')+fmtBig(s.train)+'</span> words\n<span class="d">class</span>    <span class="g">'+(schoolYears(s.train)<1?'< 1 yr':fmtYears(schoolYears(s.train)))+'</span> of school to hear them\n<span class="d">reading</span>  '+(s.train/READ_WORDS_PER_YEAR<1?'< 1 yr':fmtYears(s.train/READ_WORDS_PER_YEAR))+' nonstop</div>'
+    +'<div class="sub" style="margin-top:6px">assumes ~10M words per school year (≈1,000 h of class). '+(s.est?'Training data not publicly disclosed — estimated.':'')+'</div>');
+  H+=panel('Emerges at this scale','rollover on the ladder',
+    '<div class="sub">'+s.emg+'</div><div class="vec" style="margin-top:6px">'+s.emgList.map(e=>'<div class="vrow"><span class="vn" style="width:auto">▸</span><span style="font-size:12px;color:#cdd7f2">'+esc(e)+'</span></div>').join('')+'</div>'
+    +'<div class="sub" style="margin-top:6px">"Emergence" = abilities largely absent in smaller models that appear once the model is scaled up.</div>');
+  H+=panel('Every knob multiplied','toy vs '+SHORT[s.id],
+    '<div class="math">'+[['d_model',toy.d,s.d],['layers',toy.L,s.L],['heads',toy.h,s.h],['d_ff',toy.ff,s.ff],['vocab',toy.V,s.V],['context',toy.ctx,s.ctx]].map(r=>'<span class="d">'+r[0].padEnd(8)+'</span> '+String(r[1]).padStart(2)+' \u2192 <span class="v">'+r[2].toLocaleString()+'</span>  <span class="r">×'+fmtP(r[2]/r[1])+'</span>').join('\n')+'</div>'
+    +(s.est?'<div class="sub" style="margin-top:6px">Dimensions for this tier are estimated — not disclosed.</div>':''));
+  if(s.id==='mythos')H+=panel('About Mythos','disclosure','<div class="sub">Anthropic has not published Mythos\u2019s parameter count or architecture. The numbers here are <b>illustrative</b> — placed to show roughly where a newest-generation tier sits above the largest open models, not a leak or official figure.</div>');
+  return H;
+}
+
+/* ===== 10. DRAW LOOP + READOUT + OVERLAY ===== */
+const DRAW={embed:drawEmbed,attend:drawAttend,forge:drawForge,predict:drawPredict,learn:drawLearn,scale:drawScale};
+function dispatchDraw(){ctx.clearRect(0,0,CW,CH);(DRAW[S.tab]||drawEmbed)();}
+function updateStageReadout(){
+  const F=S.fwd; let html='';
+  if(S.tab==='embed') html='tokens <b>'+S.tokens.length+'</b><br>dims <b>'+DMODEL+'</b><br>position '+(S.showPos?'<b>on</b>':'off');
+  else if(S.tab==='attend'){const H=F.heads[S.head];const e=H.A.reduce((s,r)=>{let h=0;r.forEach(p=>{if(p>1e-9)h-=p*Math.log(p);});return s+h/Math.log(Math.max(2,S.tokens.length));},0)/S.tokens.length;html='head <b>'+(S.head+1)+'/'+NHEADS+'</b><br>query pos <b>'+S.cursor+'</b><br>entropy <b>'+e.toFixed(2)+'</b>';}
+  else if(S.tab==='forge') html='position <b>'+S.cursor+'</b><br>d_ff <b>'+DFF+'</b><br>neuron <b>h'+S.selNeuron+'</b>';
+  else if(S.tab==='predict'){const top=topProbs(1)[0];html='temp <b>'+S.temp.toFixed(2)+'</b><br>entropy <b>'+entropy().toFixed(2)+'</b> bits<br>top <b>'+(top?(top.p*100).toFixed(0):'-')+'%</b>';}
+  else if(S.tab==='learn') html='epoch <b>'+Math.floor(LN.epoch)+'</b><br>loss <b>'+lnLoss().toFixed(4)+'</b><br><b>'+lnAcc()+'/4</b> correct';
+  else if(S.tab==='scale'){const s=modelById(SCALE.sel);html='toy <b>'+fmtP(MODELS[0].P)+'</b><br>'+SHORT[s.id]+' <b>'+(s.est?'~':'')+fmtP(s.P)+'</b><br>×<b>'+fmtP(s.P/MODELS[0].P)+'</b>';}
+  $('stagereadout').innerHTML=html;
+}
+function drawHoverOverlay(){
+  if(mouse.x<0){tip.classList.remove('show');hoverHit=null;cv.style.cursor=S.tab==='embed'?'grab':'default';return;}
+  let hit=null,bd=1e9;
+  for(const h of hoverItems){const d=Math.hypot(mouse.x-h.x,mouse.y-h.y);if(d<h.r&&d<bd){hit=h;bd=d;}}
+  hoverHit=hit;
+  if(hit){tipTag.textContent=hit.tag||'';tipB.textContent=hit.title||'';tipS.textContent=hit.body||'';tipMM.textContent=hit.mm||'';tipMM.style.display=hit.mm?'block':'none';
+    tip.style.left=(mouse.cx+12)+'px';tip.style.top=(mouse.cy+12)+'px';tip.classList.add('show');
+    cv.style.cursor=hit.sel?'pointer':(S.tab==='embed'?'grab':'help');}
+  else{tip.classList.remove('show');cv.style.cursor=S.tab==='embed'?(mouse.down?'grabbing':'grab'):'default';}
+}
+let lastT=performance.now(), playAcc=0, assayDirty=false, lastAssay=0;
+function frame(now){
+  let dt=Math.min(0.05,((now-lastT)/1000)||0); lastT=now; simT+=dt*S.speed;
+  if(GEN.active){ GEN.t+=dt*1.5*Math.max(0.6,S.speed); if(GEN.t>=1) commitGen(); }
+  if(S.playing){
+    if(S.tab==='learn'){ playAcc+=dt*S.speed; if(playAcc>0.9){ playAcc=0; lnStep(); assayDirty=true; updateTransportReadout(); if(lnAcc()===4 && lnLoss()<0.01){S.playing=false;updatePlayBtn();} } }
+    else if(S.tab==='scale'){ playAcc+=dt*S.speed; if(playAcc>1.6){ playAcc=0; const i=CMP_IDS.indexOf(SCALE.sel); SCALE.sel=CMP_IDS[(i+1)%CMP_IDS.length]; SCALE.layer=null; SCALE.zoom=null; buildCtrlstrip(); assayDirty=true; updateTransportReadout(); } }
+    else if(S.tab==='attend'){playAcc+=dt*S.speed; if(playAcc>1.0 && !GEN.active){playAcc=0; if(S.cursor<S.tokens.length-1){S.cursor++;S.cell=[S.cursor,Math.min(S.cell?S.cell[1]:0,S.cursor)];renderSentence();renderAssay();updateTransportReadout();} else {startGen();}}}
+    else{playAcc+=dt*S.speed;const interval=(S.tab==='predict'?0.95:1.0);if(playAcc>interval){playAcc=0;transStep('next');}}
+  }
+  hoverItems=[]; dispatchDraw(); drawHoverOverlay(); updateStageReadout();
+  if(assayDirty && now-lastAssay>90){renderAssay();assayDirty=false;lastAssay=now;}
+  requestAnimationFrame(frame);
+}
+
+/* ===== 11. TRANSPORT ===== */
+function transStep(action){
+  if(S.tab==='learn'){
+    if(action==='play'){S.playing=!S.playing;updatePlayBtn();return;}
+    if(action==='next')lnStep();
+    else if(action==='prev'){LN.active=(LN.active+3)%4;}
+    else if(action==='first'){lnInit();}
+    else if(action==='last'){for(let e=0;e<25;e++)lnEpoch();}
+    assayDirty=true; updateTransportReadout(); return;
+  }
+  if(S.tab==='scale'){
+    if(action==='play'){S.playing=!S.playing;updatePlayBtn();return;}
+    const i=CMP_IDS.indexOf(SCALE.sel);
+    SCALE.layer=null; SCALE.zoom=null;
+    if(action==='next')SCALE.sel=CMP_IDS[(i+1)%CMP_IDS.length];
+    else if(action==='prev')SCALE.sel=CMP_IDS[(i-1+CMP_IDS.length)%CMP_IDS.length];
+    else if(action==='first')SCALE.sel=CMP_IDS[0];
+    else if(action==='last')SCALE.sel=CMP_IDS[CMP_IDS.length-1];
+    buildCtrlstrip(); assayDirty=true; updateTransportReadout(); return;
+  }
+  if(S.tab==='predict'){
+    if(action==='play'){S.playing=!S.playing;updatePlayBtn();return;}
+    if(action==='next')sampleAppend();
+    else if(action==='prev')undoToken();
+    else if(action==='first'){setTokens(($('editInput')&&$('editInput').value)||DEFAULT_SENTENCE);refreshAll();}
+    else if(action==='last'){for(let i=0;i<4 && S.tokens.length<WINDOW;i++)sampleAppend();}
+    return;
+  }
+  if(action==='play'){S.playing=!S.playing;updatePlayBtn();return;}
+  const n=S.tokens.length;
+  if(action==='next')S.cursor=(S.cursor+1)%n;
+  else if(action==='prev')S.cursor=(S.cursor-1+n)%n;
+  else if(action==='first')S.cursor=0;
+  else if(action==='last')S.cursor=n-1;
+  if(S.tab==='attend')S.cell=[S.cursor,Math.min(S.cell?S.cell[1]:0,S.cursor)];
+  renderSentence(); renderAssay(); updateTransportReadout();
+}
+function updatePlayBtn(){$('tPlay').innerHTML=S.playing?'&#10073;&#10073;':'&#9654;';}
+function updateTransportReadout(){
+  let lab='', ro='';
+  if(S.tab==='scale'){const P=tubePhysics(modelById(SCALE.sel));lab='scale:  click a model dot to rebuild the machine · ‹ › cycle models · ▶ tour all sizes';ro='if built from tubes: a <b>'+fmtLen(P.side)+'</b> cube · '+fmtMass(P.mass);$('transLab').textContent=lab;$('transReadout').innerHTML=ro;return;}
+  if(S.tab==='learn'){const acc=lnAcc();lab='train '+GATES[LN.gate].name+':  ▶ auto-train (slow) · › one small step · ‹ inspect prev · |< reset · »| skip 25  ·  keys: → step, Space auto';ro='epoch <b>'+Math.floor(LN.epoch)+'</b> · step <b>'+LN.step+'</b> · loss <b>'+lnLoss().toFixed(4)+'</b> · <b>'+acc+'/4</b>';}
+  else if(S.tab==='predict'){lab='generate: play / > sample next word · < undo · |< reset';ro='generated <b>'+S.genCount+'</b> · length <b>'+S.tokens.length+'</b>';}
+  else if(S.tab==='attend'){lab='move the query word · play to auto-read, then predict';ro='query <b>'+S.cursor+'</b> / '+(S.tokens.length-1)+' · "'+esc(S.tokens[S.cursor]||'')+'"';}
+  else {lab='move through the words, one at a time';ro='word <b>'+S.cursor+'</b> / '+(S.tokens.length-1)+' · "'+esc(S.tokens[S.cursor]||'')+'"';}
+  $('transLab').textContent=lab; $('transReadout').innerHTML=ro;
+}
+function sampleAppend(){
+  recompute(); const p=S.fwd.probs; let r=Math.random(),acc=0,ci=0;
+  for(let i=0;i<VOCAB.length;i++){acc+=p[i];if(r<=acc){ci=i;break;}}
+  const chosen=VOCAB[ci]; S.tokens.push(chosen); let fresh=S.tokens.length-1;
+  if(S.tokens.length>WINDOW){S.tokens.shift();fresh=S.tokens.length-1;}
+  S.cursor=S.tokens.length-1; S.cell=[S.cursor,0]; S.sampledTok=chosen; S.selCand=ci; S.genCount++; refreshAll(fresh);
+}
+function undoToken(){ if(S.tokens.length>1){S.tokens.pop(); S.cursor=S.tokens.length-1; S.genCount=Math.max(0,S.genCount-1); S.sampledTok=null; refreshAll(); } }
+
+/* ===== 12. CHROME: tab bar, prompt, ctrlstrip, legend ===== */
+function buildHud(){
+  const hud=$('hud');
+  TABS.forEach((t,i)=>{
+    const b=document.createElement('button'); b.className='tab'; b.dataset.tab=t.id; b.style.setProperty('--tabc',t.col);
+    b.innerHTML='<span class="dot"></span><span class="ix">0'+(i+1)+'</span><span style="min-width:0"><span class="nm">'+t.nm+'</span><br><span class="sub">'+t.sub+'</span></span><span class="arrow">▸</span>';
+    b.addEventListener('click',()=>switchTab(t.id));
+    hud.appendChild(b);
+  });
+}
+function buildChips(){const el=$('chips');if(!el)return;el.innerHTML='';SAMPLES.forEach(s=>{const c=document.createElement('button');c.className='chip';c.textContent=s;c.title=s;c.addEventListener('click',()=>{setTokens(s);closeEdit();refreshAll();});el.appendChild(c);});}
+function buildAbout(){const cards=[['architecture','1 transformer block · pre-LayerNorm · '+NHEADS+' heads · GELU MLP ('+DMODEL+'→'+DFF+'→'+DMODEL+')'],['embeddings','curated '+DMODEL+'-d vectors on '+VOCAB.length+' tokens, scaled by √d and given sinusoidal positions'],['block weights','random init, seed '+SEED+', frozen — you see the mechanism, not learned skill'],['output layer','trained by gradient descent, '+CORPUS.length+' sentences, 500 steps — gradient-checked']];$('aboutgrid').innerHTML=cards.map(c=>'<div class="acard"><div class="at">'+c[0]+'</div><div class="ad">'+c[1]+'</div></div>').join('');}
+function seg(opts,cur,cb){return '<span class="seg">'+opts.map(o=>'<button data-v="'+o.v+'" class="'+(o.v===cur?'on':'')+'">'+o.l+'</button>').join('')+'</span>';}
+function buildCtrlstrip(){
+  const el=$('ctrlstrip'); el.style.setProperty('--tabc',TABS.find(t=>t.id===S.tab).col); let html='';
+  if(S.tab==='embed'){
+    html='<span class="toggle">axis X</span>'+selDim('cubeX')+'<span class="toggle">Y</span>'+selDim('cubeY')+'<span class="toggle">Z</span>'+selDim('cubeZ')
+      +'<label class="toggle"><input type="checkbox" id="posChk" '+(S.showPos?'checked':'')+'> show position</label>'
+      +'<button id="resetRot">reset view</button><span class="toggle" style="margin-left:6px">axes auto-picked for this sentence (most spread first)</span>';
+  } else if(S.tab==='attend'){
+    html='<span class="toggle">head</span>'+seg([{v:0,l:'H1'},{v:1,l:'H2'}],S.head,'')+'<span class="toggle" style="margin-left:6px">query = highlighted word · click a word or use the transport · "predict next word" drops the output in</span>';
+  } else if(S.tab==='forge'){
+    html='<button id="neuPrev">◀ neuron</button><span class="tlabel">h<b id="neuLbl">'+S.selNeuron+'</b> / '+(DFF-1)+'</span><button id="neuNext">neuron ▶</button><span class="toggle" style="margin-left:6px">or click any orange unit</span>';
+  } else if(S.tab==='predict'){
+    html='<button class="fire" id="sampleBtn">✨ Sample next word</button>'
+      +'<span class="slider" style="margin-left:6px">temp<input type="range" id="tempSlider" min="0.20" max="1.80" step="0.01" value="'+S.temp+'"><b id="tempLbl">'+S.temp.toFixed(2)+'</b></span>'
+      +'<label class="toggle"><input type="checkbox" id="logitChk" '+(S.showLogits?'checked':'')+'> show raw logits</label>';
+  } else if(S.tab==='learn'){
+    html='<span class="toggle">gate</span>'+seg([{v:'and',l:'AND'},{v:'or',l:'OR'},{v:'xor',l:'XOR'},{v:'xnor',l:'XNOR'}],LN.gate,'')
+      +'<span class="slider" style="margin-left:6px">lr<input type="range" id="lrSlider" min="0.05" max="2" step="0.05" value="'+LN.lr+'"><b id="lrLbl">'+LN.lr.toFixed(2)+'</b></span>'
+      +'<button id="resetNet">↺ new random net</button>'
+      +'<span class="toggle" style="margin-left:6px">'+(GATES[LN.gate].sep?'linearly separable — easy':'not separable — needs the hidden layer')+'</span>';
+  } else if(S.tab==='scale'){
+    html='<span class="toggle">model</span>'+seg(CMP_IDS.map(id=>({v:id,l:SHORT[id]})),SCALE.sel,'')
+      +'<span class="toggle" style="margin-left:6px">public specs · frontier &amp; Mythos sizes not public (estimated)</span>';
+  }
+  el.innerHTML=html; bindCtrlstrip();
+}
+function selDim(key){const ranked=dimSpread().sort((a,b)=>b.range-a.range);return '<select data-dim="'+key+'" class="dimsel" style="background:rgba(0,0,0,.3);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:5px 6px;font-family:var(--mono);font-size:11px">'+ranked.map(o=>{const i=o.d;return '<option value="'+i+'" '+(S[key]===i?'selected':'')+'>'+DIMS[i]+(o.range>0.01?'  ·  '+o.range.toFixed(2):'')+'</option>';}).join('')+'</select>';}
+function bindCtrlstrip(){
+  if(S.tab==='embed'){
+    document.querySelectorAll('.dimsel').forEach(s=>s.addEventListener('change',e=>{S[e.target.dataset.dim]=+e.target.value;}));
+    const pc=$('posChk');if(pc)pc.addEventListener('change',e=>{S.showPos=e.target.checked;});
+    const rr2=$('resetRot');if(rr2)rr2.addEventListener('click',()=>{S.rotY=0.6;S.rotX=-0.32;});
+  } else if(S.tab==='attend'){
+    document.querySelectorAll('#ctrlstrip .seg button').forEach(b=>b.addEventListener('click',()=>{S.head=+b.dataset.v;buildCtrlstrip();renderAssay();}));
+  } else if(S.tab==='forge'){
+    const np=$('neuPrev'),nn=$('neuNext');
+    if(np)np.addEventListener('click',()=>{S.selNeuron=(S.selNeuron-1+DFF)%DFF;$('neuLbl').textContent=S.selNeuron;renderAssay();});
+    if(nn)nn.addEventListener('click',()=>{S.selNeuron=(S.selNeuron+1)%DFF;$('neuLbl').textContent=S.selNeuron;renderAssay();});
+  } else if(S.tab==='predict'){
+    const sb=$('sampleBtn');if(sb)sb.addEventListener('click',()=>{sampleAppend();});
+    const ts=$('tempSlider');if(ts)ts.addEventListener('input',e=>{S.temp=+e.target.value;const tl=$('tempLbl');if(tl)tl.textContent=S.temp.toFixed(2);recompute();renderAssay();});
+    const lc=$('logitChk');if(lc)lc.addEventListener('change',e=>{S.showLogits=e.target.checked;renderAssay();});
+  } else if(S.tab==='learn'){
+    document.querySelectorAll('#ctrlstrip .seg button').forEach(b=>b.addEventListener('click',()=>{LN.gate=b.dataset.v;lnInit();buildCtrlstrip();assayDirty=true;updateTransportReadout();}));
+    const ls=$('lrSlider');if(ls)ls.addEventListener('input',e=>{LN.lr=+e.target.value;$('lrLbl').textContent=LN.lr.toFixed(2);});
+    const rn=$('resetNet');if(rn)rn.addEventListener('click',()=>{lnInit();assayDirty=true;updateTransportReadout();});
+  } else if(S.tab==='scale'){
+    document.querySelectorAll('#ctrlstrip .seg button').forEach(b=>b.addEventListener('click',()=>{SCALE.sel=b.dataset.v;SCALE.layer=null;SCALE.zoom=null;buildCtrlstrip();assayDirty=true;updateTransportReadout();}));
+  }
+}
+function buildLegend(){
+  const sets={
+    embed:[['#5FE7FF','token vector'],['#FFB74A','+ position'],['#93A4C6','unknown word']],
+    attend:[['#FFB74A','query'],['#FF5D5D','attention weight'],['#58E1A5','value flow'],['#5E6E92','causal mask']],
+    forge:[['#B9C5E8','residual'],['#5FE7FF','layernorm'],['#FF7A4D','GELU hidden'],['#58E1A5','output'],['#FF5D5D','negative']],
+    predict:[['#FF6B9D','probability'],['#FFB74A','sampled'],['#5FE7FF','logit']],
+    learn:[['#FFB74A','input'],['#B58CFF','hidden · tanh'],['#FF6B9D','output'],['#5FE7FF','+ weight / class 1'],['#FF5D5D','− weight / error / class 0']],
+    scale:[['#5FE7FF','the toy'],['#F2C66B','real model'],['#9aa9cf','estimated'],['#FFB74A','× factor']]
+  };
+  $('legend').innerHTML=(sets[S.tab]||[]).map(i=>'<span class="lk"><span class="swatch" style="background:'+i[0]+'"></span>'+i[1]+'</span>').join('');
+}
+function switchTab(id){
+  S.tab=id; S.playing=false; updatePlayBtn(); playAcc=0;
+  const t=TABS.find(x=>x.id===id);
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.tab===id));
+  document.documentElement.style.setProperty('--tabc',t.col);
+  $('hudscan').style.background='radial-gradient(600px 80px at '+(TABS.indexOf(t)*22+10)+'% 50%, '+t.col+'33, transparent 70%)';
+  $('stagetag').textContent=t.tag;
+  const gb=$('genBtn'); if(gb) gb.style.display=(id==='attend')?'inline-flex':'none';
+  renderSentence();
+  buildCtrlstrip(); buildLegend(); renderAssay(); updateTransportReadout();
+}
+
+/* ===== 13. ASSAY PANELS (the inspectable math) ===== */
+function vrows(vec,names,maxAbs){
+  const mx=maxAbs||Math.max(...vec.map(v=>Math.abs(v)),1e-6);
+  return '<div class="vec">'+vec.map((v,i)=>{
+    const w=Math.abs(v)/mx*50, col=v>=0?'var(--cyan)':'var(--red)', left=v>=0?'50%':(50-w)+'%';
+    return '<div class="vrow"><span class="vn">'+(names?esc(String(names[i])):'d'+i)+'</span><span class="vbar"><span class="mid"></span><i style="left:'+left+'%;width:'+w+'%;background:'+col+'"></i></span><span class="vv">'+fmt(v,3)+'</span></div>';
+  }).join('')+'</div>';
+}
+function vinline(vec,n){return '['+vec.map(v=>fmt(v,n||2).trim()).join(', ')+']';}
+function panel(title,tag,inner){return '<section class="card panel"><h2>'+title+(tag?'<span class="tag">'+tag+'</span>':'')+'</h2>'+inner+'</section>';}
+function renderAssay(){
+  const f={embed:renderEmbedAssay,attend:renderAttendAssay,forge:renderForgeAssay,predict:renderPredictAssay,learn:renderLearnAssay,scale:renderScaleAssay}[S.tab];
+  $('assay').innerHTML=f?f():''; bindAssay();
+}
+function renderEmbedAssay(){
+  const F=S.fwd; let H='';
+  const i=clamp(S.cursor,0,S.tokens.length-1);
+  const tok=S.tokens[i], e=F.emb[i], pe=F.pe[i], x0=F.x0[i], scale=Math.sqrt(DMODEL);
+  H+=panel('Token vector','position '+i,
+    '<div class="sub">"'+esc(tok)+'"  ·  '+(isKnown(tok)?'curated embedding, id '+VIDX[tok.toLowerCase()]:'unknown, pseudo-embedding from characters')+'</div>'
+    +vrows(e,DIMS,1)
+    +'<div class="formula" style="margin-top:10px"><b>x</b> = √d_model · embedding + PE(pos) = '+scale.toFixed(2)+' · e + PE('+i+')</div>');
+  H+=panel('Position signal','sinusoidal',
+    '<div class="sub">the embedding says <i>what</i> the word is; this says <i>where</i> it sits</div>'
+    +vrows(pe,['sin 0','cos 0','sin 1','cos 1','sin 2','cos 2','sin 3','cos 3'],1)
+    +'<div class="formula" style="margin-top:10px">PE(pos, 2i) = sin( pos / 10000^(2i/d) )<br>PE(pos, 2i+1) = cos( pos / 10000^(2i/d) )</div>');
+  H+=panel('Model input x','what the block receives', vrows(x0,DIMS));
+  const sims=VOCAB.filter(t=>t!==tok.toLowerCase()).map(t=>({t,s:dot(e,embedOf(t))})).sort((a,b)=>b.s-a.s).slice(0,6);
+  H+=panel('Nearest neighbors','cosine similarity',
+    '<div class="sub">closest directions in the space; meaning lives in geometry</div>'
+    +'<div class="probs">'+sims.map(o=>'<div class="prow"><span class="ptok">'+esc(o.t)+'</span><span class="pbar"><i style="width:'+clamp(o.s*100,2,100)+'%;background:linear-gradient(90deg,var(--cyan),var(--mint))"></i></span><span class="pval">'+o.s.toFixed(2)+'</span></div>').join('')+'</div>');
+  H+='<section class="card panel"><div class="callout"><span class="h">what is the positional signal?</span>Attention has no built-in sense of order — to it, a sentence is a <i>bag</i> of word-vectors. So before the block reads them, we add a second vector that encodes each word\u2019s <b>position</b>. It\u2019s a set of sine and cosine waves of different wavelengths; position 0, 1, 2… each gets a unique fingerprint, and the smooth waves let the model judge how <i>far apart</i> two words are. Same word, different slot → different input vector. That\u2019s why "dog bites man" and "man bites dog" don\u2019t look identical to the model. Toggle <b>show position</b> on the canvas to watch the word shift to its position-adjusted spot.</div></section>';
+  H+='<section class="card panel"><div class="callout"><span class="h">what is an embedding</span>A token is just an id. The model looks that id up in a learned table to get a <b>vector</b>, a point in space. Similar meanings sit in similar directions, and every later step only moves these vectors around.</div></section>';
+  return H;
+}
+function renderAttendAssay(){
+  const F=S.fwd; const o=S.head*DHEAD, q=S.cursor, H2=F.heads[S.head]; let H='';
+  let hc='<div class="heads">';
+  for(let h=0;h<NHEADS;h++){const hh=F.heads[h];const ent=hh.A.reduce((s,r)=>{let e=0;r.forEach(p=>{if(p>1e-9)e-=p*Math.log(p);});return s+e/Math.log(Math.max(2,S.tokens.length));},0)/S.tokens.length;
+    const focus=Math.max(...hh.A[q]);
+    hc+='<div class="headcard '+(h===S.head?'sel':'')+'" data-head="'+h+'"><div class="ht"><span>Head '+(h+1)+'</span><span style="color:var(--red)">H'+(h+1)+'</span></div><div class="hs">entropy '+ent.toFixed(2)+' · '+(ent<0.55?'focused':ent>0.8?'diffuse':'mixed')+'</div><div class="meter"><i style="width:'+Math.round(focus*100)+'%;background:linear-gradient(90deg,var(--red),var(--amber))"></i></div></div>';}
+  hc+='</div><div class="sub" style="margin-top:8px">untrained heads route arbitrarily; that is the honest baseline. Training (see Learn) is what gives heads their jobs.</div>';
+  H+=panel('Attention heads',NHEADS+' lenses',hc);
+  let hm='<div class="heatwrap"><table class="heat"><tr><th>q\\k</th>';
+  S.tokens.forEach(t=>hm+='<th>'+esc(t.length>5?t.slice(0,5):t)+'</th>'); hm+='</tr>';
+  for(let r=0;r<S.tokens.length;r++){hm+='<tr><th>'+esc(S.tokens[r].length>5?S.tokens[r].slice(0,5):S.tokens[r])+'</th>';
+    for(let c=0;c<S.tokens.length;c++){const masked=c>r;const w=H2.A[r][c];const selc=S.cell&&S.cell[0]===r&&S.cell[1]===c;
+      hm+='<td data-r="'+r+'" data-c="'+c+'" class="'+(masked?'mask':'')+(selc?' sel':'')+'" style="background:'+(masked?'transparent':withAlpha('#FF5D5D',clamp(w*0.85,0,0.85)))+'">'+(masked?'·':w.toFixed(2))+'</td>';}
+    hm+='</tr>';}
+  hm+='</table></div><div class="sub" style="margin-top:8px">rows ask, columns answer · brighter = more attention · hatched = masked future · click a cell</div>';
+  H+=panel('Attention matrix','head '+(S.head+1),hm);
+  const cell=S.cell&&S.cell[0]<=S.tokens.length-1?S.cell:[q,q]; const ri=cell[0],ci=cell[1];
+  const Qi=F.Q[ri].slice(o,o+DHEAD),Kj=F.K[ci].slice(o,o+DHEAD);
+  const prod=Qi.map((v,d)=>v*Kj[d]); const raw=prod.reduce((a,b)=>a+b,0); const scaled=raw/Math.sqrt(DHEAD); const masked=ci>ri;
+  let sm='<div class="sub">cell  q'+ri+' "'+esc(S.tokens[ri])+'"  to  k'+ci+' "'+esc(S.tokens[ci])+'"</div><div class="math">';
+  sm+='<span class="d">Qi (head '+(S.head+1)+')</span> = <span class="k">'+vinline(Qi)+'</span>\n<span class="d">Kj</span> = <span class="k">'+vinline(Kj)+'</span>\n';
+  sm+='<span class="d">Qi·Kj</span> = '+prod.map(p=>fmt(p,2).trim()).join(' + ').replace(/\+ -/g,'- ')+'\n        = <span class="v">'+raw.toFixed(3)+'</span>\n';
+  sm+='<span class="d">/ root d_head (root '+DHEAD+'=2)</span>  ->  score = <span class="v">'+scaled.toFixed(3)+'</span>\n';
+  if(masked)sm+='<span class="r">masked (k>q) -> minus inf -> softmax -> 0.000</span>\n';
+  sm+='<span class="d">softmax over row -> weight</span> = <span class="g">'+H2.A[ri][ci].toFixed(3)+'</span></div>';
+  sm+='<div class="formula" style="margin-top:10px">score = (Q·Kᵀ)/√d_head, then <b>softmax</b> across keys. Output = Σ weightⱼ · Valueⱼ.</div>';
+  H+=panel('Score math','one cell',sm);
+  H+='<section class="card panel"><div class="callout"><span class="h">attention is like a CNN filter over time</span>A CNN filter slides a <b>fixed local window with shared weights</b> across an image. Attention is the sequence-and-order version: each word builds a <b>content-chosen window</b>, learning <i>which</i> earlier words to read, near or far. Same idea of weighted neighbors, but the neighborhood is learned and global, over word order instead of pixel space.</div></section>';
+  return H;
+}
+function renderForgeAssay(){
+  const F=S.fwd; const i=S.cursor, ln=F.ln2[i], k=(S.selNeuron==null?0:S.selNeuron); let H='';
+  const projd=F.projected[i], x0v=F.x0[i], x1v=F.x1[i];
+  H+=panel('Input from Attend','x1 = x0 + attention',
+    '<div class="sub">this block never reads the heads directly — it reads x1, the stream <i>after</i> attention</div>'
+    +'<div class="math">'
+    +'<span class="d">attention output</span>  (Wₒ · concat of '+NHEADS+' head mixes)\n  = <span class="r">'+vinline(projd,2)+'</span>\n'
+    +'<span class="d">+ x0</span>  (this word\u2019s own vector — the residual carry)\n  = '+vinline(x0v,2)+'\n'
+    +'<span class="d">= x1</span>  (exactly what the MLP reads)\n  = <span class="g">'+vinline(x1v,2)+'</span></div>'
+    +'<div class="formula" style="margin-top:10px">Each head mixed values into a '+DHEAD+'-number vector. The '+NHEADS+' heads were <b>concatenated</b> ('+NHEADS+'×'+DHEAD+' = '+DMODEL+'), <b>projected</b> by Wₒ, and <b>added</b> to x0. That residual sum is how the attention head output is captured here.</div>');
+  H+=panel('LayerNorm','position '+i,
+    '<div class="sub">recenters and rescales the vector before the MLP reads it</div>'
+    +'<div class="math"><span class="d">input mean</span> = <span class="v">'+ln.mean.toFixed(3)+'</span>   <span class="d">variance</span> = <span class="v">'+ln.var.toFixed(3)+'</span>\n<span class="d">x-hat = (x - mean) / root(var+eps)</span></div>');
+  const lno=ln.out, w1=W1[k]; const terms=lno.map((v,j)=>v*w1[j]); const z=F.preact[i][k], a=F.hidden[i][k];
+  let nm='<div class="sub">hidden unit h'+k+' of '+DFF+'  (click units on the canvas to switch)</div><div class="math">';
+  nm+='<span class="d">z = Sum_j x-hat_j · W1['+k+'][j] + b1</span>\n';
+  nm+=terms.map((t,j)=>'  '+fmt(lno[j],2)+' x '+fmt(w1[j],2)).join('\n')+'\n';
+  nm+='  + b1 = '+fmt(b1[k],3)+'\n';
+  nm+='<span class="d">z</span> = <span class="v">'+z.toFixed(3)+'</span>\n';
+  nm+='<span class="d">a = GELU(z)</span> = <span class="g">'+a.toFixed(3)+'</span></div>';
+  H+=panel('Neuron math','GELU unit',nm);
+  H+=panel('Residual add','highway',
+    '<div class="sub">the block never overwrites; it adds its change back</div>'
+    +'<div class="math"><span class="d">out = input + MLP(LayerNorm(input))</span>\nfor this position, MLP added:\n<span class="v">'+vinline(F.mlpOut[i],3)+'</span></div>');
+  H+='<section class="card panel"><div class="callout"><span class="h">why a feed-forward block</span>Attention <b>gathers</b> information across positions. The MLP then <b>transforms</b> each position on its own: expand to a wider space ('+DMODEL+' to '+DFF+'), bend it through GELU, project back. Much of a model\u2019s stored knowledge lives in these layers.</div></section>';
+  return H;
+}
+function renderPredictAssay(){
+  const F=S.fwd; const top=topProbs(8); let H='';
+  let pr='<div class="probs">'+top.map(o=>'<div class="prow '+(o.t===S.sampledTok?'samp':'')+'" data-ci="'+o.idx+'"><span class="ptok">'+esc(o.t)+'</span><span class="pbar"><i style="width:'+Math.min(100,o.p*100)+'%"></i></span><span class="pval">'+(S.showLogits?fmt(o.logit,2).trim():(o.p*100).toFixed(1)+'%')+'</span></div>').join('')+'</div>';
+  pr+='<div class="sub" style="margin-top:9px">temperature '+S.temp.toFixed(2)+' · '+(S.temp<0.55?'sharp / decisive':S.temp>1.15?'flat / exploratory':'balanced')+' · entropy '+entropy().toFixed(2)+' bits</div>';
+  H+=panel('Next-token softmax','top 8',pr);
+  const ci=S.selCand==null?top[0].idx:S.selCand; const feat=F.last,Uv=U[ci]; const z=F.logits[ci]; const p=F.probs[ci];
+  let lm='<div class="sub">candidate "'+esc(VOCAB[ci])+'"  ·  click any row to switch</div><div class="math">';
+  lm+='<span class="d">logit = (x_last · U_token) x '+LOGIT_SCALE+'</span>\n';
+  lm+='<span class="d">x_last·U</span> = '+(z/LOGIT_SCALE).toFixed(3)+'   ->  logit = <span class="v">'+z.toFixed(3)+'</span>\n';
+  lm+='<span class="d">/ temp ('+S.temp.toFixed(2)+')</span> -> '+(z/S.temp).toFixed(3)+'\n';
+  lm+='<span class="d">softmax</span> -> p = <span class="r">'+(p*100).toFixed(2)+'%</span></div>';
+  lm+='<div class="formula" style="margin-top:10px">pᵥ = exp(zᵥ/T) / Σ exp(z/T). Lower T sharpens toward the top token; higher T flattens toward uniform.</div>';
+  H+=panel('Logit math','one token',lm);
+  H+='<section class="card panel"><div class="callout"><span class="h">temperature</span>The final vector is scored against every token in the vocabulary. <b>Softmax</b> turns those scores into probabilities; <b>temperature</b> decides whether the sampler plays safe or takes risks. Sampling here appends the choice and re-runs the whole pass.</div></section>';
+  return H;
+}
+function renderLearnAssay(){
+  let H=''; const acc=lnAcc(), i=LN.active, x=XIN[i], t=lnTgt(i), bk=lnBack(x,t), err=t-bk.y;
+  H+=panel('Training','2→'+HID+'→1 · '+GATES[LN.gate].name,
+    '<div class="sub">a tiny network learning the <b>'+GATES[LN.gate].name+'</b> gate — '+(GATES[LN.gate].sep?'one straight cut works':'<b>not</b> linearly separable, so it must use the hidden layer')+'</div>'
+    +'<div class="math"><span class="d">epoch</span> <span class="v">'+Math.floor(LN.epoch)+'</span>    <span class="d">loss</span> <span class="r">'+lnLoss().toFixed(4)+'</span>    <span class="d">correct</span> <span class="'+(acc===4?'g':'r')+'">'+acc+'/4</span>    <span class="d">lr</span> <span class="v">'+LN.lr.toFixed(2)+'</span>\n<span class="d">▶ auto-trains slowly · › takes one small step · click any wire or case</span></div>');
+  H+=panel('This example','case '+(i+1)+' of 4',
+    '<div class="math"><span class="d">input</span> = ['+x[0]+', '+x[1]+']     <span class="d">target</span> = <span class="'+(t?'g':'r')+'">'+t+'</span>\n'
+    +'<span class="d">hidden a = tanh(W1·x + b1)</span> = '+vinline(bk.a1,2)+'\n'
+    +'<span class="d">output y = sigmoid(W2·a + b2)</span> = <span class="v">'+bk.y.toFixed(3)+'</span>\n'
+    +'<span class="d">error</span> = target − y = <span class="r">'+(err>=0?'+':'')+err.toFixed(3)+'</span>    <span class="d">loss</span> = ½·err² = '+ (0.5*err*err).toFixed(4)
+    +(LN.last?'\n<span class="d">last step ('+LN.last.x[0]+','+LN.last.x[1]+')</span>  '+LN.last.yB.toFixed(3)+' → <span class="g">'+LN.last.yA.toFixed(3)+'</span>  (small nudge toward '+LN.last.t+')':'')+'</div>');
+  const sw=S.selWeight; let det='';
+  if(sw&&sw.kind==='w1'){const w=LN.net.W1[sw.k][sw.j], grad=bk.gW1[sw.k][sw.j];
+    det='<div class="sub">weight  in'+sw.j+' → h'+sw.k+'  (W1)</div><div class="math">'
+      +'<span class="d">value</span>  w = <span class="v">'+fmt(w,4).trim()+'</span>\n'
+      +'<span class="d">error contribution</span>  ∂L/∂w = δ'+sw.k+' · x'+sw.j+' = <span class="r">'+fmt(grad,4).trim()+'</span>\n'
+      +'<span class="d">nudge</span>  Δw = −lr·(∂L/∂w) = <span class="g">'+fmt(-LN.lr*grad,4).trim()+'</span>  <span class="d">(one small step)</span>\n'
+      +'<span class="d">so</span>  w: '+fmt(w,3).trim()+' → <span class="g">'+fmt(w-LN.lr*grad,4).trim()+'</span>  <span class="d">(+ momentum)</span></div>';
+  } else if(sw&&sw.kind==='w2'){const w=LN.net.W2[sw.k], grad=bk.gW2[sw.k];
+    det='<div class="sub">weight  h'+sw.k+' → output  (W2)</div><div class="math">'
+      +'<span class="d">value</span>  w = <span class="v">'+fmt(w,4).trim()+'</span>\n'
+      +'<span class="d">error contribution</span>  ∂L/∂w = δ_out · a'+sw.k+' = <span class="r">'+fmt(grad,4).trim()+'</span>\n'
+      +'<span class="d">nudge</span>  Δw = −lr·(∂L/∂w) = <span class="g">'+fmt(-LN.lr*grad,4).trim()+'</span>  <span class="d">(one small step)</span>\n'
+      +'<span class="d">so</span>  w: '+fmt(w,3).trim()+' → <span class="g">'+fmt(w-LN.lr*grad,4).trim()+'</span></div>';
+  } else if(sw&&sw.kind==='node'){const kk=sw.k;
+    det='<div class="sub">hidden unit h'+kk+'</div><div class="math">'
+      +'<span class="d">z</span> = W1·x + b1 = <span class="v">'+fmt(bk.z1[kk],3).trim()+'</span>\n'
+      +'<span class="d">a = tanh(z)</span> = <span class="g">'+fmt(bk.a1[kk],3).trim()+'</span>\n'
+      +'<span class="d">error signal</span>  δ = δ_out · W2['+kk+'] · (1−a²) = <span class="r">'+fmt(bk.delta1[kk],4).trim()+'</span>\n<span class="d">(how much this unit is blamed for the error)</span></div>';
+  } else { det='<div class="empty">Click any wire or hidden unit in the network — you\u2019ll see its value, its error contribution (gradient), and the exact nudge gradient descent applies.</div>'; }
+  H+=panel('Selected parameter','error contribution',det);
+  H+=panel('Backprop chain','this example',
+    '<div class="math">'
+    +'<span class="d">1 · output error</span>   dL/dy = y − t = <span class="r">'+fmt(bk.dy,3).trim()+'</span>\n'
+    +'<span class="d">2 · output δ</span>   δ_out = (y−t)·y·(1−y) = <span class="r">'+fmt(bk.delta2,3).trim()+'</span>\n'
+    +'<span class="d">3 · blame each hidden</span>   δ_k = δ_out·W2[k]·(1−a_k²)\n      δ = '+vinline(bk.delta1,3)+'\n'
+    +'<span class="d">4 · gradient per weight</span>   ∂L/∂w = (δ at the end of the wire) × (value at its start)</div>'
+    +'<div class="formula" style="margin-top:10px">That is the whole of learning. A real LLM runs this exact backward pass — output error, δ at every node, gradient per weight — just with billions of weights instead of '+(HID*2+HID+HID+1)+'.</div>');
+  return H;
+}
+function bindAssay(){
+  if(S.tab==='attend'){
+    document.querySelectorAll('.headcard').forEach(c=>c.addEventListener('click',()=>{S.head=+c.dataset.head;buildCtrlstrip();renderAssay();}));
+    document.querySelectorAll('.heat td[data-r]').forEach(td=>td.addEventListener('click',()=>{S.cell=[+td.dataset.r,+td.dataset.c];S.cursor=+td.dataset.r;renderSentence();renderAssay();updateTransportReadout();}));
+  } else if(S.tab==='predict'){
+    document.querySelectorAll('.prow[data-ci]').forEach(r=>r.addEventListener('click',()=>{S.selCand=+r.dataset.ci;renderAssay();}));
+  }
+}
+
+/* ===== 14. TRACE REPORT ===== */
+function buildReport(){
+  const F=S.fwd; const L=[]; const t=TABS.find(x=>x.id===S.tab);
+  L.push('LIVING TRANSFORMER · COMPUTATION TRACE');
+  L.push('stage: '+t.nm.toUpperCase()+'  ('+t.tag+')'); L.push('');
+  if(S.tab!=='learn'){ L.push('prompt:  '+S.tokens.join(' ')); L.push('tokens:  '+S.tokens.map((x,i)=>'['+i+']'+x).join(' ')); L.push(''); }
+  if(S.tab==='embed'){const i=clamp(S.cursor,0,S.tokens.length-1);
+    L.push('TOKEN "'+S.tokens[i]+'"  position '+i);
+    L.push('  embedding   = '+vinline(F.emb[i],3));
+    L.push('  PE('+i+')       = '+vinline(F.pe[i],3));
+    L.push('  x = root d·e+PE = '+vinline(F.x0[i],3));
+  } else if(S.tab==='attend'){const q=S.cursor;
+    L.push('HEAD '+(S.head+1)+'  ·  query position '+q+' "'+S.tokens[q]+'"');
+    L.push('  attention weights (q'+q+' over keys):');
+    S.tokens.forEach((tk,j)=>L.push('    k'+j+' '+tk.padEnd(10)+' '+(F.heads[S.head].A[q][j]*100).toFixed(1)+'%'+(j>q?'  (masked)':'')));
+  } else if(S.tab==='forge'){const i=S.cursor,k=S.selNeuron;
+    L.push('POSITION '+i+'  ·  hidden unit h'+k);
+    L.push('  from Attend: attn output (Wo·concat heads) = '+vinline(F.projected[i],3));
+    L.push('  x1 = x0 + attn output                      = '+vinline(F.x1[i],3));
+    L.push('  layernorm mean='+F.ln2[i].mean.toFixed(3)+' var='+F.ln2[i].var.toFixed(3));
+    L.push('  z (pre-activation) = '+F.preact[i][k].toFixed(3));
+    L.push('  a = GELU(z)        = '+F.hidden[i][k].toFixed(3));
+    L.push('  MLP output (added) = '+vinline(F.mlpOut[i],3));
+  } else if(S.tab==='predict'){
+    L.push('NEXT-TOKEN DISTRIBUTION  (temperature '+S.temp.toFixed(2)+', entropy '+entropy().toFixed(2)+' bits)');
+    topProbs(10).forEach((o,n)=>L.push('  '+String(n+1).padStart(2,'0')+'. '+o.t.padEnd(12)+(o.p*100).toFixed(2)+'%   logit '+o.logit.toFixed(3)));
+  } else if(S.tab==='scale'){
+    const s=modelById(SCALE.sel), toy=MODELS[0], parts=partsParams(s);
+    L.push('SCALE — this toy vs a real model');
+    L.push('  toy:         '+fmtP(toy.P).padEnd(8)+' params · d_model '+toy.d+' · '+toy.L+' layer · '+toy.h+' heads · d_ff '+toy.ff+' · vocab '+toy.V+' · ctx '+toy.ctx);
+    L.push('  '+s.name+':  '+(s.est?'~':'')+fmtP(s.P)+' params · d_model '+s.d+' · '+s.L+' layers · '+s.h+' heads · d_ff '+s.ff+' · vocab '+s.V+' · ctx '+s.ctx+(s.est?' (estimated)':' ('+s.yr+')'));
+    L.push('  ratio: x'+fmtP(s.P/toy.P)+' more parameters');
+    L.push('  one layer: \u2248'+fmtP(parts.per)+' params (attention '+fmtP(4*s.d*s.d)+' + MLP '+fmtP(2*s.d*s.ff)+') = x'+fmtP(parts.per/toy.P)+' the whole toy');
+    L.push('  trained on '+(s.est?'~':'')+fmtBig(s.train)+' words ≈ '+(schoolYears(s.train)<1?'<1 yr':fmtYears(schoolYears(s.train)))+' of school (10M words/yr) · emerges: '+s.emg);
+    const P=tubePhysics(s);
+    L.push('  if built from vacuum tubes (ENIAC density): a '+fmtLen(P.side)+' cube ('+cmp(P.side,HEIGHTREFS.map(r=>({n:r.n,v:r.m})))+'), '+fmtArea(P.area)+' floor, '+fmtMass(P.mass)+', '+fmtPow(P.power)+' ('+cmp(P.power,POWERREFS)+')');
+    L.push('  same operations as the other tabs, multiplied. forward pass ~2*params multiply-adds per token.');
+    L.push(''); L.push('--- public specs where disclosed; frontier & Mythos sizes are not public (estimated/illustrative). ---');
+    return L.join('\n');
+  } else if(S.tab==='learn'){
+    const i=LN.active,x=XIN[i],t=lnTgt(i),bk=lnBack(x,t);
+    L.push('LOGIC NET  2->'+HID+'->1 (tanh, sigmoid) · gate '+GATES[LN.gate].name+(GATES[LN.gate].sep?' (linearly separable)':' (needs hidden layer)'));
+    L.push('  epoch '+Math.floor(LN.epoch)+'   loss '+lnLoss().toFixed(5)+'   correct '+lnAcc()+'/4   lr '+LN.lr.toFixed(2));
+    L.push('');
+    L.push('  truth table (input -> target : output):');
+    for(let q=0;q<4;q++){const f=lnFwd(XIN[q]);L.push('    ('+XIN[q][0]+','+XIN[q][1]+') -> '+lnTgt(q)+' : '+f.y.toFixed(3)+((f.y>=0.5?1:0)===lnTgt(q)?'  ok':'  X'));}
+    L.push('');
+    L.push('  active example ('+x[0]+','+x[1]+'), target '+t+', output '+bk.y.toFixed(3)+', error '+(t-bk.y).toFixed(3));
+    L.push('  output delta = '+bk.delta2.toFixed(4)+'   hidden deltas = '+vinline(bk.delta1,4));
+    L.push('  W1 grad = '+JSON.stringify(bk.gW1.map(r=>r.map(v=>+v.toFixed(3))))+'   W2 grad = '+vinline(bk.gW2,4));
+    L.push('  weights: W1='+JSON.stringify(LN.net.W1.map(r=>r.map(v=>+v.toFixed(2))))+' W2='+vinline(LN.net.W2,2)+' b2='+LN.net.b2.toFixed(2));
+    L.push(''); L.push('--- a tiny standalone net trained by backprop — the same algorithm an LLM uses, shrunk to '+(HID*2+HID+HID+1)+' weights. ---');
+    return L.join('\n');
+  }
+  L.push(''); L.push('--- toy model: 1 block, d_model '+DMODEL+', '+NHEADS+' heads, seed '+SEED+'. Block frozen; output layer trained by gradient descent. Real numbers, not a real LLM. ---');
+  return L.join('\n');
+}
+let reportText='';
+const EXAMINERS=[
+  {n:'ChatGPT', q:p=>'https://chatgpt.com/?q='+encodeURIComponent(p)},
+  {n:'Claude', q:p=>'https://claude.ai/new?q='+encodeURIComponent(p)},
+  {n:'Copilot', q:p=>'https://copilot.microsoft.com/?q='+encodeURIComponent(p)},
+  {n:'Perplexity', q:p=>'https://www.perplexity.ai/search?q='+encodeURIComponent(p)},
+  {n:'Grok', q:p=>'https://grok.com/?q='+encodeURIComponent(p)},
+  {n:'Gemini', home:'https://gemini.google.com/app'},
+  {n:'DeepSeek', home:'https://chat.deepseek.com/'},
+  {n:'Kimi', home:'https://www.kimi.com/'},
+  {n:'Mistral', home:'https://chat.mistral.ai/chat'}
+];
+function defaultQuestion(){return ({
+  embed:'Here is the embedding + positional-encoding state for one word in a tiny toy transformer. Explain what an embedding is and what the positional signal adds, then say whether this vector and its nearest neighbours look reasonable.',
+  attend:'Here is one attention head\u2019s state for a query word in a tiny toy transformer. Walk through the Q\u00b7K / \u221ad_head / softmax math, explain what these weights mean, and verify the arithmetic in the trace.',
+  forge:'Here is the feed-forward (MLP) state for one token: LayerNorm, one GELU hidden unit, and the residual add. Explain each step and check the neuron computation.',
+  predict:'Here is the next-token distribution from a tiny toy transformer. Explain the logit \u2192 temperature \u2192 softmax pipeline and say whether the top predictions are sensible for this prompt.',
+  learn:'Here is a tiny 1\u21926\u21921 network mid-training with backprop. Explain the gradient for the selected weight and the update rule, and verify the chain-rule arithmetic.'
+})[S.tab]||'Explain what this is doing and check the math.';}
+let exMode='ask';
+function setExMode(m){
+  exMode=m;
+  document.querySelectorAll('#exMode button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+  const q=$('exQuestion'), sub=$('exSub');
+  if(m==='teach'){ if(sub)sub.textContent='Explain in your own words what this step is doing. The AI checks your understanding against the exact numbers, corrects you, and asks a follow-up.'; if(q){q.placeholder='e.g. "The query word compares against every earlier word, and the softmax decides how much of each one to blend into its new vector…"'; q.value='';} }
+  else { if(sub)sub.textContent='Ask anything about this step. Your question travels with the exact system state, so the answer is grounded in these numbers.'; if(q){q.placeholder=''; q.value=defaultQuestion();} }
+}
+function buildPayload(){
+  const txt=($('exQuestion')&&$('exQuestion').value.trim())||'';
+  let head;
+  if(exMode==='teach'){ head='I am learning how transformers work and want to check my understanding (teach-back). Here is what I think is happening at this step:\n\n"'+(txt||'(left blank — please ask me a guiding question instead)')+'"\n\nUsing the exact system state below, tell me what I got right, gently correct anything wrong, fill the gaps, and end with one short question to test me.'; }
+  else { head=txt||defaultQuestion(); }
+  return head+'\n\n===== LIVING TRANSFORMER — SYSTEM STATE (toy model) =====\n'+reportText+'\n\nNotes: a tiny illustrative transformer — 1 block, d_model '+DMODEL+', '+NHEADS+' heads, seed '+SEED+'. The block weights are random and frozen; only the output (unembedding) layer is trained by gradient descent on a few sentences. Treat every number as exact and verify the arithmetic.';
+}
+function toast(msg){const t=$('toast');if(!t)return;t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
+function fallbackCopy(text,cb){const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.left='-9999px';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');cb&&cb();}catch(e){}document.body.removeChild(ta);}
+function copyText(text,cb){if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(text).then(cb).catch(()=>fallbackCopy(text,cb));else fallbackCopy(text,cb);}
+function examineWith(p){
+  const payload=buildPayload();
+  copyText(payload,()=>toast('Copied to clipboard — opening '+p.n+'. Paste with ⌘V / Ctrl-V and send.'));
+  let url;
+  if(p.q){const full=p.q(payload); url = full.length<7000 ? full : p.home || p.q('(The full system state is on my clipboard — I will paste it now.)');}
+  else url=p.home;
+  try{window.open(url,'_blank','noopener');}catch(e){}
+}
+function buildExaminers(){const el=$('exProviders');if(!el)return;el.innerHTML='';EXAMINERS.forEach(p=>{const b=document.createElement('button');b.className='exbtn';b.textContent=p.n;b.addEventListener('click',()=>examineWith(p));el.appendChild(b);});}
+function openModal(){reportText=buildReport();$('report').textContent=reportText;buildExaminers();setExMode(exMode);$('scrim').classList.add('show');}
+function closeModal(){$('scrim').classList.remove('show');}
+function copyReport(){copyText(reportText,()=>toast('Trace copied.'));}
+function copyPayload(){copyText(buildPayload(),()=>toast('Payload copied — paste with ⌘V / Ctrl-V.'));}
+
+/* ===== 15. EVENTS ===== */
+function openEdit(){const ei=$('editInput');if(!ei)return;ei.value=detok(S.tokens);$('sentence').style.display='none';$('editBtn').style.display='none';ei.style.display='';$('editApply').style.display='';$('editCancel').style.display='';$('chips').style.display='flex';ei.focus();ei.select();}
+function closeEdit(){const ei=$('editInput');if(!ei)return;ei.style.display='none';$('editApply').style.display='none';$('editCancel').style.display='none';$('chips').style.display='none';$('sentence').style.display='flex';$('editBtn').style.display='';}
+function applyEdit(){setTokens(($('editInput').value)||DEFAULT_SENTENCE);closeEdit();refreshAll();}
+$('editBtn').addEventListener('click',openEdit);
+$('editApply').addEventListener('click',applyEdit);
+$('editCancel').addEventListener('click',closeEdit);
+$('editInput').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();applyEdit();}else if(e.key==='Escape'){closeEdit();}});
+$('genBtn').addEventListener('click',()=>{if(!GEN.active)startGen();});
+$('tReset').addEventListener('click',resetSentence);
+$('speedSlider').addEventListener('input',e=>{S.speed=+e.target.value;});
+['First','Prev','Play','Next','Last'].forEach(k=>$('t'+k).addEventListener('click',()=>transStep(k.toLowerCase())));
+$('inspectBtn').addEventListener('click',openModal);
+$('closeModal').addEventListener('click',closeModal);
+$('copyReport').addEventListener('click',copyReport);
+$('copyPayload').addEventListener('click',copyPayload);
+document.querySelectorAll('#exMode button').forEach(b=>b.addEventListener('click',()=>setExMode(b.dataset.m)));
+$('scrim').addEventListener('click',e=>{if(e.target===$('scrim'))closeModal();});
+
+cv.addEventListener('mousemove',e=>{
+  const r=cv.getBoundingClientRect(); const nx=(e.clientX-r.left)*(CW/r.width), ny=(e.clientY-r.top)*(CH/r.height);
+  if(mouse.down && S.tab==='embed'){const dx=nx-mouse.x, dy=ny-mouse.y; S.rotY+=dx*0.01; S.rotX=clamp(S.rotX+dy*0.01,-1.4,1.4); if(Math.abs(dx)+Math.abs(dy)>1.5)S.dragging=true;}
+  else if(mouse.down && S.tab==='scale' && behemothView && ny>=behemothView.y0){const dy=ny-mouse.y; SCALE.scroll=clamp((SCALE.scroll||0)-dy,0,behemothView.maxScroll); if(Math.abs(dy)>1)S.dragging=true;}
+  mouse.x=nx; mouse.y=ny; mouse.cx=e.clientX; mouse.cy=e.clientY;
+});
+cv.addEventListener('wheel',e=>{if(S.tab==='scale'&&behemothView){e.preventDefault();SCALE.scroll=clamp((SCALE.scroll||0)+e.deltaY,0,behemothView.maxScroll);}},{passive:false});
+cv.addEventListener('mousedown',()=>{mouse.down=true;S.dragging=false;});
+window.addEventListener('mouseup',()=>{
+  if(mouse.down && !S.dragging && hoverHit && hoverHit.sel){const s=hoverHit.sel;
+    if(s.kind==='tok'){S.cursor=s.idx;renderSentence();renderAssay();updateTransportReadout();}
+    else if(s.kind==='keyclick'){S.cell=[S.cursor,s.idx];renderSentence();renderAssay();}
+    else if(s.kind==='query'){S.cursor=s.idx;S.cell=[s.idx,Math.min(S.cell?S.cell[1]:0,s.idx)];renderSentence();renderAssay();updateTransportReadout();}
+    else if(s.kind==='neuron'){S.selNeuron=s.idx;const nl=$('neuLbl');if(nl)nl.textContent=s.idx;renderAssay();}
+    else if(s.kind==='cand'){S.selCand=s.idx;renderAssay();}
+    else if(s.kind==='w1'){S.selWeight={kind:'w1',k:s.k,j:s.j};renderAssay();}
+    else if(s.kind==='w2'){S.selWeight={kind:'w2',k:s.k};renderAssay();}
+    else if(s.kind==='node'&&S.tab==='learn'){S.selWeight={kind:'node',k:s.k};renderAssay();}
+    else if(s.kind==='node'){S.selNeuron=s.idx;const nl=$('neuLbl');if(nl)nl.textContent=s.idx;renderAssay();}
+    else if(s.kind==='case'){LN.active=s.i;assayDirty=true;renderAssay();updateTransportReadout();}
+    else if(s.kind==='model'){SCALE.sel=s.id;SCALE.layer=null;SCALE.zoom=null;buildCtrlstrip();assayDirty=true;updateTransportReadout();}
+    else if(s.kind==='layer'){SCALE.layer=s.idx;assayDirty=true;}
+    else if(s.kind==='part'){SCALE.layer=s.part;assayDirty=true;}
+    else if(s.kind==='galaxyzoom'){if(galaxyGeo&&mouse.y>=galaxyGeo.y0&&mouse.y<=galaxyGeo.y1){const ly=clamp(Math.floor((mouse.y-galaxyGeo.y0)/galaxyGeo.bandH),0,galaxyGeo.L-1);SCALE.zoom=ly;SCALE.layer=ly;assayDirty=true;}}
+    else if(s.kind==='galaxyback'){SCALE.zoom=null;assayDirty=true;}
+  }
+  mouse.down=false;S.dragging=false;
+});
+cv.addEventListener('mouseleave',()=>{mouse.x=-9999;mouse.y=-9999;mouse.down=false;tip.classList.remove('show');});
+window.addEventListener('keydown',e=>{
+  const t=e.target, tag=(t.tagName||'').toLowerCase(), typ=(t.type||'').toLowerCase();
+  // only swallow keys while actually typing in a text field; sliders/checkboxes/buttons still allow shortcuts
+  const typing = tag==='textarea' || t.isContentEditable || (tag==='input' && !['range','checkbox','radio','button','submit','reset'].includes(typ));
+  if(typing) return;
+  if(e.code==='Space'){e.preventDefault();transStep('play');}
+  else if(e.key==='ArrowRight'){e.preventDefault();transStep('next');}
+  else if(e.key==='ArrowLeft'){e.preventDefault();transStep('prev');}
+  else if(e.key==='b'||e.key==='B')openModal();
+  else if(e.key>='1'&&e.key<='6'){const idx=+e.key-1;if(TABS[idx])switchTab(TABS[idx].id);}
+});
+window.addEventListener('resize',resize);
+
+/* ===== 16. INIT ===== */
+function init(){
+  trainOutputLayer();
+  setTokens(DEFAULT_SENTENCE);
+  lnInit(7);
+  buildHud(); buildChips(); buildAbout();
+  resize();
+  switchTab('embed');
+  requestAnimationFrame(frame);
+}
+init();
+})();
+</script>
+</body>
+</html>
