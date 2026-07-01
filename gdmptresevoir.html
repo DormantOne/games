@@ -1,0 +1,478 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>GDMT Reservoir Model</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0a16;color:#ddd;font-family:Inter,system-ui,sans-serif;font-size:12px}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+button{font-family:inherit;cursor:pointer}
+input[type=range]{-webkit-appearance:none;height:4px;background:#222;border-radius:2px;outline:none;cursor:pointer;width:100%}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:#aaa}
+.pnl{background:#111125;border-radius:8px;padding:10px;margin-bottom:8px}
+#nnOv{display:none;position:fixed;inset:0;background:#000e;z-index:200}
+#nnOv.show{display:block}
+#nnTip{display:none;position:fixed;background:#111133ee;border:1px solid #6366f1;border-radius:6px;padding:8px 12px;pointer-events:none;z-index:201;max-width:280px;font-size:10px}
+#jsOv{display:none;position:fixed;inset:0;background:#000c;z-index:200;overflow:auto}
+#jsOv.show{display:flex;justify-content:center;padding:30px}
+</style>
+</head>
+<body>
+<div id="root" style="padding:12px">
+  <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:8px">
+    <h1 style="font-size:16px;font-weight:800;color:#7eb8ff;margin:0">GDMT Reservoir Model</h1>
+    <span style="font-size:10px;color:#444">reservoir computing &times; clinical physiology</span>
+    <span id="debugTxt" style="font-size:9px;color:#f87171;margin-left:auto"></span>
+  </div>
+  <div id="banner" style="background:linear-gradient(135deg,#111128,#0d1a2e);border-radius:10px;padding:14px 18px;margin-bottom:10px;border:1px solid #1a1a35"></div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">
+    <div style="width:250px;flex-shrink:0">
+      <div class="pnl">
+        <div style="display:flex;gap:4px;margin-bottom:5px">
+          <button id="runBtn" onclick="toggleRun()" style="flex:1;padding:6px 0;border-radius:5px;border:none;font-weight:700;font-size:12px"></button>
+          <button onclick="resetAll()" style="padding:6px 8px;border-radius:5px;font-size:11px;background:transparent;color:#888;border:1px solid #333">Reset</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:9px;color:#888">
+          Spd <input type="range" min="1" max="20" step="1" value="10" id="spdR" oninput="speed=+this.value;document.getElementById('spdV').textContent=speed+'x'" style="flex:1">
+          <span id="spdV">10x</span>
+          <span style="margin-left:4px">T:<b id="timeV" style="color:#fff">0.0h</b></span>
+        </div>
+        <label style="font-size:9px;color:#666;cursor:pointer;display:flex;align-items:center;gap:4px;margin-top:3px">
+          <input type="checkbox" checked onchange="autoTip=this.checked"> Auto-tipping
+        </label>
+      </div>
+      <button onclick="openNN()" style="width:100%;padding:6px 0;border-radius:6px;border:1px solid #6366f155;background:#6366f122;color:#818cf8;font-weight:700;font-size:10px;margin-bottom:4px">&#x2B21; Neural Network View</button>
+      <button onclick="openJSON()" style="width:100%;padding:6px 0;border-radius:6px;border:1px solid #4ade8055;background:#4ade8022;color:#4ade80;font-weight:700;font-size:10px;margin-bottom:6px">{ } View / Edit Model JSON</button>
+      <div class="pnl" style="max-height:360px;overflow-y:auto" id="sliders"></div>
+      <div class="pnl" id="tipBox"></div>
+    </div>
+    <div style="flex:1;min-width:380px">
+      <div class="pnl" id="medRes"></div>
+      <div class="pnl" id="physRes"></div>
+      <div class="pnl" id="labRes"></div>
+      <div class="pnl"><div style="font-size:8px;color:#444;font-weight:700;letter-spacing:1px;margin-bottom:3px">TRENDS</div><canvas id="trendC" width="620" height="180" style="width:100%;background:#06060f;border-radius:4px"></canvas></div>
+      <div class="pnl"><div style="font-size:8px;color:#444;font-weight:700;letter-spacing:1px;margin-bottom:2px">EVENT LOG</div><div id="logBox" style="font-family:monospace;font-size:8px;color:#666;max-height:55px;overflow-y:auto">Waiting...</div></div>
+      <div class="pnl" style="border:1px solid #1a1a35" id="calBox"></div>
+    </div>
+  </div>
+</div>
+<div id="nnOv"><canvas id="nnC"></canvas><div id="nnTip"></div><button onclick="closeNN()" style="position:fixed;top:12px;right:16px;z-index:202;background:#222;color:#aaa;border:1px solid #444;border-radius:6px;padding:6px 14px;font-size:14px">&times; Close</button></div>
+<div id="jsOv"><div id="jsInner" style="background:#0d0d22;border:1px solid #2a2a55;border-radius:12px;max-width:900px;width:100%;padding:20px;position:relative"></div></div>
+
+<script>
+/*
+  CORE PHYSICS (v5 — spring-to-shifted-equilibrium):
+  
+  Each non-med reservoir has an equilibrium (eq). Conduits SHIFT that eq.
+  - "fill" conduits push eq UP   (eq_shift += weight * normalized_source)
+  - "leak" conduits push eq DOWN (eq_shift -= weight * normalized_source)
+  The reservoir springs toward its effective_eq at spring_rate.
+  
+  Med reservoirs decay toward 0 unless manually held.
+  
+  Noise adds biological jitter every tick.
+  
+  This guarantees: change a med slider → eq shifts → visible spring motion.
+*/
+
+var MODEL = {
+  meta:{
+    name:"GDMT HFrEF Reservoir Model v5",
+    version:"5.0",
+    description:"Spring-to-shifted-equilibrium reservoir model. Conduits shift target equilibrium. Noise adds biological variability.",
+    llm_instructions:"Adjust eq, spring_rate, conduit weights/type, tipping thresholds. Add reservoirs/conduits. Return modified JSON."
+  },
+  reservoirs:{
+    arni:     {label:"ARNI",         unit:"%dose",lo:0,  hi:100, init:0,   color:"#6ee7b7",group:"med",  eq:0,   spring_rate:0.5, noise:0.3, note:"Decays toward 0 without dosing"},
+    bb:       {label:"Beta-Blocker", unit:"%dose",lo:0,  hi:100, init:0,   color:"#7dd3fc",group:"med",  eq:0,   spring_rate:0.5, noise:0.3, note:"Decays toward 0"},
+    mra:      {label:"MRA",          unit:"%dose",lo:0,  hi:100, init:0,   color:"#c4b5fd",group:"med",  eq:0,   spring_rate:0.5, noise:0.3, note:"Decays toward 0"},
+    sglt2i:   {label:"SGLT2i",       unit:"%dose",lo:0,  hi:100, init:0,   color:"#fbbf24",group:"med",  eq:0,   spring_rate:0.5, noise:0.3, note:"Decays toward 0"},
+    diuretic: {label:"Diuretic",     unit:"%dose",lo:0,  hi:100, init:40,  color:"#f87171",group:"med",  eq:0,   spring_rate:0.5, noise:0.3, note:"Decays toward 0"},
+    sbp:      {label:"SBP",          unit:"mmHg", lo:60, hi:200, init:128, color:"#fb923c",group:"phys", eq:125, spring_rate:0.15,noise:1.2, note:"Homeostatic ~125 in untreated HF"},
+    hr:       {label:"HR",           unit:"bpm",  lo:40, hi:150, init:82,  color:"#f472b6",group:"phys", eq:82,  spring_rate:0.12,noise:0.8, note:"Intrinsic sinus ~82 in HF"},
+    ef:       {label:"EF",           unit:"%",    lo:5,  hi:65,  init:28,  color:"#34d399",group:"phys", eq:22,  spring_rate:0.03,noise:0.2, note:"Drifts DOWN to 22 without GDMT"},
+    volume:   {label:"Volume",       unit:"%euv", lo:10, hi:130, init:75,  color:"#60a5fa",group:"phys", eq:85,  spring_rate:0.10,noise:0.8, note:"HF pulls toward congestion ~85"},
+    cr:       {label:"Creatinine",   unit:"mg/dL",lo:0.5,hi:5.0, init:1.1, color:"#fca5a5",group:"lab",  eq:1.0, spring_rate:0.08,noise:0.04,note:"Baseline clearance eq ~1.0"},
+    k:        {label:"Potassium",    unit:"mEq/L",lo:2.5,hi:7.0, init:4.2, color:"#d8b4fe",group:"lab",  eq:4.2, spring_rate:0.10,noise:0.05,note:"Renal homeostasis ~4.2"},
+    bnp:      {label:"NT-proBNP",    unit:"pg/mL",lo:50, hi:5000,init:1800,color:"#fdba74",group:"lab",  eq:1200,spring_rate:0.04,noise:20,  note:"Elevated in untreated HF ~1200"}
+  },
+  conduits:[
+    {from:"arni",to:"sbp",   type:"leak",weight:25, mechanism:"ARNI pushes SBP eq DOWN via afterload reduction"},
+    {from:"arni",to:"ef",    type:"fill",weight:12, mechanism:"ARNI pushes EF eq UP via reverse remodeling"},
+    {from:"arni",to:"cr",    type:"fill",weight:0.4,mechanism:"ARNI pushes Cr eq UP via efferent dilation"},
+    {from:"arni",to:"k",     type:"fill",weight:0.5,mechanism:"ARNI pushes K eq UP via RAAS inhibition"},
+    {from:"arni",to:"bnp",   type:"leak",weight:600,mechanism:"ARNI pushes BNP eq DOWN via neurohormonal modulation"},
+    {from:"arni",to:"volume",type:"leak",weight:15, mechanism:"ARNI pushes Volume eq DOWN via natriuresis"},
+    {from:"bb",  to:"hr",    type:"leak",weight:20, mechanism:"BB pushes HR eq DOWN via beta-1 blockade"},
+    {from:"bb",  to:"sbp",   type:"leak",weight:12, mechanism:"BB pushes SBP eq DOWN via reduced CO"},
+    {from:"bb",  to:"ef",    type:"fill",weight:10, mechanism:"BB pushes EF eq UP via reverse remodeling"},
+    {from:"bb",  to:"bnp",   type:"leak",weight:400,mechanism:"BB pushes BNP eq DOWN over time"},
+    {from:"mra", to:"k",     type:"fill",weight:0.8,mechanism:"MRA pushes K eq UP via blocking excretion"},
+    {from:"mra", to:"cr",    type:"fill",weight:0.15,mechanism:"MRA mildly pushes Cr eq UP"},
+    {from:"mra", to:"ef",    type:"fill",weight:8,  mechanism:"MRA pushes EF eq UP via anti-fibrotic effect"},
+    {from:"mra", to:"bnp",   type:"leak",weight:350,mechanism:"MRA pushes BNP eq DOWN"},
+    {from:"mra", to:"volume",type:"leak",weight:8,  mechanism:"MRA pushes Volume eq DOWN mildly"},
+    {from:"sglt2i",to:"volume",type:"leak",weight:18,mechanism:"SGLT2i pushes Volume eq DOWN via osmotic diuresis"},
+    {from:"sglt2i",to:"ef",  type:"fill",weight:5,  mechanism:"SGLT2i pushes EF eq UP (mechanism debated)"},
+    {from:"sglt2i",to:"cr",  type:"fill",weight:0.3,mechanism:"SGLT2i initial Cr eq bump via TGF"},
+    {from:"sglt2i",to:"bnp", type:"leak",weight:500,mechanism:"SGLT2i pushes BNP eq DOWN"},
+    {from:"diuretic",to:"volume",type:"leak",weight:30,mechanism:"Loop diuretic massively pushes Volume eq DOWN"},
+    {from:"diuretic",to:"cr",type:"fill",weight:0.5,mechanism:"Diuretic pushes Cr eq UP via prerenal mechanism"},
+    {from:"diuretic",to:"k", type:"leak",weight:0.6,mechanism:"Diuretic pushes K eq DOWN via kaliuresis"},
+    {from:"volume",to:"sbp", type:"fill",weight:25, mechanism:"Volume pushes SBP eq UP via Starling"},
+    {from:"volume",to:"bnp", type:"fill",weight:1500,mechanism:"Volume overload pushes BNP eq UP via wall stress"}
+  ],
+  tipping_points:[
+    {id:"hypotn",label:"Hypotension",cond_key:"sbp",cond_op:"<",cond_val:90,desc:"SBP<90: back off vasodilators",effects:{arni:-3,bb:-2}},
+    {id:"brady",label:"Bradycardia",cond_key:"hr",cond_op:"<",cond_val:55,desc:"HR<55: reduce BB",effects:{bb:-5}},
+    {id:"aki",label:"AKI",cond_key:"cr",cond_op:">",cond_val:2.5,desc:"Cr>2.5: nephrotoxic backoff",effects:{arni:-2,mra:-3,diuretic:-2}},
+    {id:"hyperK",label:"Hyperkalemia",cond_key:"k",cond_op:">",cond_val:5.5,desc:"K>5.5: K-sparing backoff",effects:{mra:-5,arni:-1.5}},
+    {id:"overload",label:"Vol Overload",cond_key:"volume",cond_op:">",cond_val:95,desc:"Vol>95: ramp diuresis",effects:{diuretic:3}},
+    {id:"hypoK",label:"Hypokalemia",cond_key:"k",cond_op:"<",cond_val:3.5,desc:"K<3.5: reduce K-wasting",effects:{diuretic:-4}}
+  ],
+  calibrations:[
+    {id:"c1",scenario:"ARNI 50% with Cr 1.2",given:{arni:50,cr:1.2},expect:{cr:{dir:"up",max:1.6},sbp:{dir:"down",min:100}}},
+    {id:"c2",scenario:"Max BB with HR 58",given:{bb:100,hr:58},expect:{hr:{dir:"down",min:50}}},
+    {id:"c3",scenario:"MRA+ARNI K+ 5.0",given:{mra:75,arni:75,k:5.0},expect:{k:{dir:"up",max:5.8}}},
+    {id:"c4",scenario:"High diuretic Cr 1.8",given:{diuretic:90,cr:1.8},expect:{cr:{dir:"up",max:2.8}}}
+  ]
+};
+
+// ======== STATE ========
+var S={},running=false,speed=10,autoTip=true,hist=[],logArr=[],deltas=[],simTimer=null;
+var lastBeat=0,heartScale=1.0,tickCount=0;
+
+function initS(){S={time:0,nyha:3};for(var k in MODEL.reservoirs)S[k]=MODEL.reservoirs[k].init;}
+initS();
+
+function cl(v,lo,hi){return Math.min(hi,Math.max(lo,v))}
+function fv(k,v){return v>=100?Math.round(v):v<10?v.toFixed(1):Math.round(v)}
+function tipOn(tp){var v=S[tp.cond_key];return tp.cond_op==="<"?v<tp.cond_val:v>tp.cond_val;}
+function sc(k,v){
+  if(k==="cr")return v>2.5?"#ef4444":v>1.8?"#fbbf24":"#4ade80";
+  if(k==="k")return(v>5.5||v<3.5)?"#ef4444":(v>5||v<3.8)?"#fbbf24":"#4ade80";
+  if(k==="bnp")return v>2000?"#ef4444":v>900?"#fbbf24":"#4ade80";
+  if(k==="volume")return v>95?"#ef4444":v>80?"#fbbf24":"#4ade80";
+  return"#888";
+}
+function rng(){return(Math.random()-0.5)*2;}
+
+// ======== CORE PHYSICS ========
+function simTick(){
+  var dt=0.1*speed,R=MODEL.reservoirs;
+  S.time+=dt;
+  tickCount++;
+
+  for(var k in R){
+    var r=R[k],val=S[k];
+
+    if(r.group==="med"){
+      // Meds are PRESCRIPTIONS — they hold at whatever dose is set.
+      // No decay, no spring. Slider = prescribed dose = steady state.
+      // (Tipping points can still auto-reduce them if enabled)
+    } else {
+      // Compute effective equilibrium shifted by all conduits
+      var effEq=r.eq;
+      for(var ci=0;ci<MODEL.conduits.length;ci++){
+        var c=MODEL.conduits[ci];
+        if(c.to!==k)continue;
+        var srcR=R[c.from];
+        var srcNorm=(S[c.from]-srcR.lo)/(srcR.hi-srcR.lo);
+        if(c.type==="fill") effEq+=c.weight*srcNorm;
+        else effEq-=c.weight*srcNorm;
+      }
+      // Spring toward effective eq + noise
+      var delta=(effEq-val)*r.spring_rate*dt;
+      var noiseVal=r.noise*rng()*Math.sqrt(dt);
+      S[k]+=delta+noiseVal;
+    }
+  }
+
+  // Deltas
+  var nd=[];
+  for(var j=0;j<deltas.length;j++){
+    var d=deltas[j];
+    if(d.rem>0){S[d.target]+=(d.delta/d.over)*dt;d.rem-=dt;if(d.rem>0)nd.push(d);}
+  }
+  deltas=nd;
+
+  // Tipping
+  for(var t=0;t<MODEL.tipping_points.length;t++){
+    var tp=MODEL.tipping_points[t];
+    if(tipOn(tp)&&autoTip)for(var ek in tp.effects)S[ek]+=tp.effects[ek]*dt;
+  }
+
+  // NYHA
+  if(S.ef>45&&S.volume<70&&S.bnp<600) S.nyha=1;
+  else if(S.ef>35&&S.volume<80&&S.bnp<1200) S.nyha=2;
+  else if(S.ef>20||S.bnp<3000) S.nyha=3;
+  else S.nyha=4;
+
+  // Clamp
+  for(var k2 in R)S[k2]=cl(S[k2],R[k2].lo,R[k2].hi);
+
+  // History (sample every few ticks)
+  if(tickCount%3===0){
+    hist.push({t:S.time,sbp:S.sbp,hr:S.hr,ef:S.ef,cr:S.cr,k:S.k,bnp:S.bnp,vol:S.volume});
+    if(hist.length>300)hist.shift();
+  }
+}
+
+// ======== HEARTBEAT (JS-driven) ========
+function updateHeart(){
+  var now=Date.now();
+  var interval=60000/Math.max(S.hr,30);
+  if(now-lastBeat>interval){lastBeat=now;heartScale=1.4;}
+  heartScale+=(1.0-heartScale)*0.15;
+  var el=document.getElementById("heartSvg");
+  if(el)el.style.transform="scale("+heartScale.toFixed(3)+")";
+}
+
+// ======== BUILD STATIC ELEMENTS ========
+function buildSliders(){
+  var R=MODEL.reservoirs,h='<div style="font-size:8px;color:#444;font-weight:700;letter-spacing:1px;margin-bottom:6px">MANUAL CONTROL</div>';
+  for(var k in R){
+    var m=R[k],stp=m.hi>10?1:0.1,dp=m.hi>10?0:1;
+    h+='<div style="display:flex;align-items:center;gap:4px;margin-bottom:4px">';
+    h+='<span style="font-size:9px;color:'+m.color+';width:72px;text-align:right;font-weight:600">'+m.label+'</span>';
+    h+='<input type="range" min="'+m.lo+'" max="'+m.hi+'" step="'+stp+'" value="'+S[k]+'" id="sl_'+k+'" oninput="S[\''+k+'\']=parseFloat(this.value);document.getElementById(\'sv_'+k+'\').textContent=parseFloat(this.value).toFixed('+dp+')" style="flex:1;accent-color:'+m.color+'">';
+    h+='<span id="sv_'+k+'" style="font-size:9px;color:#aaa;width:42px;font-family:monospace;text-align:right">'+fv(k,S[k])+'</span></div>';
+  }
+  document.getElementById("sliders").innerHTML=h;
+}
+function buildCal(){
+  var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">';
+  h+='<div style="font-size:11px;font-weight:700;color:#818cf8">CALIBRATION</div>';
+  h+='<div style="display:flex;gap:4px"><button onclick="dlModel()" style="padding:3px 8px;font-size:9px;background:transparent;color:#4ade80;border:1px solid #333;border-radius:4px;font-weight:600">&darr; Download</button>';
+  h+='<label style="padding:3px 8px;font-size:9px;background:transparent;color:#60a5fa;border:1px solid #333;border-radius:4px;font-weight:600;cursor:pointer">&uarr; Upload<input type="file" accept=".json" onchange="ulModel(event)" style="display:none"></label></div></div>';
+  for(var i=0;i<MODEL.calibrations.length;i++){
+    var c=MODEL.calibrations[i];
+    h+='<div style="display:flex;align-items:center;gap:8px;padding:5px 8px;margin-bottom:4px;border-radius:5px;border:1px solid #1a1a2e;background:#ffffff05">';
+    h+='<div style="flex:1;font-size:10px;color:#ccc"><b>'+c.scenario+'</b><div style="font-size:8px;color:#666;margin-top:1px">'+JSON.stringify(c.given)+' &rarr; '+JSON.stringify(c.expect)+'</div></div>';
+    h+='<div id="calR'+i+'" style="font-size:8px;font-weight:700;width:55px;text-align:center;color:#555">&mdash;</div>';
+    h+='<button onclick="runCal('+i+')" style="padding:3px 10px;border-radius:4px;border:none;background:#6366f1;color:#fff;font-weight:700;font-size:9px">Run</button></div>';
+  }
+  document.getElementById("calBox").innerHTML=h;
+}
+
+// ======== UPDATE UI (fast, no DOM rebuild of sliders) ========
+function updateUI(){
+  var R=MODEL.reservoirs;
+  var nyC=S.nyha<=2?"#4ade80":S.nyha===3?"#fbbf24":"#ef4444";
+  var nyL=["I","II","III","IV"][S.nyha-1];
+
+  // Banner
+  var b='<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px"><div style="display:flex;gap:18px">';
+  var tk=[["bnp","NT-proBNP","pg/mL"],["cr","Creatinine","mg/dL"],["k","Potassium","mEq/L"],["volume","Volume","%euv"]];
+  for(var i=0;i<tk.length;i++){var kk=tk[i][0];b+='<div style="text-align:center"><div style="font-size:8px;color:#888;text-transform:uppercase;letter-spacing:1px">'+tk[i][1]+'</div><div style="font-size:28px;font-weight:900;color:'+sc(kk,S[kk])+';font-family:monospace;line-height:1.1">'+fv(kk,S[kk])+'</div><div style="font-size:8px;color:#555">'+tk[i][2]+'</div></div>';}
+  b+='</div>';
+  b+='<div style="display:flex;align-items:center;gap:6px"><svg id="heartSvg" viewBox="0 0 32 32" width="38" height="38"><path d="M16 28C10 22 2 17 2 10C2 5 6 2 10 2C12.5 2 15 3.5 16 6C17 3.5 19.5 2 22 2C26 2 30 5 30 10C30 17 22 22 16 28Z" fill="#ef4444" opacity="0.9"/></svg>';
+  b+='<span style="font-size:26px;font-weight:800;color:#f472b6;font-family:monospace">'+Math.round(S.hr)+'</span><span style="font-size:9px;color:#888">bpm</span></div>';
+  b+='<div style="text-align:center">'+stickSVG()+'<div style="font-size:9px;color:#888">NYHA <b style="color:'+nyC+';font-size:15px">'+nyL+'</b></div></div>';
+  var sbpC=S.sbp<90?"#ef4444":S.sbp<100?"#fbbf24":"#fb923c",efC=S.ef>40?"#4ade80":S.ef>30?"#fbbf24":"#ef4444";
+  b+='<div style="display:flex;gap:16px">';
+  b+='<div style="text-align:center"><div style="font-size:8px;color:#888;text-transform:uppercase;letter-spacing:1px">SBP</div><div style="font-size:28px;font-weight:900;color:'+sbpC+';font-family:monospace;line-height:1.1">'+Math.round(S.sbp)+'</div><div style="font-size:8px;color:#555">mmHg</div></div>';
+  b+='<div style="text-align:center"><div style="font-size:8px;color:#888;text-transform:uppercase;letter-spacing:1px">EF</div><div style="font-size:28px;font-weight:900;color:'+efC+';font-family:monospace;line-height:1.1">'+Math.round(S.ef)+'</div><div style="font-size:8px;color:#555">%</div></div>';
+  b+='</div></div>';
+  document.getElementById("banner").innerHTML=b;
+
+  // Reservoir groups
+  var groups=[{id:"medRes",label:"MED RESERVOIRS",keys:["arni","bb","mra","sglt2i","diuretic"]},{id:"physRes",label:"PHYSIO RESERVOIRS",keys:["sbp","hr","ef","volume"]},{id:"labRes",label:"LAB RESERVOIRS",keys:["cr","k","bnp"]}];
+  for(var gi=0;gi<groups.length;gi++){
+    var g=groups[gi],gh='<div style="font-size:8px;color:#444;font-weight:700;letter-spacing:1px;margin-bottom:4px">'+g.label+'</div><div style="display:flex;flex-wrap:wrap;justify-content:center">';
+    for(var ri=0;ri<g.keys.length;ri++){
+      var rk=g.keys[ri],rm=R[rk],rv=S[rk],pct=((rv-rm.lo)/(rm.hi-rm.lo))*100;
+      var isTip=false;for(var tt=0;tt<MODEL.tipping_points.length;tt++)if(tipOn(MODEL.tipping_points[tt])&&MODEL.tipping_points[tt].effects[rk])isTip=true;
+      gh+='<div style="width:82px;margin:0 3px;text-align:center"><div style="font-size:8px;color:#666;font-weight:700;margin-bottom:2px">'+rm.label+'</div>';
+      gh+='<div style="height:70px;border:1.5px solid '+rm.color+'44;border-radius:5px;background:#080818;position:relative;overflow:hidden;'+(isTip?'box-shadow:0 0 14px '+rm.color+'88':'')+'">';
+      gh+='<div style="position:absolute;bottom:0;width:100%;height:'+cl(pct,1,100)+'%;background:linear-gradient(to top,'+rm.color+'bb,'+rm.color+'22)"></div>';
+      if(isTip)gh+='<div style="position:absolute;top:1px;left:1px;right:1px;font-size:6px;font-weight:800;color:#fff;background:#ef444499;border-radius:2px;text-align:center;animation:pulse .8s infinite">TIP</div>';
+      gh+='<div style="position:absolute;bottom:2px;width:100%;text-align:center;font-size:12px;font-weight:800;color:#fff;text-shadow:0 1px 3px #000">'+fv(rk,rv)+'</div></div></div>';
+    }
+    gh+='</div>';document.getElementById(g.id).innerHTML=gh;
+  }
+
+  // Slider values (don't rebuild, just update display)
+  for(var sk in R){
+    var sve=document.getElementById("sv_"+sk);if(sve)sve.textContent=fv(sk,S[sk]);
+    var sle=document.getElementById("sl_"+sk);if(sle&&document.activeElement!==sle)sle.value=S[sk];
+  }
+
+  var rb=document.getElementById("runBtn");
+  rb.style.background=running?"#f87171":"#4ade80";rb.style.color="#000";
+  rb.innerHTML=running?"&#9208; Pause":"&#9654; Run";
+  document.getElementById("timeV").textContent=S.time.toFixed(1)+"h";
+
+  // Debug: show SBP effective eq
+  var sbpEq=MODEL.reservoirs.sbp.eq;
+  for(var di=0;di<MODEL.conduits.length;di++){
+    var dc=MODEL.conduits[di];if(dc.to!=="sbp")continue;
+    var sn=(S[dc.from]-MODEL.reservoirs[dc.from].lo)/(MODEL.reservoirs[dc.from].hi-MODEL.reservoirs[dc.from].lo);
+    if(dc.type==="fill")sbpEq+=dc.weight*sn;else sbpEq-=dc.weight*sn;
+  }
+  document.getElementById("debugTxt").textContent="SBP eq\u2192"+sbpEq.toFixed(0)+" | ticks:"+tickCount;
+
+  // Tipping
+  var th='<div style="font-size:8px;color:#444;font-weight:700;letter-spacing:1px;margin-bottom:4px">TIPPING POINTS</div>';
+  for(var ti=0;ti<MODEL.tipping_points.length;ti++){
+    var tp=MODEL.tipping_points[ti],on=tipOn(tp);
+    th+='<div style="padding:3px 6px;margin-bottom:2px;border-radius:4px;font-size:9px;background:'+(on?"#ef444418":"transparent")+';border:1px solid '+(on?"#ef444444":"transparent")+';color:'+(on?"#f87171":"#555")+'">'+(on?"\uD83D\uDD34":"\u25CB")+' <b>'+tp.label+'</b> <span style="color:#444">'+tp.desc+'</span></div>';
+  }
+  document.getElementById("tipBox").innerHTML=th;
+  drawTrends();
+}
+
+// ======== TRENDS ========
+function drawTrends(){
+  var cv=document.getElementById("trendC"),ctx=cv.getContext("2d");
+  ctx.clearRect(0,0,cv.width,cv.height);
+  if(hist.length<3)return;
+  var charts=[["sbp","#fb923c"],["hr","#f472b6"],["ef","#34d399"],["cr","#fca5a5"],["k","#d8b4fe"],["bnp","#fdba74"]];
+  var cw=cv.width/3,ch=cv.height/2;
+  for(var ci=0;ci<charts.length;ci++){
+    var dk=charts[ci][0],col=charts[ci][1],ox=(ci%3)*cw+10,oy=Math.floor(ci/3)*ch+14,w=cw-20,h=ch-24;
+    var vals=[];for(var i=0;i<hist.length;i++)vals.push(hist[i][dk]||0);
+    var mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals),r=mx-mn||1;
+    ctx.fillStyle="#888";ctx.font="bold 9px Inter,system-ui";ctx.fillText(dk.toUpperCase(),ox,oy-4);
+    ctx.fillStyle=col;ctx.fillText(fv(dk,vals[vals.length-1]),ox+30,oy-4);
+    ctx.beginPath();
+    for(var j=0;j<vals.length;j++){var x=ox+(j/(vals.length-1))*w,y=oy+h-((vals[j]-mn)/r)*h;j===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+    ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.stroke();
+  }
+}
+
+// ======== STICK FIGURE ========
+function stickSVG(){
+  var n=S.nyha,w=Math.sin(Date.now()/(n<=2?400:600))*(n===1?8:n===2?5:2);
+  if(n===4)return'<svg viewBox="0 0 120 80" width="100" height="68"><line x1="30" y1="50" x2="75" y2="50" stroke="#f87171" stroke-width="2.5" stroke-linecap="round"/><circle cx="25" cy="50" r="8" fill="none" stroke="#f87171" stroke-width="2"/><line x1="75" y1="50" x2="95" y2="60" stroke="#f87171" stroke-width="2"/><line x1="75" y1="50" x2="95" y2="40" stroke="#f87171" stroke-width="2"/><line x1="45" y1="50" x2="42" y2="35" stroke="#f87171" stroke-width="2"/><line x1="55" y1="50" x2="58" y2="33" stroke="#f87171" stroke-width="2"/><circle cx="22" cy="48" r="1" fill="#f87171"/><circle cx="28" cy="48" r="1" fill="#f87171"/><path d="M21 53Q25 51 29 53" fill="none" stroke="#f87171" stroke-width="1"/><text x="60" y="16" font-size="8" fill="#f87171" text-anchor="middle" font-weight="700">DYSPNEIC</text></svg>';
+  if(n===3)return'<svg viewBox="0 0 120 95" width="90" height="80"><circle cx="60" cy="18" r="9" fill="none" stroke="#fbbf24" stroke-width="2"/><line x1="60" y1="27" x2="60" y2="55" stroke="#fbbf24" stroke-width="2.5"/><line x1="60" y1="55" x2="45" y2="68" stroke="#fbbf24" stroke-width="2"/><line x1="45" y1="68" x2="45" y2="85" stroke="#fbbf24" stroke-width="2"/><line x1="60" y1="55" x2="75" y2="68" stroke="#fbbf24" stroke-width="2"/><line x1="75" y1="68" x2="75" y2="85" stroke="#fbbf24" stroke-width="2"/><line x1="60" y1="35" x2="48" y2="55" stroke="#fbbf24" stroke-width="2"/><line x1="60" y1="35" x2="72" y2="55" stroke="#fbbf24" stroke-width="2"/><circle cx="57" cy="16" r="1" fill="#fbbf24"/><circle cx="63" cy="16" r="1" fill="#fbbf24"/><path d="M56 21Q60 20 64 21" fill="none" stroke="#fbbf24" stroke-width="1"/><text x="60" y="94" font-size="7" fill="#fbbf24" text-anchor="middle">SEATED / SOB</text></svg>';
+  var col=n===2?"#a3e635":"#4ade80",face=n===2?'<line x1="57" y1="19" x2="63" y2="19" stroke="'+col+'" stroke-width="1"/>':'<path d="M56 19Q60 23 64 19" fill="none" stroke="'+col+'" stroke-width="1.2"/>',txt=n===2?"MILD LIMIT":"FEELING GOOD";
+  return'<svg viewBox="0 0 120 95" width="90" height="80"><circle cx="60" cy="16" r="9" fill="none" stroke="'+col+'" stroke-width="2"/><line x1="60" y1="25" x2="60" y2="55" stroke="'+col+'" stroke-width="2.5"/><line x1="60" y1="55" x2="'+(50+w)+'" y2="82" stroke="'+col+'" stroke-width="2"/><line x1="60" y1="55" x2="'+(70-w)+'" y2="82" stroke="'+col+'" stroke-width="2"/><line x1="60" y1="33" x2="'+(48-w*.7)+'" y2="48" stroke="'+col+'" stroke-width="2"/><line x1="60" y1="33" x2="'+(72+w*.7)+'" y2="48" stroke="'+col+'" stroke-width="2"/><circle cx="57" cy="14" r="1" fill="'+col+'"/><circle cx="63" cy="14" r="1" fill="'+col+'"/>'+face+'<text x="60" y="94" font-size="7" fill="'+col+'" text-anchor="middle">'+txt+'</text></svg>';
+}
+
+// ======== CONTROLS ========
+function toggleRun(){running=!running;if(running)simTimer=setInterval(function(){for(var i=0;i<4;i++)simTick();},30);else clearInterval(simTimer);}
+function resetAll(){running=false;clearInterval(simTimer);initS();hist=[];logArr=[];deltas=[];tickCount=0;buildSliders();buildCal();}
+
+// ======== CALIBRATION ========
+function runCal(idx){
+  var cal=MODEL.calibrations[idx],R=MODEL.reservoirs;
+  var t={};for(var k in S)t[k]=S[k];for(var gk in cal.given)t[gk]=cal.given[gk];
+  for(var step=0;step<1000;step++){
+    var dt=0.1;
+    for(var rk in R){
+      var r=R[rk];
+      if(r.group==="med"){t[rk]+=(r.eq-t[rk])*r.spring_rate*dt;}
+      else{
+        var eq=r.eq;
+        for(var ci=0;ci<MODEL.conduits.length;ci++){var c=MODEL.conduits[ci];if(c.to!==rk)continue;var sn=(t[c.from]-R[c.from].lo)/(R[c.from].hi-R[c.from].lo);if(c.type==="fill")eq+=c.weight*sn;else eq-=c.weight*sn;}
+        t[rk]+=(eq-t[rk])*r.spring_rate*dt;
+      }
+      t[rk]=cl(t[rk],R[rk].lo,R[rk].hi);
+    }
+  }
+  var pass=true,adj=[];
+  for(var ek in cal.expect){
+    var exp=cal.expect[ek];
+    if(exp.dir==="up"&&exp.max&&t[ek]>exp.max){pass=false;adj.push(ek);for(var j=0;j<MODEL.conduits.length;j++)if(MODEL.conduits[j].to===ek)MODEL.conduits[j].weight*=0.8;}
+    if(exp.dir==="down"&&exp.min&&t[ek]<exp.min){pass=false;adj.push(ek);for(var j2=0;j2<MODEL.conduits.length;j2++)if(MODEL.conduits[j2].to===ek)MODEL.conduits[j2].weight*=0.8;}
+  }
+  var re=document.getElementById("calR"+idx);
+  if(pass){re.style.color="#4ade80";re.textContent="PASS";logArr.unshift(S.time.toFixed(1)+"h: \u2705 "+cal.scenario);}
+  else{re.style.color="#818cf8";re.textContent="ADJ("+adj.join(",")+")";logArr.unshift(S.time.toFixed(1)+"h: \uD83D\uDD27 "+cal.scenario);}
+}
+function dlModel(){var b=new Blob([JSON.stringify(MODEL,null,2)],{type:"application/json"});var a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="gdmt_model.json";a.click();}
+function ulModel(ev){var f=ev.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(e){try{var d=JSON.parse(e.target.result);if(d.reservoirs)MODEL.reservoirs=d.reservoirs;if(d.conduits)MODEL.conduits=d.conduits;if(d.tipping_points)MODEL.tipping_points=d.tipping_points;if(d.calibrations)MODEL.calibrations=d.calibrations;initS();hist=[];logArr.unshift("\uD83D\uDCC2 Loaded");buildSliders();buildCal();}catch(x){alert("Invalid JSON");}};r.readAsText(f);}
+
+// ======== JSON OVERLAY ========
+function openJSON(){
+  document.getElementById("jsOv").classList.add("show");
+  var inner=document.getElementById("jsInner");
+  inner.innerHTML='<button onclick="closeJSON()" style="position:absolute;top:10px;right:14px;font-size:20px;color:#888;background:none;border:none;cursor:pointer">&times;</button>'
+    +'<h2 style="color:#7eb8ff;font-size:16px;margin-bottom:10px">GDMT Model \u2014 Full JSON</h2>'
+    +'<p style="color:#888;font-size:11px;margin-bottom:12px;line-height:1.6">Spring-to-equilibrium model. Conduits shift target eq. Copy to LLM:</p>'
+    +'<div style="background:#080818;border-radius:6px;padding:10px;margin-bottom:12px;font-size:10px;color:#9be0a0;font-family:monospace;line-height:1.6">'
+    +'\u2022 "fill" conduit: pushes target eq UP (source normalized 0\u20131 * weight)<br>'
+    +'\u2022 "leak" conduit: pushes target eq DOWN<br>'
+    +'\u2022 spring_rate: how fast reservoir chases its effective eq<br>'
+    +'\u2022 noise: biological jitter amplitude<br>'
+    +'\u2022 Example: "add ivabradine reservoir, wire leak to HR with weight 15"</div>'
+    +'<div style="display:flex;gap:6px;margin-bottom:10px">'
+    +'<button id="cpBtn" onclick="copyJSON()" style="padding:6px 16px;border-radius:5px;border:none;background:#6366f1;color:#fff;font-weight:700;font-size:11px">\uD83D\uDCCB Copy JSON</button>'
+    +'<button onclick="dlModel()" style="padding:6px 16px;border-radius:5px;border:none;background:#4ade80;color:#000;font-weight:700;font-size:11px">\u2193 Download</button></div>'
+    +'<textarea id="jsonEdit" style="width:100%;height:400px;background:#080818;color:#9be0a0;border:1px solid #333;border-radius:6px;padding:10px;font-family:monospace;font-size:10px;line-height:1.4;resize:vertical"></textarea>'
+    +'<button onclick="loadJSON()" style="margin-top:8px;padding:6px 16px;border-radius:5px;border:none;background:#fb923c;color:#000;font-weight:700;font-size:11px">\u2B06 Load Into Model</button>';
+  document.getElementById("jsonEdit").value=JSON.stringify(MODEL,null,2);
+}
+function closeJSON(){document.getElementById("jsOv").classList.remove("show");}
+function copyJSON(){navigator.clipboard.writeText(document.getElementById("jsonEdit").value).then(function(){var b=document.getElementById("cpBtn");b.textContent="\u2705 Copied!";setTimeout(function(){b.textContent="\uD83D\uDCCB Copy JSON"},1500);});}
+function loadJSON(){try{var d=JSON.parse(document.getElementById("jsonEdit").value);if(d.reservoirs)MODEL.reservoirs=d.reservoirs;if(d.conduits)MODEL.conduits=d.conduits;if(d.tipping_points)MODEL.tipping_points=d.tipping_points;if(d.calibrations)MODEL.calibrations=d.calibrations;initS();hist=[];logArr.unshift("\uD83D\uDCC2 Loaded");buildSliders();buildCal();closeJSON();}catch(e){alert("Invalid JSON: "+e.message);}}
+
+// ======== NEURAL NET ========
+var nnAnim,nnHI=-1,nnMX=0,nnMY=0,nnPos={};
+function openNN(){var ov=document.getElementById("nnOv");ov.classList.add("show");var c=document.getElementById("nnC");c.width=window.innerWidth;c.height=window.innerHeight;c.onmousemove=function(e){nnMX=e.clientX;nnMY=e.clientY;nnHit();};layoutNN();drawNN();}
+function closeNN(){document.getElementById("nnOv").classList.remove("show");cancelAnimationFrame(nnAnim);}
+function layoutNN(){var R=MODEL.reservoirs,W=window.innerWidth,H=window.innerHeight,gr={med:[],phys:[],lab:[]};for(var k in R)gr[R[k].group].push(k);var yy=[H*.22,H*.52,H*.80],layers=[gr.med,gr.phys,gr.lab];for(var li=0;li<layers.length;li++){var la=layers[li],n=la.length;for(var i=0;i<n;i++)nnPos[la[i]]={x:W*.12+(i/Math.max(n-1,1))*(W*.76),y:yy[li]};}}
+function nnHit(){nnHI=-1;for(var ci=0;ci<MODEL.conduits.length;ci++){var c=MODEL.conduits[ci],f=nnPos[c.from],t=nnPos[c.to];if(!f||!t)continue;var dx=t.x-f.x,dy=t.y-f.y,l2=dx*dx+dy*dy;if(!l2)continue;var tt2=Math.max(0,Math.min(1,((nnMX-f.x)*dx+(nnMY-f.y)*dy)/l2));var px=f.x+tt2*dx,py=f.y+tt2*dy,dist=Math.sqrt((nnMX-px)*(nnMX-px)+(nnMY-py)*(nnMY-py));if(dist<12){nnHI=ci;break;}}}
+function drawNN(){
+  var c=document.getElementById("nnC"),ctx=c.getContext("2d"),R=MODEL.reservoirs;
+  ctx.clearRect(0,0,c.width,c.height);
+  ctx.font="bold 12px Inter,system-ui";ctx.textAlign="left";ctx.fillStyle="#444";
+  var mk,pk,lk;for(var k in R){if(R[k].group==="med"&&!mk)mk=k;if(R[k].group==="phys"&&!pk)pk=k;if(R[k].group==="lab"&&!lk)lk=k;}
+  if(mk&&nnPos[mk])ctx.fillText("MEDICATION LAYER",30,nnPos[mk].y-50);
+  if(pk&&nnPos[pk])ctx.fillText("PHYSIOLOGIC LAYER",30,nnPos[pk].y-50);
+  if(lk&&nnPos[lk])ctx.fillText("LAB LAYER",30,nnPos[lk].y-50);
+  for(var ci=0;ci<MODEL.conduits.length;ci++){
+    var con=MODEL.conduits[ci],fp=nnPos[con.from],tp=nnPos[con.to];if(!fp||!tp)continue;
+    var hv=ci===nnHI,isFill=con.type==="fill";
+    ctx.beginPath();ctx.moveTo(fp.x,fp.y);ctx.lineTo(tp.x,tp.y);
+    ctx.strokeStyle=hv?(isFill?"#4ade80":"#f87171"):(isFill?"#4ade8033":"#f8717133");
+    ctx.lineWidth=hv?3.5:1.5;if(!isFill)ctx.setLineDash([6,4]);else ctx.setLineDash([]);
+    ctx.stroke();ctx.setLineDash([]);
+    var ang=Math.atan2(tp.y-fp.y,tp.x-fp.x),ax=tp.x-Math.cos(ang)*36,ay=tp.y-Math.sin(ang)*36;
+    ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(ax-Math.cos(ang-.4)*11,ay-Math.sin(ang-.4)*11);ctx.lineTo(ax-Math.cos(ang+.4)*11,ay-Math.sin(ang+.4)*11);ctx.closePath();
+    ctx.fillStyle=hv?(isFill?"#4ade80":"#f87171"):(isFill?"#4ade8044":"#f8717144");ctx.fill();
+  }
+  ctx.textAlign="center";
+  for(var nk in nnPos){
+    var np=nnPos[nk],nm=R[nk],nv=S[nk],pct=(nv-nm.lo)/(nm.hi-nm.lo),rad=32;
+    var grd=ctx.createRadialGradient(np.x,np.y,rad-5,np.x,np.y,rad+10);
+    grd.addColorStop(0,nm.color+"44");grd.addColorStop(1,"transparent");
+    ctx.beginPath();ctx.arc(np.x,np.y,rad+10,0,Math.PI*2);ctx.fillStyle=grd;ctx.fill();
+    ctx.save();ctx.beginPath();ctx.arc(np.x,np.y,rad,0,Math.PI*2);ctx.clip();
+    ctx.fillStyle="#0d0d22";ctx.fillRect(np.x-rad,np.y-rad,rad*2,rad*2);
+    var fH=rad*2*pct;ctx.fillStyle=nm.color+"66";ctx.fillRect(np.x-rad,np.y+rad-fH,rad*2,fH);ctx.restore();
+    ctx.beginPath();ctx.arc(np.x,np.y,rad,0,Math.PI*2);ctx.strokeStyle=nm.color;ctx.lineWidth=2.5;ctx.stroke();
+    ctx.fillStyle=nm.color;ctx.font="bold 10px Inter,system-ui";ctx.fillText(nm.label,np.x,np.y-6);
+    ctx.fillStyle="#fff";ctx.font="bold 14px monospace";ctx.fillText(fv(nk,nv),np.x,np.y+10);
+    ctx.fillStyle="#666";ctx.font="8px Inter,system-ui";ctx.fillText(nm.unit,np.x,np.y+21);
+  }
+  ctx.textAlign="start";
+  var tip=document.getElementById("nnTip");
+  if(nnHI>=0&&MODEL.conduits[nnHI]){
+    var hc=MODEL.conduits[nnHI],isFill2=hc.type==="fill",hcol=isFill2?"#4ade80":"#f87171";
+    tip.style.display="block";tip.style.left=(nnMX+15)+"px";tip.style.top=(nnMY-10)+"px";
+    tip.innerHTML='<div style="font-weight:700;color:'+hcol+';font-size:11px;margin-bottom:3px">'+R[hc.from].label+' \u2192 '+R[hc.to].label+'</div><div style="font-size:10px;color:#ccc;margin-bottom:2px">'+hc.mechanism+'</div><div style="font-size:9px;color:#888">Type: <b style="color:'+hcol+'">'+hc.type+'</b> (shifts eq '+(isFill2?"UP":"DOWN")+') | Weight: <b>'+hc.weight+'</b></div>';
+  }else tip.style.display="none";
+  if(document.getElementById("nnOv").classList.contains("show"))nnAnim=requestAnimationFrame(drawNN);
+}
+
+// ======== BOOT — auto-start! ========
+buildSliders();
+buildCal();
+running=true;
+simTimer=setInterval(function(){for(var i=0;i<4;i++)simTick();},30);
+// Render loop
+setInterval(function(){
+  updateUI();
+  updateHeart();
+  var lb=document.getElementById("logBox");
+  if(logArr.length)lb.innerHTML=logArr.slice(0,20).join("<br>");
+},60);
+</script>
+</body>
+</html>
