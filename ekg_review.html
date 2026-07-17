@@ -1,0 +1,1139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EKG Question-Caliper Tutor v14</title>
+<style>
+:root{
+ --bg:#edf2f5;--paper:#fff;--ink:#15232d;--muted:#667784;--line:#d6dfe5;
+ --navy:#173b57;--teal:#087f8c;--teal2:#075f68;--wash:#e7f5f6;
+ --amber:#a96800;--amberwash:#fff4d9;--red:#b42318;--redwash:#fdecea;
+ --green:#237a4b;--greenwash:#e8f6ee;--blue:#245fa8;--bluewash:#eaf2fc;
+ --shadow:0 10px 28px rgba(30,48,62,.11);--r:15px;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box} html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input,select,textarea{font:inherit}button{cursor:pointer}
+header{position:sticky;top:0;z-index:30;background:rgba(237,242,245,.95);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.head{max-width:1560px;margin:auto;padding:12px 18px;display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+h1{font-size:17px;letter-spacing:.03em;color:var(--navy);margin:0}.subtitle{font-size:12px;color:var(--muted);margin-top:3px}.badges{display:flex;gap:7px;flex-wrap:wrap}.badge{font-size:10.5px;font-weight:800;border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 8px;color:var(--muted)}.badge.local{color:var(--green);background:var(--greenwash);border-color:#b8ddc8}
+.progress{max-width:1560px;margin:auto;padding:0 18px 10px;display:grid;grid-template-columns:repeat(8,minmax(70px,1fr));gap:6px;overflow-x:auto}
+.stage{border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--muted);padding:7px 8px;font-size:10.5px;font-weight:800;white-space:nowrap;text-align:center}.stage.active{background:var(--navy);color:#fff;border-color:var(--navy)}.stage.done{background:var(--greenwash);color:var(--green);border-color:#b8ddc8}
+main{max-width:1560px;margin:auto;padding:15px 18px 30px}.banner{border:1px solid #bad9dd;background:var(--wash);color:#075e67;border-radius:12px;padding:10px 12px;margin-bottom:13px;font-size:12.5px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.banner.warn{background:var(--amberwash);border-color:#efd08a;color:#785100}.banner.ok{background:var(--greenwash);border-color:#b8ddc8;color:#17613a}.banner.danger{background:var(--redwash);border-color:#efb9b4;color:#8d1e16}
+.layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(370px,.8fr);gap:14px}@media(max-width:1080px){.layout{grid-template-columns:1fr}}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}.phead{padding:11px 13px;background:#f9fbfc;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}.phead h2{margin:0;font-size:13.5px;color:var(--navy)}.pbody{padding:13px}
+.btn{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:8px;padding:8px 10px;font-size:11.5px;font-weight:800}.btn:hover{border-color:var(--teal);color:var(--teal2)}.btn.primary{background:var(--teal);border-color:var(--teal);color:#fff}.btn.primary:hover{background:var(--teal2)}.btn.navy{background:var(--navy);border-color:var(--navy);color:#fff}.btn.danger{background:var(--redwash);border-color:#efc0bc;color:var(--red)}.btn.small{padding:5px 7px;font-size:10.5px}.btn.active{background:var(--teal);border-color:var(--teal);color:#fff}.btn:disabled{opacity:.45;cursor:not-allowed}.row{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.grow{flex:1}.hidden{display:none!important}
+.upload{border:2px dashed var(--line);border-radius:11px;background:#f8fafb;padding:13px;text-align:center;color:var(--muted);cursor:pointer;font-size:12px}.upload.over{background:var(--wash);border-color:var(--teal)}.upload input{display:none}
+.toolbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:9px 0}.tool{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 9px;font-size:10.5px;font-weight:850;color:#415260}.tool.active{background:var(--teal);color:#fff;border-color:var(--teal)}.checkline{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);font-weight:750}.qmeasure{margin-top:10px;border:1px solid #efd18f;background:var(--amberwash);border-radius:11px;padding:10px}.qmeasure .btn{margin-top:7px}.ratebig{font-size:28px;font-weight:900;color:var(--navy);margin:8px 0}.tool.requested{box-shadow:0 0 0 3px rgba(8,127,140,.17)}
+.canvaswrap{position:relative;border:1px solid #34434d;border-radius:11px;overflow:hidden;background:#111a20;min-height:520px}.canvaswrap canvas{display:block;width:100%;height:620px;touch-action:none}.canvashelp{position:absolute;left:9px;bottom:9px;background:rgba(10,20,28,.84);color:#e3edf1;border-radius:7px;padding:6px 8px;font-size:10.5px;pointer-events:none;max-width:72%}.autobox{position:absolute;right:9px;top:9px;background:rgba(255,255,255,.92);border:1px solid #cad4db;border-radius:9px;padding:7px 8px;font-size:10.5px;color:#344653;box-shadow:0 5px 16px rgba(0,0,0,.12)}
+.zoom{display:flex;gap:6px;align-items:center;font-size:10.5px;color:var(--muted)}.zoom input{width:120px}
+.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:9px}@media(max-width:650px){.cards{grid-template-columns:repeat(2,1fr)}}.metric{border:1px solid var(--line);border-radius:9px;background:#fbfcfd;padding:8px}.metric .k{font-size:9px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}.metric .v{font-size:18px;color:var(--navy);font-weight:800;margin-top:2px}.metric .v small{font-size:9px;color:var(--muted)}
+.question{border:1px solid #b9dce0;background:linear-gradient(180deg,#f3fbfb,#fff);border-radius:13px;padding:14px}.qstage{font-size:10px;color:var(--teal2);font-weight:900;text-transform:uppercase;letter-spacing:.09em}.question h3{font-size:19px;line-height:1.25;margin:7px 0;color:var(--navy)}.why{font-size:12px;color:var(--muted);line-height:1.45;margin:5px 0 11px}.options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.options.one{grid-template-columns:1fr}@media(max-width:540px){.options{grid-template-columns:1fr}}.option{border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px;text-align:left;font-size:12px;font-weight:800;color:#334653}.option:hover{border-color:var(--teal);background:var(--wash)}.option.selected{border-color:var(--teal);background:var(--teal);color:#fff}.option small{display:block;font-weight:500;opacity:.82;margin-top:4px;line-height:1.35}.measurecall{border:1px solid #efd18f;background:var(--amberwash);border-radius:10px;padding:10px;margin-top:10px;font-size:11.5px;color:#6f4b00}.measurecall b{color:#6b4600}
+.navrow{display:flex;justify-content:space-between;gap:7px;margin-top:11px}.history{margin-top:11px;border-top:1px solid var(--line);padding-top:10px;max-height:210px;overflow:auto}.hist{display:flex;gap:7px;align-items:flex-start;border-bottom:1px solid #edf0f2;padding:6px 0;font-size:10.5px}.hist:last-child{border:0}.hist .num{width:20px;height:20px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#eaf0f3;font-weight:850;color:#4b5d69;flex:none}.hist b{color:var(--navy)}
+.section{border:1px solid var(--line);border-radius:11px;padding:10px;margin-top:10px;background:#fbfcfd}.section h3{font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}label{display:block;font-size:10.5px;font-weight:800;color:#435461;margin-bottom:4px}input[type=text],input[type=number],select,textarea{width:100%;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);padding:7px 8px;font-size:11.5px}textarea{resize:vertical;min-height:65px}.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}@media(max-width:620px){.g2,.g3{grid-template-columns:1fr}}
+.ledger{display:flex;gap:6px;flex-wrap:wrap}.markchip{border:2px solid var(--c,#468);border-radius:9px;background:#fff;padding:6px 7px;font-size:10.5px;color:#31434f;display:flex;gap:6px;align-items:center}.markchip b{font-size:13px;color:var(--c,#468)}.markchip.selected{box-shadow:0 0 0 3px rgba(8,127,140,.18)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}.tab{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 10px;font-size:10.5px;font-weight:850;color:var(--muted)}.tab.active{background:var(--navy);color:#fff;border-color:var(--navy)}.view{display:none}.view.active{display:block}
+.finding{border-left:4px solid var(--teal);background:#f4fafb;border-radius:8px;padding:9px 10px;margin:7px 0;font-size:11.5px;line-height:1.45}.finding.ok{border-left-color:var(--green);background:var(--greenwash)}.finding.warn{border-left-color:var(--amber);background:var(--amberwash)}.finding.danger{border-left-color:var(--red);background:var(--redwash)}.chip{display:inline-block;border-radius:999px;padding:4px 7px;font-size:9.5px;font-weight:850;border:1px solid var(--line);background:#fff;margin:2px}.chip.ok{background:var(--greenwash);color:var(--green);border-color:#b8ddc8}.chip.warn{background:var(--amberwash);color:var(--amber);border-color:#efd18f}.chip.info{background:var(--bluewash);color:var(--blue);border-color:#c7daf2}
+#heartCanvas{display:block;width:100%;height:470px;border:1px solid var(--line);border-radius:11px;background:radial-gradient(circle at 48% 42%,#fbfdfe,#e4edf2);cursor:grab;touch-action:none}#heartCanvas.dragging{cursor:grabbing}.concept{font-size:10.5px;color:var(--muted);line-height:1.4;margin-top:7px}.output{background:#0e1820;color:#dceaf0;border-radius:10px;padding:11px;min-height:360px;max-height:610px;overflow:auto;white-space:pre-wrap;word-break:break-word;font:10.5px/1.45 var(--mono)}
+.axisbox{border:1px solid var(--line);border-radius:10px;background:#fff;padding:9px;margin-top:8px}.axisgrid{display:grid;grid-template-columns:110px 1fr;gap:10px;align-items:center}.axisdiagram{width:110px;height:110px}.axistext{font-size:11px;line-height:1.45;color:#40525e}
+
+.focusmetric{border:2px solid var(--teal);background:var(--wash)}
+.gridguide{border:1px solid #c8d6dd;background:#fff;border-radius:12px;padding:10px;margin:9px 0 11px}
+.gridguide svg{display:block;width:100%;height:auto;max-height:245px}
+.gridguide .guidecaption{font-size:11px;line-height:1.4;color:var(--muted);margin-top:6px}
+.detectchoice{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:9px 0}
+.detectchoice>div{border:1px solid var(--line);border-radius:9px;padding:7px;background:#fff;text-align:center;font-size:10.5px;color:var(--muted)}
+.detectchoice>div.chosen{border:2px solid var(--teal);background:var(--wash);color:var(--teal2);font-weight:850}
+@media(max-width:560px){.detectchoice{grid-template-columns:1fr}}
+
+.toast{position:fixed;right:17px;bottom:17px;background:#17232c;color:#fff;border-radius:9px;padding:9px 11px;font-size:11px;opacity:0;transform:translateY(7px);transition:.18s;pointer-events:none;z-index:100}.toast.show{opacity:1;transform:translateY(0)}
+
+.caliperbox{margin-top:12px;border:2px solid #80c4ca;background:#f3fbfb;border-radius:13px;padding:11px}
+.caliperbox h4{margin:0 0 4px;color:var(--navy);font-size:13px}
+.caliperintro{font-size:11.5px;color:#46606d;line-height:1.45;margin-bottom:8px}
+.caliperactions{display:grid;grid-template-columns:1fr;gap:7px}
+.caliperaction{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:8px;border:1px solid #cbd9df;background:#fff;border-radius:10px;padding:8px}
+.caliperaction.active{border-color:var(--teal);box-shadow:0 0 0 3px rgba(8,127,140,.13);background:#eefafa}.caliperaction.done{border-color:#8bc7a1;background:var(--greenwash)}
+.caliperstep{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#e8f0f3;color:var(--navy);font-size:11px;font-weight:900}
+.caliperaction.active .caliperstep{background:var(--teal);color:#fff}
+.caliperlabel{font-size:12px;font-weight:900;color:#263e4d}
+.caliperinstruction{font-size:10.8px;color:var(--muted);line-height:1.38;margin-top:2px}
+.calipercontrols{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-top:9px;border-top:1px solid #d9e6e9;padding-top:8px}
+.activeinstruction{margin-top:9px;border:1px solid #efc86f;background:#fff7df;border-radius:9px;padding:9px;color:#704900;font-size:11.5px;line-height:1.45}
+.activeinstruction b{color:#5b3a00}
+.rrstats{border:1px solid #bfd5df;background:#f7fbfd;border-radius:11px;padding:10px;margin:9px 0}
+.rrstatsgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:8px}
+@media(max-width:650px){.rrstatsgrid{grid-template-columns:repeat(2,minmax(0,1fr));}.caliperaction{grid-template-columns:30px 1fr}.caliperaction .btn{grid-column:1/-1}}
+.rrmetric{border:1px solid #dae4e9;background:#fff;border-radius:8px;padding:7px}
+.rrmetric .k{font-size:9px;text-transform:uppercase;letter-spacing:.07em;color:#6a7c87;font-weight:900}
+.rrmetric .v{font-size:16px;color:var(--navy);font-weight:900;margin-top:2px}
+.rrintervals{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+.rrpill{border:1px solid #d3dee4;background:#fff;border-radius:999px;padding:4px 7px;font-size:10.5px;font-weight:800;color:#435865}
+.miniguide{border:1px solid #d1dde3;border-radius:11px;background:#fff;margin:9px 0;padding:7px;overflow:hidden}
+.miniguide svg{width:100%;height:auto;display:block}
+.guidecaption{font-size:10.8px;color:#5a6b76;line-height:1.4;margin-top:5px}
+.calibrationdone{border:2px solid #62ad7e;background:var(--greenwash);color:#175f3b;border-radius:11px;padding:12px;margin:8px 0;font-size:12.5px}
+.calibrationdone .doneword{display:block;font-size:24px;line-height:1;font-weight:950;letter-spacing:.04em;margin-bottom:6px}
+.setupinstruction{border:3px solid var(--teal);background:#eefafa;border-radius:13px;padding:12px;margin:10px 0;text-align:center}
+.setupinstruction .bigstep{font-size:20px;font-weight:950;color:var(--navy)}
+.setupinstruction .substep{font-size:12px;color:#46606d;margin-top:5px}
+
+.canvaswrap{position:relative}
+.imageundo{position:absolute;z-index:15;display:none;border:2px solid #f2b7b0;background:#fff7f6;color:#a61b13;border-radius:999px;padding:7px 11px;font-size:11px;font-weight:950;box-shadow:0 8px 22px rgba(27,43,57,.22)}
+.annotationtoggle.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.measureleadrow{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:7px}.measureleadrow label{margin:0;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#60717d}.measurelead{width:auto;min-width:110px;padding:5px 7px;font-size:11px}
+.learninggrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:900px){.learninggrid{grid-template-columns:1fr}}
+.learnblock{border:1px solid var(--line);border-radius:12px;background:#fbfcfd;margin-top:12px;overflow:hidden}.learnblock>summary{cursor:pointer;list-style:none;padding:12px 14px;font-weight:950;color:var(--navy);background:#f4f8fa}.learnblock>summary::-webkit-details-marker{display:none}.learnbody{padding:12px;border-top:1px solid var(--line)}
+.morphgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}@media(max-width:780px){.morphgrid{grid-template-columns:1fr}}.morphcard{border:1px solid var(--line);border-radius:10px;background:white;overflow:hidden}.morphcard summary{cursor:pointer;list-style:none;padding:10px 11px;font-weight:900;color:#27465e}.morphcard summary::-webkit-details-marker{display:none}.morphbody{padding:10px;border-top:1px solid var(--line)}.morphstate{margin-bottom:8px}
+.reporttools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.reportlayout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);gap:14px}@media(max-width:1000px){.reportlayout{grid-template-columns:1fr}}
+.reportpaper{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:14px}.reportpaper h3{margin:0 0 10px;color:var(--navy)}.reportimage{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:9px;background:#fff;margin-bottom:10px}.reportcaption{font-size:11px;color:var(--muted);margin:-3px 0 10px}.reportsection{border:1px solid var(--line);border-radius:10px;background:#fbfcfd;padding:10px;margin-bottom:10px}.reportsection h4{margin:0 0 7px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#5b6b77}.reporttext{white-space:pre-wrap;font-size:12px;line-height:1.46;color:#2e404c}.reporttable{width:100%;border-collapse:collapse;font-size:11px}.reporttable th,.reporttable td{border-bottom:1px solid #e3e9ed;padding:6px;text-align:left;vertical-align:top}.reporttable th{background:#f2f6f8;color:#536673}.reportjson{background:#0f1820;color:#dce8ee;border-radius:10px;padding:11px;white-space:pre-wrap;word-break:break-word;font:10.5px/1.42 var(--mono);max-height:560px;overflow:auto}.reportstatus{border-radius:10px;padding:9px 11px;background:var(--greenwash);border:1px solid #b6ddc6;color:#1d6842;font-size:12px;margin-bottom:10px}
+
+.vectorlayout{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(330px,.75fr);gap:13px}
+@media(max-width:1050px){.vectorlayout{grid-template-columns:1fr}}
+.vectorcontrols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.vectorcontrols .wide{grid-column:1/-1}
+.vectorpresetrow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:9px}
+.vectorpreset{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 9px;font-size:10.5px;font-weight:900;color:#405665}
+.vectorpreset:hover{border-color:var(--teal);color:var(--teal)}
+.vectortoggles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:8px 0}
+.vectorcheck{border:1px solid var(--line);border-radius:8px;background:#fff;padding:7px;font-size:11px;color:#40515c;display:flex;gap:6px;align-items:center}
+.vectorinterpret{border:1px solid #b9d5dc;background:#f4fafb;border-radius:10px;padding:10px;font-size:11.5px;line-height:1.5;color:#294653;margin-top:9px}
+.vectorlegendgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-top:8px}
+.vectorlegenditem{font-size:10.5px;border-radius:8px;padding:6px 7px;background:#fff;border:1px solid var(--line)}
+.swatch{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.futureanalyzers{display:grid;grid-template-columns:1fr;gap:7px;margin-top:10px}
+.futurecard{border:1px dashed #aebdc7;border-radius:9px;padding:8px 9px;background:#fbfcfd;font-size:11px;line-height:1.45;color:#40525e}
+.futurecard b{color:var(--navy)}
+.vectorwarning{border-left:4px solid var(--amber);background:var(--amberwash);border-radius:8px;padding:8px 9px;font-size:10.5px;line-height:1.45;color:#715000;margin-top:8px}
+
+.rhythmlayout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(360px,.85fr);gap:14px}
+@media(max-width:1050px){.rhythmlayout{grid-template-columns:1fr}}
+.rhythmcanvas{display:block;width:100%;height:260px;border:1px solid var(--line);border-radius:11px;background:#fff}
+.intervalcanvas{display:block;width:100%;height:235px;border:1px solid var(--line);border-radius:11px;background:#fbfcfd}
+.rhythmcontrols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.rhythmcontrols .wide{grid-column:1/-1}
+.rhythmstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin:9px 0}
+@media(max-width:760px){.rhythmstats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.rhythmstat{border:1px solid var(--line);border-radius:9px;background:#fff;padding:8px}
+.rhythmstat .rk{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:850}
+.rhythmstat .rv{font-size:17px;font-weight:950;color:var(--navy);margin-top:2px}
+.rhythmfinding{border-left:4px solid var(--teal);background:#f4fafb;border-radius:8px;padding:9px 10px;margin:7px 0;font-size:12px;line-height:1.45}
+.rhythmfinding.warn{border-left-color:var(--amber);background:var(--amberwash)}
+.rhythmfinding.danger{border-left-color:var(--red);background:var(--redwash)}
+.rhythmfinding.ok{border-left-color:var(--green);background:var(--greenwash)}
+.rhythmtable{width:100%;border-collapse:collapse;font-size:11px}
+.rhythmtable th,.rhythmtable td{border-bottom:1px solid #e3e9ed;padding:6px;text-align:left;vertical-align:top}
+.rhythmtable th{background:#f3f7f9;color:#526573}
+.rhythmrank{display:grid;grid-template-columns:34px 1fr auto;gap:8px;align-items:start;border:1px solid var(--line);border-radius:9px;background:#fff;padding:8px;margin:7px 0}
+.rhythmrank .ranknum{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--navy);color:#fff;font-weight:950;font-size:11px}
+.confidence{font-size:10px;font-weight:900;border-radius:999px;padding:4px 7px;background:var(--bluewash);color:var(--blue);border:1px solid #c7d9f3}
+.paxisbox{border:1px solid #c9d7df;background:#f7fafb;border-radius:10px;padding:9px;margin-top:8px;font-size:11.5px;line-height:1.45}
+.rhythmbuttons{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}
+
+
+</style>
+</head>
+<body>
+<header>
+ <div class="head">
+  <div><h1>EKG Question-Caliper Tutor v14</h1><div class="subtitle">Measure, interpret, and complete a structured rhythm-strip analysis</div></div>
+  <div class="badges"><span class="badge local">Local image processing</span><span class="badge">Guided learning</span><span class="badge">Structured payload</span><span class="badge">Not autonomous diagnosis</span></div>
+ </div>
+ <div class="progress" id="progress"></div>
+</header>
+<main>
+ <div class="banner warn" id="banner"><span id="bannerMain"><b>Begin:</b> load an EKG or the demo.</span><span id="bannerSide">Step 1: place one caliper across five LARGE boxes. At 25 mm/s, that span is exactly 1 second.</span></div>
+ <div class="layout">
+  <section>
+   <div class="panel">
+    <div class="phead"><h2>Tracing — clear, removable, lead-specific calipers</h2><div class="row"><button class="btn small" id="demoBtn">Load demo</button><button class="btn small annotationtoggle active" id="toggleAnnotations">Hide annotations</button><button class="btn small danger" id="clearMarks">Clear marks</button><button class="btn small danger" id="resetBtn">New tracing</button></div></div>
+    <div class="pbody">
+     <div class="upload" id="upload"><input id="file" type="file" accept="image/*"><b>Drop, paste, or click to load an EKG image</b><br><span>PNG/JPG screenshots work best. Nothing is uploaded.</span></div>
+     <div class="toolbar">
+      <button class="tool active" data-tool="pan">Pan / select mark</button>
+      <button class="btn small danger" id="deleteMark">Remove selected mark</button>
+      <div style="width:92px"><input id="activeLead" type="text" value="II" aria-label="Active lead" title="Lead for the next question-requested mark"></div>
+      <div class="zoom">Zoom <input type="range" min="45" max="350" value="100" id="zoom"><span id="zoomText">100%</span></div>
+     </div>
+     <div class="canvaswrap">
+      <button id="imageUndo" class="imageundo" title="Remove selected mark" aria-label="Remove selected mark">×</button>
+      <canvas id="ecg"></canvas>
+      <div class="canvashelp" id="canvasHelp">Load an image. Click a mark to select it; remove it directly on the image or hide all annotations.</div>
+      <div class="autobox" id="autoBox">Grid: —<br>Rate: —</div>
+     </div>
+     <div class="cards">
+      <div class="metric"><div class="k">Setup</div><div class="v" id="tinyMetric">NOT DONE</div></div>
+      <div class="metric focusmetric"><div class="k">1 little box</div><div class="v" id="boxMetric">—</div></div>
+      <div class="metric"><div class="k">5 large boxes</div><div class="v" id="bigMetric">—</div></div>
+      <div class="metric"><div class="k">Mean R–R rate</div><div class="v" id="peakMetric">—</div></div>
+     </div>
+     <div class="section">
+      <h3>Paper setting</h3>
+      <div class="g3">
+       <div><label>Paper speed</label><select id="speed"><option value="25">25 mm/s</option><option value="50">50 mm/s</option><option value="12.5">12.5 mm/s</option></select></div>
+       <div class="hidden"><label>Horizontal box spacing</label><input type="number" id="boxPx"></div>
+       <div class="hidden"><label>Vertical box spacing</label><input type="number" id="boxPy"></div>
+      </div>
+      <div class="concept"><b>No recognizer and no grid overlay.</b> Place one two-point caliper across five LARGE boxes. The program treats that span as 25 small boxes.</div>
+     </div>
+     <div class="section"><h3>Caliper ledger — each mark is lettered and removable</h3><div class="ledger" id="ledger"><span class="concept">No manual marks yet.</span></div></div>
+    </div>
+   </div>
+  </section>
+
+  <aside>
+   <div class="panel">
+    <div class="phead"><h2>One-question interpreter</h2><div class="row"><button class="btn small" id="restartTree">Restart questions</button></div></div>
+    <div class="pbody">
+     <div class="question" id="question"></div>
+     <div class="navrow"><button class="btn" id="backBtn">← Back</button><button class="btn primary" id="nextBtn">Next incomplete →</button></div>
+     <div class="history" id="history"></div>
+    </div>
+   </div>
+
+   <div class="panel" style="margin-top:14px">
+    <div class="phead"><h2>Live axis explanation</h2></div>
+    <div class="pbody"><div class="axisbox"><div class="axisgrid"><canvas class="axisdiagram" id="axisCanvas" width="220" height="220"></canvas><div class="axistext" id="axisText">Lead I asks whether the mean QRS force points left. aVF asks whether it points downward. Their signs place the frontal vector into a quadrant.</div></div></div></div>
+   </div>
+  </aside>
+ </div>
+
+ <div class="panel" style="margin-top:14px">
+  <div class="phead"><h2>Interpretation, 3D vector heart, and payload</h2></div>
+  <div class="pbody">
+   <div class="tabs"><button class="tab active" data-view="synthesis">Synthesis</button><button class="tab" data-view="rhythm">Rhythm analyzer</button><button class="tab" data-view="learning">Morphology library</button><button class="tab" data-view="heart">3D electrical vector heart</button><button class="tab" data-view="payload">Payload JSON</button><button class="tab" data-view="prompt">LLM handoff</button><button class="tab" data-view="report">Report / PDF</button></div>
+   <div class="view active" id="view-synthesis"><div id="synthesis"></div></div>
+
+   <div class="view" id="view-rhythm">
+    <div class="rhythmlayout">
+     <div>
+      <div class="section" style="margin-top:0">
+       <h3>Selected rhythm strip</h3>
+       <canvas id="rhythmStripCanvas" class="rhythmcanvas" width="1200" height="300"></canvas>
+       <div class="rhythmcontrols" style="margin-top:9px">
+        <div><label>Crop top</label><input id="rhythmTop" type="range" min="0" max="95" value="82"><div class="smallnote" id="rhythmTopText">82%</div></div>
+        <div><label>Crop bottom</label><input id="rhythmBottom" type="range" min="5" max="100" value="100"><div class="smallnote" id="rhythmBottomText">100%</div></div>
+       </div>
+       <div class="rhythmbuttons">
+        <button class="btn" id="rhythmUseBottom">Use bottom rhythm strip</button>
+        <button class="btn" id="rhythmUseFull">Use full image</button>
+        <button class="btn" id="rhythmRefresh">Refresh preview</button>
+       </div>
+       <div class="concept">The crop is only a clean visual preview. Rhythm classification comes from the R–R calipers and the structured atrial/AV observations—not hidden image guessing.</div>
+      </div>
+
+      <div class="section">
+       <h3>R–R interval sequence</h3>
+       <canvas id="rhythmIntervalCanvas" class="intervalcanvas" width="1100" height="270"></canvas>
+       <div id="rhythmStats" class="rhythmstats"></div>
+       <div style="max-height:300px;overflow:auto" id="rhythmBeatTable"></div>
+       <div class="rhythmbuttons">
+        <button class="btn primary" id="rhythmMeasureRR">Measure another R–R</button>
+        <button class="btn" id="rhythmMeasurePR">Measure PR</button>
+        <button class="btn" id="rhythmSync">Pull answers from main tree</button>
+       </div>
+      </div>
+     </div>
+
+     <div>
+      <div class="section" style="margin-top:0">
+       <h3>Atrial activity and AV linkage</h3>
+       <div class="g3">
+        <div><label>Rhythm-strip lead</label><select id="rhythmLead"><option>II</option><option>I</option><option>III</option><option>V1</option><option>Rhythm strip</option><option>Other</option></select></div>
+        <div><label>P waves visible?</label><select id="rhythmPVisible"><option value="unknown">Unknown</option><option value="yes">Yes</option><option value="no">No</option><option value="flutter">Flutter-like activity</option><option value="uncertain">Uncertain</option></select></div>
+        <div><label>P morphology</label><select id="rhythmPMorph"><option value="unknown">Unknown</option><option value="uniform">Uniform</option><option value="multiple">Multiple morphologies</option><option value="retrograde">Retrograde</option><option value="flutter">Sawtooth/flutter-like</option><option value="uncertain">Uncertain</option></select></div>
+        <div><label>P before each QRS?</label><select id="rhythmPBefore"><option value="unknown">Unknown</option><option value="yes">Yes</option><option value="no">No</option><option value="variable">Variable</option><option value="uncertain">Uncertain</option></select></div>
+        <div><label>QRS after each P?</label><select id="rhythmQrsAfterP"><option value="unknown">Unknown</option><option value="yes">Yes</option><option value="no">No</option><option value="variable">Variable</option><option value="uncertain">Uncertain</option></select></div>
+        <div><label>Pauses</label><select id="rhythmPauses"><option value="not_assessed">Not assessed</option><option value="none">None seen</option><option value="present">Present</option><option value="uncertain">Uncertain</option></select></div>
+        <div><label>Ectopy</label><select id="rhythmEctopy"><option value="not_assessed">Not assessed</option><option value="none">None seen</option><option value="pac">PACs</option><option value="pvc">PVCs</option><option value="mixed">Mixed ectopy</option><option value="uncertain">Uncertain</option></select></div>
+       </div>
+      </div>
+
+      <div class="section">
+       <h3>Approximate P-wave axis</h3>
+       <div class="g3">
+        <div><label>P polarity in I</label><select id="pAxisI"><option value="unknown">Unknown</option><option value="positive">Positive</option><option value="negative">Negative</option><option value="equiphasic">Equiphasic</option></select></div>
+        <div><label>P polarity in II</label><select id="pAxisII"><option value="unknown">Unknown</option><option value="positive">Positive</option><option value="negative">Negative</option><option value="equiphasic">Equiphasic</option></select></div>
+        <div><label>P polarity in aVF</label><select id="pAxisAVF"><option value="unknown">Unknown</option><option value="positive">Positive</option><option value="negative">Negative</option><option value="equiphasic">Equiphasic</option></select></div>
+       </div>
+       <div id="pAxisResult" class="paxisbox">Enter P-wave polarity in I, II, and aVF to estimate the atrial vector.</div>
+      </div>
+
+      <div class="section">
+       <h3>Rhythm interpretation</h3>
+       <button class="btn primary" id="rhythmRun">Run structured rhythm analysis</button>
+       <div id="rhythmInterpretation" style="margin-top:8px"></div>
+       <div id="rhythmNext"></div>
+      </div>
+
+      <div class="section">
+       <h3>Editable report wording</h3>
+       <label>Rhythm-strip interpretation</label><textarea id="rhythmText" placeholder="The analyzer can draft this, but you remain in control of the final wording."></textarea>
+       <label style="margin-top:8px">Teaching pearls / alternatives</label><textarea id="rhythmPearls" placeholder="What supports the interpretation? What else could mimic it? What observation would settle the ambiguity?"></textarea>
+       <button class="btn" id="fillRhythm" style="margin-top:8px">Draft report wording from analysis</button>
+      </div>
+     </div>
+    </div>
+   </div>
+
+   <div class="view" id="view-learning">
+    <div class="learninggrid">
+<details class="learnblock" open><summary>Unusual morphology library</summary><div class="learnbody"><div class="concept" style="margin-bottom:9px">Open only the patterns relevant to this tracing. Record the state, leads, measurements, and uncertainty rather than forcing a diagnosis.</div><div class="morphgrid">
+      <details class="morphcard"><summary>Peaked T waves / hyperkalemia</summary><div class="morphbody"><div class="morphstate"><select id="morphHyperKState"><option value="not_assessed">Not assessed</option><option value="absent">Not seen</option><option value="possible">Possible</option><option value="present">Present</option><option value="uncertain">Uncertain</option></select></div><textarea id="morphHyperKNotes" placeholder="Leads, T-wave amplitude/shape, P/PR/QRS changes, potassium context."></textarea></div></details>
+      <details class="morphcard"><summary>Hypokalemia / U waves</summary><div class="morphbody"><div class="morphstate"><select id="morphHypoKState"><option value="not_assessed">Not assessed</option><option value="absent">Not seen</option><option value="possible">Possible</option><option value="present">Present</option><option value="uncertain">Uncertain</option></select></div><textarea id="morphHypoKNotes" placeholder="T flattening, ST change, U waves, apparent QU interval, potassium context."></textarea></div></details>
+      <details class="morphcard"><summary>Low calcium / long QT pattern</summary><div class="morphbody"><div class="morphstate"><select id="morphLowCaState"><option value="not_assessed">Not assessed</option><option value="absent">Not seen</option><option value="possible">Possible</option><option value="present">Present</option><option value="uncertain">Uncertain</option></select></div><textarea id="morphLowCaNotes" placeholder="QT/QTc, ST duration, calcium and albumin context."></textarea></div></details>
+      <details class="morphcard"><summary>High calcium / short QT pattern</summary><div class="morphbody"><div class="morphstate"><select id="morphHighCaState"><option value="not_assessed">Not assessed</option><option value="absent">Not seen</option><option value="possible">Possible</option><option value="present">Present</option><option value="uncertain">Uncertain</option></select></div><textarea id="morphHighCaNotes" placeholder="QT/QTc, ST shortening, calcium context."></textarea></div></details>
+      <details class="morphcard"><summary>Digoxin effect / toxicity</summary><div class="morphbody"><div class="morphstate"><select id="morphDigState"><option value="not_assessed">Not assessed</option><option value="absent">Not seen</option><option value="possible">Possible</option><option value="present">Present</option><option value="uncertain">Uncertain</option></select></div><textarea id="morphDigNotes" placeholder="ST morphology, rhythm, AV conduction, ectopy, medication level/context."></textarea></div></details>
+      <details class="morphcard"><summary>Pulmonary embolism / RV strain</summary><div class="morphbody"><div class="morphstate"><select id="morphPEState"><option value="not_assessed">Not assessed</option><option value="absent">Not seen</option><option value="possible">Possible</option><option value="present">Present</option><option value="uncertain">Uncertain</option></select></div><textarea id="morphPENotes" placeholder="Rate, axis, RBBB pattern, right-precordial T changes, clinical probability."></textarea></div></details>
+      <details class="morphcard"><summary>Pericarditis / diffuse injury pattern</summary><div class="morphbody"><div class="morphstate"><select id="morphPeriState"><option value="not_assessed">Not assessed</option><option value="absent">Not seen</option><option value="possible">Possible</option><option value="present">Present</option><option value="uncertain">Uncertain</option></select></div><textarea id="morphPeriNotes" placeholder="Lead distribution, PR changes, reciprocal findings, symptoms."></textarea></div></details>
+      <details class="morphcard"><summary>Brugada-like pattern</summary><div class="morphbody"><div class="morphstate"><select id="morphBrugadaState"><option value="not_assessed">Not assessed</option><option value="absent">Not seen</option><option value="possible">Possible</option><option value="present">Present</option><option value="uncertain">Uncertain</option></select></div><textarea id="morphBrugadaNotes" placeholder="V1-V3 morphology, lead placement, fever/drug context, uncertainty."></textarea></div></details>
+      <details class="morphcard"><summary>Pre-excitation / WPW-like pattern</summary><div class="morphbody"><div class="morphstate"><select id="morphWPWState"><option value="not_assessed">Not assessed</option><option value="absent">Not seen</option><option value="possible">Possible</option><option value="present">Present</option><option value="uncertain">Uncertain</option></select></div><textarea id="morphWPWNotes" placeholder="PR, initial QRS slurring, QRS width, pseudo-infarct patterns."></textarea></div></details>
+      <details class="morphcard"><summary>Posterior MI clues</summary><div class="morphbody"><div class="morphstate"><select id="morphPosteriorState"><option value="not_assessed">Not assessed</option><option value="absent">Not seen</option><option value="possible">Possible</option><option value="present">Present</option><option value="uncertain">Uncertain</option></select></div><textarea id="morphPosteriorNotes" placeholder="V1-V3 findings, posterior leads, reciprocal relationships, symptoms."></textarea></div></details>
+      <details class="morphcard"><summary>Wellens / de Winter-type ischemic morphology</summary><div class="morphbody"><div class="morphstate"><select id="morphOcclusionState"><option value="not_assessed">Not assessed</option><option value="absent">Not seen</option><option value="possible">Possible</option><option value="present">Present</option><option value="uncertain">Uncertain</option></select></div><textarea id="morphOcclusionNotes" placeholder="Precordial T/ST morphology, pain state, prior comparison, lead distribution."></textarea></div></details>
+      <details class="morphcard"><summary>Hypertrophic cardiomyopathy clues</summary><div class="morphbody"><div class="morphstate"><select id="morphHCMState"><option value="not_assessed">Not assessed</option><option value="absent">Not seen</option><option value="possible">Possible</option><option value="present">Present</option><option value="uncertain">Uncertain</option></select></div><textarea id="morphHCMNotes" placeholder="Voltage, Q waves, repolarization, symptoms/family history."></textarea></div></details>
+      <details class="morphcard"><summary>Other unusual morphology</summary><div class="morphbody"><div class="morphstate"><select id="morphOtherState"><option value="not_assessed">Not assessed</option><option value="absent">Not seen</option><option value="possible">Possible</option><option value="present">Present</option><option value="uncertain">Uncertain</option></select></div><textarea id="morphOtherNotes" placeholder="Describe the morphology, leads, measurements, differential, and uncertainty."></textarea></div></details>
+     </div></div></details>
+    </div>
+   </div>
+   <div class="view" id="view-heart">
+    <div class="vectorlayout">
+     <div>
+      <canvas id="heartCanvas" width="1000" height="620"></canvas>
+      <div class="concept"><b>Heuristic 3D electrical-force model:</b> arrows are derived from the entered axis, amplitudes, intervals, ST/Q/T territories, and chamber-force clues. This is not a patient-specific inverse reconstruction.</div>
+     </div>
+     <div>
+      <div class="section" style="margin-top:0">
+       <h3>View and vector controls</h3>
+       <div class="vectorpresetrow">
+        <button class="vectorpreset" data-vector-view="frontal">Frontal</button>
+        <button class="vectorpreset" data-vector-view="lao">LAO</button>
+        <button class="vectorpreset" data-vector-view="rao">RAO</button>
+        <button class="vectorpreset" data-vector-view="top">Top</button>
+        <button class="vectorpreset" data-vector-view="reset">Reset 3D</button>
+       </div>
+       <div class="vectorcontrols">
+        <div><label>Left/right rotation</label><input id="heartYaw" type="range" min="-180" max="180" value="-18"></div>
+        <div><label>Top/bottom rotation</label><input id="heartPitch" type="range" min="-85" max="85" value="8"></div>
+        <div class="wide"><label>Zoom</label><input id="heartZoom" type="range" min="65" max="155" value="100"></div>
+       </div>
+       <div class="vectortoggles">
+        <label class="vectorcheck"><input id="showVectorPlanes" type="checkbox" checked> Coordinate planes</label>
+        <label class="vectorcheck"><input id="showPVector" type="checkbox" checked> P vector</label>
+        <label class="vectorcheck"><input id="showQRSVector" type="checkbox" checked> QRS vector</label>
+        <label class="vectorcheck"><input id="showTVector" type="checkbox" checked> T vector</label>
+        <label class="vectorcheck"><input id="showInjuryVector" type="checkbox" checked> ST/injury vector</label>
+        <label class="vectorcheck"><input id="showTerminalVector" type="checkbox" checked> Terminal-delay vector</label>
+       </div>
+       <div class="smallnote">Drag directly on the heart to rotate it. Mouse wheel changes zoom.</div>
+      </div>
+      <div class="section">
+       <h3>Live vector interpretation</h3>
+       <div id="vectorInterpretation" class="vectorinterpret">Enter axis and morphology observations to build the vector interpretation.</div>
+       <div id="heartLegend" class="vectorlegendgrid"></div>
+       <div class="vectorwarning">All vectors emanate from one electrical origin. The frontal reference ring is an Einthoven circle. Directions are heuristic teaching estimates from your entered measurements, not a full inverse electrophysiology solution.</div>
+      </div>
+      <div class="section">
+       <h3>Future analyzer hooks</h3>
+       <div id="futureAnalyzerStatus" class="futureanalyzers"></div>
+      </div>
+     </div>
+    </div>
+   </div>
+   <div class="view" id="view-payload"><div class="row" style="margin-bottom:8px"><button class="btn" id="copyJson">Copy JSON</button><button class="btn" id="downloadJson">Download JSON</button><button class="btn" id="saveSession">Save session</button><button class="btn" id="loadSession">Load session</button><input class="hidden" id="loadSessionInput" type="file" accept="application/json"></div><pre class="output" id="jsonOut"></pre></div>
+   <div class="view" id="view-prompt"><div class="row" style="margin-bottom:8px"><button class="btn" id="copyPrompt">Copy prompt</button><button class="btn" id="annotatedPng">Download annotated PNG</button></div><pre class="output" id="promptOut"></pre></div>
+
+   <div class="view" id="view-report">
+    <div class="reporttools"><button class="btn primary" id="buildReport">Build / refresh report</button><button class="btn" id="downloadReportPng">Download report PNG</button><button class="btn" id="printReport">Print / Save PDF</button><button class="btn" id="downloadReportHtml">Download standalone HTML</button></div>
+    <div id="reportStatus" class="reportstatus">The report contains a clean tracing, an annotated tracing, dense interpretation, lead-specific measurements, rhythm-strip notes, morphology notes, and compact JSON.</div>
+    <div class="reportlayout"><div class="reportpaper" id="reportPaper"><h3>EKG Structured Learning Report</h3><div class="reportsection"><h4>Clean tracing</h4><img class="reportimage" id="reportCleanImg" alt="Clean EKG"><div class="reportcaption">Original tracing without annotations.</div></div><div class="reportsection"><h4>Annotated tracing</h4><img class="reportimage" id="reportAnnotatedImg" alt="Annotated EKG"><div class="reportcaption">Lettered, lead-specific calipers. The raw tracing remains available above for comparison.</div></div><div class="reportsection"><h4>3D electrical vector map</h4><img class="reportimage" id="reportVectorImg" alt="3D electrical vector map"><div class="reportcaption">Rotatable in the main application; captured here in the current view.</div></div><div class="reportsection"><h4>Dense narrative</h4><div class="reporttext" id="reportNarrative"></div></div><div class="reportsection"><h4>Rhythm strip</h4><div class="reporttext" id="reportRhythm"></div></div><div class="reportsection"><h4>Unusual morphology notes</h4><div class="reporttext" id="reportMorphology"></div></div><div class="reportsection"><h4>Lead-specific measurements</h4><div id="reportMeasurements"></div></div></div><div><div class="reportsection"><h4>Compact upload JSON</h4><div class="reportjson" id="reportJson"></div></div></div></div>
+   </div>
+  </div>
+ </div>
+</main>
+<div class="toast" id="toast"></div>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id),qsa=s=>[...document.querySelectorAll(s)];
+const canvas=$('ecg'),ctx=canvas.getContext('2d'),off=document.createElement('canvas'),ox=off.getContext('2d',{willReadFrequently:true});
+const STAGES=['Setup','Rate','Rhythm','Axis','Intervals','Hypertrophy','Ischemia','Synthesis'];
+const C={rr:'#ef4444',time:'#16a34a',amp:'#2563eb',qrs:'#f59e0b',pr:'#059669',qt:'#8b5cf6',qwidth:'#dc2626',force:'#2563eb',st:'#ec4899'};
+const app={img:null,imgData:null,name:'',scale:1,panX:0,panY:0,tool:'pan',points:[],drag:false,dragStart:null,band:{top:.86,bottom:.98},gridPx:null,gridPxY:null,autoGridPx:null,autoGridPxY:null,autoBigPx:null,autoBigPxY:null,gridTinyPx:null,gridBigPx:null,gridOriginX:0,gridOriginY:0,gridConfidence:0,rate:null,rateWarning:null,rr:[],peaks:[],traceY:[],heartPoints:null,heartGeometry:null,vectorYaw:-18,vectorPitch:8,vectorZoom:1,vectorDragging:false,vectorDragStart:null,reportVectorData:null,marks:[],nextMark:0,selectedMark:null,answers:{},history:[],qIndex:0,currentQuestion:null,requestedMeasurement:null,activeMeasureLabel:null,activeMeasureInstruction:null,justCompletedGrid:false,showAnnotations:true,reportCleanData:null,reportAnnotatedData:null};
+const letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+const LEAD_OPTIONS=['I','II','III','aVR','aVL','aVF','V1','V2','V3','V4','V5','V6','Rhythm strip','Other'];
+function reportFieldIds(){return ['rhythmLead','rhythmTop','rhythmBottom','rhythmPVisible','rhythmPMorph','rhythmPBefore','rhythmQrsAfterP','rhythmPauses','rhythmEctopy','pAxisI','pAxisII','pAxisAVF','rhythmText','rhythmPearls','morphHyperKState','morphHyperKNotes','morphHypoKState','morphHypoKNotes','morphLowCaState','morphLowCaNotes','morphHighCaState','morphHighCaNotes','morphDigState','morphDigNotes','morphPEState','morphPENotes','morphPeriState','morphPeriNotes','morphBrugadaState','morphBrugadaNotes','morphWPWState','morphWPWNotes','morphPosteriorState','morphPosteriorNotes','morphOcclusionState','morphOcclusionNotes','morphHCMState','morphHCMNotes','morphOtherState','morphOtherNotes']}
+function collectReportFields(){const out={};reportFieldIds().forEach(id=>{const el=$(id);if(el)out[id]=el.value});return out}
+function restoreReportFields(values={}){reportFieldIds().forEach(id=>{const el=$(id);if(el&&values[id]!==undefined)el.value=values[id]})}
+function morphologyPayload(){const defs=[['hyperkalemia','Peaked T waves / hyperkalemia','morphHyperKState','morphHyperKNotes'],['hypokalemia','Hypokalemia / U waves','morphHypoKState','morphHypoKNotes'],['low_calcium','Low calcium / long QT pattern','morphLowCaState','morphLowCaNotes'],['high_calcium','High calcium / short QT pattern','morphHighCaState','morphHighCaNotes'],['digoxin','Digoxin effect / toxicity','morphDigState','morphDigNotes'],['pulmonary_embolism','Pulmonary embolism / RV strain','morphPEState','morphPENotes'],['pericarditis','Pericarditis / diffuse injury pattern','morphPeriState','morphPeriNotes'],['brugada','Brugada-like pattern','morphBrugadaState','morphBrugadaNotes'],['preexcitation','Pre-excitation / WPW-like pattern','morphWPWState','morphWPWNotes'],['posterior_mi','Posterior MI clues','morphPosteriorState','morphPosteriorNotes'],['occlusion_patterns','Wellens / de Winter-type ischemic morphology','morphOcclusionState','morphOcclusionNotes'],['hcm','Hypertrophic cardiomyopathy clues','morphHCMState','morphHCMNotes'],['other','Other unusual morphology','morphOtherState','morphOtherNotes']];const out={};defs.forEach(([key,label,stateId,noteId])=>{out[key]={label,state:$(stateId)?.value||'not_assessed',notes:$(noteId)?.value.trim()||null}});return out}
+function median(vals){if(!vals.length)return null;const a=[...vals].sort((x,y)=>x-y),m=Math.floor(a.length/2);return a.length%2?a[m]:(a[m-1]+a[m])/2}
+function rhythmRRSeries(){return app.marks.filter(m=>m.type==='rr').map(m=>({mark:m,x:(m.a.x+m.b.x)/2,rr_ms:m.value,rate_bpm:60000/m.value,lead:m.lead||null})).sort((a,b)=>a.x-b.x)}
+function patternError(vals,lag,med){if(vals.length<lag*2||!med)return null;let sum=0,n=0;for(let i=lag;i<vals.length;i++){sum+=(vals[i]-vals[i-lag])**2;n++}return n?Math.sqrt(sum/n)/med:null}
+function rhythmRegularity(vals){
+ const n=vals.length,med=median(vals),m=mean(vals),s=n>1?sd(vals):null,cv=m&&s?s/m:null;
+ if(n<3)return{code:'insufficient',label:'Insufficient R–R sampling',explanation:'Measure at least three intervals; five or more is preferable.',cv,median_ms:med,repeat_lag:null};
+ const e2=patternError(vals,2,med),e3=patternError(vals,3,med),odd=vals.filter((_,i)=>i%2===0),even=vals.filter((_,i)=>i%2===1),oddCv=odd.length>1?sd(odd)/mean(odd):null,evenCv=even.length>1?sd(even)/mean(even):null,altDiff=odd.length&&even.length?Math.abs(mean(odd)-mean(even))/med:0;
+ if(cv<=.05)return{code:'regular',label:'Approximately regular',explanation:`R–R CV ${fmt(cv*100,1)}% is low across the measured sample.`,cv,median_ms:med,repeat_lag:null};
+ if(n>=4&&altDiff>.09&&(oddCv===null||oddCv<.07)&&(evenCv===null||evenCv<.07))return{code:'regularly_irregular',label:'Regularly irregular — alternating pattern',explanation:'Odd and even intervals form two internally consistent groups.',cv,median_ms:med,repeat_lag:2};
+ if(e2!==null&&e2<.06)return{code:'regularly_irregular',label:'Regularly irregular — repeating every 2 intervals',explanation:'The interval pattern approximately repeats at lag 2.',cv,median_ms:med,repeat_lag:2};
+ if(e3!==null&&e3<.06)return{code:'regularly_irregular',label:'Regularly irregular — repeating every 3 intervals',explanation:'The interval pattern approximately repeats at lag 3.',cv,median_ms:med,repeat_lag:3};
+ if(cv>=.12)return{code:'irregularly_irregular',label:'Irregularly irregular candidate',explanation:'Variability is high and no short repeating interval pattern was detected.',cv,median_ms:med,repeat_lag:null};
+ return{code:'variable',label:'Variable rhythm',explanation:'Variation is greater than a regular rhythm but does not yet establish a repeating or chaotic pattern.',cv,median_ms:med,repeat_lag:null}
+}
+function pAxisAnalysis(){
+ const i=$('pAxisI')?.value||'unknown',ii=$('pAxisII')?.value||'unknown',f=$('pAxisAVF')?.value||'unknown';
+ if([i,ii,f].every(x=>x==='unknown'))return{classification:'Not assessed',degrees:null,explanation:'Enter P-wave polarity in I, II, and aVF.'};
+ if(i==='positive'&&ii==='positive'&&f==='positive')return{classification:'Sinus-compatible inferior-leftward P axis',degrees:50,explanation:'Positive P waves in I, II, and aVF support a mean atrial vector directed leftward and inferiorly.'};
+ if(ii==='negative'&&f==='negative')return{classification:'Superior or retrograde atrial axis',degrees:-70,explanation:'Negative P waves in II and aVF suggest a superiorly directed or retrograde atrial vector.'};
+ if(i==='negative'&&ii==='positive'&&f==='positive')return{classification:'Rightward atrial axis',degrees:100,explanation:'Negative P in I with positive inferior leads suggests a rightward atrial vector.'};
+ if(i==='positive'&&ii==='positive'&&f==='negative')return{classification:'Leftward/superior P axis',degrees:-15,explanation:'Positive I and II with negative aVF suggest a more leftward or superior atrial vector.'};
+ if(ii==='equiphasic')return{classification:'P axis near perpendicular to lead II',degrees:-30,explanation:'An equiphasic P in II places the mean atrial vector near a lead-II perpendicular; confirm with I and aVF.'};
+ return{classification:'Indeterminate P axis',degrees:null,explanation:'The entered polarities do not define a simple atrial-axis quadrant. Recheck P-wave identification and lead polarity.'}
+}
+function rhythmAnalysis(){
+ const series=rhythmRRSeries(),vals=series.map(x=>x.rr_ms),reg=rhythmRegularity(vals),med=reg.median_ms,m=mean(vals),rate=m?60000/m:null;
+ const pVisible=$('rhythmPVisible')?.value||app.answers.p_visible||'unknown',pMorph=$('rhythmPMorph')?.value||'unknown',pBefore=$('rhythmPBefore')?.value||app.answers.p_before||'unknown',qAfter=$('rhythmQrsAfterP')?.value||app.answers.qrs_after_p||'unknown',qrsWide=(app.answers.qrs_ms??0)>=120||app.answers.qrs_width==='wide',beats=[],pauseIndexes=[],ectopyPairs=[],nearDouble=[];
+ series.forEach((item,i)=>{const dev=med?((item.rr_ms-med)/med)*100:null,flags=[];if(med&&item.rr_ms>Math.max(1800,med*1.8)){flags.push('pause candidate');pauseIndexes.push(i)}if(med&&item.rr_ms>med*1.75&&item.rr_ms<med*2.25){flags.push('near 2× median');nearDouble.push(i)}if(med&&i<series.length-1&&item.rr_ms<med*.80&&series[i+1].rr_ms>med*1.20){flags.push('short–long pair');ectopyPairs.push([i,i+1])}beats.push({label:item.mark.letter,lead:item.lead,rr_ms:+item.rr_ms.toFixed(1),rate_bpm:+item.rate_bpm.toFixed(1),deviation_percent:dev===null?null:+dev.toFixed(1),flags})});
+ const ranked=[],add=(label,support,confidence)=>ranked.push({label,support,confidence});
+ if(pVisible==='flutter'||pMorph==='flutter')add('Atrial flutter or organized macro-reentry','Flutter-like/sawtooth atrial activity was entered. Measure atrial cycle length and conduction ratio.','high if morphology is clear');
+ if(pVisible==='no'&&reg.code==='irregularly_irregular')add('Atrial fibrillation','No discrete P waves plus nonrepeating irregular R–R intervals.','moderate–high');
+ if(pVisible==='yes'&&pBefore==='yes'&&qAfter==='yes'){if(reg.code==='regular')add('Sinus rhythm','Discrete P waves with 1:1 AV linkage and a regular ventricular response.','high if P axis is sinus-compatible');else if(reg.code==='variable')add('Sinus rhythm with respiratory sinus arrhythmia or intermittent ectopy','Consistent P–QRS linkage with measurable R–R variation.','moderate');else if(reg.code==='regularly_irregular')add('Sinus rhythm with patterned irregularity','P–QRS linkage is preserved but the R–R pattern repeats. Consider bigeminy, Wenckebach, or patterned ectopy.','moderate');else if(reg.code==='irregularly_irregular')add('Sinus rhythm with frequent ectopy or variable conduction','Visible linked P waves argue against pure atrial fibrillation; inspect every irregular cycle.','low–moderate')}
+ if(pVisible==='no'&&reg.code==='regular'&&!qrsWide)add('Junctional or low-atrial rhythm','Regular narrow-complex rhythm without clearly visible preceding P waves.','low–moderate');
+ if(pVisible==='no'&&reg.code==='regular'&&qrsWide)add('Ventricular, paced, or aberrantly conducted rhythm','Regular wide-complex rhythm without established atrial linkage.','low–moderate');
+ if((pBefore==='variable'||pBefore==='no'||qAfter==='variable'||qAfter==='no'))add('AV block or AV dissociation pattern','The entered P-to-QRS relationship is not consistently 1:1.','moderate');
+ if(ectopyPairs.length)add('Premature ectopy pattern','One or more short–long interval pairs were detected. Compare the premature QRS and its preceding P wave.','moderate');
+ if(pauseIndexes.length)add('Pause / dropped-beat pattern','At least one interval exceeds 1.8× the median or 1.8 seconds. Inspect the T wave for a blocked premature P and count atrial cycles.','moderate');
+ if(!ranked.length)add('Rhythm not yet classifiable','The available R–R and atrial/AV observations do not support a single rhythm family.','insufficient');
+ const uncertainties=[];if(series.length<5)uncertainties.push('Fewer than five R–R intervals were measured; longer sampling may change the regularity classification.');if(['unknown','uncertain'].includes(pVisible))uncertainties.push('P-wave presence remains uncertain.');if(['unknown','uncertain'].includes(pBefore))uncertainties.push('Whether each QRS has a preceding P wave remains uncertain.');if(['unknown','uncertain'].includes(qAfter))uncertainties.push('Whether each P wave conducts remains uncertain.');if(!app.answers.qrs_ms&&!app.answers.qrs_width)uncertainties.push('QRS width has not been established.');
+ const next=series.length<5?'Measure at least five consecutive R–R intervals on the same rhythm strip.':['unknown','uncertain'].includes(pVisible)?'Inspect lead II and V1 at high zoom and mark a candidate P wave before several QRS complexes.':['unknown','uncertain'].includes(pBefore)?'For three consecutive QRS complexes, answer whether a P wave immediately precedes each one.':['unknown','uncertain'].includes(qAfter)?'Track several consecutive P waves and determine whether each produces a QRS.':ectopyPairs.length?'Compare the premature complex with the baseline QRS and look for an early or hidden P wave.':pauseIndexes.length?'Inspect the pause for a hidden blocked P wave and determine whether it is an exact multiple of the baseline P–P interval.':'Confirm QRS width and compare the rhythm with a longer strip or telemetry segment.';
+ return{lead:$('rhythmLead')?.value||null,intervals:series.length,mean_rate_bpm:rate?+rate.toFixed(1):null,mean_rr_ms:m?+m.toFixed(1):null,median_rr_ms:med?+med.toFixed(1):null,sd_ms:vals.length>1?+sd(vals).toFixed(1):null,cv_percent:reg.cv!==null&&reg.cv!==undefined?+(reg.cv*100).toFixed(1):null,regularity:reg,p_wave_axis:pAxisAnalysis(),atrial_activity:{p_visible:pVisible,p_morphology:pMorph,p_before_each_qrs:pBefore,qrs_after_each_p:qAfter},pause_candidates:pauseIndexes,near_double_intervals:nearDouble,short_long_pairs:ectopyPairs,beats,ranked_interpretation:ranked,uncertainties,next_best_observation:next}
+}
+function rhythmPayload(){return{lead:$('rhythmLead')?.value||null,pauses:$('rhythmPauses')?.value||'not_assessed',ectopy:$('rhythmEctopy')?.value||'not_assessed',interpretation:$('rhythmText')?.value.trim()||null,teaching_notes:$('rhythmPearls')?.value.trim()||null,analysis:rhythmAnalysis()}}
+function selectedMarkObject(){return app.marks.find(m=>m.id===app.selectedMark)||null}
+function setAnnotationVisibility(show){app.showAnnotations=!!show;$('toggleAnnotations').textContent=app.showAnnotations?'Hide annotations':'Show annotations';$('toggleAnnotations').classList.toggle('active',app.showAnnotations);draw()}
+function positionImageUndo(){const btn=$('imageUndo'),m=selectedMarkObject();if(!m||!app.showAnnotations||!app.img){btn.style.display='none';return}const t=tr(),a=i2c(m.a,t),b=i2c(m.b,t),d=devicePixelRatio||1,x=((a.x+b.x)/2)/d,y=Math.min(a.y,b.y)/d;btn.style.left=Math.max(8,Math.min(Math.max(20,canvas.clientWidth-165),x-72))+'px';btn.style.top=Math.max(8,Math.min(Math.max(20,canvas.clientHeight-38),y-34))+'px';btn.style.display='block'}
+function reportTracingCanvas(withAnnotations){if(!app.img)return null;const maxW=1500,scale=Math.min(1,maxW/app.img.width),c=document.createElement('canvas');c.width=Math.round(app.img.width*scale);c.height=Math.round(app.img.height*scale);const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(app.img,0,0,c.width,c.height);if(withAnnotations)app.marks.forEach(m=>{const a={x:m.a.x*scale,y:m.a.y*scale},b={x:m.b.x*scale,y:m.b.y*scale},col=C[m.type]||'#2563eb',vertical=['amp','force','st'].includes(m.type),p2=vertical?{x:a.x,y:b.y}:b;x.save();x.strokeStyle=col;x.fillStyle=col;x.lineWidth=Math.max(2,3*scale);x.beginPath();x.moveTo(a.x,a.y);x.lineTo(p2.x,p2.y);x.stroke();[a,p2].forEach((p,i)=>{x.beginPath();x.arc(p.x,p.y,Math.max(4,6*scale),0,Math.PI*2);x.fill();x.fillStyle='#fff';x.font=`bold ${Math.max(9,11*scale)}px system-ui`;x.textAlign='center';x.textBaseline='middle';x.fillText(m.letter+(i+1),p.x,p.y);x.fillStyle=col});const label=`${m.letter} ${m.lead||''}: ${m.measureLabel||m.type} · ${m.label}`;x.font=`bold ${Math.max(10,13*scale)}px system-ui`;const w=x.measureText(label).width+12,mx=(a.x+p2.x)/2,my=(a.y+p2.y)/2;x.fillStyle='rgba(14,24,32,.9)';x.fillRect(Math.max(0,mx-w/2),Math.max(0,my-25),Math.min(w,c.width),19);x.fillStyle='#fff';x.textAlign='center';x.textBaseline='alphabetic';x.fillText(label,mx,Math.max(14,my-11));x.restore()});return c}
+function denseNarrativeText(){const s=synth(),axis=axisResult(),r=rrSummary(),a=app.answers,lines=[];lines.push(`Source: ${app.name||'unnamed tracing'}`);lines.push(`Calibration: ${app.answers.grid_confirm||'not completed'}; paper speed ${$('speed').value} mm/s.`);if(r.n)lines.push(`Rate/regularity: ${fmt(r.meanRate)} bpm from ${r.n} R-R intervals; mean R-R ${fmt(r.meanMs)} ms${r.n>1?`, SD ${fmt(r.sdMs)} ms, CV ${fmt(r.cv*100,1)}%`:''}; ${r.estimate}.`);if(a.p_visible)lines.push(`Atrial activity: P waves ${displayAnswer('p_visible',a.p_visible)}; P before QRS ${displayAnswer('p_before',a.p_before||'not measured')}; QRS after P ${displayAnswer('qrs_after_p',a.qrs_after_p||'not measured')}.`);lines.push(`Axis: ${axis.name}${axis.deg!==null?` (roughly ${axis.deg}°)`:''}.`);if(a.pr_ms||a.qrs_ms||a.qt_ms)lines.push(`Intervals: PR ${a.pr_ms??'not measured'} ms; QRS ${a.qrs_ms??'not measured'} ms; QT ${a.qt_ms??'not measured'} ms; QTc Fridericia ${a.qtc_fridericia??'not measured'} ms.`);if(a.lvh_voltage_sum_mv!==undefined)lines.push(`Chamber-force clue: LVH voltage sum ${a.lvh_voltage_sum_mv} mV (${a.lvh||'uncertain'}).`);if(a.rvh_v1_rs_ratio!==undefined)lines.push(`RV force clue: V1 R/S ratio ${a.rvh_v1_rs_ratio}.`);if(a.qwaves)lines.push(`Q waves: ${displayAnswer('qwaves',a.qwaves)}${a.q_wave_leads?.length?` in ${a.q_wave_leads.join(', ')}`:''}.`);if(a.st_change)lines.push(`ST finding: ${displayAnswer('st_change',a.st_change)}${a.st_change_leads?.length?` in ${a.st_change_leads.join(', ')}`:a.territory?` (${displayAnswer('territory',a.territory)})`:''}.`);if(a.t_change)lines.push(`T-wave finding: ${displayAnswer('t_change',a.t_change)}.`);if(s.lines.length){lines.push('Synthesis:');s.lines.forEach(x=>lines.push(`- ${x}`))}if(s.urgent.length){lines.push('Urgent flags:');s.urgent.forEach(x=>lines.push(`- ${x}`))}if(s.missing.length){lines.push('Uncertainty / missing information:');s.missing.forEach(x=>lines.push(`- ${x}`))}return lines.join('\n')}
+function morphologyNarrativeText(){const lines=[];Object.values(morphologyPayload()).forEach(x=>{if(x.state!=='not_assessed'||x.notes)lines.push(`${x.label}: ${x.state.replaceAll('_',' ')}${x.notes?` — ${x.notes}`:''}`)});return lines.length?lines.join('\n'):'No unusual morphology module entries recorded.'}
+function rhythmNarrativeText(){const r=rhythmPayload(),a=r.analysis,lines=[`Lead: ${r.lead||'not specified'}`,`Measured intervals: ${a.intervals}`,`Mean rate: ${a.mean_rate_bpm??'not measured'} bpm`,`Regularity: ${a.regularity.label}`,`P-wave axis: ${a.p_wave_axis.classification}`,`Pauses entered: ${r.pauses.replaceAll('_',' ')}`,`Ectopy entered: ${r.ectopy.replaceAll('_',' ')}`];if(a.ranked_interpretation.length)lines.push('Ranked interpretation: '+a.ranked_interpretation.map((x,i)=>`${i+1}. ${x.label}`).join('; '));lines.push(`Editable interpretation: ${r.interpretation||'Not entered.'}`);if(r.teaching_notes)lines.push(`Teaching notes: ${r.teaching_notes}`);if(a.uncertainties.length)lines.push('Uncertainty: '+a.uncertainties.join(' '));lines.push('Next best observation: '+a.next_best_observation);return lines.join('\n')}
+function measurementTableHtml(){if(!app.marks.length)return '<div class="concept">No measurements recorded.</div>';const rows=app.marks.map(m=>`<tr><td>${esc(m.letter)}</td><td>${esc(m.lead||'')}</td><td>${esc(m.measureLabel||m.type)}</td><td>${esc(m.label)}</td></tr>`).join('');return `<table class="reporttable"><thead><tr><th>Mark</th><th>Lead</th><th>Measurement</th><th>Result</th></tr></thead><tbody>${rows}</tbody></table>`}
+function compactReportPayload(){const p=payload();return{schema:p.schema,generated_at:p.generated_at,source:p.source,rate:p.human_caliper_rate,rhythm_strip:p.rhythm_strip_interpretation,axis:p.axis,key_answers:{p_visible:p.branch_answers.p_visible||null,p_before:p.branch_answers.p_before||null,qrs_after_p:p.branch_answers.qrs_after_p||null,pr_ms:p.branch_answers.pr_ms||null,qrs_ms:p.branch_answers.qrs_ms||null,qt_ms:p.branch_answers.qt_ms||null,qtc_fridericia:p.branch_answers.qtc_fridericia||null,qwaves:p.branch_answers.qwaves||null,q_wave_leads:p.branch_answers.q_wave_leads||[],st_change:p.branch_answers.st_change||null,st_change_leads:p.branch_answers.st_change_leads||[],t_change:p.branch_answers.t_change||null},morphology_library:p.unusual_morphology_library,electrical_vector_map:p.electrical_vector_map,measurements:p.calipers,synthesis:p.synthesis,next_steps:p.next_steps}}
+function buildReport(){const clean=reportTracingCanvas(false),annotated=reportTracingCanvas(true);if(!clean||!annotated){toast('Load an EKG first.');return false}drawHeart();app.reportCleanData=clean.toDataURL('image/png');app.reportAnnotatedData=annotated.toDataURL('image/png');app.reportVectorData=$('heartCanvas').toDataURL('image/png');$('reportCleanImg').src=app.reportCleanData;$('reportAnnotatedImg').src=app.reportAnnotatedData;$('reportVectorImg').src=app.reportVectorData;$('reportNarrative').textContent=denseNarrativeText()+`\n\n3D vector interpretation:\n`+$('vectorInterpretation').innerText;$('reportRhythm').textContent=rhythmNarrativeText();$('reportMorphology').textContent=morphologyNarrativeText();$('reportMeasurements').innerHTML=measurementTableHtml();$('reportJson').textContent=JSON.stringify(compactReportPayload(),null,2);$('reportStatus').textContent=`Report refreshed ${new Date().toLocaleString()}. It contains clean and annotated tracings plus the current 3D vector view.`;return true}
+function standaloneReportHtml(){if(!app.reportCleanData||!app.reportAnnotatedData||!app.reportVectorData)buildReport();const css=`body{font-family:Arial,Helvetica,sans-serif;color:#17212b;margin:24px}h1,h2{color:#173b57}img{max-width:100%;border:1px solid #ccd5dc;border-radius:8px}.box{border:1px solid #d6dde5;border-radius:10px;padding:12px;margin:12px 0;page-break-inside:avoid}pre{white-space:pre-wrap;word-break:break-word;font:11px/1.42 Consolas,monospace;background:#101820;color:#e4edf2;padding:12px;border-radius:8px}table{width:100%;border-collapse:collapse;font-size:11px}th,td{padding:6px;border-bottom:1px solid #dde4e9;text-align:left;vertical-align:top}@media print{button{display:none}body{margin:10mm}.box{box-shadow:none}}`;return `<!doctype html><html><head><meta charset="utf-8"><title>EKG Structured Report</title><style>${css}</style></head><body><h1>EKG Structured Learning Report</h1><div class="box"><h2>Clean tracing</h2><img src="${app.reportCleanData}"></div><div class="box"><h2>Annotated tracing</h2><img src="${app.reportAnnotatedData}"></div><div class="box"><h2>3D electrical vector map</h2><img src="${app.reportVectorData}"><div style="white-space:pre-wrap">${esc($('vectorInterpretation').innerText)}</div></div><div class="box"><h2>Dense narrative</h2><div style="white-space:pre-wrap">${esc(denseNarrativeText())}</div></div><div class="box"><h2>Rhythm strip</h2><div style="white-space:pre-wrap">${esc(rhythmNarrativeText())}</div></div><div class="box"><h2>Unusual morphology notes</h2><div style="white-space:pre-wrap">${esc(morphologyNarrativeText())}</div></div><div class="box"><h2>Lead-specific measurements</h2>${measurementTableHtml()}</div><div class="box"><h2>Compact JSON</h2><pre>${esc(JSON.stringify(compactReportPayload(),null,2))}</pre></div></body></html>`}
+function downloadBlobText(name,content,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),600)}
+function drawWrapped(x,text,left,top,maxWidth,lineHeight){const words=String(text).split(/\s+/),lines=[];let line='';words.forEach(word=>{const test=line?line+' '+word:word;if(x.measureText(test).width>maxWidth&&line){lines.push(line);line=word}else line=test});if(line)lines.push(line);lines.forEach((ln,i)=>x.fillText(ln,left,top+i*lineHeight));return top+lines.length*lineHeight}
+function buildReportPngCanvas(){
+ if(!app.reportCleanData||!app.reportAnnotatedData||!app.reportVectorData)buildReport();
+ const clean=reportTracingCanvas(false),annotated=reportTracingCanvas(true),vector=$('heartCanvas'),W=1600,margin=55,imgW=W-margin*2,scale1=imgW/clean.width,h1=clean.height*scale1,scale2=imgW/annotated.width,h2=annotated.height*scale2,vectorW=Math.min(imgW,1100),vectorH=vector.height*(vectorW/vector.width),sections=[denseNarrativeText(),$('vectorInterpretation').innerText,rhythmNarrativeText(),morphologyNarrativeText()],estimate=390+h1+h2+vectorH+sections.reduce((n,s)=>n+Math.max(90,Math.ceil(s.length/95)*25),0)+app.marks.length*22,c=document.createElement('canvas');
+ c.width=W;c.height=Math.max(2400,Math.ceil(estimate));const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.fillStyle='#173b57';x.font='bold 34px system-ui';x.fillText('EKG Structured Learning Report',margin,55);let y=92;
+ x.font='bold 20px system-ui';x.fillText('Clean tracing',margin,y);y+=16;x.drawImage(clean,margin,y,imgW,h1);y+=h1+38;
+ x.font='bold 20px system-ui';x.fillText('Annotated tracing',margin,y);y+=16;x.drawImage(annotated,margin,y,imgW,h2);y+=h2+38;
+ x.font='bold 20px system-ui';x.fillText('3D electrical vector map',margin,y);y+=16;x.drawImage(vector,margin,y,vectorW,vectorH);y+=vectorH+42;
+ const addSection=(title,content)=>{x.fillStyle='#173b57';x.font='bold 21px system-ui';x.fillText(title,margin,y);y+=30;x.fillStyle='#263945';x.font='17px system-ui';String(content).split('\n').forEach(line=>{y=drawWrapped(x,line||' ',margin,y,imgW,23)+4});y+=22};
+ addSection('Dense narrative',denseNarrativeText());addSection('3D vector interpretation',$('vectorInterpretation').innerText);addSection('Rhythm strip',rhythmNarrativeText());addSection('Unusual morphology notes',morphologyNarrativeText());x.fillStyle='#173b57';x.font='bold 21px system-ui';x.fillText('Lead-specific measurements',margin,y);y+=30;x.fillStyle='#263945';x.font='16px system-ui';app.marks.forEach(m=>{y=drawWrapped(x,`${m.letter} | ${m.lead||''} | ${m.measureLabel||m.type} | ${m.label}`,margin,y,imgW,21)+3});const cropped=document.createElement('canvas');cropped.width=W;cropped.height=Math.min(c.height,Math.ceil(y+55));cropped.getContext('2d').drawImage(c,0,0);return cropped
+}
+function toast(s){const t=$('toast');t.textContent=s;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1700)}
+function mean(a){return a.length?a.reduce((x,y)=>x+y,0)/a.length:null}function median(a){if(!a.length)return null;const b=[...a].sort((x,y)=>x-y),n=b.length;return n%2?b[(n-1)/2]:(b[n/2-1]+b[n/2])/2}function sd(a){if(a.length<2)return null;const m=mean(a);return Math.sqrt(a.reduce((s,x)=>s+(x-m)**2,0)/(a.length-1))}function fmt(n,d=0){return Number.isFinite(n)?Number(n).toFixed(d):'—'}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
+function stageOf(id){const q=QUESTIONS.find(x=>x.id===id);return q?q.stage:0}
+function currentStage(){return app.currentQuestion?stageOf(app.currentQuestion.id):0}
+function renderProgress(){const s=currentStage();$('progress').innerHTML=STAGES.map((x,i)=>`<div class="stage ${i<s?'done':i===s?'active':''}">${i+1}. ${x}</div>`).join('')}
+function tr(){if(!app.img)return{x:0,y:0,w:0,h:0,s:1};const m=20*(devicePixelRatio||1),base=Math.min((canvas.width-2*m)/app.img.width,(canvas.height-2*m)/app.img.height),s=base*app.scale,w=app.img.width*s,h=app.img.height*s;return{x:(canvas.width-w)/2+app.panX,y:(canvas.height-h)/2+app.panY,w,h,s}}
+function i2c(p,t=tr()){return{x:t.x+p.x*t.s,y:t.y+p.y*t.s}}function c2i(p,t=tr()){return{x:(p.x-t.x)/t.s,y:(p.y-t.y)/t.s}}
+function evt(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*canvas.width/r.width,y:(e.clientY-r.top)*canvas.height/r.height}}
+function resize(){const r=canvas.getBoundingClientRect(),d=devicePixelRatio||1;const w=Math.max(650,Math.round(r.width*d)),h=Math.max(520,Math.round(r.height*d));if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h}draw()}
+addEventListener('resize',resize);
+function draw(){ctx.clearRect(0,0,canvas.width,canvas.height);if(!app.img){ctx.fillStyle='#f8fafb';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#6b7b86';ctx.textAlign='center';ctx.font=`${18*(devicePixelRatio||1)}px system-ui`;ctx.fillText('Load an EKG or the synthetic demo',canvas.width/2,canvas.height/2);return}const t=tr();ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(app.img,t.x,t.y,t.w,t.h);if(app.showAnnotations)app.marks.forEach(m=>drawMark(m,t));
+ if(app.points.length===1){const p=i2c(app.points[0],t);ctx.save();ctx.strokeStyle=C[app.tool]||'#0ea5e9';ctx.lineWidth=3*(devicePixelRatio||1);ctx.beginPath();ctx.arc(p.x,p.y,8*(devicePixelRatio||1),0,Math.PI*2);ctx.stroke();ctx.restore()}positionImageUndo()}
+function drawMark(m,t){const a=i2c(m.a,t),b=i2c(m.b,t),d=devicePixelRatio||1,col=C[m.type]||'#2563eb',sel=m.id===app.selectedMark;ctx.save();ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=(sel?5:3)*d;ctx.shadowColor=sel?'rgba(8,127,140,.45)':'transparent';ctx.shadowBlur=sel?8*d:0;const vertical=['amp','force','st'].includes(m.type);ctx.beginPath();if(vertical){ctx.moveTo(a.x,a.y);ctx.lineTo(a.x,b.y)}else{ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y)}ctx.stroke();const pts=vertical?[a,{x:a.x,y:b.y}]:[a,b];pts.forEach((p,i)=>{ctx.beginPath();ctx.arc(p.x,p.y,6*d,0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff';ctx.font=`bold ${9*d}px system-ui`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(m.letter+(i+1),p.x,p.y);ctx.fillStyle=col});const mx=(pts[0].x+pts[1].x)/2,my=(pts[0].y+pts[1].y)/2,lab=`${m.letter} ${m.lead||''}: ${m.label}`;ctx.font=`bold ${10*d}px system-ui`;const w=ctx.measureText(lab).width+12*d;ctx.fillStyle='rgba(14,24,32,.88)';ctx.fillRect(mx-w/2,my-25*d,w,18*d);ctx.fillStyle='#fff';ctx.fillText(lab,mx,my-16*d);ctx.restore()}
+function setTool(tool,requested=false){app.tool=tool;app.points=[];qsa('.tool').forEach(b=>{b.classList.toggle('active',b.dataset.tool===tool);b.classList.toggle('requested',requested&&b.dataset.tool===tool)});const messages={pan:'Drag to pan. Click a colored mark to select it for removal.',rr:'Click the peak of one R wave, then the peak of the next R wave.',time:'FIRST CLICK: left border of a large box. SECOND CLICK: right border five LARGE boxes later.',amp:'Click baseline, then vertical wave endpoint.',qrs:'Click earliest QRS onset, then latest QRS offset.',pr:'Click P onset, then QRS onset.',qt:'Click QRS onset, then T-wave endpoint.',qwidth:'Click Q onset, then return through baseline/end of Q.',force:'Click the isoelectric baseline, then the wave peak or trough.',st:'Click the isoelectric baseline, then the ST level at the requested point.'};$('canvasHelp').textContent=app.activeMeasureInstruction||messages[tool]||'';draw()}
+qsa('.tool').forEach(b=>b.onclick=()=>setTool(b.dataset.tool));$('zoom').oninput=e=>{app.scale=+e.target.value/100;$('zoomText').textContent=e.target.value+'%';draw()};
+canvas.onpointerdown=e=>{if(!app.img)return;canvas.setPointerCapture(e.pointerId);const p=evt(e),ip=c2i(p);if(app.tool==='pan'){const hit=app.showAnnotations?hitMark(p):null;if(hit){app.selectedMark=hit;renderLedger();draw();return}app.drag=true;app.dragStart={x:p.x,y:p.y,panX:app.panX,panY:app.panY};return}if(ip.x<0||ip.y<0||ip.x>app.img.width||ip.y>app.img.height)return;app.points.push(ip);if(app.points.length===2){completeMark(app.tool,app.points[0],app.points[1]);app.points=[]}draw()};
+canvas.onpointermove=e=>{if(!app.drag||!app.dragStart)return;const p=evt(e);if(app.tool==='pan'){app.panX=app.dragStart.panX+p.x-app.dragStart.x;app.panY=app.dragStart.panY+p.y-app.dragStart.y;draw()}};
+canvas.onpointerup=()=>{app.drag=false;app.dragStart=null};canvas.onpointercancel=canvas.onpointerup;
+function hitMark(p){const t=tr(),tol=12*(devicePixelRatio||1);for(let i=app.marks.length-1;i>=0;i--){const m=app.marks[i],a=i2c(m.a,t),b=i2c(m.b,t),vertical=['amp','force','st'].includes(m.type),x1=a.x,y1=a.y,x2=vertical?a.x:b.x,y2=b.y;const dx=x2-x1,dy=y2-y1,l2=dx*dx+dy*dy||1,u=clamp(((p.x-x1)*dx+(p.y-y1)*dy)/l2,0,1),qx=x1+u*dx,qy=y1+u*dy;if(Math.hypot(p.x-qx,p.y-qy)<tol)return m.id}return null}
+function rrSummary(){
+ const vals=app.marks.filter(z=>z.type==='rr').map(z=>z.value),n=vals.length,m=mean(vals),s=n>1?sd(vals):null,cv=m&&s?s/m:null,minv=n?Math.min(...vals):null,maxv=n?Math.max(...vals):null;
+ let estimate='Need at least 3 R–R intervals',code='insufficient';
+ if(n>=3){
+   if(cv<=.05){estimate='Approximately regular across the measured intervals';code='regular'}
+   else if(cv<=.10){estimate='Mildly variable; inspect whether the variation repeats';code='mildly_variable'}
+   else{estimate='Clearly variable/irregular; SD alone cannot distinguish regularly from irregularly irregular';code='variable'}
+ }
+ return{values:vals,n,meanMs:m,sdMs:s,cv,rangeMs:n?maxv-minv:null,minMs:minv,maxMs:maxv,meanRate:m?60000/m:null,estimate,code}
+}
+function recalcRR(){
+ const r=rrSummary();app.rr=r.values;app.rate=r.meanRate;app.rateWarning=null;
+ if(app.rate){
+   app.answers.rate_value=Math.round(app.rate);app.answers.rr_count=r.n;
+   if(r.n>=2){app.answers.rr_sd_ms=+r.sdMs.toFixed(1);app.answers.rr_cv_percent=+(r.cv*100).toFixed(1);app.answers.rr_range_ms=+r.rangeMs.toFixed(1)}
+   else{delete app.answers.rr_sd_ms;delete app.answers.rr_cv_percent;delete app.answers.rr_range_ms}
+   if(r.n>=3)app.answers.rr_regularity_estimate=r.code;else delete app.answers.rr_regularity_estimate;
+   if(app.rate>220||app.rate<20)app.rateWarning='This result is unusual. Check that setup mark A spans five LARGE boxes—not five small boxes and not one large box.';
+ }else{
+   delete app.answers.rate_value;delete app.answers.rate_measure;delete app.answers.rr_count;delete app.answers.rr_sd_ms;delete app.answers.rr_cv_percent;delete app.answers.rr_range_ms;delete app.answers.rr_regularity_estimate;
+ }
+}
+function completeMark(type,a,b){
+ if(type==='time'&&app.requestedMeasurement==='grid_calibration'){
+  const dx=Math.abs(b.x-a.x);
+  if(dx<2){toast('The two calibration endpoints must be different.');return}
+  // The user spans FIVE LARGE boxes. Each large box contains five small boxes:
+  // 5 large boxes = 25 small boxes.
+  const little=dx/25;
+  const oneLarge=dx/5;
+  app.gridPx=little;app.gridPxY=little;app.gridBigPx=oneLarge;app.gridTinyPx=null;
+  app.gridOriginX=((Math.min(a.x,b.x)%little)+little)%little;
+  $('boxPx').value=little.toFixed(2);$('boxPy').value=little.toFixed(2);app.gridConfidence=1;
+  const letter=letters[app.nextMark%letters.length],lead='GRID',msPerSmallBox=1000/(+$('speed').value);
+  const calibrationMs=25*msPerSmallBox;
+  const m={id:Date.now()+Math.random(),letter,type,a,b,value:calibrationMs,unit:'ms',label:`DONE · 5 LARGE = 25 small boxes · ${fmt(calibrationMs)} ms`,lead,request:'grid_calibration',calibration:true,boxPx:little,bigPx:oneLarge,calibrationSpanPx:dx,measureLabel:'Five-large-box calibration'};
+  app.nextMark++;app.marks.push(m);app.selectedMark=m.id;
+  app.requestedMeasurement=null;app.activeMeasureLabel=null;app.activeMeasureInstruction=null;
+  app.answers.grid_confirm='done — five large boxes measured; treated as 25 small boxes';
+  if(!app.history.includes('grid_confirm'))app.history.push('grid_confirm');
+  app.justCompletedGrid=true;
+  setTool('pan');
+  goToQuestion('rate_measure');
+  renderAll();
+  toast(`DONE — five LARGE boxes = ${fmt(calibrationMs)} ms. Now measure R–R.`);
+  return
+ }
+ let value=null,unit='',label='';const speed=+$('speed').value,msPerBox=1000/speed;
+ if(['rr','qrs','pr','qt','qwidth','time'].includes(type)){
+   if(!app.gridPx){toast('First complete the five-LARGE-box calibration.');return}
+   const boxes=Math.abs(b.x-a.x)/app.gridPx;value=boxes*msPerBox;unit='ms';
+   if(type==='rr'){const bpm=60000/value;label=`${fmt(boxes,1)} little boxes · ${fmt(value)} ms · ${fmt(bpm)} bpm`}
+   else label=`${fmt(boxes,1)} little boxes · ${fmt(value)} ms`;
+ }else if(['amp','force','st'].includes(type)){
+   const py=app.gridPxY||app.gridPx;if(!py){toast('The vertical little-box spacing is not known yet.');return}
+   value=-(b.y-a.y)/py/10;unit='mV';label=`${value>=0?'+':''}${fmt(value,2)} mV ${value>=0?'above':'below'} baseline`;
+ }else return;
+ const letter=letters[app.nextMark%letters.length],request=app.requestedMeasurement,lead=$('activeLead').value.trim()||'unspecified';
+ const m={id:Date.now()+Math.random(),letter,type,a,b,value,unit,label,lead,request,measureLabel:app.activeMeasureLabel||request||type,instruction:app.activeMeasureInstruction||null};
+ app.nextMark++;app.marks.push(m);app.selectedMark=m.id;if(type==='rr')recalcRR();
+ app.requestedMeasurement=null;app.activeMeasureLabel=null;app.activeMeasureInstruction=null;
+ renderLedger();deriveFromMarks();renderAll();toast(`Mark ${letter} added. Use Undo last caliper if either endpoint was wrong.`);setTool('pan')
+}
+function restoreGridAfterRemoval(){
+ const cal=[...app.marks].reverse().find(m=>m.calibration&&m.boxPx);
+ if(cal){app.gridPx=cal.boxPx;app.gridTinyPx=cal.boxPx/5;app.gridBigPx=cal.bigPx||cal.boxPx*5}
+ else{app.gridPx=null;app.gridPxY=null;app.gridTinyPx=null;app.gridBigPx=null}
+ $('boxPx').value=app.gridPx?app.gridPx.toFixed(2):'';$('boxPy').value=app.gridPxY?app.gridPxY.toFixed(2):''
+}
+function removeMarkById(id,msg='Mark removed.'){
+ const removed=app.marks.find(m=>m.id===id);app.marks=app.marks.filter(m=>m.id!==id);if(app.selectedMark===id)app.selectedMark=null;
+ if(removed?.calibration&&!app.marks.some(m=>m.calibration)){
+   delete app.answers.grid_confirm;app.history=app.history.filter(x=>x!=='grid_confirm');app.justCompletedGrid=false;
+ }
+ restoreGridAfterRemoval();recalcRR();deriveFromMarks();
+ if(!app.answers.grid_confirm)goToQuestion('grid_confirm');
+ renderAll();toast(msg)
+}
+function undoLastCaliper(){
+ if(app.requestedMeasurement&&app.points.length){
+   app.points=[];renderQuestion();draw();toast('Removed the first endpoint. Start that caliper again.');return
+ }
+ if(!app.marks.length){toast('There is no caliper to undo.');return}
+ const m=app.marks[app.marks.length-1];removeMarkById(m.id,`Undid mark ${m.letter}.`)
+}
+$('deleteMark').onclick=()=>{if(app.selectedMark==null)return toast('Click a mark or ledger chip first.');removeMarkById(app.selectedMark)};
+function renderLedger(){
+ const l=$('ledger');if(!app.marks.length){l.innerHTML='<span class="concept">No manual marks yet.</span>';return}
+ l.innerHTML=app.marks.map(m=>`<span class="markchip ${m.id===app.selectedMark?'selected':''}" style="--c:${C[m.type]||'#2563eb'}"><button class="btn small markselect" data-id="${m.id}"><b>${m.letter}</b> ${esc(m.lead||'')} · ${esc(m.measureLabel||m.type.toUpperCase())}<br><span class="concept">${esc(m.label)}</span></button><button class="btn small danger markremove" data-id="${m.id}">× Remove</button></span>`).join('');
+ qsa('.markselect').forEach(b=>b.onclick=()=>{app.selectedMark=+b.dataset.id;renderLedger();draw()});
+ qsa('.markremove').forEach(b=>b.onclick=()=>removeMarkById(+b.dataset.id))
+}
+function imageData(){if(!app.img)return null;const maxW=1800,s=Math.min(1,maxW/app.img.width);off.width=Math.round(app.img.width*s);off.height=Math.round(app.img.height*s);ox.clearRect(0,0,off.width,off.height);ox.drawImage(app.img,0,0,off.width,off.height);return{data:ox.getImageData(0,0,off.width,off.height),scale:s}}
+function autocorr(a,lag){let m=mean(a),num=0,d1=0,d2=0;for(let i=0;i<a.length-lag;i++){const x=a[i]-m,y=a[i+lag]-m;num+=x*y;d1+=x*x;d2+=y*y}return d1&&d2?num/Math.sqrt(d1*d2):0}
+function gridSignal(im,axis){const w=im.width,h=im.height,len=axis==='x'?w:h,orth=axis==='x'?h:w,out=new Float64Array(len);for(let p=0;p<len;p++){let sum=0,n=0;for(let q=0;q<orth;q+=2){const x=axis==='x'?p:q,y=axis==='x'?q:p,i=(y*w+x)*4,r=im.data[i],g=im.data[i+1],b=im.data[i+2],mx=Math.max(r,g,b),mn=Math.min(r,g,b),lum=(r+g+b)/3;const red=Math.max(0,r-(g+b)/2);const pink=(r>145&&red>4)?red*1.8:0;const neutral=(mx-mn<15)?Math.max(0,238-lum)*.08:0;sum+=pink+neutral;n++}out[p]=sum/Math.max(1,n)}return [...out]}
+function gridPeriod(signal){
+ const sm=smooth(signal,1),mu=mean(sm),sigma=sd(sm)||1,maxLag=Math.min(100,Math.floor(sm.length/8)),scores=[];
+ for(let lag=2;lag<=maxLag;lag++)scores.push({lag,c:autocorr(sm,lag)});
+ const byLag=new Map(scores.map(z=>[z.lag,z.c]));
+ const local=scores.filter((z,i)=>i>0&&i<scores.length-1&&z.c>=scores[i-1].c&&z.c>=scores[i+1].c&&z.c>.05&&z.lag>=10&&z.lag<=80);
+ let candidates=local.length?local:scores.filter(z=>z.lag>=10&&z.lag<=80);
+ for(const z of candidates){
+   let phaseStrength=-Infinity,bestPhase=0;
+   for(let p=0;p<z.lag;p++){
+     let s=0,n=0;
+     for(let i=p;i<sm.length;i+=z.lag){s+=sm[i];n++}
+     const v=(s/Math.max(1,n)-mu)/sigma;
+     if(v>phaseStrength){phaseStrength=v;bestPhase=p}
+   }
+   z.phaseStrength=phaseStrength;z.phase=bestPhase;
+   z.score=phaseStrength+.25*Math.max(0,z.c)-.002*z.lag;
+ }
+ candidates.sort((a,b)=>b.score-a.score);
+ if(!candidates.length)return null;
+ const bestScore=candidates[0].score;
+ // Harmonics of the true major-grid period can score similarly; choose the smallest
+ // strong candidate so 19,38,57,76 resolves to the fundamental 19-pixel BIG box.
+ const strong=candidates.filter(z=>z.score>=bestScore*.94).sort((a,b)=>a.lag-b.lag);
+ const big=strong[0]||candidates[0];
+ const bigPeriod=big.lag,littlePeriod=bigPeriod/5;
+ const confidence=clamp((Math.max(0,big.c)*.55+Math.max(0,big.phaseStrength)/3*.45),0,1);
+ return{period:littlePeriod,big:bigPeriod,tiny:littlePeriod/5,phase:big.phase,confidence,baseCorrelation:big.c}
+}
+function detectGrid(){const pack=imageData();if(!pack)return;const {data:im,scale}=pack,xr=gridPeriod(gridSignal(im,'x')),yr=gridPeriod(gridSignal(im,'y'));
+ if(xr){app.autoBigPx=xr.big/scale;app.autoGridPx=xr.period/scale;app.gridPx=app.autoGridPx;app.gridTinyPx=xr.tiny/scale;app.gridBigPx=app.autoBigPx;app.gridOriginX=xr.phase/scale;$('boxPx').value=app.gridPx.toFixed(2)}
+ if(yr){app.autoBigPxY=yr.big/scale;app.autoGridPxY=yr.period/scale;app.gridPxY=app.autoGridPxY;app.gridOriginY=yr.phase/scale;$('boxPy').value=app.gridPxY.toFixed(2)}
+ if(!app.gridPxY&&app.gridPx)app.gridPxY=app.gridPx;if(!app.gridTinyPx&&app.gridPx)app.gridTinyPx=app.gridPx/5;if(!app.gridBigPx&&app.gridPx)app.gridBigPx=app.gridPx*5;
+ const agreement=app.gridPx&&app.gridPxY?1-Math.min(1,Math.abs(app.gridPx-app.gridPxY)/Math.max(app.gridPx,app.gridPxY)):0;app.gridConfidence=clamp(mean([xr?.confidence||0,yr?.confidence||0,agreement]),0,1);renderAuto();draw()}
+function smooth(a,r=2){const out=new Float64Array(a.length);for(let i=0;i<a.length;i++){let s=0,n=0;for(let j=Math.max(0,i-r);j<=Math.min(a.length-1,i+r);j++){s+=a[j];n++}out[i]=s/n}return [...out]}
+function detectRate(){if(!app.img||!app.gridPx)return renderAuto();const pack=imageData(),{data:im,scale}=pack,w=im.width,h=im.height,y0=Math.floor(app.band.top*h),y1=Math.floor(app.band.bottom*h),trace=new Array(w).fill(null);for(let x=0;x<w;x++){let sum=0,wy=0,bestY=null,best=-1;for(let y=y0;y<y1;y++){const i=(y*w+x)*4,r=im.data[i],g=im.data[i+1],b=im.data[i+2],gray=(r+g+b)/3,spread=Math.max(r,g,b)-Math.min(r,g,b),black=Math.max(0,155-gray)*(spread<55?1:.35);if(black>best){best=black;bestY=y}if(black>18){sum+=black;wy+=black*y}}trace[x]=sum>0?wy/sum:bestY}let ys=smooth(trace,2),base=median(ys.filter(Number.isFinite)),dev=ys.map(y=>Math.abs(y-base));dev=smooth(dev,3);const med=median(dev),mad=median(dev.map(v=>Math.abs(v-med)))||1,thr=med+Math.max(5,3.4*mad),minSep=Math.max(8,Math.round(app.gridPx*scale*5.2));let peaks=[];for(let x=Math.round(w*.06);x<Math.round(w*.98);x++){if(dev[x]<thr)continue;let local=true;for(let j=Math.max(0,x-3);j<=Math.min(w-1,x+3);j++)if(dev[j]>dev[x])local=false;if(!local)continue;if(peaks.length&&x-peaks[peaks.length-1]<minSep){if(dev[x]>dev[peaks[peaks.length-1]])peaks[peaks.length-1]=x}else peaks.push(x)}if(peaks.length>=3){const ampMax=Math.max(...peaks.map(x=>dev[x])),strong=peaks.filter(x=>dev[x]>=ampMax*.78);if(strong.length>=3)peaks=strong}if(peaks.length>16){peaks=peaks.sort((a,b)=>dev[b]-dev[a]).slice(0,16).sort((a,b)=>a-b)}const origPeaks=peaks.map(x=>x/scale),rr=[];for(let i=1;i<origPeaks.length;i++)rr.push(origPeaks[i]-origPeaks[i-1]);const medrr=median(rr);const clean=rr.filter(v=>!medrr||v>.55*medrr&&v<1.65*medrr);const meanRR=mean(clean.length?clean:rr);const msPerBox=1000/(+$('speed').value);app.peaks=origPeaks;app.rr=clean.length?clean:rr;app.rate=meanRR?60000/(meanRR/app.gridPx*msPerBox):null;app.traceY=ys;renderAuto();renderAll();draw()}
+function renderAuto(){
+ const msPerSmall=1000/(+$('speed').value);
+ const cal=app.marks.find(m=>m.calibration);
+ $('tinyMetric').innerHTML=app.answers.grid_confirm?'<span style="color:#237a4b">DONE</span>':'<span style="color:#a96800">NOT DONE</span>';
+ $('boxMetric').innerHTML=app.gridPx?`${fmt(app.gridPx,1)} <small>px · ${fmt(msPerSmall)} ms</small>`:'—';
+ $('bigMetric').innerHTML=cal?`${fmt(cal.calibrationSpanPx||Math.abs(cal.b.x-cal.a.x),1)} <small>px · ${fmt(cal.value)} ms</small>`:'—';
+ $('peakMetric').innerHTML=app.rate?`${fmt(app.rate)} <small>bpm</small>`:'—';
+ $('autoBox').innerHTML=app.answers.grid_confirm?`✓ FIVE-LARGE-BOX CALIBRATION DONE<br>1 small box: ${fmt(app.gridPx,1)} px<br>1 large box: ${fmt(app.gridBigPx,1)} px<br>Mean R–R rate: ${app.rate?fmt(app.rate)+' bpm':'not measured'}`:'SETUP NOT DONE<br>Span five LARGE boxes in Question 1.'
+}
+function analyze(){if(!app.img)return;detectGrid();renderAll();toast('Grid hierarchy analyzed. Confirm the middle scale in question 1.')}
+function loadData(src,name){return new Promise((res,rej)=>{const im=new Image();im.onload=()=>{app.img=im;app.imgData=src;app.name=name;app.scale=1;app.panX=app.panY=0;app.gridPx=null;app.gridPxY=null;app.autoGridPx=null;app.autoGridPxY=null;app.autoBigPx=null;app.autoBigPxY=null;app.gridTinyPx=null;app.gridBigPx=null;app.gridOriginX=app.gridOriginY=0;app.rate=null;app.rateWarning=null;app.rr=[];app.peaks=[];app.marks=[];app.nextMark=0;app.selectedMark=null;app.answers={};app.history=[];app.qIndex=0;app.currentQuestion=null;app.requestedMeasurement=null;app.activeMeasureLabel=null;app.activeMeasureInstruction=null;app.heartPoints=null;$('zoom').value=100;$('zoomText').textContent='100%';resize();goFirst();renderAll();res()};im.onerror=rej;im.src=src})}
+function handleFile(f){if(!f)return;const r=new FileReader();r.onload=()=>loadData(r.result,f.name);r.readAsDataURL(f)}
+const upload=$('upload');upload.onclick=e=>{if(e.target!==$('file'))$('file').click()};$('file').onchange=e=>handleFile(e.target.files[0]);['dragenter','dragover'].forEach(ev=>upload.addEventListener(ev,e=>{e.preventDefault();upload.classList.add('over')}));['dragleave','drop'].forEach(ev=>upload.addEventListener(ev,e=>{e.preventDefault();upload.classList.remove('over')}));upload.ondrop=e=>handleFile(e.dataTransfer.files[0]);document.addEventListener('paste',e=>{const f=[...e.clipboardData.files].find(x=>x.type.startsWith('image/'));if(f)handleFile(f)});
+function demo(){const c=document.createElement('canvas');c.width=1700;c.height=820;const x=c.getContext('2d');x.fillStyle='#fffdfd';x.fillRect(0,0,c.width,c.height);
+ // Tiny print/scan texture: faint dots every 2 px. Little boxes: 8 px. Big boxes: 40 px.
+ x.fillStyle='rgba(245,190,190,.18)';for(let i=0;i<c.width;i+=2)for(let j=0;j<c.height;j+=2)x.fillRect(i,j,.55,.55);
+ for(let i=0;i<c.width;i+=8){x.strokeStyle=i%40===0?'#e99a9a':'#f4cccc';x.lineWidth=i%40===0?1.5:.72;x.beginPath();x.moveTo(i,0);x.lineTo(i,c.height);x.stroke()}for(let j=0;j<c.height;j+=8){x.strokeStyle=j%40===0?'#e99a9a':'#f4cccc';x.lineWidth=j%40===0?1.5:.72;x.beginPath();x.moveTo(0,j);x.lineTo(c.width,j);x.stroke()}
+ const rows=[['I',90,1],['II',205,.95],['III',320,.7],['aVR',435,-.65],['aVL',550,.55],['aVF',665,.85],['II rhythm',765,1]];x.font='20px system-ui';x.fillStyle='#222';function gauss(t,c,w){return Math.exp(-(((t-c)/w)**2))}function wave(base,start,period,amp,cycles){x.strokeStyle='#101010';x.lineWidth=3;x.beginPath();let first=true;for(let px=start;px<Math.min(c.width-10,start+period*cycles);px+=2){const t=((px-start)%period)/period;let y=7*gauss(t,.18,.035)-9*gauss(t,.38,.015)+55*gauss(t,.405,.013)-18*gauss(t,.43,.018)+17*gauss(t,.70,.075);y*=amp;const yy=base-y;if(first){x.moveTo(px,yy);first=false}else x.lineTo(px,yy)}x.stroke()}rows.forEach(([n,b,a],i)=>{x.fillText(n,18,b+6);wave(b,90,200,a,i===6?8:7)});x.strokeStyle='#111';x.lineWidth=3;x.beginPath();x.moveTo(75,45);x.lineTo(75,5);x.lineTo(115,5);x.lineTo(115,45);x.stroke();x.font='15px system-ui';x.fillText('Synthetic teaching EKG — tiny texture 2 px · LITTLE box 8 px · BIG box 40 px',1130,805);return c.toDataURL('image/png')}
+$('demoBtn').onclick=()=>loadData(demo(),'synthetic_teaching_ekg.png');$('speed').onchange=renderAll;
+$('resetBtn').onclick=()=>{app.img=null;app.imgData=null;app.name='';app.answers={};app.history=[];app.currentQuestion=null;app.requestedMeasurement=null;app.activeMeasureLabel=null;app.activeMeasureInstruction=null;app.justCompletedGrid=false;app.marks=[];app.gridPx=app.gridPxY=app.autoGridPx=app.autoGridPxY=app.gridTinyPx=app.gridBigPx=app.rate=null;app.heartPoints=null;renderAll();draw()};
+function opt(value,label,small=''){return{value,label,small}}
+const QUESTIONS=[
+{id:'grid_confirm',stage:0,title:'STEP 1: Span FIVE LARGE boxes.',why:'Place the first endpoint on a heavy large-box boundary. Place the second endpoint five large boxes later. Five large boxes contain 25 small boxes and equal 1 second at 25 mm/s.',custom:'grid'},
+{id:'rate_measure',stage:1,title:'Measure several R–R intervals.',why:'Click the center of one R peak and then the center of the next. Repeat on at least three intervals so the app can calculate the mean rate, standard deviation, range, and an approximate regularity estimate.',custom:'rate'},
+{id:'regularity',stage:2,title:'How regular are the R–R intervals?',why:'Regularity is often more discriminating than rate. A repeating irregular pattern differs from a pattern with no repeating organization.',options:()=>[opt('regular','Regular'),opt('regularly_irregular','Regularly irregular'),opt('irregularly_irregular','Irregularly irregular'),opt('uncertain','Uncertain')]},
+{id:'p_visible',stage:2,title:'Can you identify atrial activity?',why:'Look especially in lead II and V1. Do not call P waves absent merely because they are small or buried.',options:()=>[opt('yes','Yes — discrete P waves'),opt('no','No discrete P waves'),opt('flutter','Sawtooth / flutter-like activity'),opt('uncertain','Uncertain')]},
+{id:'p_before',stage:2,show:a=>a.p_visible==='yes',title:'Is a P wave present before every QRS?',why:'This asks whether ventricular activation has a consistent atrial antecedent.',options:()=>[opt('yes','Yes'),opt('no','No'),opt('variable','Variable'),opt('uncertain','Uncertain')]},
+{id:'qrs_after_p',stage:2,show:a=>a.p_visible==='yes',title:'Is every P wave followed by a QRS?',why:'Atrial impulses that do not conduct change the AV-block branch even when some P–QRS pairs look normal.',options:()=>[opt('yes','Yes'),opt('no','No — dropped conduction'),opt('variable','Variable'),opt('uncertain','Uncertain')]},
+{id:'axis_i',stage:3,title:'In lead I, is the net QRS force positive or negative?',why:'Lead I views electrical movement toward the patient’s left arm. A net upward QRS points generally leftward.',options:()=>[opt('positive','Positive — more up than down'),opt('negative','Negative — more down than up'),opt('equiphasic','Nearly equal / equiphasic'),opt('measure','Measure R and S forces')]},
+{id:'axis_avf',stage:3,title:'In aVF, is the net QRS force positive or negative?',why:'aVF looks toward the feet. A net upward QRS points generally downward in the frontal plane.',options:()=>[opt('positive','Positive — more up than down'),opt('negative','Negative — more down than up'),opt('equiphasic','Nearly equal / equiphasic'),opt('measure','Measure R and S forces')]},
+{id:'axis_ii',stage:3,show:a=>a.axis_i==='positive'&&a.axis_avf==='negative',title:'Lead II resolves the borderline leftward quadrant: is its QRS net positive?',why:'A positive lead II generally keeps the axis above about −30°, whereas a negative lead II supports left-axis deviation.',options:()=>[opt('positive','Positive'),opt('negative','Negative'),opt('equiphasic','Equiphasic'),opt('uncertain','Uncertain')]},
+{id:'qrs_width',stage:4,title:'Is the QRS narrow or wide?',why:'A wide QRS changes how rhythm origin, axis, ST-T shifts, and ventricular forces should be interpreted.',options:()=>[opt('narrow','Narrow — under about 120 ms'),opt('wide','Wide — about 120 ms or more'),opt('measure','Measure it with a QRS caliper'),opt('uncertain','Uncertain')]},
+{id:'pr_interval',stage:4,show:a=>a.p_visible==='yes',title:'Is the PR interval normal, short, or prolonged?',why:'Measure from the earliest P-wave onset to the earliest QRS onset. Use more than one beat when conduction varies.',options:()=>[opt('normal','Normal range'),opt('short','Short'),opt('long','Prolonged'),opt('measure','Measure PR')]},
+{id:'qt_interval',stage:4,title:'Does the QT appear clearly prolonged?',why:'A quick screen is whether QT extends beyond roughly half the RR interval; a measured QTc is better when it is close.',options:()=>[opt('no','No'),opt('yes','Yes'),opt('measure','Measure QT'),opt('uncertain','Uncertain')]},
+{id:'lvh',stage:5,title:'Do the left-precordial forces suggest LV hypertrophy?',why:'Large S force in V1 plus large R force in V5/V6 can support LVH, but voltage is affected by age, body habitus, lead placement, and conduction.',options:()=>[opt('no','No obvious voltage pattern'),opt('yes','Yes / likely'),opt('measure','Measure S in V1 and R in V5 or V6'),opt('uncertain','Uncertain')]},
+{id:'rvh',stage:5,title:'Do rightward forces suggest RV hypertrophy?',why:'Right-axis deviation, a dominant R in V1, and supporting morphology can suggest RVH; no single feature should stand alone.',options:()=>[opt('no','No'),opt('yes','Yes / likely'),opt('uncertain','Uncertain')]},
+{id:'qwaves',stage:6,title:'Are there abnormal-appearing Q waves?',why:'Ask where they occur, how wide they are, and whether their depth is disproportionate to the following R wave. Septal q waves can be normal.',options:()=>[opt('none','None'),opt('inferior','Inferior: II, III, aVF'),opt('anterior','Anterior / septal: V1–V4'),opt('lateral','Lateral: I, aVL, V5–V6'),opt('multiple','Multiple territories'),opt('measure','Measure Q width/depth'),opt('uncertain','Uncertain')]},
+{id:'q_leads',stage:6,show:a=>['inferior','anterior','lateral','multiple'].includes(a.qwaves),title:'Exactly which leads contain the Q waves?',why:'The payload should preserve the observed leads rather than only the territory label.',custom:'qleads'},
+{id:'st_change',stage:6,title:'Are there ST-segment shifts?',why:'Describe direction, magnitude, morphology, contiguous leads, reciprocal changes, and the clinical setting. Conduction patterns can create secondary ST-T shifts.',options:()=>[opt('none','No significant shift'),opt('elevation','ST elevation'),opt('depression','ST depression'),opt('both','Elevation and depression'),opt('measure','Measure from baseline to ST level'),opt('uncertain','Uncertain')]},
+{id:'territory',stage:6,show:a=>['elevation','depression','both'].includes(a.st_change),title:'Which territory contains the principal ST change?',why:'Contiguous lead groups allow the observation to be mapped to a rough ventricular surface, while remembering that coronary anatomy varies.',options:()=>[opt('inferior','Inferior'),opt('anterior','Anterior / septal'),opt('lateral','Lateral'),opt('posterior','Posterior pattern'),opt('diffuse','Diffuse / non-territorial'),opt('multiple')]},
+{id:'st_leads',stage:6,show:a=>['elevation','depression','both'].includes(a.st_change),title:'Which individual leads show the ST change?',why:'Exact lead distribution is more useful to an LLM than a territory label alone.',custom:'stleads'},
+{id:'t_change',stage:6,title:'Are T-wave abnormalities present?',why:'Record inversion, hyperacute broad waves, or sharply peaked waves and state the lead distribution.',options:()=>[opt('none','None'),opt('inversion','T-wave inversion'),opt('hyperacute','Broad hyperacute-appearing T waves'),opt('peaked','Sharply peaked T waves'),opt('multiple','More than one pattern'),opt('uncertain','Uncertain')]},
+{id:'context',stage:7,title:'Add the clinical context that changes the meaning of the tracing.',why:'Symptoms, hemodynamics, electrolytes, medications, pacemaker status, transplant history, and prior EKG comparison can move the same pattern from routine to urgent.',custom:'context'},
+{id:'complete',stage:7,title:'The observation payload is assembled.',why:'Review the synthesis, the stochastic evidence model, and the JSON. Any uncertain branch remains explicit rather than being silently guessed.',options:()=>[opt('review','Review synthesis'),opt('restart','Start over')]}];
+function visibleQuestions(){return QUESTIONS.filter(q=>!q.show||q.show(app.answers))}
+function goFirst(){app.qIndex=0;app.currentQuestion=visibleQuestions()[0]||null;renderAll()}
+function goToQuestion(id){
+ const qs=visibleQuestions(),i=qs.findIndex(q=>q.id===id);
+ if(i>=0){app.qIndex=i;app.currentQuestion=qs[i];return true}
+ return false
+}
+function getCurrent(){
+ const qs=visibleQuestions();
+ if(app.currentQuestion){
+   const live=qs.findIndex(q=>q.id===app.currentQuestion.id);
+   if(live>=0)app.qIndex=live;
+ }
+ app.qIndex=clamp(app.qIndex,0,Math.max(0,qs.length-1));
+ app.currentQuestion=qs[app.qIndex]||null;
+ return app.currentQuestion
+}
+function questionComplete(q){
+ if(!q)return false;
+ if(q.id==='grid_confirm')return !!app.answers.grid_confirm;
+ if(q.id==='rate_measure')return !!app.answers.rate_measure;
+ if(q.custom==='context')return !!app.answers.context;
+ if(q.custom==='qleads'||q.custom==='stleads')return app.answers[q.id]!==undefined;
+ if(q.id==='complete')return false;
+ return app.answers[q.id]!==undefined
+}
+function answer(q,val){
+ if(val==='measure'){
+   const actions=questionCaliperActions(q);if(actions.length)startCaliperAction(actions[0]);else toast('Use the measurement buttons inside this question.');
+   return
+ }
+ if(q.id==='complete'&&val==='review'){document.querySelector('.tab[data-view="synthesis"]').click();return}
+ if(q.id==='complete'&&val==='restart'){restartQuestions();return}
+ app.answers[q.id]=val;if(!app.history.includes(q.id))app.history.push(q.id);advance()
+}
+function advance(){
+ const qs=visibleQuestions(),idx=qs.findIndex(x=>x.id===app.currentQuestion?.id);
+ const nextIndex=idx<0?0:Math.min(idx+1,qs.length-1);
+ app.qIndex=nextIndex;app.currentQuestion=qs[nextIndex];renderAll()
+}
+function back(){
+ const qs=visibleQuestions(),idx=qs.findIndex(x=>x.id===app.currentQuestion?.id);
+ app.qIndex=Math.max(0,(idx<0?0:idx)-1);app.currentQuestion=qs[app.qIndex];renderAll()
+}
+function nextUnanswered(){
+ const qs=visibleQuestions(),current=qs.findIndex(q=>q.id===app.currentQuestion?.id),start=current<0?0:current+1;
+ let i=-1;
+ for(let n=start;n<qs.length;n++){if(!questionComplete(qs[n])){i=n;break}}
+ if(i<0){for(let n=0;n<start;n++){if(!questionComplete(qs[n])){i=n;break}}}
+ if(i<0)i=qs.length-1;
+ app.qIndex=i;app.currentQuestion=qs[i];renderAll()
+}
+function restartQuestions(){
+ const keepGrid=app.answers.grid_confirm;
+ app.answers=keepGrid?{grid_confirm:keepGrid}:{};
+ app.history=keepGrid?['grid_confirm']:[];
+ if(keepGrid)goToQuestion('rate_measure');else goToQuestion('grid_confirm');
+ renderAll();toast('Question tree restarted.')
+}
+$('backBtn').onclick=back;$('nextBtn').onclick=nextUnanswered;$('restartTree').onclick=restartQuestions;
+function boxGuideMarkup(){
+ const speed=+$('speed').value;
+ const calMs=25*(1000/speed);
+ const little=app.gridPx?fmt(app.gridPx,1)+' px':'not yet measured';
+ let verticals='';
+ for(let i=0;i<=25;i++){
+   const x=70+i*20;
+   const major=i%5===0;
+   verticals+=`<line x1="${x}" y1="46" x2="${x}" y2="190" stroke="${major?'#b5535d':'#edb9bd'}" stroke-width="${major?4:1.4}"/>`;
+ }
+ let horizontals='';
+ for(let i=0;i<=5;i++){
+   const y=46+i*28.8;
+   horizontals+=`<line x1="70" y1="${y}" x2="570" y2="${y}" stroke="${i===0||i===5?'#b5535d':'#edb9bd'}" stroke-width="${i===0||i===5?3:1.2}"/>`;
+ }
+ return `<div class="miniguide">
+ <svg viewBox="0 0 760 245" role="img" aria-label="Five large ECG boxes containing twenty-five small boxes">
+  <rect x="70" y="46" width="500" height="144" fill="#fffafa"/>
+  ${verticals}${horizontals}
+  <path d="M90 132 L170 132 L193 128 L210 132 L233 132 L249 149 L268 73 L287 161 L309 132 L395 132 L420 113 L449 132 L548 132" fill="none" stroke="#17212b" stroke-width="5" stroke-linejoin="round"/>
+  <line x1="70" y1="25" x2="570" y2="25" stroke="#087f8c" stroke-width="4"/>
+  <polygon points="70,25 88,16 88,34" fill="#087f8c"/>
+  <polygon points="570,25 552,16 552,34" fill="#087f8c"/>
+  <text x="320" y="18" text-anchor="middle" font-family="system-ui" font-size="19" font-weight="950" fill="#075f68">SPAN ALL 5 LARGE BOXES</text>
+  ${Array.from({length:5},(_,i)=>`<text x="${120+i*100}" y="215" text-anchor="middle" font-family="system-ui" font-size="16" font-weight="950" fill="#173b57">LARGE ${i+1}</text>`).join('')}
+  <text x="620" y="74" font-family="system-ui" font-size="15" font-weight="900" fill="#173b57">5 large boxes</text>
+  <text x="620" y="98" font-family="system-ui" font-size="15" font-weight="900" fill="#173b57">= 25 small boxes</text>
+  <text x="620" y="128" font-family="system-ui" font-size="17" font-weight="950" fill="#087f8c">= ${fmt(calMs)} ms</text>
+  <text x="620" y="151" font-family="system-ui" font-size="14" font-weight="800" fill="#4a5c67">at ${speed} mm/s</text>
+  <text x="620" y="184" font-family="system-ui" font-size="13" font-weight="800" fill="#4a5c67">Two clicks only.</text>
+ </svg>
+ <div class="guidecaption">The program divides the full calibration span by <b>25</b>, not by 5. Current small-box width: <b>${little}</b>.</div>
+ </div>`
+}
+function qrsGuideMarkup(){
+ return `<div class="miniguide"><svg viewBox="0 0 700 185" role="img" aria-label="QRS duration measurement guide">
+ <rect x="35" y="25" width="620" height="125" fill="#fffafa" stroke="#e2a0a0" stroke-width="2"/>
+ ${Array.from({length:12},(_,i)=>`<line x1="${35+i*50}" y1="25" x2="${35+i*50}" y2="150" stroke="${i%5===0?'#d48181':'#efcaca'}" stroke-width="${i%5===0?2:1}"/>`).join('')}
+ <line x1="35" y1="100" x2="655" y2="100" stroke="#7a8890" stroke-width="1.5"/>
+ <path d="M70 100 L235 100 L265 112 L286 48 L310 132 L336 100 L610 100" fill="none" stroke="#18232c" stroke-width="5"/>
+ <line x1="235" y1="32" x2="235" y2="145" stroke="#087f8c" stroke-width="4"/><circle cx="235" cy="20" r="13" fill="#087f8c"/><text x="235" y="25" text-anchor="middle" font-size="13" font-weight="900" fill="white">1</text>
+ <line x1="336" y1="32" x2="336" y2="145" stroke="#087f8c" stroke-width="4"/><circle cx="336" cy="20" r="13" fill="#087f8c"/><text x="336" y="25" text-anchor="middle" font-size="13" font-weight="900" fill="white">2</text>
+ <text x="390" y="55" font-family="system-ui" font-size="16" font-weight="900" fill="#173b57">QRS duration</text>
+ <text x="390" y="79" font-family="system-ui" font-size="14" fill="#4d606c">1 = earliest departure from baseline</text>
+ <text x="390" y="101" font-family="system-ui" font-size="14" fill="#4d606c">2 = final return to baseline</text>
+ </svg><div class="guidecaption">Do not measure only the tall R wave. Measure the entire QRS from its earliest onset to its latest offset.</div></div>`
+}
+function baselineGuideMarkup(){
+ return `<div class="miniguide"><svg viewBox="0 0 700 155" role="img" aria-label="Baseline to upward and downward wave measurement guide">
+ <line x1="50" y1="80" x2="650" y2="80" stroke="#667984" stroke-width="2"/><text x="52" y="70" font-size="14" font-weight="800" fill="#4b5d69">isoelectric baseline</text>
+ <path d="M100 80 L210 80 L250 30 L290 80 L400 80 L445 128 L485 80 L610 80" fill="none" stroke="#17212b" stroke-width="5"/>
+ <line x1="250" y1="80" x2="250" y2="30" stroke="#087f8c" stroke-width="4"/><circle cx="250" cy="80" r="9" fill="#087f8c"/><circle cx="250" cy="30" r="9" fill="#087f8c"/>
+ <line x1="445" y1="80" x2="445" y2="128" stroke="#b42318" stroke-width="4"/><circle cx="445" cy="80" r="9" fill="#b42318"/><circle cx="445" cy="128" r="9" fill="#b42318"/>
+ <text x="180" y="20" font-size="14" font-weight="900" fill="#075f68">ABOVE: baseline first → peak second</text>
+ <text x="380" y="151" font-size="14" font-weight="900" fill="#8f2018">BELOW: baseline first → trough second</text>
+ </svg></div>`
+}
+function act(request,label,tool,lead,instruction){return{request,label,tool,lead,instruction}}
+function questionCaliperActions(q){
+ const free=[act(`free_time_${q.id}`,'Measure a horizontal time interval','time',null,'Click the first time landmark, then the second. The result will be reported in little boxes and milliseconds.'),act(`free_up_${q.id}`,'Measure above baseline','force',null,'Click the isoelectric baseline first, then click the top of the wave.'),act(`free_down_${q.id}`,'Measure below baseline','force',null,'Click the isoelectric baseline first, then click the bottom of the wave.')];
+ const map={
+  grid_confirm:[act('grid_calibration','START 5-LARGE-BOX CALIPER','time','GRID','FIRST CLICK: start of the first LARGE box. SECOND CLICK: end of the fifth LARGE box.')],
+  rate_measure:[act('rate_measure','Measure another R–R interval','rr','II','Click the center of one R peak, then the center of the next R peak. Repeat at least three times.')],
+  regularity:[act('regularity_rr','Add another R–R interval','rr','II','Click one R peak, then the next. Use at least three intervals for standard deviation and approximate regularity.')],
+  p_visible:[act('p_height_up','Measure a P wave above baseline','force','II','In lead II, click the baseline immediately before P, then the top of the P wave.'),act('p_depth_down','Measure a P wave below baseline','force','V1','In V1, click the baseline immediately before P, then the bottom of the negative P component.'),act('pp_interval','Measure a P–P interval','time','II','Click the center of one P wave, then the center of the next P wave.')],
+  p_before:[act('pr_for_p_before','Measure P onset → QRS onset','pr','II','Click the earliest P-wave onset, then the earliest QRS onset on the same beat.')],
+  qrs_after_p:[act('pp_for_conduction','Measure one P–P interval','time','II','Click one P-wave center, then the next.'),act('rr_for_conduction','Measure the corresponding R–R interval','rr','II','Click one R peak, then the next. Compare P–P and R–R behavior.')],
+  axis_i:[act('axis_i_r','1. Lead I: measure R above baseline','force','I','On one representative QRS in lead I, click baseline first, then the R-wave peak.'),act('axis_i_s','2. Lead I: measure S below baseline','force','I','Use the same representative QRS. Click baseline first, then the deepest S-wave trough.')],
+  axis_avf:[act('axis_avf_r','1. aVF: measure R above baseline','force','aVF','On one representative QRS in aVF, click baseline first, then the R-wave peak.'),act('axis_avf_s','2. aVF: measure S below baseline','force','aVF','Use the same representative QRS. Click baseline first, then the deepest S-wave trough.')],
+  axis_ii:[act('axis_ii_r','1. Lead II: measure R above baseline','force','II','Click baseline first, then the R-wave peak.'),act('axis_ii_s','2. Lead II: measure S below baseline','force','II','Click baseline first, then the S-wave trough on the same QRS.')],
+  qrs_width:[act('qrs_width','Measure complete QRS width','qrs','II','Click the earliest departure from baseline, then the final return to baseline.')],
+  pr_interval:[act('pr_interval','Measure PR interval','pr','II','Click the earliest P-wave onset, then the earliest QRS onset. Repeat on another beat if variable.')],
+  qt_interval:[act('qt_interval','1. Measure QT','qt','II','Click QRS onset, then the point where the T wave returns to baseline.'),act('qt_rr','2. Measure the matching R–R','rr','II','On the same region, click one R peak and the next so QT can be corrected for rate.')],
+  lvh:[act('lvh_v1_s','1. V1: measure S below baseline','force','V1','Click baseline first, then the deepest S trough in V1.'),act('lvh_v5_r','2. V5: measure R above baseline','force','V5','Click baseline first, then the R peak in V5.'),act('lvh_v6_r','Alternative: V6 R above baseline','force','V6','Click baseline first, then the R peak in V6.')],
+  rvh:[act('rvh_v1_r','1. V1: measure R above baseline','force','V1','Click baseline first, then the R peak in V1.'),act('rvh_v1_s','2. V1: measure S below baseline','force','V1','Click baseline first, then the S trough on the same QRS.'),act('rvh_v6_s','Optional: V6 S below baseline','force','V6','Click baseline first, then the S trough in V6.')],
+  qwaves:[act('q_width','1. Measure Q-wave width','qwidth',null,'Click Q-wave onset, then the point where the Q wave ends/returns through baseline before the R wave.'),act('q_depth','2. Measure Q below baseline','force',null,'Click baseline first, then the deepest point of the Q wave.')],
+  q_leads:[act('q_width_selected','Measure Q width in selected lead','qwidth',null,'Set the lead box to the lead you are inspecting, then click Q onset and Q end.'),act('q_depth_selected','Measure Q depth below baseline','force',null,'Click baseline first, then the deepest Q-wave point.')],
+  st_change:[act('st_above','Measure ST above baseline','st',null,'Click the isoelectric baseline first, then the ST level at the chosen post-J-point location.'),act('st_below','Measure ST below baseline','st',null,'Click the isoelectric baseline first, then the depressed ST level.')],
+  territory:[act('territory_st_up','Measure elevation in a representative lead','st',null,'Choose a representative lead, click baseline first, then the elevated ST level.'),act('territory_st_down','Measure depression in a reciprocal/representative lead','st',null,'Click baseline first, then the depressed ST level.')],
+  st_leads:[act('st_lead_up','Measure ST above baseline in current lead','st',null,'Enter the lead above the tracing. Click baseline first, then the ST level.'),act('st_lead_down','Measure ST below baseline in current lead','st',null,'Enter the lead above the tracing. Click baseline first, then the ST level.')],
+  t_change:[act('t_up','Measure T above baseline','force',null,'Click baseline first, then the T-wave peak.'),act('t_down','Measure T below baseline','force',null,'Click baseline first, then the deepest inverted T-wave point.'),act('t_width','Measure T-wave time span','time',null,'Click T-wave onset, then T-wave end.')],
+  context:free,
+  complete:free
+ };
+ return map[q.id]||free
+}
+function startCaliperAction(a){
+ if(!app.img){toast('Load an EKG first.');return}
+ if(a.request!=='grid_calibration'&&!app.answers.grid_confirm){toast('First span five LARGE boxes in Setup.');return}
+ app.requestedMeasurement=a.request;app.activeMeasureLabel=a.label;app.activeMeasureInstruction=a.instruction;if(a.lead)$('activeLead').value=a.lead;
+ if(a.request==='grid_calibration'&&app.scale<1.2){app.scale=1.2;$('zoom').value=120;$('zoomText').textContent='120%'}
+ app.points=[];
+ setTool(a.tool,true);renderQuestion();toast(a.instruction)
+}
+function rrStatsMarkup(){
+ const r=rrSummary(),marks=app.marks.filter(m=>m.type==='rr');
+ if(!r.n)return `<div class="rrstats"><b>No R–R intervals yet.</b><div class="why">Measure at least three consecutive or representative intervals.</div></div>`;
+ const stats=r.n>=3?`<div class="rrstatsgrid">
+  <div class="rrmetric"><div class="k">Intervals</div><div class="v">${r.n}</div></div>
+  <div class="rrmetric"><div class="k">Mean rate</div><div class="v">${fmt(r.meanRate)} bpm</div></div>
+  <div class="rrmetric"><div class="k">RR SD</div><div class="v">${fmt(r.sdMs)} ms</div></div>
+  <div class="rrmetric"><div class="k">RR CV</div><div class="v">${fmt(r.cv*100,1)}%</div></div>
+ </div><div class="finding ${r.code==='regular'?'ok':'warn'}"><b>Approximation:</b> ${esc(r.estimate)}. Measured range: ${fmt(r.minMs)}–${fmt(r.maxMs)} ms.</div>`:
+ `<div class="finding warn"><b>${r.n} interval${r.n===1?'':'s'} measured.</b> Add ${3-r.n} more for standard deviation and an approximate regularity estimate.</div>`;
+ return `<div class="rrstats"><b>Measured R–R set</b><div class="rrintervals">${marks.map(m=>{const small=Math.abs(m.b.x-m.a.x)/app.gridPx;return `<span class="rrpill">${m.letter}: ${fmt(small,1)} small / ${fmt(small/5,1)} large boxes · ${fmt(m.value)} ms · ${fmt(60000/m.value)} bpm</span>`}).join('')}</div>${stats}</div>`
+}
+function renderQuestionCalipers(q){
+ const acts=questionCaliperActions(q),needsBaseline=acts.some(a=>['force','st'].includes(a.tool));
+ let h=`<div class="caliperbox"><h4>MEASUREMENTS AVAILABLE IN THIS QUESTION</h4><div class="caliperintro">Press a Measure button. The button tells you exactly what to click first and second. Questions may need two separate calipers; completed actions show DONE.</div>`;
+ if(q.id==='qrs_width')h+=qrsGuideMarkup();else if(needsBaseline)h+=baselineGuideMarkup();
+ h+=`<div class="caliperactions">${acts.map((a,i)=>{const done=app.marks.some(m=>m.request===a.request),defaultLead=a.lead||$('activeLead').value||'II',leadOptions=LEAD_OPTIONS.map(l=>`<option value="${esc(l)}" ${l===defaultLead?'selected':''}>${esc(l)}</option>`).join('');return `<div class="caliperaction ${app.requestedMeasurement===a.request?'active':''} ${done?'done':''}"><div class="caliperstep">${done?'✓':i+1}</div><div><div class="caliperlabel">${done?'DONE — ':''}${esc(a.label)}</div><div class="caliperinstruction">${esc(a.instruction)}</div><div class="measureleadrow"><label>Clicked lead</label><select class="measurelead" data-request="${esc(a.request)}">${leadOptions}</select></div></div><button class="btn ${app.requestedMeasurement===a.request?'primary':done?'':'navy'} startmeasure" data-measure="${esc(a.request)}">${app.requestedMeasurement===a.request?'CLICK ON EKG NOW':done?'Measure again':'START MEASURING'}</button></div>`}).join('')}</div>`;
+ if(app.requestedMeasurement)h+=`<div class="activeinstruction"><b>Active caliper:</b> ${esc(app.activeMeasureInstruction||'Click the two requested landmarks.')}</div>`;
+ h+=`<div class="calipercontrols"><button class="btn danger" id="undoQuestionCaliper" ${app.marks.length?'':'disabled'}>↶ Undo last caliper</button><button class="btn" id="cancelQuestionCaliper" ${app.requestedMeasurement?'':'disabled'}>Cancel active caliper</button><span class="concept">Marks stay lettered and individually removable in the ledger.</span></div></div>`;
+ return h
+}
+function renderQuestion(){
+ const q=getCurrent(),el=$('question');if(!q){el.innerHTML='<div class="why">Load a tracing to begin.</div>';return}
+ let body=`<div class="qstage">${STAGES[q.stage]}</div><h3>${esc(q.title)}</h3><div class="why">${esc(q.why)}</div>`;
+ if(q.custom==='grid'){
+   body+=`<div class="setupinstruction"><div class="bigstep">ONE CALIPER ACROSS 5 LARGE BOXES</div><div class="substep">Two clicks only: start of large box 1 → end of large box 5.</div></div>`;
+   body+=boxGuideMarkup();
+ }else if(q.custom==='rate'){
+   if(app.answers.grid_confirm)body+=`<div class="calibrationdone"><span class="doneword">✓ SETUP DONE</span>Mark A spans five LARGE boxes = 25 small boxes. At 25 mm/s, that is 1,000 ms.</div>`;
+   body+=rrStatsMarkup();
+   if(app.rateWarning)body+=`<div class="finding danger"><b>Rate looks wrong:</b> ${esc(app.rateWarning)}</div>`;
+   if(app.rate)body+=`<button class="btn primary" id="acceptRate">Use mean rate ${fmt(app.rate)} bpm and continue</button>`;
+ }else if(q.id==='regularity'){
+   body+=rrStatsMarkup();
+   const r=rrSummary();if(r.n>=3&&r.code==='regular')body+=`<button class="btn primary" id="acceptRRRegular">Use measured estimate: approximately regular</button>`;
+   const opts=q.options?q.options():[];body+=`<div class="options">${opts.map(o=>`<button class="option ${app.answers[q.id]===o.value?'selected':''}" data-val="${esc(o.value)}">${esc(o.label)}${o.small?`<small>${esc(o.small)}</small>`:''}</button>`).join('')}</div>`;
+ }else if(q.custom==='context'){
+   body+=`<div class="g2"><div><label>Symptoms / indication</label><textarea id="ctxSymptoms" placeholder="Chest pain, syncope, dyspnea, screening..."></textarea></div><div><label>Modifiers</label><textarea id="ctxModifiers" placeholder="Potassium, magnesium, QT drugs, pacemaker, transplant, prior EKG..."></textarea></div></div><button class="btn primary" id="saveContext" style="margin-top:8px">Save context and continue</button>`;
+ }else if(q.custom==='qleads'||q.custom==='stleads'){
+   const key=q.custom==='qleads'?'q_wave_leads':'st_change_leads',selected=new Set(app.answers[key]||[]),leads=['I','II','III','aVR','aVL','aVF','V1','V2','V3','V4','V5','V6'];
+   body+=`<div class="options">${leads.map(l=>`<button class="option leadpick ${selected.has(l)?'selected':''}" data-lead="${l}">${l}</button>`).join('')}</div><button class="btn primary" id="saveLeads" style="margin-top:8px">Save selected leads and continue</button>`;
+ }else{
+   const opts=q.options?q.options():[];body+=`<div class="options ${opts.length===1?'one':''}">${opts.map(o=>`<button class="option ${app.answers[q.id]===o.value?'selected':''}" data-val="${esc(o.value)}">${esc(o.label)}${o.small?`<small>${esc(o.small)}</small>`:''}</button>`).join('')}</div>`;
+ }
+ body+=renderQuestionCalipers(q);el.innerHTML=body;
+ qsa('#question .option').forEach(b=>b.onclick=()=>answer(q,b.dataset.val));
+ if(q.custom==='rate'&&$('acceptRate'))$('acceptRate').onclick=()=>{app.answers.rate_measure=app.rate?Math.round(app.rate):null;if(!app.history.includes(q.id))app.history.push(q.id);advance()};
+ if(q.id==='regularity'&&$('acceptRRRegular'))$('acceptRRRegular').onclick=()=>answer(q,'regular');
+ if(q.custom==='context'){
+   $('ctxSymptoms').value=app.answers.context_symptoms||'';$('ctxModifiers').value=app.answers.context_modifiers||'';
+   $('saveContext').onclick=()=>{app.answers.context_symptoms=$('ctxSymptoms').value.trim();app.answers.context_modifiers=$('ctxModifiers').value.trim();app.answers.context='saved';if(!app.history.includes(q.id))app.history.push(q.id);advance()}
+ }else if(q.custom==='qleads'||q.custom==='stleads'){
+   const key=q.custom==='qleads'?'q_wave_leads':'st_change_leads',selected=new Set(app.answers[key]||[]);
+   qsa('#question .leadpick').forEach(b=>b.onclick=()=>{selected.has(b.dataset.lead)?selected.delete(b.dataset.lead):selected.add(b.dataset.lead);b.classList.toggle('selected',selected.has(b.dataset.lead))});
+   $('saveLeads').onclick=()=>{app.answers[key]=[...selected];app.answers[q.id]='saved';if(!app.history.includes(q.id))app.history.push(q.id);advance()}
+ }
+ const acts=questionCaliperActions(q);
+ qsa('#question .startmeasure').forEach(b=>{const a=acts.find(x=>x.request===b.dataset.measure);b.onclick=()=>{if(!a)return;const leadSelect=qsa('#question .measurelead').find(s=>s.dataset.request===a.request);const selectedLead=leadSelect?.value||a.lead||$('activeLead').value||'II';$('activeLead').value=selectedLead;startCaliperAction({...a,lead:selectedLead})}});
+ $('undoQuestionCaliper').onclick=undoLastCaliper;
+ $('cancelQuestionCaliper').onclick=()=>{app.requestedMeasurement=null;app.activeMeasureLabel=null;app.activeMeasureInstruction=null;app.points=[];setTool('pan');renderQuestion();toast('Active caliper cancelled.')}
+}
+function renderHistory(){const qs=QUESTIONS.filter(q=>app.history.includes(q.id));$('history').innerHTML=qs.length?qs.map((q,i)=>`<div class="hist"><span class="num">${i+1}</span><div><b>${esc(q.title)}</b><br>${esc(displayAnswer(q.id,app.answers[q.id]))}</div></div>`).join(''):'<div class="concept">Answers will accumulate here as the payload is built.</div>'}
+function displayAnswer(id,v){if(v===undefined)return'';if(id==='rate_measure'&&app.answers.rate_value)return`${app.answers.rate_value} bpm`;return String(v).replaceAll('_',' ')}
+function deriveFromMarks(){
+ const latestType=t=>app.marks.filter(m=>m.type===t).at(-1),latestReq=r=>app.marks.filter(m=>m.request===r).at(-1),val=r=>latestReq(r)?.value;
+ const qrs=latestType('qrs'),pr=latestType('pr'),qt=latestType('qt');
+ if(qrs){app.answers.qrs_ms=Math.round(qrs.value);app.answers.qrs_width=qrs.value>=120?'wide':'narrow';app.answers.qrs_width_source='caliper'}
+ else{delete app.answers.qrs_ms;if(app.answers.qrs_width_source==='caliper'){delete app.answers.qrs_width;delete app.answers.qrs_width_source}}
+ if(pr){app.answers.pr_ms=Math.round(pr.value);app.answers.pr_interval=pr.value<120?'short':pr.value>200?'long':'normal';app.answers.pr_interval_source='caliper'}
+ else{delete app.answers.pr_ms;if(app.answers.pr_interval_source==='caliper'){delete app.answers.pr_interval;delete app.answers.pr_interval_source}}
+ if(qt){app.answers.qt_ms=Math.round(qt.value);const rrms=app.rr.length?mean(app.rr):null;if(rrms){app.answers.qtc_bazett=Math.round(qt.value/Math.sqrt(rrms/1000));app.answers.qtc_fridericia=Math.round(qt.value/Math.cbrt(rrms/1000))}}
+ else{delete app.answers.qt_ms;delete app.answers.qtc_bazett;delete app.answers.qtc_fridericia}
+ [['axis_i','axis_i_r','axis_i_s'],['axis_avf','axis_avf_r','axis_avf_s'],['axis_ii','axis_ii_r','axis_ii_s']].forEach(([key,rr,ss])=>{
+   const r=val(rr),s=val(ss);
+   if(r!==undefined&&s!==undefined){const net=r+s;app.answers[key+'_r_mv']=+r.toFixed(2);app.answers[key+'_s_mv']=+s.toFixed(2);app.answers[key+'_net_mv']=+net.toFixed(2);app.answers[key]=net>.05?'positive':net<-.05?'negative':'equiphasic';app.answers[key+'_source']='caliper'}
+   else{delete app.answers[key+'_r_mv'];delete app.answers[key+'_s_mv'];delete app.answers[key+'_net_mv'];if(app.answers[key+'_source']==='caliper'){delete app.answers[key];delete app.answers[key+'_source']}}
+ });
+ const sV1=val('lvh_v1_s'),rV5=val('lvh_v5_r'),rV6=val('lvh_v6_r');
+ if(sV1!==undefined&&(rV5!==undefined||rV6!==undefined)){const r=Math.max(rV5??-Infinity,rV6??-Infinity),sum=Math.abs(sV1)+r;app.answers.lvh_voltage_sum_mv=+sum.toFixed(2);app.answers.lvh=sum>=3.5?'yes':'no';app.answers.lvh_source='caliper'}
+ else{delete app.answers.lvh_voltage_sum_mv;if(app.answers.lvh_source==='caliper'){delete app.answers.lvh;delete app.answers.lvh_source}}
+ const rvR=val('rvh_v1_r'),rvS=val('rvh_v1_s');
+ if(rvR!==undefined&&rvS!==undefined){app.answers.rvh_v1_rs_ratio=+(rvR/Math.max(.01,Math.abs(rvS))).toFixed(2)}
+ else delete app.answers.rvh_v1_rs_ratio;
+ const qd=val('q_depth');if(qd!==undefined)app.answers.q_depth_mv=+Math.abs(qd).toFixed(2);else delete app.answers.q_depth_mv;
+ const qu=latestReq('q_width');if(qu)app.answers.q_width_ms=Math.round(qu.value);else delete app.answers.q_width_ms;
+ const stMarks=app.marks.filter(m=>m.type==='st');if(stMarks.length)app.answers.st_measurements=stMarks.map(m=>({lead:m.lead,value_mv:+m.value.toFixed(2),label:m.letter,request:m.request}));else delete app.answers.st_measurements;
+}
+function axisResult(){const a=app.answers,i=a.axis_i,f=a.axis_avf,ii=a.axis_ii;let name='Undetermined',deg=null,why='Answer lead I and aVF to place the frontal QRS vector.';if(i==='positive'&&f==='positive'){name='Normal quadrant';deg=45;why='Net QRS is positive in both I and aVF, so the mean vector points leftward and inferiorly.'}else if(i==='negative'&&f==='positive'){name='Right-axis deviation quadrant';deg=120;why='Lead I is negative while aVF is positive, so the vector points rightward and inferiorly.'}else if(i==='negative'&&f==='negative'){name='Extreme axis quadrant';deg=-135;why='Both I and aVF are negative, placing the vector in the extreme superior-right quadrant.'}else if(i==='positive'&&f==='negative'){if(ii==='negative'){name='Left-axis deviation';deg=-45;why='I is positive, aVF and II are negative, supporting an axis more negative than about −30°.'}else if(ii==='positive'){name='Leftward but usually normal/borderline axis';deg=-15;why='I is positive and aVF negative, but lead II remains positive, usually keeping the axis above about −30°.'}else{name='Leftward quadrant — lead II needed';deg=-20;why='I is positive and aVF negative. Lead II separates borderline normal from left-axis deviation.'}}else if(i==='equiphasic'||f==='equiphasic'){name='Near a quadrant boundary';why='An equiphasic limb lead suggests the mean vector is close to perpendicular to that lead.'}return{name,deg,why}}
+function drawAxis(){const c=$('axisCanvas'),x=c.getContext('2d'),w=c.width,h=c.height,d=axisResult();x.clearRect(0,0,w,h);x.fillStyle='#fff';x.fillRect(0,0,w,h);x.strokeStyle='#b9c6ce';x.lineWidth=2;x.beginPath();x.moveTo(20,h/2);x.lineTo(w-20,h/2);x.moveTo(w/2,20);x.lineTo(w/2,h-20);x.stroke();x.fillStyle='#60717d';x.font='18px system-ui';x.fillText('I +',8,h/2-8);x.fillText('aVF +',w/2+7,h-12);if(d.deg!==null){const rad=d.deg*Math.PI/180,len=75,ex=w/2+Math.cos(rad)*len,ey=h/2+Math.sin(rad)*len;x.strokeStyle='#087f8c';x.fillStyle='#087f8c';x.lineWidth=7;x.beginPath();x.moveTo(w/2,h/2);x.lineTo(ex,ey);x.stroke();const ang=Math.atan2(ey-h/2,ex-w/2);x.beginPath();x.moveTo(ex,ey);x.lineTo(ex-18*Math.cos(ang-.5),ey-18*Math.sin(ang-.5));x.lineTo(ex-18*Math.cos(ang+.5),ey-18*Math.sin(ang+.5));x.closePath();x.fill()}$('axisText').innerHTML=`<b>${esc(d.name)}</b><br>${esc(d.why)}${d.deg!==null?`<br><span class="chip info">rough vector ${d.deg}°</span>`:''}`}
+function territoryFromLead(lead){
+ if(['II','III','aVF'].includes(lead))return'inferior';
+ if(['I','aVL','V5','V6'].includes(lead))return'lateral';
+ if(['V1','V2'].includes(lead))return'septal';
+ if(['V3','V4'].includes(lead))return'anterior';
+ if(['V7','V8','V9'].includes(lead))return'posterior';
+ return null
+}
+function qWaveTerritories(){
+ const t=new Set(),a=app.answers;
+ if(['inferior','anterior','lateral','posterior','septal'].includes(a.qwaves))t.add(a.qwaves);
+ (a.q_wave_leads||[]).forEach(l=>{const v=territoryFromLead(l);if(v)t.add(v)});
+ if(a.qwaves==='multiple')['inferior','anterior','lateral'].forEach(x=>t.add(x));
+ return[...t]
+}
+function stTerritories(){
+ const t=new Set(),a=app.answers;
+ if(['inferior','anterior','lateral','posterior','septal','diffuse'].includes(a.territory))t.add(a.territory);
+ (a.st_change_leads||[]).forEach(l=>{const v=territoryFromLead(l);if(v)t.add(v)});
+ (a.st_measurements||[]).forEach(m=>{const v=territoryFromLead(m.lead);if(v)t.add(v)});
+ if(a.territory==='multiple')['inferior','anterior','lateral'].forEach(x=>t.add(x));
+ return[...t]
+}
+
+function drawRhythmStrip(){
+ const c=$('rhythmStripCanvas'),x=c.getContext('2d'),w=c.width,h=c.height;x.clearRect(0,0,w,h);x.fillStyle='#fff';x.fillRect(0,0,w,h);
+ if(!app.img){x.fillStyle='#697985';x.textAlign='center';x.font='18px system-ui';x.fillText('Load an EKG to preview the rhythm strip',w/2,h/2);return}
+ let top=+$('rhythmTop').value,bottom=+$('rhythmBottom').value;if(bottom<=top+3){bottom=Math.min(100,top+4);$('rhythmBottom').value=bottom}
+ $('rhythmTopText').textContent=top+'%';$('rhythmBottomText').textContent=bottom+'%';
+ const sy=app.img.height*top/100,sh=app.img.height*(bottom-top)/100,scale=Math.min(w/app.img.width,h/sh),dw=app.img.width*scale,dh=sh*scale,dx=(w-dw)/2,dy=(h-dh)/2;
+ x.drawImage(app.img,0,sy,app.img.width,sh,dx,dy,dw,dh);x.strokeStyle='#9db0bc';x.strokeRect(dx,dy,dw,dh);x.fillStyle='rgba(20,40,52,.78)';x.fillRect(8,8,260,24);x.fillStyle='#fff';x.font='bold 13px system-ui';x.textAlign='left';x.fillText(`${$('rhythmLead').value} · image ${top}% to ${bottom}%`,16,25)
+}
+function drawRhythmIntervals(){
+ const c=$('rhythmIntervalCanvas'),x=c.getContext('2d'),w=c.width,h=c.height,a=rhythmAnalysis(),beats=a.beats;x.clearRect(0,0,w,h);x.fillStyle='#fbfcfd';x.fillRect(0,0,w,h);
+ if(!beats.length){x.fillStyle='#6c7b86';x.textAlign='center';x.font='17px system-ui';x.fillText('Measure R–R intervals to build the interval sequence',w/2,h/2);return}
+ const vals=beats.map(b=>b.rr_ms),min=Math.min(...vals),max=Math.max(...vals),pad=Math.max(40,(max-min)*.22),lo=min-pad,hi=max+pad,left=58,right=22,top=24,bottom=42;
+ x.strokeStyle='#c7d2d9';x.lineWidth=1;x.beginPath();x.moveTo(left,top);x.lineTo(left,h-bottom);x.lineTo(w-right,h-bottom);x.stroke();
+ const med=a.median_rr_ms,ym=v=>top+(hi-v)/(hi-lo)*(h-top-bottom),xm=i=>left+(beats.length===1?.5:i/(beats.length-1))*(w-left-right);
+ if(med){x.strokeStyle='rgba(8,127,140,.55)';x.setLineDash([6,5]);x.beginPath();x.moveTo(left,ym(med));x.lineTo(w-right,ym(med));x.stroke();x.setLineDash([]);x.fillStyle='#087f8c';x.font='11px system-ui';x.fillText(`median ${fmt(med)} ms`,left+5,ym(med)-5)}
+ x.strokeStyle='#173b57';x.lineWidth=2.5;x.beginPath();beats.forEach((b,i)=>{const px=xm(i),py=ym(b.rr_ms);if(i===0)x.moveTo(px,py);else x.lineTo(px,py)});x.stroke();
+ beats.forEach((b,i)=>{const px=xm(i),py=ym(b.rr_ms),danger=b.flags.includes('pause candidate'),warn=b.flags.length&&!danger;x.fillStyle=danger?'#b42318':warn?'#a66a00':'#087f8c';x.beginPath();x.arc(px,py,6,0,Math.PI*2);x.fill();x.fillStyle='#344954';x.textAlign='center';x.font='bold 11px system-ui';x.fillText(b.label,px,h-bottom+18);x.fillText(fmt(b.rr_ms),px,py-10)});
+ x.fillStyle='#405461';x.textAlign='left';x.font='12px system-ui';x.fillText('R–R interval (ms)',8,16)
+}
+function renderRhythmAnalyzer(){
+ if(!$('rhythmStats'))return;const a=rhythmAnalysis();drawRhythmStrip();drawRhythmIntervals();
+ $('pAxisResult').innerHTML=`<b>${esc(a.p_wave_axis.classification)}</b>${a.p_wave_axis.degrees!==null?` · rough ${a.p_wave_axis.degrees}°`:''}<br>${esc(a.p_wave_axis.explanation)}`;
+ $('rhythmStats').innerHTML=`<div class="rhythmstat"><div class="rk">Intervals</div><div class="rv">${a.intervals}</div></div><div class="rhythmstat"><div class="rk">Mean rate</div><div class="rv">${a.mean_rate_bpm??'—'}<small> bpm</small></div></div><div class="rhythmstat"><div class="rk">R–R SD</div><div class="rv">${a.sd_ms??'—'}<small> ms</small></div></div><div class="rhythmstat"><div class="rk">CV</div><div class="rv">${a.cv_percent??'—'}<small>%</small></div></div>`;
+ $('rhythmBeatTable').innerHTML=a.beats.length?`<table class="rhythmtable"><thead><tr><th>Mark</th><th>Lead</th><th>R–R</th><th>Rate</th><th>Deviation</th><th>Flags</th></tr></thead><tbody>${a.beats.map(b=>`<tr><td><b>${esc(b.label)}</b></td><td>${esc(b.lead||'')}</td><td>${fmt(b.rr_ms)} ms</td><td>${fmt(b.rate_bpm)} bpm</td><td>${b.deviation_percent===null?'—':(b.deviation_percent>0?'+':'')+b.deviation_percent+'%'}</td><td>${b.flags.length?b.flags.map(f=>`<span class="chip warn">${esc(f)}</span>`).join(' '):'<span class="chip ok">ordinary</span>'}</td></tr>`).join('')}</tbody></table>`:'<div class="concept">No R–R measurements yet.</div>';
+ const regClass=a.regularity.code==='regular'?'ok':a.regularity.code==='irregularly_irregular'?'danger':'warn';let html=`<div class="rhythmfinding ${regClass}"><b>${esc(a.regularity.label)}</b><br>${esc(a.regularity.explanation)}</div>`;
+ html+=a.ranked_interpretation.map((r,i)=>`<div class="rhythmrank"><div class="ranknum">${i+1}</div><div><b>${esc(r.label)}</b><br><span class="smallnote">${esc(r.support)}</span></div><span class="confidence">${esc(r.confidence)}</span></div>`).join('');
+ if(a.uncertainties.length)html+=`<div class="rhythmfinding warn"><b>Uncertainty</b><br>${a.uncertainties.map(esc).join('<br>')}</div>`;
+ $('rhythmInterpretation').innerHTML=html;$('rhythmNext').innerHTML=`<div class="rhythmfinding"><b>Next best observation</b><br>${esc(a.next_best_observation)}</div>`
+}
+function syncRhythmFromQuestions(){const a=app.answers;$('rhythmPVisible').value=a.p_visible||'unknown';$('rhythmPBefore').value=a.p_before||'unknown';$('rhythmQrsAfterP').value=a.qrs_after_p||'unknown';if(a.p_visible==='flutter')$('rhythmPMorph').value='flutter';else if(a.p_visible==='yes'&&$('rhythmPMorph').value==='unknown')$('rhythmPMorph').value='uniform';renderRhythmAnalyzer()}
+function draftRhythmReport(){
+ const a=rhythmAnalysis(),top=a.ranked_interpretation[0],parts=[];if(a.mean_rate_bpm!==null)parts.push(`${a.regularity.label} ventricular rhythm at approximately ${a.mean_rate_bpm} bpm.`);parts.push(`Atrial activity: P waves ${a.atrial_activity.p_visible.replaceAll('_',' ')}, P-before-QRS ${a.atrial_activity.p_before_each_qrs.replaceAll('_',' ')}, QRS-after-P ${a.atrial_activity.qrs_after_each_p.replaceAll('_',' ')}.`);if(top)parts.push(`Leading interpretation: ${top.label}.`);if(a.pause_candidates.length)parts.push(`${a.pause_candidates.length} pause candidate interval(s) detected.`);if(a.short_long_pairs.length)parts.push(`${a.short_long_pairs.length} short–long pair(s) suggest possible premature ectopy.`);parts.push(`P-wave axis: ${a.p_wave_axis.classification}.`);$('rhythmText').value=parts.join(' ');$('rhythmPearls').value=`Next best observation: ${a.next_best_observation}${a.uncertainties.length?' Uncertainties: '+a.uncertainties.join(' '):''}`;renderPayload();if($('view-report').classList.contains('active'))buildReport()
+}
+
+function territories(){return[...new Set([...qWaveTerritories(),...stTerritories()])]}
+function v3(x=0,y=0,z=0){return{x,y,z}}
+function vAdd(a,b){return v3(a.x+b.x,a.y+b.y,a.z+b.z)}
+function vScale(a,s){return v3(a.x*s,a.y*s,a.z*s)}
+function vLen(a){return Math.hypot(a.x,a.y,a.z)}
+function vNorm(a){const l=vLen(a)||1;return vScale(a,1/l)}
+function vCross(a,b){return v3(a.y*b.z-a.z*b.y,a.z*b.x-a.x*b.z,a.x*b.y-a.y*b.x)}
+function rotate3(p){
+ const yaw=app.vectorYaw*Math.PI/180,pitch=app.vectorPitch*Math.PI/180,cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
+ const x1=p.x*cy+p.z*sy,z1=-p.x*sy+p.z*cy,y1=p.y;
+ return{x:x1,y:y1*cp-z1*sp,z:y1*sp+z1*cp}
+}
+function project3(p,w,h){const r=rotate3(p),s=Math.min(w,h)*.245*app.vectorZoom;return{x:w*.46+r.x*s,y:h*.48+r.y*s,z:r.z,s}}
+function makeSurface(cx,cy,cz,rx,ry,rz,kind){
+ const verts=[],faces=[],rows=13,cols=22;
+ for(let j=0;j<=rows;j++){
+  const phi=-Math.PI/2+j*Math.PI/rows,sp=Math.sin(phi),cp=Math.cos(phi);
+  for(let i=0;i<cols;i++){
+   const th=i*2*Math.PI/cols;let taper=1;
+   if(kind==='ventricle')taper=1-.48*Math.pow((sp+1)/2,2);
+   if(kind==='atrium')taper=.9+.1*Math.cos(phi);
+   verts.push(v3(cx+rx*cp*Math.cos(th)*taper,cy+ry*sp,cz+rz*cp*Math.sin(th)*taper))
+  }
+ }
+ for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){
+  const n=(i+1)%cols,a=j*cols+i,b=j*cols+n,c=(j+1)*cols+n,d=(j+1)*cols+i;
+  faces.push([a,b,c],[a,c,d])
+ }
+ return{verts,faces,kind}
+}
+function ensureHeartGeometry(){
+ if(app.heartGeometry)return app.heartGeometry;
+ app.heartGeometry={
+  lv:makeSurface(.28,.18,-.02,.70,1.08,.57,'ventricle'),
+  rv:makeSurface(-.30,.10,.22,.58,.92,.48,'ventricle'),
+  la:makeSurface(.25,-.78,-.06,.48,.42,.43,'atrium'),
+  ra:makeSurface(-.28,-.76,.13,.45,.40,.40,'atrium')
+ };
+ return app.heartGeometry
+}
+function surfaceTerritory(p){
+ if(p.y>.62)return'inferior';
+ if(p.z>.30)return'anterior';
+ if(p.z<-.30)return'posterior';
+ if(p.x>.53)return'lateral';
+ if(Math.abs(p.x)<.20&&p.z>.02)return'septal';
+ return'central'
+}
+function vectorMapData(){
+ const a=app.answers,axis=axisResult(),deg=(axis.deg??0)*Math.PI/180;
+ const rvR=a.rvh_v1_r_mv??app.marks.filter(m=>m.request==='rvh_v1_r').at(-1)?.value;
+ const rvS=a.rvh_v1_s_mv??app.marks.filter(m=>m.request==='rvh_v1_s').at(-1)?.value;
+ let ap=0;if(rvR!==undefined&&rvS!==undefined)ap=clamp((rvR+rvS)/(Math.abs(rvR)+Math.abs(rvS)+.05),-.65,.65);
+ const forceVals=app.marks.filter(m=>['force','amp'].includes(m.type)).map(m=>Math.abs(m.value));
+ const meanForce=forceVals.length?mean(forceVals):1,chamberBoost=(a.lvh==='yes'||a.rvh==='yes') ? .18 : 0,qrsMagnitude=clamp(.95+meanForce*.16+chamberBoost,.9,1.65);
+ const qrsDir=vNorm(v3(Math.cos(deg),Math.sin(deg),ap));
+ const qrs={key:'qrs',label:'QRS',color:'#087f8c',dir:qrsDir,magnitude:qrsMagnitude,available:axis.deg!==null};
+ const pMarks=app.marks.filter(m=>m.request==='p_height_up').map(m=>Math.abs(m.value)),pMag=clamp(.22+(pMarks.length?mean(pMarks)*.22:0),.20,.42);
+ const pDeg=55*Math.PI/180,p={key:'p',label:'P',color:'#2e9d59',dir:vNorm(v3(Math.cos(pDeg),Math.sin(pDeg),.12)),magnitude:pMag,available:a.p_visible==='yes'};
+ let tDir=qrsDir,tMag=.52,tStatus='approximately concordant with QRS';
+ if(a.t_change==='inversion'){tDir=vScale(qrsDir,-1);tStatus='opposed to the QRS estimate because T inversion was entered'}
+ if(['hyperacute','peaked'].includes(a.t_change)){tMag=.72;tStatus='enlarged because a prominent T-wave pattern was entered'}
+ if(['uncertain','multiple'].includes(a.t_change)){tMag=.48;tStatus='direction is uncertain; displayed as a provisional estimate'}
+ const t={key:'t',label:'T',color:'#d98219',dir:tDir,magnitude:tMag,available:!!a.t_change&&a.t_change!=='none'&&qrs.available};
+ const stTer=stTerritories(),qTer=qWaveTerritories(),ter=territories(),dirs={inferior:v3(0,1,0),anterior:v3(0,0,1),posterior:v3(0,0,-1),lateral:v3(1,0,0),septal:v3(.15,0,.75),diffuse:v3(.35,.35,.45)};
+ let injDir=v3(0,0,0);stTer.forEach(k=>{if(dirs[k])injDir=vAdd(injDir,dirs[k])});if(!vLen(injDir)&&a.territory&&dirs[a.territory])injDir=dirs[a.territory];if(!vLen(injDir))injDir=v3(0,0,1);
+ if(a.st_change==='depression')injDir=vScale(injDir,-1);
+ const stVals=(a.st_measurements||[]).map(m=>Math.abs(m.value_mv)),injMag=clamp(.38+(stVals.length?Math.max(...stVals)*.35:0),.38,.82);
+ const injury={key:'injury',label:a.st_change==='depression'?'ST depression':'Injury/ST',color:a.st_change==='depression'?'#276bd1':'#d83b2d',dir:vNorm(injDir),magnitude:injMag,available:['elevation','depression','both'].includes(a.st_change)};
+ let terminalDir=qrsDir,terminalNote='terminal direction follows the mean QRS estimate';
+ if((a.rvh_v1_rs_ratio??0)>1){terminalDir=vNorm(v3(-.70,-.10,.62));terminalNote='right-anterior terminal bias from the entered V1 R/S clue'}
+ else if(a.lvh==='yes'||(rvS!==undefined&&Math.abs(rvS)>Math.abs(rvR??0))){terminalDir=vNorm(v3(.78,-.08,-.52));terminalNote='left-posterior terminal bias from dominant leftward forces'}
+ const terminal={key:'terminal',label:'Terminal delay',color:'#7651b5',dir:terminalDir,magnitude:.36,available:(a.qrs_ms??0)>=120&&(axis.deg!==null||rvR!==undefined||rvS!==undefined),note:terminalNote};
+ return{coordinate_system:{x:'patient left',y:'inferior',z:'anterior'},axis,mean_force_mv:+meanForce.toFixed(2),territories:ter,st_territories:stTer,q_wave_territories:qTer,qrs,p,t,t_status:tStatus,injury,terminal,chamber_emphasis:{lv:a.lvh==='yes',rv:a.rvh==='yes'},qrs_duration_ms:a.qrs_ms??null}
+}
+
+function drawOrigin3(x,w,h,p,color='#263f4e',label='origin'){
+ const a=project3(p,w,h);x.save();x.fillStyle=color;x.strokeStyle='rgba(255,255,255,.9)';x.lineWidth=2;
+ x.beginPath();x.arc(a.x,a.y,6,0,Math.PI*2);x.fill();x.stroke();
+ x.font='bold 11px system-ui';x.fillStyle='rgba(255,255,255,.92)';
+ const tw=x.measureText(label).width+8;x.fillRect(a.x+8,a.y-16,tw,16);x.fillStyle=color;x.fillText(label,a.x+12,a.y-4);x.restore()
+}
+function drawProjectedPolyline(x,pts,stroke,width=1.5,dashed=false,fill=null){
+ x.save();x.strokeStyle=stroke;x.lineWidth=width;if(dashed)x.setLineDash([7,5]);if(fill)x.fillStyle=fill;
+ x.beginPath();x.moveTo(pts[0].x,pts[0].y);for(let i=1;i<pts.length;i++)x.lineTo(pts[i].x,pts[i].y);if(fill)x.closePath();if(fill)x.fill();x.stroke();x.setLineDash([]);x.restore()
+}
+function drawEinthovenCircle(x,w,h){
+ const center=v3(0,0,0),R=1.55,samples=[];
+ for(let i=0;i<=80;i++){const a=i*Math.PI*2/80;samples.push(project3(v3(Math.cos(a)*R,Math.sin(a)*R,0),w,h))}
+ drawProjectedPolyline(x,samples,'rgba(8,127,140,.42)',2,false);
+ const leadDefs=[
+  {name:'I',deg:0,color:'rgba(44,84,108,.68)'},
+  {name:'II',deg:60,color:'rgba(44,84,108,.5)'},
+  {name:'III',deg:120,color:'rgba(44,84,108,.42)'},
+  {name:'aVR',deg:-150,color:'rgba(90,91,132,.40)'},
+  {name:'aVL',deg:-30,color:'rgba(90,91,132,.46)'},
+  {name:'aVF',deg:90,color:'rgba(90,91,132,.58)'},
+ ];
+ leadDefs.forEach(ld=>{
+   const r=ld.deg*Math.PI/180,p1=project3(center,w,h),p2=project3(v3(Math.cos(r)*R,Math.sin(r)*R,0),w,h);
+   x.save();x.strokeStyle=ld.color;x.lineWidth=1.2;x.setLineDash([5,5]);x.beginPath();x.moveTo(p1.x,p1.y);x.lineTo(p2.x,p2.y);x.stroke();x.setLineDash([]);
+   x.fillStyle=ld.color;x.font='bold 11px system-ui';x.fillText(ld.name,p2.x+4,p2.y-4);x.restore()
+ })
+ x.save();x.fillStyle='rgba(255,255,255,.92)';x.fillRect(18,57,170,18);x.fillStyle='#1f5f69';x.font='bold 11px system-ui';x.fillText('Frontal reference: Einthoven circle',24,70);x.restore()
+}
+
+function drawPlane(x,w,h,points,fill,stroke,label){const pp=points.map(p=>project3(p,w,h));x.save();x.fillStyle=fill;x.strokeStyle=stroke;x.lineWidth=1.2;x.beginPath();x.moveTo(pp[0].x,pp[0].y);pp.slice(1).forEach(p=>x.lineTo(p.x,p.y));x.closePath();x.fill();x.stroke();const q=pp[2];x.fillStyle=stroke;x.font='bold 11px system-ui';x.fillText(label,q.x+5,q.y-5);x.restore()}
+function drawAxis3(x,w,h,a,b,color,label){const p1=project3(a,w,h),p2=project3(b,w,h);x.save();x.strokeStyle=color;x.fillStyle=color;x.lineWidth=1.5;x.beginPath();x.moveTo(p1.x,p1.y);x.lineTo(p2.x,p2.y);x.stroke();x.font='bold 11px system-ui';x.fillText(label,p2.x+4,p2.y-4);x.restore()}
+function drawArrow3(x,w,h,start,vec,color,label,width=6,dashed=false){
+ const end=vAdd(start,vec),a=project3(start,w,h),b=project3(end,w,h),dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1,ux=dx/L,uy=dy/L,head=12+width*.8;
+ x.save();
+ x.strokeStyle=color;x.fillStyle=color;x.lineWidth=width;x.lineCap='round';
+ if(dashed)x.setLineDash([8,6]);
+ x.beginPath();x.moveTo(a.x,a.y);x.lineTo(b.x,b.y);x.stroke();x.setLineDash([]);
+ x.beginPath();x.arc(a.x,a.y,Math.max(2.8,width*.42),0,Math.PI*2);x.fill();
+ x.beginPath();x.moveTo(b.x,b.y);x.lineTo(b.x-head*ux+head*.48*uy,b.y-head*uy-head*.48*ux);x.lineTo(b.x-head*ux-head*.48*uy,b.y-head*uy+head*.48*ux);x.closePath();x.fill();
+ x.font='bold 13px system-ui';const tw=x.measureText(label).width+10;x.fillStyle='rgba(255,255,255,.88)';x.fillRect(b.x+6,b.y-18,tw,19);x.fillStyle=color;x.fillText(label,b.x+11,b.y-4);x.restore()
+}
+function drawSurface(x,w,h,surface,baseColor,emphasis,activeTerritories,stChange,qWaveTerritories){
+ const pts=surface.verts.map(p=>{let q={...p};if(emphasis){if(surface===ensureHeartGeometry().lv&&q.x>0)q.x*=1.10;if(surface===ensureHeartGeometry().rv&&q.x<0)q.x*=1.10}const pr=project3(q,w,h);return{...pr,world:q}}),faces=[];
+ surface.faces.forEach(f=>{const p=f.map(i=>pts[i]),z=(p[0].z+p[1].z+p[2].z)/3,world=vScale(vAdd(vAdd(p[0].world,p[1].world),p[2].world),1/3);faces.push({p,z,territory:surfaceTerritory(world)})});faces.sort((a,b)=>a.z-b.z);
+ faces.forEach(face=>{const hit=activeTerritories.has(face.territory)||activeTerritories.has('diffuse'),qhit=qWaveTerritories.has(face.territory);let fill=baseColor,stroke='rgba(78,45,50,.16)';if(hit){if(stChange==='depression')fill='rgba(55,112,216,.38)';else if(['elevation','both'].includes(stChange))fill='rgba(232,86,45,.42)';else fill='rgba(120,98,120,.32)'}if(qhit){fill='rgba(62,54,69,.43)';stroke='rgba(50,44,55,.45)'}x.fillStyle=fill;x.strokeStyle=stroke;x.lineWidth=.55;x.beginPath();x.moveTo(face.p[0].x,face.p[0].y);x.lineTo(face.p[1].x,face.p[1].y);x.lineTo(face.p[2].x,face.p[2].y);x.closePath();x.fill();x.stroke()})
+}
+function vectorInterpretationHtml(d){
+ const lines=[];if(d.qrs.available)lines.push(`<b>Mean QRS:</b> ${esc(d.axis.name)} near ${d.axis.deg}° in the frontal plane; arrow length is scaled to the entered voltage evidence.`);else lines.push(`<b>Mean QRS:</b> not established because the frontal axis is incomplete. When present, the QRS arrow starts at the electrical origin and points through the Einthoven frontal reference system.`);
+ if(d.p.available)lines.push(`<b>P vector:</b> small inferior-leftward estimate because discrete P waves were entered. A true P axis was not independently reconstructed. The arrow still begins at the shared electrical origin.`);else lines.push(`<b>P vector:</b> not established from the current observations.`);
+ lines.push(`<b>T vector:</b> ${esc(d.t_status)}.`);
+ if(d.injury.available)lines.push(`<b>ST/injury vector:</b> directed toward the entered ${d.st_territories.join(', ')||'unspecified'} region${app.answers.st_change==='depression'?' in the reciprocal/opposite direction for depression':''}.`);
+ if(d.terminal.available)lines.push(`<b>Wide-QRS terminal force:</b> ${esc(d.terminal.note)}. This is a teaching estimate, not a bundle-branch diagnosis. It is drawn from the same origin for easy comparison.`);
+ if(d.chamber_emphasis.lv||d.chamber_emphasis.rv)lines.push(`<b>Chamber shell:</b> ${d.chamber_emphasis.lv?'LV enlarged/emphasized. ':''}${d.chamber_emphasis.rv?'RV enlarged/emphasized.':''}`);
+ return lines.join('<br>')
+}
+function renderFutureAnalyzerStatus(){
+ const r=rrSummary(),a=app.answers,rReady=[r.n>=3,!!a.p_visible,!!a.p_before,!!a.qrs_after_p].filter(Boolean).length,qReady=[!!a.qrs_ms,axisResult().deg!==null,app.marks.some(m=>['force','amp'].includes(m.type)),!!a.rvh_v1_rs_ratio].filter(Boolean).length;
+ $('futureAnalyzerStatus').innerHTML=`<div class="futurecard"><b>Rhythm analyzer — active</b><br>${rReady}/4 core inputs currently available. Open the Rhythm analyzer tab for interval-pattern, pause, ectopy, P-axis, and AV-linkage interpretation.</div><div class="futurecard"><b>“Funny QRS” morphology analyzer — future module</b><br>${qReady}/4 core inputs currently available. Planned: bundle-branch, pacing, pre-excitation, ventricular-origin, fragmentation/notching, and lead-by-lead QRS fingerprinting.</div>`
+}
+function drawHeart(){
+ const c=$('heartCanvas'),x=c.getContext('2d'),w=c.width,h=c.height,d=vectorMapData(),g=ensureHeartGeometry(),active=new Set(d.st_territories),qTerr=new Set(d.q_wave_territories);
+ x.clearRect(0,0,w,h);const bg=x.createRadialGradient(w*.45,h*.42,20,w*.48,h*.48,w*.65);bg.addColorStop(0,'#ffffff');bg.addColorStop(1,'#e3edf2');x.fillStyle=bg;x.fillRect(0,0,w,h);
+ if($('showVectorPlanes')?.checked){
+   drawPlane(x,w,h,[v3(-1.45,-1.35,0),v3(1.45,-1.35,0),v3(1.45,1.35,0),v3(-1.45,1.35,0)],'rgba(61,142,160,.030)','rgba(31,112,129,.14)','frontal');
+   drawPlane(x,w,h,[v3(-1.45,0,-1.05),v3(1.45,0,-1.05),v3(1.45,0,1.05),v3(-1.45,0,1.05)],'rgba(226,165,52,.032)','rgba(181,120,25,.18)','horizontal');
+   drawPlane(x,w,h,[v3(0,-1.35,-1.05),v3(0,-1.35,1.05),v3(0,1.35,1.05),v3(0,1.35,-1.05)],'rgba(117,91,178,.03)','rgba(102,76,160,.16)','sagittal');
+   drawEinthovenCircle(x,w,h);
+ }
+ drawAxis3(x,w,h,v3(0,0,0),v3(1.55,0,0),'rgba(35,73,96,.55)','L');drawAxis3(x,w,h,v3(0,0,0),v3(-1.55,0,0),'rgba(35,73,96,.38)','R');drawAxis3(x,w,h,v3(0,0,0),v3(0,1.45,0),'rgba(35,73,96,.55)','Inferior');drawAxis3(x,w,h,v3(0,0,0),v3(0,-1.45,0),'rgba(35,73,96,.38)','Superior');drawAxis3(x,w,h,v3(0,0,0),v3(0,0,1.15),'rgba(35,73,96,.55)','Anterior');drawAxis3(x,w,h,v3(0,0,0),v3(0,0,-1.15),'rgba(35,73,96,.38)','Posterior');
+ const surfaces=[{s:g.la,c:'rgba(171,71,83,.22)',e:false},{s:g.ra,c:'rgba(91,132,169,.21)',e:false},{s:g.lv,c:'rgba(173,52,67,.31)',e:d.chamber_emphasis.lv},{s:g.rv,c:'rgba(74,119,158,.28)',e:d.chamber_emphasis.rv}];
+ surfaces.forEach(o=>drawSurface(x,w,h,o.s,o.c,o.e,active,app.answers.st_change,qTerr));
+ const origin=v3(0,.08,.02);
+ drawOrigin3(x,w,h,origin,'#263f4e','origin');
+ if($('showPVector')?.checked&&d.p.available)drawArrow3(x,w,h,origin,vScale(d.p.dir,d.p.magnitude),'#2e9d59','P',4);
+ if($('showQRSVector')?.checked&&d.qrs.available)drawArrow3(x,w,h,origin,vScale(d.qrs.dir,d.qrs.magnitude),'#087f8c',`QRS ${d.axis.deg!==null?d.axis.deg+'°':''}`,8);
+ if($('showTVector')?.checked&&d.t.available)drawArrow3(x,w,h,origin,vScale(d.t.dir,d.t.magnitude),'#d98219','T',5,d.t_status.includes('uncertain'));
+ if($('showInjuryVector')?.checked&&d.injury.available)drawArrow3(x,w,h,origin,vScale(d.injury.dir,d.injury.magnitude),d.injury.color,d.injury.label,6);
+ if($('showTerminalVector')?.checked&&d.terminal.available)drawArrow3(x,w,h,origin,vScale(d.terminal.dir,d.terminal.magnitude),'#7651b5','terminal',4,true);
+ x.fillStyle='#263f4e';x.font='bold 18px system-ui';x.fillText('3D electrical vector heart',22,28);x.font='12px system-ui';x.fillText(`x = patient left · y = inferior · z = anterior · yaw ${fmt(app.vectorYaw)}° · pitch ${fmt(app.vectorPitch)}°`,22,48);
+ $('vectorInterpretation').innerHTML=vectorInterpretationHtml(d);
+ $('heartLegend').innerHTML=`<div class="vectorlegenditem"><span class="swatch" style="background:#263f4e"></span>Electrical origin</div><div class="vectorlegenditem"><span class="swatch" style="background:#2e9d59"></span>P / atrial</div><div class="vectorlegenditem"><span class="swatch" style="background:#087f8c"></span>Mean QRS</div><div class="vectorlegenditem"><span class="swatch" style="background:#d98219"></span>T / repolarization</div><div class="vectorlegenditem"><span class="swatch" style="background:${d.injury.color}"></span>ST / injury</div><div class="vectorlegenditem"><span class="swatch" style="background:#7651b5"></span>Terminal delay</div><div class="vectorlegenditem"><span class="swatch" style="background:#4c4654"></span>Q-wave territory</div><div class="vectorlegenditem"><span class="swatch" style="background:#8bc6d1"></span>Einthoven circle</div>`;
+ renderFutureAnalyzerStatus()
+}
+function setVectorView(yaw,pitch,zoom=1){app.vectorYaw=yaw;app.vectorPitch=pitch;app.vectorZoom=zoom;$('heartYaw').value=Math.round(yaw);$('heartPitch').value=Math.round(pitch);$('heartZoom').value=Math.round(zoom*100);drawHeart()}
+$('heartYaw').oninput=e=>{app.vectorYaw=+e.target.value;drawHeart()};$('heartPitch').oninput=e=>{app.vectorPitch=+e.target.value;drawHeart()};$('heartZoom').oninput=e=>{app.vectorZoom=+e.target.value/100;drawHeart()};
+['showVectorPlanes','showPVector','showQRSVector','showTVector','showInjuryVector','showTerminalVector'].forEach(id=>$(id).onchange=drawHeart);
+qsa('.vectorpreset').forEach(b=>b.onclick=()=>{const v=b.dataset.vectorView;if(v==='frontal')setVectorView(0,0,1);else if(v==='lao')setVectorView(45,6,1);else if(v==='rao')setVectorView(-45,6,1);else if(v==='top')setVectorView(0,-72,1);else setVectorView(-18,8,1)});
+const hc=$('heartCanvas');hc.onpointerdown=e=>{app.vectorDragging=true;app.vectorDragStart={x:e.clientX,y:e.clientY,yaw:app.vectorYaw,pitch:app.vectorPitch};hc.classList.add('dragging');hc.setPointerCapture(e.pointerId)};hc.onpointermove=e=>{if(!app.vectorDragging||!app.vectorDragStart)return;app.vectorYaw=clamp(app.vectorDragStart.yaw+(e.clientX-app.vectorDragStart.x)*.45,-180,180);app.vectorPitch=clamp(app.vectorDragStart.pitch+(e.clientY-app.vectorDragStart.y)*.35,-85,85);$('heartYaw').value=Math.round(app.vectorYaw);$('heartPitch').value=Math.round(app.vectorPitch);drawHeart()};hc.onpointerup=()=>{app.vectorDragging=false;app.vectorDragStart=null;hc.classList.remove('dragging')};hc.onpointercancel=hc.onpointerup;hc.onwheel=e=>{e.preventDefault();app.vectorZoom=clamp(app.vectorZoom*(e.deltaY>0?.92:1.08),.65,1.55);$('heartZoom').value=Math.round(app.vectorZoom*100);drawHeart()};
+
+function synth(){const a=app.answers,d=axisResult(),lines=[],urgent=[],missing=[];const rate=a.rate_value||app.rate;if(rate)lines.push(`Ventricular rate approximately ${Math.round(rate)} bpm.`);else missing.push('Ventricular rate is not established.');if(a.regularity)lines.push(`Rhythm is described as ${displayAnswer('regularity',a.regularity)}.`);else missing.push('Regularity remains unclassified.');if(a.p_visible==='yes'&&a.p_before==='yes'&&a.qrs_after_p==='yes'&&a.regularity==='regular')lines.push('Discrete P waves with a regular 1:1 P–QRS relationship support sinus rhythm if P morphology and axis are appropriate.');if(a.p_visible==='no'&&a.regularity==='irregularly_irregular')lines.push('No discrete P waves plus an irregularly irregular ventricular response raises atrial fibrillation as a leading hypothesis.');if(a.p_visible==='flutter')lines.push('Flutter-like atrial activity is reported; measure atrial rate and conduction ratio.');if(d.name!=='Undetermined')lines.push(`Frontal QRS axis: ${d.name}.`);else missing.push('Frontal QRS axis is incomplete.');if(a.qrs_ms)lines.push(`QRS duration approximately ${a.qrs_ms} ms (${a.qrs_width}).`);else if(a.qrs_width)lines.push(`QRS is described as ${a.qrs_width}.`);else missing.push('QRS width is not established.');if(a.pr_ms)lines.push(`PR approximately ${a.pr_ms} ms (${a.pr_interval}).`);if(a.qtc_fridericia){lines.push(`QTc Fridericia approximately ${a.qtc_fridericia} ms; Bazett approximately ${a.qtc_bazett} ms.`);if(a.qtc_fridericia>=500)urgent.push('Marked QT prolongation requires prompt review of medications, potassium, magnesium, bradycardia, ectopy, and congenital risk.')}if(a.lvh==='yes')lines.push('Entered forces suggest a possible LVH voltage pattern; correlate with full criteria and clinical context.');if(a.rvh==='yes')lines.push('Entered forces suggest a possible RVH pattern; correlate with axis and V1 morphology.');if(a.qwaves&&a.qwaves!=='none'&&a.qwaves!=='uncertain'&&a.qwaves!=='measure')lines.push(`Abnormal-appearing Q waves are reported in the ${displayAnswer('qwaves',a.qwaves)} distribution.`);if(a.st_change&&a.st_change!=='none'&&a.st_change!=='uncertain'&&a.st_change!=='measure'){lines.push(`${displayAnswer('st_change',a.st_change)} is reported${a.territory?' in the '+displayAnswer('territory',a.territory)+' distribution':''}.`);if(a.st_change==='elevation'||a.st_change==='both')urgent.push('Reported ST elevation requires direct clinician review of the original tracing and clinical context.')}if(a.t_change&&a.t_change!=='none'&&a.t_change!=='uncertain')lines.push(`${displayAnswer('t_change',a.t_change)} is reported.`);if(!a.context)missing.push('Clinical context and prior comparison have not been added.');return{lines,urgent,missing}}
+function renderSynthesis(){const s=synth();let h=s.urgent.map(x=>`<div class="finding danger"><b>Urgent flag</b><br>${esc(x)}</div>`).join('');h+=s.lines.length?s.lines.map(x=>`<div class="finding">${esc(x)}</div>`).join(''):'<div class="finding warn">The descriptor is still too incomplete for a useful synthesis.</div>';if(s.missing.length)h+=`<div class="finding warn"><b>Still needed</b><br>${s.missing.map(esc).join('<br>')}</div>`;$('synthesis').innerHTML=h}
+function payload(){const axis=axisResult(),s=synth(),cv=app.rr.length>1?sd(app.rr)/mean(app.rr):null;return{schema:'ekg-question-caliper-observation.v14',generated_at:new Date().toISOString(),source:{name:app.name||null},grid_hierarchy:{tiny_texture_pixels_estimate:app.gridTinyPx?+app.gridTinyPx.toFixed(2):null,little_box_pixels_horizontal:app.gridPx?+app.gridPx.toFixed(2):null,little_box_pixels_vertical:app.gridPxY?+app.gridPxY.toFixed(2):null,one_large_box_pixels:app.gridBigPx?+app.gridBigPx.toFixed(2):null,five_large_box_span_pixels:(app.marks.find(m=>m.calibration)?.calibrationSpanPx||null),selected_level:'small_box_1_mm',selection_confirmation:app.answers.grid_confirm||null,grid_confidence:+app.gridConfidence.toFixed(3),paper_speed_mm_s:+$('speed').value},human_caliper_rate:(()=>{const r=rrSummary();return{ventricular_rate_bpm:r.meanRate?+r.meanRate.toFixed(1):null,rr_count:r.n,rr_mean_ms:r.meanMs?+r.meanMs.toFixed(1):null,rr_standard_deviation_ms:r.sdMs?+r.sdMs.toFixed(1):null,rr_coefficient_of_variation_percent:r.cv?+(r.cv*100).toFixed(1):null,rr_range_ms:r.rangeMs?+r.rangeMs.toFixed(1):null,approximate_regularity:r.estimate,rr_marks:app.marks.filter(m=>m.type==='rr').map(m=>({label:m.letter,rr_ms:+m.value.toFixed(1),rate_bpm:+(60000/m.value).toFixed(1)}))}})(),branch_answers:{...app.answers},rhythm_strip_interpretation:rhythmPayload(),unusual_morphology_library:morphologyPayload(),axis:{classification:axis.name,rough_degrees:axis.deg,explanation:axis.why},calipers:app.marks.map(m=>({label:m.letter,type:m.type,measurement:m.measureLabel||null,instruction:m.instruction||null,lead:m.lead||null,value:+m.value.toFixed(m.unit==='mV'?3:1),unit:m.unit,requested_for:m.request||null,point_1:m.a,point_2:m.b})),electrical_vector_map:vectorMapData(),conceptual_heart_model:{deprecated:true,axis_degrees:axis.deg,lv_wall_emphasis:app.answers.lvh==='yes',rv_wall_emphasis:app.answers.rvh==='yes',mapped_territories:territories(),st_pattern:app.answers.st_change||null},rhythm_strip_analyzer:rhythmAnalysis(),future_analyzer_hooks:{qrs_morphology_analyzer:{qrs_ms:app.answers.qrs_ms||null,axis_degrees:axis.deg,v1_rs_ratio:app.answers.rvh_v1_rs_ratio||null,force_mark_count:app.marks.filter(m=>['force','amp'].includes(m.type)).length}},synthesis:{status:s.urgent.length?'urgent_clinician_review':s.missing.length?'additional_information_required':'descriptor_complete',interpretation:s.lines,urgent_flags:s.urgent,missing_information:s.missing},next_steps:buildNextSteps(),guardrails:['The user calibration spans five LARGE boxes, which equal 25 small boxes. The program divides the span by 25. No automatic comparison is performed.','No grid overlay is drawn; caliper results are only as accurate as the confirmed little-box scale and landmark placement.','The 3D vector-heart is an evidence visualization, not a patient-specific anatomical reconstruction.','The rhythm analyzer uses measured R–R intervals and explicit atrial/AV observations; it does not silently invent waveform detections.','Use the original tracing, patient, and clinical context for care decisions.','When information is insufficient, preserve uncertainty rather than inventing morphology.']}}
+function buildNextSteps(){const a=app.answers,n=[];if(!app.gridPx)n.push({action:'Correct grid calibration',reason:'Time measurements cannot be reproduced without a small-box scale.'});if(!a.rate_value)n.push({action:'Measure one or more R–R intervals with the question-driven caliper',reason:'Rate should be derived from a human R–R caliper using the confirmed LITTLE-box scale.'});if(!a.regularity)n.push({action:'Classify RR regularity',reason:'This is a major rhythm branch point.'});if(!a.p_visible)n.push({action:'Inspect lead II and V1 for atrial activity',reason:'P-wave presence and AV relationship separate major rhythm families.'});if(!a.axis_i||!a.axis_avf)n.push({action:'Classify net QRS polarity in leads I and aVF',reason:'These two signs place the frontal QRS vector into a quadrant.'});if(!a.qrs_width)n.push({action:'Measure or classify QRS width',reason:'Wide QRS changes rhythm and ST-T interpretation.'});if(!a.st_change)n.push({action:'Inspect ST segments in contiguous lead groups',reason:'Regional ST change may be urgent and cannot be inferred from rate or axis.'});if(!a.context)n.push({action:'Add symptoms, hemodynamics, electrolytes, medications, device history, and prior EKG',reason:'Context determines urgency and diagnostic meaning.'});n.push({action:'Compare with a prior tracing when available',reason:'Temporal change is often more informative than an isolated morphology.'});return n}
+function promptText(p){return`You are reviewing a structured EKG observation payload created by a five-large-box (25-small-box) calibration plus question-driven human calipers and a branching interview.\n\nRULES\n1. Use only the supplied observations and measurements. Do not invent unseen morphology.\n2. First write a concise descriptor: rate, rhythm evidence, axis, intervals/conduction, chamber-force clues, Q waves, ST-T findings.\n3. Identify contradictions, possible grid/landmark errors, and evidence that requires direct tracing review.\n4. Give a ranked differential, not a single forced diagnosis.\n5. Ask for the single next observation or clinical datum with the greatest information value.\n6. Separate urgent flags from routine next steps.\n7. Preserve “uncertain” and “not measured” states.\n8. Return a human-readable interpretation followed by a next_steps JSON object.\n\nPAYLOAD\n${JSON.stringify(p,null,2)}\n\nThis prototype is educational/decision support and does not replace clinician review of the original tracing and patient.`}
+function renderPayload(){const p=payload();$('jsonOut').textContent=JSON.stringify(p,null,2);$('promptOut').textContent=promptText(p)}
+function renderBanner(){if(!app.img){$('banner').className='banner warn';$('bannerMain').innerHTML='<b>Begin:</b> load an EKG or the demo.';$('bannerSide').textContent='Click the left edge of a large box, then the right edge five large boxes later. The app treats that span as 25 small boxes.';return}const q=getCurrent(),s=synth();$('banner').className='banner '+(s.urgent.length?'danger':q?.id==='complete'?'ok':'');$('bannerMain').innerHTML=`<b>Current branch:</b> ${esc(q?.title||'Review')}`;$('bannerSide').textContent=app.rate?`Human R–R caliper rate ${fmt(app.rate)} bpm.`:app.answers.grid_confirm?'Setup DONE; measure several R–R intervals.':'Setup not done: span five LARGE boxes.'}
+function renderAll(){renderAuto();renderQuestion();renderHistory();renderProgress();renderLedger();drawAxis();drawHeart();renderSynthesis();renderRhythmAnalyzer();renderPayload();renderBanner();draw();if($('view-report').classList.contains('active'))buildReport()}
+qsa('.tab').forEach(b=>b.onclick=()=>{qsa('.tab').forEach(x=>x.classList.remove('active'));b.classList.add('active');qsa('.view').forEach(x=>x.classList.remove('active'));$('view-'+b.dataset.view).classList.add('active');if(b.dataset.view==='heart')drawHeart();if(b.dataset.view==='rhythm')renderRhythmAnalyzer();if(b.dataset.view==='report')buildReport()});
+function download(name,text,type='application/json'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)}
+async function copyTextSafe(text){
+ try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(text);return true}}catch(e){}
+ const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();
+ let ok=false;try{ok=document.execCommand('copy')}catch(e){}ta.remove();return ok
+}
+
+$('toggleAnnotations').onclick=()=>setAnnotationVisibility(!app.showAnnotations);
+$('imageUndo').onclick=()=>{const m=selectedMarkObject();if(m)removeMarkById(m.id,`Removed mark ${m.letter}.`)};
+$('clearMarks').onclick=()=>{if(!app.marks.length){toast('There are no marks to clear.');return}if(!confirm('Clear all calipers and restart measurement setup?'))return;app.marks=[];app.selectedMark=null;app.points=[];app.nextMark=0;app.rr=[];app.rate=null;app.rateWarning=null;app.gridPx=null;app.gridPxY=null;app.gridBigPx=null;app.gridTinyPx=null;app.answers={};app.history=[];app.qIndex=0;app.currentQuestion=null;goFirst();renderAll();toast('All annotations and measurements cleared.')};
+$('fillRhythm').onclick=()=>{draftRhythmReport();toast('Rhythm-strip wording drafted from the structured analysis.')};
+$('rhythmRun').onclick=()=>{renderRhythmAnalyzer();draftRhythmReport();toast('Structured rhythm analysis refreshed.')};
+$('rhythmSync').onclick=()=>{syncRhythmFromQuestions();toast('Pulled atrial and AV-linkage answers from the main tree.')};
+$('rhythmUseBottom').onclick=()=>{$('rhythmTop').value=82;$('rhythmBottom').value=100;renderRhythmAnalyzer()};
+$('rhythmUseFull').onclick=()=>{$('rhythmTop').value=0;$('rhythmBottom').value=100;renderRhythmAnalyzer()};
+$('rhythmRefresh').onclick=renderRhythmAnalyzer;
+$('rhythmMeasureRR').onclick=()=>{$('activeLead').value=$('rhythmLead').value||'II';setTool('rr',true);scrollTo({top:0,behavior:'smooth'});toast('Click one R peak and the next R peak on the selected rhythm strip.')};
+$('rhythmMeasurePR').onclick=()=>{$('activeLead').value=$('rhythmLead').value||'II';setTool('pr',true);scrollTo({top:0,behavior:'smooth'});toast('Click P-wave onset, then QRS onset.')};
+['rhythmTop','rhythmBottom','rhythmLead','rhythmPVisible','rhythmPMorph','rhythmPBefore','rhythmQrsAfterP','rhythmPauses','rhythmEctopy','pAxisI','pAxisII','pAxisAVF'].forEach(id=>$(id).addEventListener('input',()=>{renderRhythmAnalyzer();renderPayload()}));
+reportFieldIds().forEach(id=>{const el=$(id);if(el)el.addEventListener('input',()=>{renderPayload();if($('view-report').classList.contains('active'))buildReport()})});
+$('buildReport').onclick=()=>{if(buildReport())toast('Dense report refreshed.')};
+$('downloadReportPng').onclick=()=>{if(!buildReport())return;const c=buildReportPngCanvas(),a=document.createElement('a');a.href=c.toDataURL('image/png');a.download='ekg_dense_report_v14.png';a.click()};
+$('downloadReportHtml').onclick=()=>{if(!buildReport())return;downloadBlobText('ekg_dense_report_v14.html',standaloneReportHtml(),'text/html')};
+$('printReport').onclick=()=>{if(!buildReport())return;const w=window.open('','_blank');if(!w){toast('Pop-up blocked. Allow pop-ups to print/save PDF.');return}w.document.open();w.document.write(standaloneReportHtml());w.document.close();w.focus();setTimeout(()=>w.print(),350)};
+
+$('copyJson').onclick=async()=>{renderPayload();toast(await copyTextSafe($('jsonOut').textContent)?'JSON copied.':'Select and copy the JSON manually.')};
+$('downloadJson').onclick=()=>download('ekg_question_caliper_payload_v14.json',$('jsonOut').textContent);
+$('copyPrompt').onclick=async()=>{renderPayload();toast(await copyTextSafe($('promptOut').textContent)?'Prompt copied.':'Select and copy the prompt manually.')};
+$('annotatedPng').onclick=()=>{draw();const a=document.createElement('a');a.href=canvas.toDataURL('image/png');a.download='ekg_question_calipers_v14.png';a.click()};
+function session(){return{version:14,imgData:app.imgData,name:app.name,gridPx:app.gridPx,gridPxY:app.gridPxY,autoGridPx:app.autoGridPx,autoGridPxY:app.autoGridPxY,gridTinyPx:app.gridTinyPx,gridBigPx:app.gridBigPx,gridOriginX:app.gridOriginX,gridOriginY:app.gridOriginY,gridConfidence:app.gridConfidence,rate:app.rate,rr:app.rr,marks:app.marks,nextMark:app.nextMark,answers:app.answers,history:app.history,qIndex:app.qIndex,speed:$('speed').value,showAnnotations:app.showAnnotations,vectorYaw:app.vectorYaw,vectorPitch:app.vectorPitch,vectorZoom:app.vectorZoom,vectorToggles:{planes:$('showVectorPlanes').checked,p:$('showPVector').checked,qrs:$('showQRSVector').checked,t:$('showTVector').checked,injury:$('showInjuryVector').checked,terminal:$('showTerminalVector').checked},reportFields:collectReportFields()}}
+$('saveSession').onclick=()=>download('ekg_question_caliper_session_v14.json',JSON.stringify(session(),null,2));$('loadSession').onclick=()=>$('loadSessionInput').click();$('loadSessionInput').onchange=async e=>{try{const s=JSON.parse(await e.target.files[0].text());if(s.imgData)await loadData(s.imgData,s.name||'loaded session');Object.assign(app,{gridPx:s.gridPx,gridPxY:s.gridPxY||s.gridPx,autoGridPx:s.autoGridPx||s.gridPx,autoGridPxY:s.autoGridPxY||s.gridPxY||s.gridPx,gridTinyPx:s.gridTinyPx||(s.gridPx?s.gridPx/5:null),gridBigPx:s.gridBigPx||(s.gridPx?s.gridPx*5:null),gridOriginX:s.gridOriginX||0,gridOriginY:s.gridOriginY||0,gridConfidence:s.gridConfidence||0,rate:s.rate,rr:s.rr||[],marks:s.marks||[],nextMark:s.nextMark||0,answers:s.answers||{},history:s.history||[],qIndex:s.qIndex||0,showAnnotations:s.showAnnotations!==false,vectorYaw:s.vectorYaw??-18,vectorPitch:s.vectorPitch??8,vectorZoom:s.vectorZoom??1});$('speed').value=s.speed||25;restoreReportFields(s.reportFields||{});setAnnotationVisibility(app.showAnnotations);$('heartYaw').value=Math.round(app.vectorYaw);$('heartPitch').value=Math.round(app.vectorPitch);$('heartZoom').value=Math.round(app.vectorZoom*100);if(s.vectorToggles){$('showVectorPlanes').checked=s.vectorToggles.planes!==false;$('showPVector').checked=s.vectorToggles.p!==false;$('showQRSVector').checked=s.vectorToggles.qrs!==false;$('showTVector').checked=s.vectorToggles.t!==false;$('showInjuryVector').checked=s.vectorToggles.injury!==false;$('showTerminalVector').checked=s.vectorToggles.terminal!==false;}app.currentQuestion=visibleQuestions()[app.qIndex]||visibleQuestions()[0];renderAll();toast('Session loaded.')}catch(err){toast('Could not load session.')}};
+resize();goFirst();renderPayload();
+})();
+</script>
+</body></html>
