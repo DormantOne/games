@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>GenMail</title>
+</head>
+<body>
+
+<h2>Launching Email...</h2>
+
+<script>
+const q = decodeURIComponent(window.location.search.substring(1));
+
+if (q) {
+    const parts = q.split("/");
+
+    const email = parts[0] || "";
+    const subject = parts[1] || "";
+    const body = parts.slice(2).join("\n");
+
+    const mailto =
+        `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+    window.location.href = mailto;
+
+    document.body.innerHTML =
+        '<p>If your mail client did not open, <a id="m">click here</a>.</p>';
+
+    setTimeout(() => {
+        document.getElementById('m').href = mailto;
+    }, 100);
+} else {
+    document.body.innerHTML =
+        '<p>Usage:<br>?email@domain.com/Subject/Body text</p>';
+}
+</script>
+
+</body>
+</html>
