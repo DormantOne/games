@@ -1,0 +1,2803 @@
+
+<!doctype html>
+<html lang="en" data-visualize-standalone>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Novel Maze Memory</title>
+<style>:root {
+  color-scheme: light dark;
+  background-color: transparent !important;
+
+  /* Agent-facing contract; keep in sync with SKILL.md. */
+  --background: var(
+    --main-surface-primary,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --foreground: light-dark(rgb(26 28 31), rgb(255 255 255));
+  --card: color-mix(in oklab, var(--foreground) 5%, transparent);
+  --card-foreground: var(--foreground);
+  --popover: light-dark(rgb(255 255 255), rgb(45 45 45));
+  --popover-foreground: var(--foreground);
+  --primary: light-dark(rgb(51 156 255), rgb(131 195 255));
+  --primary-foreground: light-dark(rgb(255 255 255), rgb(13 13 13));
+  --secondary: light-dark(rgb(255 255 255 / 96%), rgb(54 54 54 / 96%));
+  --secondary-foreground: var(--foreground);
+  --muted: color-mix(in srgb, var(--foreground) 10%, transparent);
+  --muted-foreground: light-dark(
+    rgb(26 28 31 / 49.4%),
+    rgb(255 255 255 / 49.8%)
+  );
+  --accent: light-dark(rgb(229 242 255), rgb(13 39 63));
+  --accent-foreground: var(--primary);
+  --destructive: light-dark(rgb(226 85 7), rgb(255 133 73));
+  --border: light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%));
+  --input: light-dark(
+    rgb(26 28 31 / 11.8%),
+    color-mix(in oklab, rgb(0 0 0) 10%, transparent)
+  );
+  --ring: light-dark(rgb(51 156 255), rgb(131 195 255 / 76%));
+  --font-size-base: 14px;
+  --red: light-dark(rgb(186 38 35), rgb(250 66 62));
+  --green: light-dark(rgb(0 162 64), rgb(64 201 119));
+
+  /* Internal implementation variables; not part of the agent contract. */
+  --font-sans: -apple-system, system-ui, "Segoe UI", sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono",
+    monospace;
+  --font-size-normal: max(11px, var(--font-size-base));
+  --font-size-tooltip: calc(var(--font-size-base) - 1px);
+  --font-size-small: max(11px, calc(var(--font-size-base) - 2px));
+  --font-size-h1: calc(var(--font-size-normal) * 1.7142857143);
+  --font-size-h2: calc(var(--font-size-normal) * 1.4285714286);
+  --font-size-h3: calc(var(--font-size-normal) * 1.2857142857);
+  --font-weight-normal: 430;
+  --font-weight-medium: 500;
+  --line-height-normal: calc(var(--font-size-normal) * 1.5);
+  --line-height-tooltip: calc(var(--font-size-tooltip) * 1.4285714286);
+  --line-height-small: calc(var(--font-size-small) + 4px);
+  --radius: 10px;
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-2xl: calc(var(--radius) * 1.6);
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px -1px rgb(0 0 0 / 8%);
+  --checkmark-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 17 17'%3E%3Cpath d='M12.8961 3.64101C13.1297 3.41418 13.4984 3.37523 13.7779 3.56581C14.0571 3.75635 14.1554 4.11331 14.0299 4.41347L13.9615 4.53847L7.71151 13.7045C7.59411 13.8767 7.4063 13.9877 7.19881 14.0072C6.99136 14.0267 6.78564 13.9533 6.63826 13.806L2.88826 10.056L2.79842 9.9457C2.6192 9.67407 2.64927 9.30496 2.88826 9.06581C3.12738 8.82669 3.49647 8.79676 3.76815 8.97597L3.8785 9.06581L7.03084 12.2182L12.8053 3.74941L12.8961 3.64101Z'/%3E%3C/svg%3E");
+
+  /* Legacy aliases; not part of the current agent contract. */
+  --viz-bg: transparent;
+  --viz-panel: var(--card);
+  --viz-border: var(--border);
+  --viz-text: var(--foreground);
+  --viz-muted: var(--muted-foreground);
+  --viz-accent: var(--primary);
+  --viz-accent-text: var(--primary-foreground);
+  --viz-accent-bg: var(--accent);
+  --viz-font-size: var(--font-size-base);
+  --viz-warning: var(--destructive);
+  --color-background-primary: var(--background);
+  --color-text-primary: var(--foreground);
+  --color-border-secondary: var(--border);
+}
+
+:root[data-visualize-standalone] {
+  background-color: var(--background) !important;
+}
+
+/* Generic mobile code-block hosts provide light/dark mode but no series palette.
+   AppBlock hosts set all six variables themselves. */
+:root:not([data-app-block-surface]) {
+  --viz-series-1: var(--primary);
+  --viz-series-2: light-dark(#f3883b, #f59a56);
+  --viz-series-3: light-dark(#5dc977, #74d58b);
+  --viz-series-4: light-dark(#eb77b1, #f08fc0);
+  --viz-series-5: light-dark(#9b79ec, #aa91ef);
+  --viz-series-6: light-dark(#3ab9b1, #5acbc2);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html > body {
+  margin: 0;
+  padding: 5px;
+  color: var(--foreground);
+  background: transparent !important;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-normal);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+}
+
+:root:not([data-app-block-surface]) > body {
+  padding: 12px;
+}
+
+a {
+  color: color-mix(in srgb, var(--viz-accent) 80%, var(--viz-text) 20%);
+  cursor: pointer;
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  text-underline-offset: 2px;
+}
+
+a:is(:hover, :focus-visible) {
+  text-decoration-line: underline;
+  text-decoration-style: dashed;
+  text-decoration-thickness: 0.5px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin-block: 0;
+}
+
+h1 {
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h2 {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h3,
+h4,
+h5,
+h6 {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.3;
+}
+
+b,
+strong,
+th {
+  font-weight: var(--font-weight-medium);
+}
+
+code:not(pre code) {
+  display: inline;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  word-break: break-word;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--foreground);
+  font: inherit;
+  text-align: start;
+}
+
+.table :is(th, td) {
+  padding-block: 10px;
+  padding-inline: 0 24px;
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid var(--border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.table-responsive > .table :is(th, td) {
+  overflow-wrap: break-word;
+}
+
+.table :is(th, td):last-child {
+  padding-inline-end: 0;
+}
+
+.table :is(caption, thead th) {
+  font-weight: 600;
+}
+
+.table thead th {
+  padding-block: 8px;
+  border-bottom-color: color-mix(in srgb, var(--foreground) 16%, transparent);
+}
+
+.table tbody tr:last-child :is(th, td) {
+  border-bottom: 0;
+}
+
+.table.table-sm :is(th, td) {
+  padding-block: 6px;
+}
+
+.table.table-sm :is(th, td):not(:last-child) {
+  padding-inline-end: 16px;
+}
+
+.table :is(.text-end, [align="right"]) {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.table :is(.text-center, [align="center"]) {
+  text-align: center;
+}
+
+.table .text-nowrap {
+  white-space: nowrap;
+}
+
+#widget {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  background: transparent !important;
+}
+
+.card {
+  min-width: 0;
+  padding: 12px;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  border-radius: var(--radius-2xl);
+  color: var(--card-foreground);
+  background: var(--card);
+}
+
+#widget > :not(.card) {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  left: 0;
+  width: max-content;
+  max-width: min(
+    20rem,
+    var(--tooltip-available-width, calc(100vw - 10px)),
+    calc(100vw - 10px)
+  );
+  max-height: min(
+    var(--tooltip-available-height, calc(100vh - 10px)),
+    calc(100vh - 10px)
+  );
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  color: var(--popover-foreground);
+  background: var(--popover);
+  box-shadow: none;
+  font-size: var(--font-size-tooltip);
+  line-height: var(--line-height-tooltip);
+  overflow-wrap: break-word;
+  white-space: normal;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* The bundled tooltip runtime owns [data-tooltip]. AppBlock's CSS-only
+   pseudo-tooltip can widen dense grids even while hidden. */
+main [data-tooltip]::after {
+  content: none;
+}
+
+.viz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(max(180px, 24%), 1fr));
+  gap: 10px;
+}
+
+.viz-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.viz-stat-value {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+.viz-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.viz-badge {
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  color: var(--accent-foreground);
+  background: var(--accent);
+  font-weight: var(--font-weight-medium);
+}
+
+small,
+.text-small,
+.viz-badge {
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.text-muted {
+  color: var(--muted-foreground);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.viz-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.viz-controls > .form-label {
+  display: grid;
+  min-width: min(100%, 260px);
+  flex: 1 1 280px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 2px 12px;
+  margin-bottom: 0;
+}
+
+.viz-controls > .form-label > :is(.form-control, .form-range, .form-select) {
+  grid-column: 1 / -1;
+}
+
+.btn,
+.form-check-input,
+.form-control,
+.form-range,
+.form-select {
+  font: inherit;
+}
+
+.btn {
+  appearance: button;
+  display: inline-flex;
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0 8px;
+  -webkit-app-region: no-drag;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: var(--cursor-interaction, pointer);
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+.btn:is(.btn-block, .viz-tile) {
+  inline-size: 100%;
+}
+
+.btn.viz-tile {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+a.btn {
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn:not(:disabled):hover {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.btn-primary {
+  border-color: transparent;
+  color: var(--interactive-label-primary-default, var(--primary-foreground));
+  background: var(--interactive-bg-primary-default, var(--foreground));
+  background-clip: padding-box;
+}
+
+.btn-primary .text-muted {
+  color: color-mix(
+    in srgb,
+    var(--interactive-label-primary-default, var(--primary-foreground)) 50%,
+    transparent
+  );
+}
+
+.btn-primary:not(:disabled):hover {
+  background: color-mix(in srgb, var(--foreground) 80%, transparent);
+  background-clip: padding-box;
+}
+
+.btn-ghost {
+  border-color: transparent;
+  color: var(--muted-foreground);
+  background: transparent;
+}
+
+.btn-ghost:not(:disabled):hover {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+[data-lucide] {
+  stroke-width: 1.6;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--foreground);
+}
+
+.form-control {
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  padding: 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  color: var(--foreground);
+  background: var(--secondary);
+}
+
+.form-control::placeholder {
+  color: var(--muted-foreground);
+}
+
+.form-control[type="file"] {
+  padding: 0;
+  overflow: hidden;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control[type="file"]::file-selector-button {
+  min-height: 26px;
+  margin-right: 8px;
+  padding: 0 8px;
+  border: 0;
+  border-right: 1px solid var(--input);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: inherit;
+  font: inherit;
+}
+
+.form-control[type="file"]:not(:disabled):hover::file-selector-button {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-control-color[type="color"] {
+  width: 40px;
+  height: 28px;
+  padding: 3px;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control-color[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.form-control-color[type="color"]::-webkit-color-swatch {
+  border: 0;
+  border-radius: calc(var(--radius-lg) - 4px);
+}
+
+textarea.form-control {
+  height: auto;
+  min-height: 72px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.form-control:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-control:disabled,
+.form-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.form-select {
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  margin: 0;
+  padding: 0 32px 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  color: var(--foreground);
+  background-color: var(--secondary);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted-foreground) 50%),
+    linear-gradient(135deg, var(--muted-foreground) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) 50%,
+    calc(100% - 10px) 50%;
+  background-repeat: no-repeat;
+  background-size: 4px 4px;
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-select:not(:disabled):hover {
+  background-color: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-select:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-check {
+  display: flex;
+  min-height: 20px;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-check-input {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  margin: 0;
+  border: 1px solid var(--input);
+  color: var(--primary-foreground);
+  background-color: transparent;
+  cursor: var(--cursor-interaction, default);
+  transition:
+    background-color 150ms,
+    border-color 150ms,
+    box-shadow 150ms;
+}
+
+.form-check:not(.form-switch) .form-check-input[type="checkbox"] {
+  border-color: var(--input);
+  border-radius: var(--radius-sm);
+  background-color: var(--secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input:not(:disabled):not(:checked):hover {
+  background-color: var(--card);
+}
+
+.form-check:not(.form-switch) .form-check-input[type="checkbox"]:checked {
+  border-color: var(--primary);
+  background-color: var(--primary);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input[type="checkbox"]:checked::before {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--primary-foreground);
+  content: "";
+  mask: var(--checkmark-image) center / 12px 12px no-repeat;
+}
+
+.form-check-input[type="radio"] {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full);
+}
+
+.form-check-input[type="radio"]:checked {
+  border: 2px solid var(--primary);
+  background:
+    radial-gradient(circle, var(--primary-foreground) 0 2.5px, transparent 3px),
+    var(--primary);
+}
+
+.form-check:not(.form-switch) .form-check-input:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+}
+
+.form-switch .form-check-input:disabled,
+.form-switch .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.form-check-label {
+  color: var(--foreground);
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-switch .form-check-input {
+  position: relative;
+  width: 32px;
+  height: 20px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+  box-shadow: none;
+  transition: background-color 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 1px solid light-dark(var(--primary-foreground), var(--foreground));
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+  box-shadow: var(--shadow-sm);
+  content: "";
+  transform: translate(2px, -50%);
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input:checked {
+  background: var(--primary);
+}
+
+.form-switch .form-check-input:checked::before {
+  transform: translate(14px, -50%);
+}
+
+.form-switch .form-check-input:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.form-range {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 28px;
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  outline: none;
+  border: 0;
+  accent-color: var(--primary);
+  background: linear-gradient(
+      color-mix(in srgb, var(--foreground) 7%, transparent),
+      color-mix(in srgb, var(--foreground) 7%, transparent)
+    )
+    center / 100% 2px no-repeat;
+}
+
+.form-range::-webkit-slider-runnable-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-webkit-slider-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range::-moz-range-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-moz-range-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.btn:not(.btn-primary, .viz-tile):is(
+    [aria-pressed="true"],
+    [aria-selected="true"],
+    .is-selected
+  ) {
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+  background: var(--primary);
+}
+
+.btn.viz-tile:is([aria-pressed="true"], [aria-selected="true"], .is-selected) {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+#widget > svg {
+  width: 100%;
+}
+
+.text-warning,
+.text-destructive {
+  color: var(--destructive);
+}
+</style>
+</head>
+<body>
+<div id="novelMazeMemoryLab">
+  <style>
+    #novelMazeMemoryLab {
+      color: var(--foreground);
+      font-family: inherit;
+      width: 100%;
+    }
+    #novelMazeMemoryLab * { box-sizing: border-box; }
+    #novelMazeMemoryLab .nml-controls { align-items: end; margin-bottom: 10px; }
+    #novelMazeMemoryLab .nml-control { min-width: 108px; }
+    #novelMazeMemoryLab .nml-control-wide { min-width: 150px; }
+    #novelMazeMemoryLab .nml-control .form-range { width: 132px; }
+    #novelMazeMemoryLab .nml-status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin: 8px 0;
+    }
+    #novelMazeMemoryLab .nml-progress {
+      height: 5px;
+      background: var(--muted);
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+    #novelMazeMemoryLab .nml-progress > span {
+      display: block;
+      width: 0;
+      height: 100%;
+      background: var(--viz-series-1);
+      transition: width 120ms linear;
+    }
+    #novelMazeMemoryLab .nml-maze-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+    }
+    #novelMazeMemoryLab .nml-arm { min-width: 0; }
+    #novelMazeMemoryLab .nml-arm-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    #novelMazeMemoryLab .nml-arm-head h3 { margin: 0; }
+    #novelMazeMemoryLab .nml-state { color: var(--muted-foreground); }
+    #novelMazeMemoryLab .nml-canvas {
+      display: block;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background: transparent;
+    }
+    #novelMazeMemoryLab .nml-arm .table { margin: 8px 0 0; }
+    #novelMazeMemoryLab .nml-arm .table th { color: var(--muted-foreground); }
+    #novelMazeMemoryLab .nml-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      align-items: center;
+      margin: 10px 0 4px;
+      color: var(--muted-foreground);
+    }
+    #novelMazeMemoryLab .nml-key {
+      display: inline-block;
+      width: 22px;
+      height: 0;
+      border-top: 3px solid var(--viz-series-1);
+      vertical-align: middle;
+      margin-right: 5px;
+    }
+    #novelMazeMemoryLab .nml-key-back { border-top-style: dashed; }
+    #novelMazeMemoryLab .nml-key-waste { border-color: var(--destructive); }
+    #novelMazeMemoryLab .nml-key-memory {
+      width: 8px;
+      height: 8px;
+      border: 0;
+      background: var(--viz-series-3);
+    }
+    #novelMazeMemoryLab .nml-experiment-note {
+      color: var(--muted-foreground);
+      margin: 4px 0 16px;
+    }
+    #novelMazeMemoryLab .nml-results { margin: 14px 0; }
+    #novelMazeMemoryLab .nml-chart-wrap { margin: 16px 0; }
+    #novelMazeMemoryLab .nml-biopsy { margin: 16px 0; }
+    #novelMazeMemoryLab .nml-biopsy-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+    #novelMazeMemoryLab .nml-biopsy-head h3 { margin: 0; }
+    #novelMazeMemoryLab .nml-chart-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+    #novelMazeMemoryLab .nml-chart-head h3 { margin: 0; }
+    #novelMazeMemoryLab .nml-chart {
+      display: block;
+      width: 100%;
+      height: 230px;
+    }
+    #novelMazeMemoryLab .nml-line-legend {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      color: var(--muted-foreground);
+    }
+    #novelMazeMemoryLab .nml-dot {
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      margin-right: 5px;
+      background: var(--viz-series-1);
+    }
+    #novelMazeMemoryLab .nml-dot-liquid { background: var(--viz-series-2); }
+    #novelMazeMemoryLab .nml-dot-lesion { background: var(--viz-series-4); }
+    #novelMazeMemoryLab .nml-about { margin-top: 14px; }
+    #novelMazeMemoryLab .nml-about summary { cursor: pointer; }
+    #novelMazeMemoryLab .nml-about-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px 20px;
+      margin-top: 10px;
+    }
+    #novelMazeMemoryLab .nml-about-grid h3 { margin: 0 0 4px; }
+    #novelMazeMemoryLab .nml-about-grid p { margin: 0; color: var(--muted-foreground); }
+    #novelMazeMemoryLab .nml-vault { color: var(--muted-foreground); }
+    #novelMazeMemoryLab .nml-hidden { display: none; }
+    @media (max-width: 720px) {
+      #novelMazeMemoryLab .nml-maze-grid { grid-template-columns: 1fr; }
+      #novelMazeMemoryLab .nml-about-grid { grid-template-columns: 1fr; }
+      #novelMazeMemoryLab .nml-control,
+      #novelMazeMemoryLab .nml-control-wide { min-width: 132px; }
+    }
+  </style>
+
+  <div class="viz-controls nml-controls" aria-label="Experiment controls">
+    <button type="button" class="btn btn-primary" id="nml-evolve">Evolve</button>
+    <button type="button" class="btn" id="nml-stop" disabled>Stop</button>
+    <button type="button" class="btn" id="nml-new" disabled>New unseen maze</button>
+    <button type="button" class="btn btn-ghost" id="nml-replay" disabled>Replay</button>
+
+    <label class="form-label nml-control">Maze
+      <select class="form-select" id="nml-size">
+        <option value="4">4 × 4</option>
+        <option value="5" selected>5 × 5</option>
+        <option value="6">6 × 6</option>
+        <option value="8">8 × 8</option>
+        <option value="10">10 × 10</option>
+        <option value="12">12 × 12</option>
+      </select>
+    </label>
+    <label class="form-label nml-control">Topology
+      <select class="form-select" id="nml-topology">
+        <option value="tree">Perfect tree</option>
+        <option value="braid" selected>Braided</option>
+        <option value="loopy">Loopy</option>
+      </select>
+    </label>
+    <label class="form-label nml-control-wide">Generations <span id="nml-gens-value">800</span>
+      <input class="form-range" id="nml-gens" type="range" min="100" max="10000" step="100" value="800">
+    </label>
+    <label class="form-label nml-control">Population <span id="nml-pop-value">48</span>
+      <input class="form-range" id="nml-pop" type="range" min="24" max="160" step="8" value="48">
+    </label>
+    <label class="form-label nml-control">Controller neurons <span id="nml-neurons-value">12</span>
+      <input class="form-range" id="nml-neurons" type="range" min="6" max="64" step="2" value="12">
+    </label>
+    <label class="form-label nml-control-wide">Organ slots <span id="nml-organ-slots-value">128</span>
+      <input class="form-range" id="nml-organ-slots" type="range" min="8" max="512" step="8" value="128">
+    </label>
+    <label class="form-label nml-control">Replay speed <span id="nml-speed-value">6</span>
+      <input class="form-range" id="nml-speed" type="range" min="1" max="10" step="1" value="6">
+    </label>
+    <label class="form-check form-switch">
+      <input class="form-check-input" type="checkbox" id="nml-use-vault" checked>
+      <span class="form-check-label">Seed from champions</span>
+    </label>
+    <label class="form-check form-switch">
+      <input class="form-check-input" type="checkbox" id="nml-hebb-evolution">
+      <span class="form-check-label">Hebbian evolution for all</span>
+    </label>
+    <button type="button" class="btn btn-ghost" id="nml-reset-vault">Reset champions</button>
+    <button type="button" class="btn btn-ghost" id="nml-export">Export champions</button>
+  </div>
+
+  <div class="nml-status-row">
+    <div id="nml-status" aria-live="polite">Ready. No route will be demonstrated.</div>
+    <div class="nml-vault" id="nml-vault">Champion vault: empty</div>
+  </div>
+  <div class="nml-progress" role="progressbar" aria-label="Evolution progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="nml-progress"></span></div>
+
+  <div class="nml-maze-grid">
+    <section class="card nml-arm" aria-labelledby="nml-organ-title">
+      <div class="nml-arm-head">
+        <h3 id="nml-organ-title">Organ champion</h3>
+        <span class="nml-state" id="nml-organ-state">not evolved</span>
+      </div>
+      <canvas class="nml-canvas" id="nml-organ-canvas" role="img" aria-label="Organ champion exploring an unseen maze"></canvas>
+      <table class="table table-sm">
+        <thead><tr><th>Goal</th><th class="text-end">Steps</th><th class="text-end">Coverage</th><th class="text-end">Excess retrace</th></tr></thead>
+        <tbody><tr><td id="nml-organ-goal">—</td><td class="text-end" id="nml-organ-steps">—</td><td class="text-end" id="nml-organ-coverage">—</td><td class="text-end" id="nml-organ-waste">—</td></tr></tbody>
+      </table>
+    </section>
+
+    <section class="card nml-arm" aria-labelledby="nml-liquid-title">
+      <div class="nml-arm-head">
+        <h3 id="nml-liquid-title">Liquid-only champion</h3>
+        <span class="nml-state" id="nml-liquid-state">not evolved</span>
+      </div>
+      <canvas class="nml-canvas" id="nml-liquid-canvas" role="img" aria-label="Liquid-only champion exploring the same unseen maze"></canvas>
+      <table class="table table-sm">
+        <thead><tr><th>Goal</th><th class="text-end">Steps</th><th class="text-end">Coverage</th><th class="text-end">Excess retrace</th></tr></thead>
+        <tbody><tr><td id="nml-liquid-goal">—</td><td class="text-end" id="nml-liquid-steps">—</td><td class="text-end" id="nml-liquid-coverage">—</td><td class="text-end" id="nml-liquid-waste">—</td></tr></tbody>
+      </table>
+    </section>
+  </div>
+
+  <div class="nml-legend text-small" aria-label="Maze trace legend">
+    <span><i class="nml-key"></i>first exploration</span>
+    <span><i class="nml-key nml-key-back"></i>necessary backtrack</span>
+    <span><i class="nml-key nml-key-waste"></i>corridor traversed more than twice</span>
+    <span><i class="nml-key nml-key-memory"></i>organ branch mark</span>
+  </div>
+  <p class="nml-experiment-note text-small">The goal is visible to you but is never supplied to either controller. Both see the same local walls and previous movement. The organ starts blank and can attach branch marks to random place-codes; the liquid-only controller receives zeros in that socket. Hebbian evolution, when enabled, changes only inherited mutations between generations—never weights during a maze.</p>
+
+  <div class="viz-grid nml-results" aria-label="Fresh maze results">
+    <div class="card viz-stat">
+      <div class="text-muted">Organ solutions</div>
+      <div class="viz-stat-value" id="nml-test-organ">—</div>
+      <div class="text-small text-muted" id="nml-test-organ-note">solutions / excess-retrace steps</div>
+    </div>
+    <div class="card viz-stat">
+      <div class="text-muted">Liquid-only solutions</div>
+      <div class="viz-stat-value" id="nml-test-liquid">—</div>
+      <div class="text-small text-muted" id="nml-test-liquid-note">solutions / excess-retrace steps</div>
+    </div>
+    <div class="card viz-stat">
+      <div class="text-muted">Organ champion, severed</div>
+      <div class="viz-stat-value" id="nml-test-lesion">—</div>
+      <div class="text-small text-muted" id="nml-test-lesion-note">solutions / excess-retrace steps</div>
+    </div>
+  </div>
+
+  <section class="nml-biopsy" aria-labelledby="nml-biopsy-title">
+    <div class="nml-biopsy-head">
+      <div>
+        <h3 id="nml-biopsy-title">Memory biopsy</h3>
+        <div class="text-small text-muted" id="nml-biopsy-status">Same champions and same 32 unseen mazes under targeted knockouts.</div>
+      </div>
+      <button type="button" class="btn" id="nml-biopsy-run" disabled>Run biopsy</button>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm">
+        <thead><tr><th>Condition</th><th class="text-end">Solved</th><th class="text-end">Excess retrace</th><th class="text-end">Mean steps</th></tr></thead>
+        <tbody id="nml-biopsy-body">
+          <tr><td colspan="4" class="text-muted">Evolve champions first.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="nml-chart-wrap" aria-labelledby="nml-chart-title">
+    <div class="nml-chart-head">
+      <h3 id="nml-chart-title">Does evolution improve fresh-maze search?</h3>
+      <div class="nml-line-legend text-small">
+        <span><i class="nml-dot"></i>organ</span>
+        <span><i class="nml-dot nml-dot-liquid"></i>liquid only</span>
+        <span><i class="nml-dot nml-dot-lesion"></i>same-genome lesion</span>
+      </div>
+    </div>
+    <canvas class="nml-chart" id="nml-chart" role="img" aria-label="Held-out search score across generations for organ, liquid-only, and lesioned controllers"></canvas>
+  </section>
+
+  <details class="nml-about">
+    <summary>About this experiment, including the concerns</summary>
+    <div class="nml-about-grid">
+      <section>
+        <h3>The actual task</h3>
+        <p>There is no guided pass. On a new tree, braided, or loopy maze, the creature explores until it finds a hidden goal. The key waste metric counts every corridor traversal after its first outward and first return traversal.</p>
+      </section>
+      <section>
+        <h3>What evolves</h3>
+        <p>Both populations evolve the same mixed liquid-and-spiking recurrent controller with a direct four-direction action head. Twelve-dimensional place-codes reduce collisions in larger mazes. Organ capacity is explicit: when slots run out, the least recently used location is replaced.</p>
+      </section>
+      <section>
+        <h3>Focused evolution</h3>
+        <p>Focus changes only after held-out thresholds are crossed: first valid exploration, then dead-end discipline, then goal solving. If the new focus destroys validated ability, the population is repopulated from its best checkpoint. A small branch-marking scaffold is present only before the final solving focus.</p>
+      </section>
+      <section>
+        <h3>The controls</h3>
+        <p>The liquid-only champion receives the same maze budget and evolves independently. Biopsy can reset its recurrent state every move, hide its previous-direction signal, or combine those knockouts. The organ lesion leaves direct action intact.</p>
+      </section>
+      <section>
+        <h3>What would count</h3>
+        <p>A credible memory claim requires solutions on held-out mazes, few excess-retrace steps, and a selective collapse under the relevant memory knockout. Final results report raw solutions and raw excess retracing separately instead of hiding them inside one reward score.</p>
+      </section>
+      <section>
+        <h3>What still worries me</h3>
+        <p>Hebbian evolution records activity but never changes weights during a maze. Between generations, every active parameter family in both populations receives more frequent, gentler inherited mutations; inactive circuitry retains background exploration, and the total expected mutation energy is matched to uniform evolution. One run is still not proof.</p>
+      </section>
+    </div>
+  </details>
+
+  <script>
+  (function () {
+    "use strict";
+
+    const root = document.getElementById("novelMazeMemoryLab");
+    const byId = id => root.querySelector("#" + id);
+    const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const DIRS = 4;
+    const CODE_D = 12;
+    const IN_D = 28;
+    const OUT_D = 5;
+    const REC_FAN = 3;
+    const DX = [0, 1, 0, -1];
+    const DY = [-1, 0, 1, 0];
+    const OPP = [2, 3, 0, 1];
+    const VAULT_KEY = "novel-maze-memory-champions-v8";
+    const TASK_VERSION = 8;
+
+    function mulberry32(seed) {
+      return function () {
+        let t = seed += 0x6D2B79F5;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+    function RNG(seed) {
+      const next = mulberry32(seed >>> 0);
+      return {
+        next,
+        int(n) { return Math.floor(next() * n); },
+        gauss() {
+          let u = 0;
+          let v = 0;
+          while (u === 0) u = next();
+          while (v === 0) v = next();
+          return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+        }
+      };
+    }
+    const sigmoid = x => 1 / (1 + Math.exp(-Math.max(-30, Math.min(30, x))));
+    const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
+    function argmax(values, start, count) {
+      let best = 0;
+      let bestValue = -Infinity;
+      for (let i = 0; i < count; i++) {
+        const value = values[start + i];
+        if (value > bestValue) {
+          bestValue = value;
+          best = i;
+        }
+      }
+      return best;
+    }
+    function unitVector(rng, n) {
+      const out = new Float64Array(n);
+      let length = 0;
+      for (let i = 0; i < n; i++) {
+        out[i] = rng.gauss();
+        length += out[i] * out[i];
+      }
+      length = Math.sqrt(length) || 1;
+      for (let i = 0; i < n; i++) out[i] /= length;
+      return out;
+    }
+    function cosine(a, b) {
+      let dot = 0;
+      let aa = 0;
+      let bb = 0;
+      for (let i = 0; i < a.length; i++) {
+        dot += a[i] * b[i];
+        aa += a[i] * a[i];
+        bb += b[i] * b[i];
+      }
+      return dot / ((Math.sqrt(aa) || 1e-9) * (Math.sqrt(bb) || 1e-9));
+    }
+
+    function makeMaze(size, seed, topology) {
+      topology = topology || "braid";
+      const rng = RNG(seed);
+      const cells = size * size;
+      const open = new Uint8Array(cells);
+      const seen = new Uint8Array(cells);
+      const index = (x, y) => y * size + x;
+      const stack = [0];
+      seen[0] = 1;
+      while (stack.length) {
+        const cell = stack[stack.length - 1];
+        const x = cell % size;
+        const y = Math.floor(cell / size);
+        const choices = [];
+        for (let d = 0; d < 4; d++) {
+          const nx = x + DX[d];
+          const ny = y + DY[d];
+          if (nx >= 0 && nx < size && ny >= 0 && ny < size && !seen[index(nx, ny)]) choices.push(d);
+        }
+        if (!choices.length) {
+          stack.pop();
+          continue;
+        }
+        const d = choices[rng.int(choices.length)];
+        const next = index(x + DX[d], y + DY[d]);
+        open[cell] |= 1 << d;
+        open[next] |= 1 << OPP[d];
+        seen[next] = 1;
+        stack.push(next);
+      }
+
+      if (topology !== "tree") {
+        const closedEdges = [];
+        for (let y = 0; y < size; y++) {
+          for (let x = 0; x < size; x++) {
+            const cell = index(x, y);
+            if (x + 1 < size && !(open[cell] & (1 << 1))) closedEdges.push([cell, 1]);
+            if (y + 1 < size && !(open[cell] & (1 << 2))) closedEdges.push([cell, 2]);
+          }
+        }
+        for (let i = closedEdges.length - 1; i > 0; i--) {
+          const j = rng.int(i + 1);
+          const swap = closedEdges[i];
+          closedEdges[i] = closedEdges[j];
+          closedEdges[j] = swap;
+        }
+        const fraction = topology === "loopy" ? 0.22 : 0.10;
+        const extra = Math.min(closedEdges.length, Math.max(1, Math.round(cells * fraction)));
+        for (let i = 0; i < extra; i++) {
+          const cell = closedEdges[i][0];
+          const direction = closedEdges[i][1];
+          const x = cell % size;
+          const y = Math.floor(cell / size);
+          const neighbor = index(x + DX[direction], y + DY[direction]);
+          open[cell] |= 1 << direction;
+          open[neighbor] |= 1 << OPP[direction];
+        }
+      }
+
+      const start = rng.int(cells);
+      const distance = new Int32Array(cells).fill(-1);
+      const parent = new Int32Array(cells).fill(-1);
+      const queue = [start];
+      distance[start] = 0;
+      for (let head = 0; head < queue.length; head++) {
+        const cell = queue[head];
+        const x = cell % size;
+        const y = Math.floor(cell / size);
+        for (let d = 0; d < 4; d++) {
+          if (!(open[cell] & (1 << d))) continue;
+          const next = index(x + DX[d], y + DY[d]);
+          if (distance[next] >= 0) continue;
+          distance[next] = distance[cell] + 1;
+          parent[next] = cell;
+          queue.push(next);
+        }
+      }
+      const leaves = [];
+      const farCells = [];
+      for (let cell = 0; cell < cells; cell++) {
+        if (cell === start) continue;
+        farCells.push(cell);
+        let degree = 0;
+        for (let d = 0; d < 4; d++) if (open[cell] & (1 << d)) degree++;
+        if (degree === 1) leaves.push(cell);
+      }
+      farCells.sort((a, b) => distance[b] - distance[a]);
+      leaves.sort((a, b) => distance[b] - distance[a]);
+      const candidates = topology === "tree" && leaves.length ? leaves : farCells;
+      const farPool = candidates.slice(0, Math.max(1, Math.ceil(candidates.length * (topology === "tree" ? 0.55 : 0.22))));
+      const goal = farPool[rng.int(farPool.length)];
+      const place = [];
+      for (let cell = 0; cell < cells; cell++) place.push(unitVector(rng, CODE_D));
+      const budgetFactor = topology === "tree" ? 2.55 : topology === "loopy" ? 3.60 : 3.10;
+      return {
+        size,
+        cells,
+        topology,
+        open,
+        place,
+        start,
+        goal,
+        distance,
+        parent,
+        shortest: distance[goal],
+        maxSteps: Math.ceil(budgetFactor * (cells - 1) + distance[goal]),
+        index
+      };
+    }
+    function isLegal(maze, cell, direction) {
+      return (maze.open[cell] & (1 << direction)) !== 0;
+    }
+    function nextCell(maze, cell, direction) {
+      const x = cell % maze.size;
+      const y = Math.floor(cell / maze.size);
+      return maze.index(x + DX[direction], y + DY[direction]);
+    }
+    function degree(maze, cell) {
+      let n = 0;
+      for (let d = 0; d < 4; d++) if (isLegal(maze, cell, d)) n++;
+      return n;
+    }
+    function edgeIndex(maze, cell, direction) {
+      const x = cell % maze.size;
+      const y = Math.floor(cell / maze.size);
+      const horizontalCount = maze.size * (maze.size - 1);
+      if (direction === 1) return y * (maze.size - 1) + x;
+      if (direction === 3) return y * (maze.size - 1) + x - 1;
+      if (direction === 2) return horizontalCount + y * maze.size + x;
+      return horizontalCount + (y - 1) * maze.size + x;
+    }
+
+    function genomeSize(neurons) {
+      return neurons * IN_D + neurons * REC_FAN + neurons + neurons + OUT_D * (neurons + IN_D) + OUT_D + 3;
+    }
+    function randomGenome(rng, neurons) {
+      const genome = new Float64Array(genomeSize(neurons));
+      for (let i = 0; i < genome.length; i++) genome[i] = rng.gauss() * 0.42;
+      return genome;
+    }
+    function makeNet(genome, neurons, activityOptions) {
+      const collectActivity = !!(activityOptions && activityOptions.collectActivity);
+      const gateUsed = !!(activityOptions && activityOptions.gateUsed);
+      let cursor = 0;
+      function take(n) {
+        const part = genome.subarray(cursor, cursor + n);
+        cursor += n;
+        return part;
+      }
+      const inputWeights = [];
+      for (let i = 0; i < neurons; i++) inputWeights.push(take(IN_D));
+      const recurrentWeights = [];
+      for (let i = 0; i < neurons; i++) recurrentWeights.push(take(REC_FAN));
+      const biases = take(neurons);
+      const tauGenes = take(neurons);
+      const outputWeights = [];
+      for (let o = 0; o < OUT_D; o++) outputWeights.push(take(neurons + IN_D));
+      const outputBias = take(OUT_D);
+      const sharedPolicy = take(3);
+      const state = new Float64Array(neurons);
+      const voltage = new Float64Array(neurons);
+      const spikeTrace = new Float64Array(neurons);
+      const nextState = new Float64Array(neurons);
+      const tau = new Float64Array(neurons);
+      const neuronActivity = collectActivity ? new Float64Array(neurons) : null;
+      const inputActivity = collectActivity ? new Float64Array(IN_D) : null;
+      const recurrentActivity = collectActivity ? new Float64Array(neurons * REC_FAN) : null;
+      const outputActivity = collectActivity ? new Float64Array(OUT_D) : null;
+      let activitySteps = 0;
+      for (let i = 0; i < neurons; i++) tau[i] = 0.55 + 2.1 * sigmoid(tauGenes[i]);
+      function resetState() {
+        state.fill(0);
+        voltage.fill(0);
+        spikeTrace.fill(0);
+        nextState.fill(0);
+      }
+      return {
+        resetState,
+        resetAll() {
+          resetState();
+        },
+        forward(input) {
+          for (let i = 0; i < neurons; i++) {
+            let sum = biases[i];
+            const iw = inputWeights[i];
+            for (let j = 0; j < IN_D; j++) sum += iw[j] * input[j];
+            const rw = recurrentWeights[i];
+            for (let k = 0; k < REC_FAN; k++) {
+              const source = (i * 7 + k * 3 + 1) % neurons;
+              const sign = source % 5 === 0 ? -1 : 1;
+              const baseWeight = sign * Math.log1p(Math.exp(clamp(rw[k], -15, 15)));
+              sum += baseWeight * state[source];
+            }
+            if (i % 7 === 2) {
+              voltage[i] += 0.45 * (-voltage[i] / 1.8 + sum);
+              const spike = voltage[i] > 0.65 ? 1 : 0;
+              if (spike) voltage[i] = 0;
+              spikeTrace[i] = spikeTrace[i] * 0.58 + spike;
+              nextState[i] = spikeTrace[i];
+            } else {
+              nextState[i] = state[i] + 0.5 * (Math.tanh(sum) - state[i]) / tau[i];
+            }
+          }
+          state.set(nextState);
+          const output = new Float64Array(OUT_D);
+          for (let o = 0; o < OUT_D; o++) {
+            let sum = outputBias[o];
+            const ow = outputWeights[o];
+            for (let i = 0; i < neurons; i++) sum += ow[i] * state[i];
+            for (let j = 0; j < IN_D; j++) sum += ow[neurons + j] * input[j];
+            if (o < 4) sum += sharedPolicy[0] * input[o] + sharedPolicy[1] * input[4 + o] + sharedPolicy[2] * input[8 + o];
+            output[o] = sum;
+          }
+          if (collectActivity) {
+            activitySteps++;
+            for (let j = 0; j < IN_D; j++) inputActivity[j] += Math.abs(input[j]);
+            for (let i = 0; i < neurons; i++) {
+              neuronActivity[i] += Math.abs(state[i]);
+              for (let k = 0; k < REC_FAN; k++) {
+                const source = (i * 7 + k * 3 + 1) % neurons;
+                recurrentActivity[i * REC_FAN + k] += Math.abs(state[i] * state[source]);
+              }
+            }
+            let maximum = output[0];
+            for (let o = 1; o < 4; o++) maximum = Math.max(maximum, output[o]);
+            let denominator = 0;
+            const probabilities = new Float64Array(4);
+            for (let o = 0; o < 4; o++) {
+              probabilities[o] = Math.exp(clamp(output[o] - maximum, -30, 0));
+              denominator += probabilities[o];
+            }
+            for (let o = 0; o < 4; o++) outputActivity[o] += probabilities[o] / Math.max(1e-9, denominator);
+            if (gateUsed) outputActivity[4] += 1;
+          }
+          return output;
+        },
+        activityProfile() {
+          if (!collectActivity) return null;
+          const steps = Math.max(1, activitySteps);
+          function normalized(source) {
+            const values = new Float64Array(source.length);
+            let maximum = 0;
+            for (let i = 0; i < source.length; i++) maximum = Math.max(maximum, source[i] / steps);
+            maximum = maximum || 1;
+            for (let i = 0; i < source.length; i++) values[i] = clamp((source[i] / steps) / maximum, 0, 1);
+            return values;
+          }
+          const neuronUse = normalized(neuronActivity);
+          const inputUse = normalized(inputActivity);
+          const recurrentUse = normalized(recurrentActivity);
+          const outputUse = normalized(outputActivity);
+          const profile = new Float64Array(genome.length);
+          let p = 0;
+          for (let i = 0; i < neurons; i++) {
+            for (let j = 0; j < IN_D; j++) profile[p++] = Math.sqrt(neuronUse[i] * inputUse[j]);
+          }
+          for (let i = 0; i < neurons; i++) {
+            for (let k = 0; k < REC_FAN; k++) profile[p++] = recurrentUse[i * REC_FAN + k];
+          }
+          for (let i = 0; i < neurons; i++) profile[p++] = neuronUse[i];
+          for (let i = 0; i < neurons; i++) profile[p++] = neuronUse[i];
+          for (let o = 0; o < OUT_D; o++) {
+            for (let i = 0; i < neurons; i++) profile[p++] = Math.sqrt(outputUse[o] * neuronUse[i]);
+            for (let j = 0; j < IN_D; j++) profile[p++] = Math.sqrt(outputUse[o] * inputUse[j]);
+          }
+          for (let o = 0; o < OUT_D; o++) profile[p++] = outputUse[o];
+          for (let group = 0; group < 3; group++) {
+            let mean = 0;
+            for (let d = 0; d < 4; d++) mean += inputUse[group * 4 + d];
+            profile[p++] = mean / 4;
+          }
+          return profile;
+        }
+      };
+    }
+
+    function MemoryOrgan(capacity) {
+      capacity = Math.max(1, Math.floor(capacity));
+      const keys = Array.from({ length: capacity }, () => null);
+      const values = Array.from({ length: capacity }, () => new Float64Array(4));
+      const lastTouched = new Float64Array(capacity);
+      let used = 0;
+      let clock = 0;
+      function find(key) {
+        let best = -1;
+        let similarity = -Infinity;
+        for (let i = 0; i < used; i++) {
+          const value = cosine(key, keys[i]);
+          if (value > similarity) {
+            similarity = value;
+            best = i;
+          }
+        }
+        return similarity > 0.985 ? best : -1;
+      }
+      return {
+        read(key) {
+          const slot = find(key);
+          if (slot >= 0) lastTouched[slot] = ++clock;
+          return slot >= 0 ? Float64Array.from(values[slot]) : new Float64Array(4);
+        },
+        write(key, distribution, gate) {
+          if (gate < 0.03) return this.read(key);
+          let slot = find(key);
+          if (slot < 0) {
+            if (used < capacity) slot = used++;
+            else {
+              slot = 0;
+              for (let i = 1; i < capacity; i++) if (lastTouched[i] < lastTouched[slot]) slot = i;
+            }
+            keys[slot] = Float64Array.from(key);
+            values[slot].fill(0);
+          }
+          lastTouched[slot] = ++clock;
+          for (let d = 0; d < 4; d++) {
+            const addition = gate * distribution[d];
+            values[slot][d] = 1 - (1 - values[slot][d]) * (1 - addition);
+          }
+          return Float64Array.from(values[slot]);
+        }
+      };
+    }
+
+    function buildInput(maze, cell, memory, previousDirection, step, wasBlocked) {
+      const input = new Float64Array(IN_D);
+      let cursor = 0;
+      for (let d = 0; d < 4; d++) input[cursor++] = isLegal(maze, cell, d) ? 1 : 0;
+      for (let d = 0; d < 4; d++) input[cursor++] = memory[d];
+      for (let d = 0; d < 4; d++) input[cursor++] = previousDirection >= 0 && OPP[previousDirection] === d ? 1 : 0;
+      for (let i = 0; i < CODE_D; i++) input[cursor++] = maze.place[cell][i];
+      input[cursor++] = degree(maze, cell) / 4;
+      input[cursor++] = step / maze.maxSteps;
+      input[cursor++] = cell === maze.start ? 1 : 0;
+      input[cursor++] = wasBlocked ? 1 : 0;
+      return input;
+    }
+
+    function behavioralScore(metrics) {
+      return 0.50 * metrics.reached +
+        0.14 * metrics.coverage +
+        0.10 * metrics.validRate +
+        0.08 * metrics.deadRecovery +
+        0.10 * (1 - metrics.repeatRate) +
+        0.08 * metrics.efficiency;
+    }
+    function trainingScore(metrics, stage, withOrgan) {
+      if (stage === 0) {
+        const book = withOrgan ? metrics.writeMatch : (1 - metrics.reentryRate);
+        return 0.34 * metrics.coverage + 0.28 * metrics.validRate + 0.23 * metrics.deadRecovery + 0.15 * book;
+      }
+      if (stage === 1) {
+        const book = withOrgan ? metrics.writeMatch : metrics.validRate;
+        return 0.20 * metrics.reached + 0.20 * metrics.coverage + 0.20 * metrics.validRate +
+          0.15 * metrics.deadRecovery + 0.15 * (1 - metrics.repeatRate) + 0.10 * book;
+      }
+      return behavioralScore(metrics);
+    }
+
+    function runEpisode(genome, neurons, maze, withOrgan, capture, stage, options) {
+      const runOptions = Object.assign({
+        organSlots: maze.cells,
+        collectActivity: false,
+        resetStateEachStep: false,
+        hidePrevious: false,
+        disableOrganWrites: false
+      }, options || {});
+      const net = makeNet(genome, neurons, { collectActivity: runOptions.collectActivity, gateUsed: withOrgan });
+      const organ = withOrgan ? MemoryOrgan(runOptions.organSlots) : null;
+      net.resetAll();
+      let cell = maze.start;
+      let previousDirection = -1;
+      let wasBlocked = false;
+      let reached = cell === maze.goal;
+      let validMoves = 0;
+      let attemptedMoves = 0;
+      let deadEnds = 0;
+      let deadEscapes = 0;
+      let excessRetraceSteps = 0;
+      let firstBacktracks = 0;
+      let newCorridorSteps = 0;
+      let writeMatchSum = 0;
+      let writeCount = 0;
+      let gateSum = 0;
+      const visited = new Uint8Array(maze.cells);
+      const edgeTraversals = new Uint16Array(2 * maze.size * (maze.size - 1));
+      visited[cell] = 1;
+      let unique = 1;
+      const trace = capture ? [] : null;
+
+      for (let step = 0; step < maze.maxSteps && !reached; step++) {
+        const memoryBefore = organ ? organ.read(maze.place[cell]) : new Float64Array(4);
+        if (runOptions.resetStateEachStep) net.resetState();
+        const input = buildInput(maze, cell, memoryBefore, runOptions.hidePrevious ? -1 : previousDirection, step, wasBlocked);
+        const output = net.forward(input);
+        const action = argmax(output, 0, 4);
+        const writeDistribution = new Float64Array(4);
+        writeDistribution[action] = 1;
+        const gate = sigmoid(output[4]);
+        const legal = isLegal(maze, cell, action);
+        const atDeadEnd = cell !== maze.start && cell !== maze.goal && degree(maze, cell) === 1;
+        attemptedMoves++;
+        if (atDeadEnd) deadEnds++;
+        gateSum += gate;
+
+        let memoryAfter = memoryBefore;
+        if (organ && legal && !runOptions.disableOrganWrites) {
+          memoryAfter = organ.write(maze.place[cell], writeDistribution, gate);
+          writeMatchSum += gate * writeDistribution[action];
+          writeCount++;
+        }
+
+        if (!legal) {
+          wasBlocked = true;
+          if (capture) trace.push({ from: cell, to: cell, action, kind: "blocked", atDeadEnd, memory: Array.from(memoryAfter) });
+          continue;
+        }
+
+        validMoves++;
+        wasBlocked = false;
+        const from = cell;
+        const to = nextCell(maze, cell, action);
+        const corridor = edgeIndex(maze, from, action);
+        const priorTraversals = edgeTraversals[corridor];
+        edgeTraversals[corridor]++;
+        const firstVisit = !visited[to];
+        let kind = firstVisit ? "explore" : priorTraversals === 1 ? "backtrack" : "reentry";
+        if (priorTraversals === 0) newCorridorSteps++;
+        else if (priorTraversals === 1) firstBacktracks++;
+        else excessRetraceSteps++;
+        if (atDeadEnd) deadEscapes++;
+
+        cell = to;
+        previousDirection = action;
+        let arrivalMemory = null;
+        if (organ && !runOptions.disableOrganWrites) {
+          const returnDirection = new Float64Array(4);
+          returnDirection[OPP[action]] = 1;
+          arrivalMemory = organ.write(maze.place[cell], returnDirection, gate * 0.35);
+        }
+        if (!visited[cell]) {
+          visited[cell] = 1;
+          unique++;
+        }
+        reached = cell === maze.goal;
+        if (capture) trace.push({ from, to, action, kind, atDeadEnd, memory: Array.from(memoryAfter), arrivalMemory: arrivalMemory ? Array.from(arrivalMemory) : null, reached });
+      }
+
+      const steps = attemptedMoves;
+      const metrics = {
+        reached: reached ? 1 : 0,
+        steps,
+        coverage: unique / maze.cells,
+        validRate: validMoves / Math.max(1, attemptedMoves),
+        deadRecovery: deadEnds ? deadEscapes / deadEnds : 1,
+        reentryRate: excessRetraceSteps / Math.max(1, validMoves),
+        repeatRate: excessRetraceSteps / Math.max(1, validMoves),
+        exhaustedReentries: excessRetraceSteps,
+        excessRetraceSteps,
+        firstBacktracks,
+        newCorridorSteps,
+        validMoves,
+        attemptedMoves,
+        efficiency: reached ? maze.shortest / Math.max(maze.shortest, steps) : 0,
+        writeMatch: writeCount ? writeMatchSum / writeCount : 0,
+        gateMean: gateSum / Math.max(1, attemptedMoves)
+      };
+      metrics.behavioral = behavioralScore(metrics);
+      metrics.training = trainingScore(metrics, stage || 0, withOrgan);
+      return { metrics, trace, finalCell: cell, activityProfile: net.activityProfile() };
+    }
+
+    function averageMetrics(genome, neurons, mazes, withOrgan, stage, options) {
+      const total = {
+        reached: 0,
+        steps: 0,
+        coverage: 0,
+        validRate: 0,
+        deadRecovery: 0,
+        reentryRate: 0,
+        repeatRate: 0,
+        exhaustedReentries: 0,
+        excessRetraceSteps: 0,
+        firstBacktracks: 0,
+        newCorridorSteps: 0,
+        validMoves: 0,
+        attemptedMoves: 0,
+        efficiency: 0,
+        writeMatch: 0,
+        gateMean: 0,
+        behavioral: 0,
+        training: 0
+      };
+      let solutions = 0;
+      let totalSteps = 0;
+      let totalExcessRetraceSteps = 0;
+      const activityTotal = options && options.collectActivity ? new Float64Array(genome.length) : null;
+      for (const maze of mazes) {
+        const episode = runEpisode(genome, neurons, maze, withOrgan, false, stage, options);
+        const metrics = episode.metrics;
+        solutions += metrics.reached;
+        totalSteps += metrics.steps;
+        totalExcessRetraceSteps += metrics.excessRetraceSteps;
+        for (const key of Object.keys(total)) total[key] += metrics[key];
+        if (activityTotal && episode.activityProfile) {
+          for (let i = 0; i < activityTotal.length; i++) activityTotal[i] += episode.activityProfile[i];
+        }
+      }
+      for (const key of Object.keys(total)) total[key] /= mazes.length;
+      total.sampleCount = mazes.length;
+      total.solutions = solutions;
+      total.totalSteps = totalSteps;
+      total.totalExcessRetraceSteps = totalExcessRetraceSteps;
+      if (activityTotal) {
+        for (let i = 0; i < activityTotal.length; i++) activityTotal[i] /= mazes.length;
+        total.activityProfile = activityTotal;
+      }
+      return total;
+    }
+
+    function crossover(a, b, rng) {
+      const child = new Float64Array(a.length);
+      for (let i = 0; i < a.length; i++) child[i] = rng.next() < 0.5 ? a[i] : b[i];
+      return child;
+    }
+    function mergeActivity(left, right) {
+      if (!left) return right || null;
+      if (!right) return left;
+      const merged = new Float64Array(left.length);
+      for (let i = 0; i < merged.length; i++) merged[i] = 0.5 * (left[i] + right[i]);
+      return merged;
+    }
+    function mutate(genome, rng, rate, scale, activityProfile, hebbianEvolution) {
+      const child = Float64Array.from(genome);
+      if (!hebbianEvolution || !activityProfile || activityProfile.length !== child.length) {
+        for (let i = 0; i < child.length; i++) {
+          if (rng.next() < rate) child[i] += rng.gauss() * scale;
+        }
+        return child;
+      }
+      const weights = new Float64Array(child.length);
+      const probabilities = new Float64Array(child.length);
+      const gentleScale = new Float64Array(child.length);
+      let meanWeight = 0;
+      for (let i = 0; i < child.length; i++) {
+        const activity = clamp(activityProfile[i], 0, 1);
+        weights[i] = 0.25 + 0.75 * Math.pow(activity, 1.25);
+        gentleScale[i] = 1 - 0.55 * activity;
+        meanWeight += weights[i];
+      }
+      meanWeight /= Math.max(1, child.length);
+      let expectedEnergy = 0;
+      for (let i = 0; i < child.length; i++) {
+        probabilities[i] = clamp(rate * weights[i] / Math.max(1e-9, meanWeight), rate * 0.05, 0.75);
+        expectedEnergy += probabilities[i] * gentleScale[i] * gentleScale[i];
+      }
+      const energyMatch = Math.sqrt(rate * child.length / Math.max(1e-9, expectedEnergy));
+      for (let i = 0; i < child.length; i++) {
+        if (rng.next() < probabilities[i]) child[i] += rng.gauss() * scale * gentleScale[i] * energyMatch;
+      }
+      return child;
+    }
+
+    function Population(initial, seed, withOrgan, neurons, runOptions) {
+      const rng = RNG(seed);
+      return {
+        genomes: initial.map(g => Float64Array.from(g)),
+        withOrgan,
+        neurons,
+        runOptions,
+        hebbianEvolution: !!runOptions.hebbianEvolution,
+        rng,
+        bestGenome: Float64Array.from(initial[0]),
+        lastCandidate: Float64Array.from(initial[0]),
+        bestValidation: -Infinity,
+        bestMetrics: null,
+        bestActivity: null,
+        stagnant: 0,
+        evaluateGeneration(trainingMazes, validationMazes, stage) {
+          const scores = new Float64Array(this.genomes.length);
+          const activityProfiles = new Array(this.genomes.length);
+          const trainingOptions = Object.assign({}, this.runOptions, { collectActivity: this.hebbianEvolution });
+          for (let i = 0; i < this.genomes.length; i++) {
+            const training = averageMetrics(this.genomes[i], this.neurons, trainingMazes, this.withOrgan, stage, trainingOptions);
+            scores[i] = training.training;
+            activityProfiles[i] = training.activityProfile || null;
+          }
+          const order = Array.from(scores.keys()).sort((a, b) => scores[b] - scores[a]);
+          const candidate = this.genomes[order[0]];
+          this.lastCandidate = Float64Array.from(candidate);
+          const validation = averageMetrics(candidate, this.neurons, validationMazes, this.withOrgan, stage, this.runOptions);
+          if (validation.behavioral > this.bestValidation) {
+            this.bestValidation = validation.behavioral;
+            this.bestGenome = Float64Array.from(candidate);
+            this.bestMetrics = validation;
+            this.bestActivity = activityProfiles[order[0]] ? Float64Array.from(activityProfiles[order[0]]) : null;
+            this.stagnant = 0;
+          } else {
+            this.stagnant++;
+          }
+
+          const populationSize = this.genomes.length;
+          const immigrantCount = Math.max(1, Math.floor(populationSize * 0.10));
+          const next = [Float64Array.from(this.genomes[order[0]]), Float64Array.from(this.bestGenome)];
+          const tournament = () => {
+            let winner = this.rng.int(populationSize);
+            for (let k = 0; k < 2; k++) {
+              const challenger = this.rng.int(populationSize);
+              if (scores[challenger] > scores[winner]) winner = challenger;
+            }
+            return winner;
+          };
+          const mutationRate = this.stagnant > 24 ? 0.16 : 0.10;
+          const mutationScale = this.stagnant > 24 ? 0.32 : 0.21;
+          while (next.length < populationSize - immigrantCount) {
+            const left = tournament();
+            const right = tournament();
+            const child = crossover(this.genomes[left], this.genomes[right], this.rng);
+            const activity = mergeActivity(activityProfiles[left], activityProfiles[right]);
+            next.push(mutate(child, this.rng, mutationRate, mutationScale, activity, this.hebbianEvolution));
+          }
+          while (next.length < populationSize) next.push(randomGenome(this.rng, this.neurons));
+          this.genomes = next;
+          return validation;
+        },
+        rollback(checkpoint) {
+          if (!checkpoint) return;
+          this.bestGenome = Float64Array.from(checkpoint);
+          for (let i = 0; i < Math.ceil(this.genomes.length * 0.55); i++) {
+            this.genomes[i] = i === 0 ? Float64Array.from(checkpoint) : mutate(checkpoint, this.rng, 0.08, 0.14, this.bestActivity, this.hebbianEvolution);
+          }
+          this.stagnant = 0;
+        }
+      };
+    }
+
+    function loadVault() {
+      try {
+        const parsed = JSON.parse(localStorage.getItem(VAULT_KEY) || "[]");
+        return Array.isArray(parsed) ? parsed.filter(item => item && item.taskVersion === TASK_VERSION) : [];
+      } catch (error) {
+        return [];
+      }
+    }
+    function persistVault(items) {
+      try {
+        localStorage.setItem(VAULT_KEY, JSON.stringify(items));
+        return true;
+      } catch (error) {
+        return false;
+      }
+    }
+    function updateVaultLabel() {
+      const vault = loadVault();
+      const organ = vault.filter(item => item.kind === "organ").length;
+      const liquid = vault.filter(item => item.kind === "liquid").length;
+      byId("nml-vault").textContent = vault.length ? "Champion vault: " + organ + " organ · " + liquid + " liquid" : "Champion vault: empty";
+    }
+    function saveChampion(kind, genome, score, neurons, size, topology, hebbianEvolution, organSlots) {
+      const vault = loadVault();
+      vault.push({
+        taskVersion: TASK_VERSION,
+        kind,
+        score,
+        neurons,
+        size,
+        topology,
+        hebbianEvolution: !!hebbianEvolution,
+        organSlots,
+        savedAt: new Date().toISOString(),
+        genome: Array.from(genome, value => Number(value.toFixed(6)))
+      });
+      const kept = [];
+      for (const group of ["organ", "liquid"]) {
+        kept.push(...vault.filter(item => item.kind === group).sort((a, b) => b.score - a.score).slice(0, 6));
+      }
+      persistVault(kept);
+      updateVaultLabel();
+    }
+    function compatibleSeeds(kind, neurons, topology, hebbianEvolution) {
+      return loadVault().filter(item => item.kind === kind && item.neurons === neurons && item.topology === topology && item.hebbianEvolution === !!hebbianEvolution && item.genome.length === genomeSize(neurons));
+    }
+    function injectSeeds(population, kind, neurons, topology, hebbianEvolution, rng) {
+      if (!byId("nml-use-vault").checked) return;
+      const seeds = compatibleSeeds(kind, neurons, topology, hebbianEvolution);
+      if (!seeds.length) return;
+      const slots = Math.max(1, Math.floor(population.length * 0.22));
+      for (let i = 0; i < slots; i++) {
+        const seed = Float64Array.from(seeds[i % seeds.length].genome);
+        population[population.length - 1 - i] = i < seeds.length ? seed : mutate(seed, rng, 0.06, 0.10);
+      }
+    }
+    function exportVault() {
+      const data = JSON.stringify({ task: "novel-maze-memory", taskVersion: TASK_VERSION, champions: loadVault() }, null, 2);
+      const blob = new Blob([data], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "novel-maze-memory-champions.json";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    const state = {
+      running: false,
+      stopRequested: false,
+      seedCounter: Math.floor(Math.random() * 0xffffffff) >>> 0,
+      neurons: 12,
+      size: 5,
+      topology: "braid",
+      organSlots: 128,
+      hebbianEvolution: false,
+      organChampion: null,
+      liquidChampion: null,
+      historyOrgan: [],
+      historyLiquid: [],
+      historyLesion: [],
+      stageEvents: [],
+      finalTest: null,
+      demo: null,
+      animation: null,
+      biopsyRunning: false,
+      biopsyResults: null,
+      runId: 0
+    };
+    const stageNames = ["valid exploration", "dead-end discipline", "goal solving"];
+
+    function nextSeed() {
+      state.seedCounter = (Math.imul(state.seedCounter, 1664525) + 1013904223) >>> 0;
+      return state.seedCounter;
+    }
+    function setProgress(fraction) {
+      const value = Math.round(clamp(fraction, 0, 1) * 100);
+      byId("nml-progress").style.width = value + "%";
+      const holder = byId("nml-progress").parentElement;
+      holder.setAttribute("aria-valuenow", String(value));
+    }
+    function setRunningUI(running) {
+      state.running = running;
+      const busy = running || state.biopsyRunning;
+      byId("nml-evolve").disabled = busy;
+      byId("nml-stop").disabled = !running;
+      byId("nml-new").disabled = busy || !state.organChampion;
+      byId("nml-replay").disabled = busy || !state.demo;
+      byId("nml-biopsy-run").disabled = busy || !state.organChampion;
+      byId("nml-reset-vault").disabled = busy;
+      for (const id of ["nml-size", "nml-topology", "nml-gens", "nml-pop", "nml-neurons", "nml-organ-slots", "nml-use-vault", "nml-hebb-evolution"]) byId(id).disabled = busy;
+    }
+    function updateReadouts() {
+      byId("nml-gens-value").textContent = byId("nml-gens").value;
+      byId("nml-pop-value").textContent = byId("nml-pop").value;
+      byId("nml-neurons-value").textContent = byId("nml-neurons").value;
+      byId("nml-organ-slots-value").textContent = byId("nml-organ-slots").value;
+      byId("nml-speed-value").textContent = byId("nml-speed").value;
+    }
+
+    function evolve() {
+      if (state.running || state.biopsyRunning) return;
+      stopAnimation();
+      setRunningUI(true);
+      state.stopRequested = false;
+      state.runId++;
+      const currentRun = state.runId;
+      const generations = Number(byId("nml-gens").value);
+      const populationSize = Number(byId("nml-pop").value);
+      const neurons = Number(byId("nml-neurons").value);
+      const size = Number(byId("nml-size").value);
+      const topology = byId("nml-topology").value;
+      const organSlots = Number(byId("nml-organ-slots").value);
+      const hebbianEvolution = byId("nml-hebb-evolution").checked;
+      state.neurons = neurons;
+      state.size = size;
+      state.topology = topology;
+      state.organSlots = organSlots;
+      state.hebbianEvolution = hebbianEvolution;
+      state.historyOrgan = [];
+      state.historyLiquid = [];
+      state.historyLesion = [];
+      state.stageEvents = [];
+      state.finalTest = null;
+      setProgress(0);
+      drawChart();
+
+      const seed = nextSeed();
+      const baseRng = RNG(seed);
+      const sharedInitial = [];
+      for (let i = 0; i < populationSize; i++) sharedInitial.push(randomGenome(baseRng, neurons));
+      const organInitial = sharedInitial.map(g => Float64Array.from(g));
+      const liquidInitial = sharedInitial.map(g => Float64Array.from(g));
+      injectSeeds(organInitial, "organ", neurons, topology, hebbianEvolution, baseRng);
+      injectSeeds(liquidInitial, "liquid", neurons, topology, hebbianEvolution, baseRng);
+      const runOptions = { organSlots, hebbianEvolution };
+      const organ = Population(organInitial, seed ^ 0x4f524741, true, neurons, runOptions);
+      const liquid = Population(liquidInitial, seed ^ 0x4c495155, false, neurons, runOptions);
+      const validationMazes = [];
+      const validationCount = size >= 10 ? 4 : 6;
+      for (let i = 0; i < validationCount; i++) validationMazes.push(makeMaze(size, (seed ^ 0x7a11) + i * 977, topology));
+
+      let generation = 0;
+      let stage = 0;
+      let smoothed = null;
+      let checkpointOrgan = null;
+      let checkpointLiquid = null;
+      let checkpointScore = 0;
+      let regressionChecks = 0;
+      let lastUi = 0;
+      const started = performance.now();
+
+      function tick() {
+        if (currentRun !== state.runId) return;
+        const sliceStart = performance.now();
+        do {
+          const trainingMazes = [];
+          const mazeCount = size >= 10 ? 1 : size >= 7 ? 2 : 3;
+          for (let i = 0; i < mazeCount; i++) trainingMazes.push(makeMaze(size, (seed + generation * 1319 + i * 193) >>> 0, topology));
+          const organValidation = organ.evaluateGeneration(trainingMazes, validationMazes, stage);
+          const liquidValidation = liquid.evaluateGeneration(trainingMazes, validationMazes, stage);
+          const lesionValidation = averageMetrics(organ.lastCandidate, neurons, validationMazes, false, stage, runOptions);
+          state.historyOrgan.push(organValidation.behavioral);
+          state.historyLiquid.push(liquidValidation.behavioral);
+          state.historyLesion.push(lesionValidation.behavioral);
+
+          if (!smoothed) smoothed = Object.assign({}, organValidation);
+          else {
+            for (const key of Object.keys(smoothed)) smoothed[key] = 0.82 * smoothed[key] + 0.18 * organValidation[key];
+          }
+
+          if (stage === 0 && smoothed.coverage > 0.50 && smoothed.validRate > 0.66 && smoothed.deadRecovery > 0.42) {
+            stage = 1;
+            checkpointOrgan = Float64Array.from(organ.bestGenome);
+            checkpointLiquid = Float64Array.from(liquid.bestGenome);
+            checkpointScore = smoothed.behavioral;
+            regressionChecks = 0;
+            state.stageEvents.push({ generation, label: "dead ends" });
+          } else if (stage === 1 && smoothed.coverage > 0.64 && smoothed.validRate > 0.72 && smoothed.deadRecovery > 0.58 && smoothed.repeatRate < 0.42 && smoothed.reached > 0.16) {
+            stage = 2;
+            checkpointOrgan = Float64Array.from(organ.bestGenome);
+            checkpointLiquid = Float64Array.from(liquid.bestGenome);
+            checkpointScore = smoothed.behavioral;
+            regressionChecks = 0;
+            state.stageEvents.push({ generation, label: "solve" });
+          } else if (stage > 0 && generation % 5 === 0 && checkpointOrgan) {
+            if (smoothed.behavioral < checkpointScore - 0.12) regressionChecks++;
+            else regressionChecks = Math.max(0, regressionChecks - 1);
+            if (regressionChecks >= 3) {
+              organ.rollback(checkpointOrgan);
+              liquid.rollback(checkpointLiquid);
+              state.stageEvents.push({ generation, label: "rollback" });
+              regressionChecks = 0;
+            }
+          }
+          generation++;
+        } while (generation < generations && !state.stopRequested && performance.now() - sliceStart < 24);
+
+        const now = performance.now();
+        if (now - lastUi > 90 || generation >= generations || state.stopRequested) {
+          const organLast = state.historyOrgan[state.historyOrgan.length - 1] || 0;
+          const liquidLast = state.historyLiquid[state.historyLiquid.length - 1] || 0;
+          byId("nml-status").textContent = "Generation " + generation + " / " + generations +
+            " · focus: " + stageNames[stage] + " · held-out score " + Math.round(organLast * 100) +
+            "% organ vs " + Math.round(liquidLast * 100) + "% liquid · " + (hebbianEvolution ? "activity-weighted" : "uniform") +
+            " mutation · " + ((now - started) / 1000).toFixed(1) + " s";
+          setProgress(generation / generations);
+          drawChart();
+          lastUi = now;
+        }
+
+        if (generation < generations && !state.stopRequested) requestAnimationFrame(tick);
+        else finishEvolution(organ, liquid, size, topology, organSlots, hebbianEvolution, neurons, generation, generations, stage);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function finishEvolution(organ, liquid, size, topology, organSlots, hebbianEvolution, neurons, generation, generations, stage) {
+      state.organChampion = Float64Array.from(organ.bestGenome);
+      state.liquidChampion = Float64Array.from(liquid.bestGenome);
+      const testSeed = nextSeed() ^ 0x54455354;
+      const testMazes = [];
+      for (let i = 0; i < 32; i++) testMazes.push(makeMaze(size, (testSeed + i * 1543) >>> 0, topology));
+      const runOptions = { organSlots };
+      const organTest = averageMetrics(state.organChampion, neurons, testMazes, true, 2, runOptions);
+      const liquidTest = averageMetrics(state.liquidChampion, neurons, testMazes, false, 2, runOptions);
+      const lesionTest = averageMetrics(state.organChampion, neurons, testMazes, false, 2, runOptions);
+      state.finalTest = { organ: organTest, liquid: liquidTest, lesion: lesionTest };
+      saveChampion("organ", state.organChampion, organTest.behavioral, neurons, size, topology, hebbianEvolution, organSlots);
+      saveChampion("liquid", state.liquidChampion, liquidTest.behavioral, neurons, size, topology, hebbianEvolution, organSlots);
+      renderFinalResults();
+      setRunningUI(false);
+      setProgress(generation / generations);
+      byId("nml-status").textContent = (generation < generations ? "Stopped with best-so-far champions" : "Evolution complete") +
+        " · " + (hebbianEvolution ? "activity-weighted" : "uniform") + " mutation · final focus: " + stageNames[stage] + " · fresh solutions " + organTest.solutions + "/32 organ vs " + liquidTest.solutions +
+        "/32 liquid; severed " + lesionTest.solutions + "/32 · excess retrace " + organTest.totalExcessRetraceSteps + " / " + liquidTest.totalExcessRetraceSteps;
+      playNewMaze();
+    }
+
+    function renderFinalResults() {
+      if (!state.finalTest) return;
+      function render(prefix, metrics) {
+        byId("nml-test-" + prefix).textContent = metrics.solutions + " / " + metrics.sampleCount;
+        byId("nml-test-" + prefix + "-note").textContent = metrics.totalExcessRetraceSteps + " excess-retrace steps · " + metrics.steps.toFixed(1) + " mean attempts";
+      }
+      render("organ", state.finalTest.organ);
+      render("liquid", state.finalTest.liquid);
+      render("lesion", state.finalTest.lesion);
+    }
+
+    function runBiopsy() {
+      if (state.running || state.biopsyRunning || !state.organChampion || !state.liquidChampion) return;
+      stopAnimation();
+      state.biopsyRunning = true;
+      state.biopsyResults = null;
+      setRunningUI(false);
+      const baseOptions = { organSlots: state.organSlots };
+      const conditions = [
+        { label: "Organ intact", genome: state.organChampion, withOrgan: true, options: baseOptions },
+        { label: "Same organ genome — socket severed", genome: state.organChampion, withOrgan: false, options: baseOptions },
+        { label: "Liquid intact", genome: state.liquidChampion, withOrgan: false, options: baseOptions },
+        { label: "Liquid — recurrent state reset each move", genome: state.liquidChampion, withOrgan: false, options: Object.assign({}, baseOptions, { resetStateEachStep: true }) },
+        { label: "Liquid — previous-direction signal hidden", genome: state.liquidChampion, withOrgan: false, options: Object.assign({}, baseOptions, { hidePrevious: true }) },
+        { label: "Liquid — state reset + direction hidden", genome: state.liquidChampion, withOrgan: false, options: Object.assign({}, baseOptions, { resetStateEachStep: true, hidePrevious: true }) }
+      ];
+      const seed = nextSeed() ^ 0x42494f50;
+      const mazes = [];
+      for (let i = 0; i < 32; i++) mazes.push(makeMaze(state.size, (seed + i * 2027) >>> 0, state.topology));
+      const accumulators = conditions.map(() => ({ solved: 0, excess: 0, steps: 0 }));
+      const totalJobs = conditions.length * mazes.length;
+      let job = 0;
+      byId("nml-biopsy-body").innerHTML = '<tr><td colspan="4" class="text-muted">Running targeted knockouts…</td></tr>';
+
+      function biopsyTick() {
+        const started = performance.now();
+        do {
+          const conditionIndex = Math.floor(job / mazes.length);
+          const mazeIndex = job % mazes.length;
+          const condition = conditions[conditionIndex];
+          const metrics = runEpisode(condition.genome, state.neurons, mazes[mazeIndex], condition.withOrgan, false, 2, condition.options).metrics;
+          const accumulator = accumulators[conditionIndex];
+          accumulator.solved += metrics.reached;
+          accumulator.excess += metrics.excessRetraceSteps;
+          accumulator.steps += metrics.steps;
+          job++;
+        } while (job < totalJobs && performance.now() - started < 20);
+
+        byId("nml-biopsy-status").textContent = "Biopsy " + job + " / " + totalJobs + " runs · same unseen mazes for every condition.";
+        if (job < totalJobs) {
+          requestAnimationFrame(biopsyTick);
+          return;
+        }
+        state.biopsyResults = conditions.map((condition, index) => ({
+          label: condition.label,
+          solved: accumulators[index].solved,
+          excess: accumulators[index].excess,
+          meanSteps: accumulators[index].steps / mazes.length
+        }));
+        byId("nml-biopsy-body").innerHTML = state.biopsyResults.map(result =>
+          "<tr><td>" + result.label + "</td><td class=\"text-end\">" + result.solved + " / 32</td><td class=\"text-end\">" + result.excess + "</td><td class=\"text-end\">" + result.meanSteps.toFixed(1) + "</td></tr>"
+        ).join("");
+        byId("nml-biopsy-status").textContent = "Complete. Large selective drops identify which memory channel carried the behavior.";
+        state.biopsyRunning = false;
+        setRunningUI(false);
+      }
+      requestAnimationFrame(biopsyTick);
+    }
+
+    const colorProbe = document.createElement("span");
+    colorProbe.setAttribute("aria-hidden", "true");
+    colorProbe.style.position = "absolute";
+    colorProbe.style.visibility = "hidden";
+    colorProbe.style.pointerEvents = "none";
+    root.appendChild(colorProbe);
+
+    function themeColor(name) {
+      colorProbe.style.color = "var(" + name + ")";
+      return getComputedStyle(colorProbe).color || getComputedStyle(root).getPropertyValue(name).trim();
+    }
+    function canvasSetup(canvas, preferredHeight) {
+      const width = Math.max(280, Math.floor(canvas.clientWidth || 420));
+      const height = preferredHeight || width;
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      canvas.style.height = height + "px";
+      const context = canvas.getContext("2d");
+      context.setTransform(dpr, 0, 0, dpr, 0, 0);
+      return { context, width, height };
+    }
+    function mazeGeometry(maze, width, height) {
+      const pad = 24;
+      const cell = Math.floor(Math.min((width - pad * 2) / maze.size, (height - pad * 2) / maze.size));
+      const ox = Math.round((width - cell * maze.size) / 2);
+      const oy = Math.round((height - cell * maze.size) / 2);
+      return {
+        cell,
+        ox,
+        oy,
+        x(cellIndex) { return ox + (cellIndex % maze.size + 0.5) * cell; },
+        y(cellIndex) { return oy + (Math.floor(cellIndex / maze.size) + 0.5) * cell; }
+      };
+    }
+    function drawMaze(canvas, maze, episode, upto, armColor) {
+      const setup = canvasSetup(canvas);
+      const context = setup.context;
+      const geometry = mazeGeometry(maze, setup.width, setup.height);
+      const border = themeColor("--border");
+      const foreground = themeColor("--foreground");
+      const muted = themeColor("--muted-foreground");
+      const destructive = themeColor("--destructive");
+      const memoryColor = themeColor("--viz-series-3");
+      const fontSize = Math.max(11, parseFloat(getComputedStyle(root).fontSize) || 14);
+      const fontFamily = getComputedStyle(root).fontFamily;
+      context.clearRect(0, 0, setup.width, setup.height);
+      context.strokeStyle = border;
+      context.lineWidth = 1.5;
+      context.beginPath();
+      for (let y = 0; y < maze.size; y++) {
+        for (let x = 0; x < maze.size; x++) {
+          const cellIndex = y * maze.size + x;
+          const x0 = geometry.ox + x * geometry.cell;
+          const y0 = geometry.oy + y * geometry.cell;
+          const x1 = x0 + geometry.cell;
+          const y1 = y0 + geometry.cell;
+          if (!isLegal(maze, cellIndex, 0)) { context.moveTo(x0, y0); context.lineTo(x1, y0); }
+          if (!isLegal(maze, cellIndex, 1)) { context.moveTo(x1, y0); context.lineTo(x1, y1); }
+          if (!isLegal(maze, cellIndex, 2)) { context.moveTo(x0, y1); context.lineTo(x1, y1); }
+          if (!isLegal(maze, cellIndex, 3)) { context.moveTo(x0, y0); context.lineTo(x0, y1); }
+        }
+      }
+      context.stroke();
+
+      const trace = episode.trace || [];
+      const limit = Math.min(upto, trace.length);
+      const memories = new Map();
+      const deadEnds = new Set();
+      for (let i = 0; i < limit; i++) {
+        const step = trace[i];
+        if (step.memory) memories.set(step.from, step.memory);
+        if (step.arrivalMemory) memories.set(step.to, step.arrivalMemory);
+        if (step.atDeadEnd) deadEnds.add(step.from);
+        if (step.kind === "blocked") {
+          const cx = geometry.x(step.from) + DX[step.action] * geometry.cell * 0.28;
+          const cy = geometry.y(step.from) + DY[step.action] * geometry.cell * 0.28;
+          const r = Math.max(3, geometry.cell * 0.07);
+          context.strokeStyle = destructive;
+          context.lineWidth = 1.5;
+          context.beginPath();
+          context.moveTo(cx - r, cy - r); context.lineTo(cx + r, cy + r);
+          context.moveTo(cx + r, cy - r); context.lineTo(cx - r, cy + r);
+          context.stroke();
+          continue;
+        }
+        context.strokeStyle = step.kind === "reentry" || step.kind === "waste" ? destructive : armColor;
+        context.globalAlpha = step.kind === "backtrack" ? 0.68 : 0.92;
+        context.lineWidth = Math.max(2.5, geometry.cell * 0.09);
+        context.lineCap = "round";
+        context.setLineDash(step.kind === "backtrack" ? [Math.max(4, geometry.cell * 0.18), Math.max(3, geometry.cell * 0.12)] : []);
+        context.beginPath();
+        context.moveTo(geometry.x(step.from), geometry.y(step.from));
+        context.lineTo(geometry.x(step.to), geometry.y(step.to));
+        context.stroke();
+      }
+      context.setLineDash([]);
+      context.globalAlpha = 1;
+
+      for (const [cellIndex, values] of memories.entries()) {
+        for (let d = 0; d < 4; d++) {
+          if (values[d] < 0.16 || !isLegal(maze, cellIndex, d)) continue;
+          const cx = geometry.x(cellIndex) + DX[d] * geometry.cell * 0.33;
+          const cy = geometry.y(cellIndex) + DY[d] * geometry.cell * 0.33;
+          const side = Math.max(3, geometry.cell * 0.10);
+          context.globalAlpha = clamp(values[d], 0.25, 1);
+          context.fillStyle = memoryColor;
+          context.fillRect(cx - side / 2, cy - side / 2, side, side);
+        }
+      }
+      context.globalAlpha = 1;
+
+      for (const cellIndex of deadEnds) {
+        const cx = geometry.x(cellIndex);
+        const cy = geometry.y(cellIndex);
+        const radius = Math.max(3, geometry.cell * 0.08);
+        context.strokeStyle = destructive;
+        context.globalAlpha = 0.75;
+        context.lineWidth = 1.3;
+        context.beginPath();
+        context.moveTo(cx - radius, cy - radius); context.lineTo(cx + radius, cy + radius);
+        context.moveTo(cx + radius, cy - radius); context.lineTo(cx - radius, cy + radius);
+        context.stroke();
+      }
+      context.globalAlpha = 1;
+
+      function label(cellIndex, text, color) {
+        const cx = geometry.x(cellIndex);
+        const cy = geometry.y(cellIndex);
+        const radius = Math.max(9, geometry.cell * 0.22);
+        context.fillStyle = themeColor("--card");
+        context.strokeStyle = color;
+        context.lineWidth = 1.7;
+        context.beginPath();
+        context.arc(cx, cy, radius, 0, Math.PI * 2);
+        context.fill();
+        context.stroke();
+        context.fillStyle = foreground;
+        context.font = "500 " + fontSize + "px " + fontFamily;
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        context.fillText(text, cx, cy);
+      }
+      label(maze.start, "S", armColor);
+      label(maze.goal, "G", themeColor("--viz-series-4"));
+
+      let head = maze.start;
+      if (limit) head = trace[limit - 1].to;
+      context.fillStyle = armColor;
+      context.strokeStyle = foreground;
+      context.lineWidth = 1.4;
+      context.beginPath();
+      context.arc(geometry.x(head), geometry.y(head), Math.max(5, geometry.cell * 0.14), 0, Math.PI * 2);
+      context.fill();
+      context.stroke();
+
+      context.fillStyle = muted;
+      context.font = "400 " + fontSize + "px " + fontFamily;
+      context.textAlign = "left";
+      context.textBaseline = "top";
+      context.fillText("G is hidden from the controller", geometry.ox, Math.max(2, geometry.oy - fontSize - 5));
+    }
+
+    function describeStep(episode, index) {
+      if (!episode || !episode.trace || !episode.trace.length) return "no movement";
+      if (index >= episode.trace.length && episode.metrics.reached) return "goal found";
+      const step = episode.trace[Math.max(0, Math.min(episode.trace.length - 1, index - 1))];
+      if (step.reached) return "goal found";
+      if (step.kind === "blocked") return "hit a wall";
+      if (step.kind === "reentry") return "excess corridor retrace";
+      if (step.kind === "backtrack") return "first return along this corridor";
+      if (step.atDeadEnd) return "dead end — turning back";
+      if (step.kind === "explore") return "exploring a new branch";
+      return "moving through visited space";
+    }
+
+    function stopAnimation() {
+      if (state.animation) cancelAnimationFrame(state.animation);
+      state.animation = null;
+    }
+    function playNewMaze() {
+      if (!state.organChampion || !state.liquidChampion) return;
+      stopAnimation();
+      const maze = makeMaze(state.size, nextSeed(), state.topology);
+      const runOptions = { organSlots: state.organSlots };
+      const organEpisode = runEpisode(state.organChampion, state.neurons, maze, true, true, 2, runOptions);
+      const liquidEpisode = runEpisode(state.liquidChampion, state.neurons, maze, false, true, 2, runOptions);
+      state.demo = { maze, organEpisode, liquidEpisode };
+      byId("nml-replay").disabled = false;
+      replayDemo();
+    }
+    function replayDemo() {
+      if (!state.demo) return;
+      stopAnimation();
+      const demo = state.demo;
+      const organCanvas = byId("nml-organ-canvas");
+      const liquidCanvas = byId("nml-liquid-canvas");
+      const organColor = themeColor("--viz-series-1");
+      const liquidColor = themeColor("--viz-series-2");
+      const maximum = Math.max(demo.organEpisode.trace.length, demo.liquidEpisode.trace.length);
+      let step = 0;
+      function draw() {
+        drawMaze(organCanvas, demo.maze, demo.organEpisode, step, organColor);
+        drawMaze(liquidCanvas, demo.maze, demo.liquidEpisode, step, liquidColor);
+        byId("nml-organ-state").textContent = describeStep(demo.organEpisode, step);
+        byId("nml-liquid-state").textContent = describeStep(demo.liquidEpisode, step);
+      }
+      if (reduceMotion) {
+        step = maximum;
+        draw();
+        renderDemoMetrics();
+        return;
+      }
+      let last = performance.now();
+      let carry = 0;
+      draw();
+      function frame(now) {
+        const speed = Number(byId("nml-speed").value);
+        const interval = 340 - speed * 27;
+        carry += now - last;
+        last = now;
+        while (carry >= interval && step < maximum) {
+          carry -= interval;
+          step++;
+        }
+        draw();
+        if (step < maximum) state.animation = requestAnimationFrame(frame);
+        else {
+          state.animation = null;
+          renderDemoMetrics();
+        }
+      }
+      state.animation = requestAnimationFrame(frame);
+    }
+    function renderDemoMetrics() {
+      if (!state.demo) return;
+      function set(prefix, episode) {
+        const metrics = episode.metrics;
+        byId("nml-" + prefix + "-goal").textContent = metrics.reached ? "Reached" : "Not reached";
+        byId("nml-" + prefix + "-steps").textContent = String(metrics.steps);
+        byId("nml-" + prefix + "-coverage").textContent = Math.round(metrics.coverage * 100) + "%";
+        byId("nml-" + prefix + "-waste").textContent = String(metrics.excessRetraceSteps);
+      }
+      set("organ", state.demo.organEpisode);
+      set("liquid", state.demo.liquidEpisode);
+    }
+
+    function drawChart() {
+      const canvas = byId("nml-chart");
+      const setup = canvasSetup(canvas, 230);
+      const context = setup.context;
+      const width = setup.width;
+      const height = setup.height;
+      const left = 38;
+      const right = 12;
+      const top = 12;
+      const bottom = 28;
+      const border = themeColor("--border");
+      const muted = themeColor("--muted-foreground");
+      const fontSize = Math.max(11, parseFloat(getComputedStyle(root).fontSize) || 14);
+      const fontFamily = getComputedStyle(root).fontFamily;
+      context.clearRect(0, 0, width, height);
+      context.font = "400 " + fontSize + "px " + fontFamily;
+      context.fillStyle = muted;
+      context.textBaseline = "middle";
+      for (let tick = 0; tick <= 100; tick += 25) {
+        const y = height - bottom - (height - top - bottom) * tick / 100;
+        context.strokeStyle = border;
+        context.globalAlpha = 0.55;
+        context.lineWidth = 1;
+        context.beginPath();
+        context.moveTo(left, y);
+        context.lineTo(width - right, y);
+        context.stroke();
+        context.globalAlpha = 1;
+        context.textAlign = "right";
+        context.fillText(tick + "%", left - 6, y);
+      }
+      const count = Math.max(2, state.historyOrgan.length);
+      const x = i => left + (width - left - right) * i / Math.max(1, count - 1);
+      const y = value => height - bottom - (height - top - bottom) * clamp(value, 0, 1);
+      function line(values, color, dashed) {
+        if (!values.length) return;
+        context.strokeStyle = color;
+        context.lineWidth = 2;
+        context.setLineDash(dashed ? [5, 4] : []);
+        context.beginPath();
+        for (let i = 0; i < values.length; i++) {
+          if (i === 0) context.moveTo(x(i), y(values[i]));
+          else context.lineTo(x(i), y(values[i]));
+        }
+        context.stroke();
+        context.setLineDash([]);
+      }
+      line(state.historyOrgan, themeColor("--viz-series-1"), false);
+      line(state.historyLiquid, themeColor("--viz-series-2"), false);
+      line(state.historyLesion, themeColor("--viz-series-4"), true);
+      for (const event of state.stageEvents) {
+        const eventX = x(event.generation);
+        context.strokeStyle = muted;
+        context.globalAlpha = 0.6;
+        context.setLineDash([3, 4]);
+        context.beginPath();
+        context.moveTo(eventX, top);
+        context.lineTo(eventX, height - bottom);
+        context.stroke();
+        context.setLineDash([]);
+        context.save();
+        context.translate(eventX + 4, top + 2);
+        context.rotate(Math.PI / 2);
+        context.textAlign = "left";
+        context.fillStyle = muted;
+        context.fillText(event.label, 0, 0);
+        context.restore();
+      }
+      context.globalAlpha = 1;
+      context.fillStyle = muted;
+      context.textAlign = "left";
+      context.textBaseline = "bottom";
+      context.fillText("generation", left, height - 3);
+      context.textAlign = "right";
+      context.fillText("held-out behavioral score", width - right, height - 3);
+    }
+
+    byId("nml-evolve").addEventListener("click", evolve);
+    byId("nml-stop").addEventListener("click", () => { state.stopRequested = true; });
+    byId("nml-new").addEventListener("click", playNewMaze);
+    byId("nml-replay").addEventListener("click", replayDemo);
+    byId("nml-biopsy-run").addEventListener("click", runBiopsy);
+    byId("nml-export").addEventListener("click", exportVault);
+    byId("nml-reset-vault").addEventListener("click", () => {
+      if (state.running || state.biopsyRunning) return;
+      if (window.confirm && !window.confirm("Clear every saved organ and liquid champion for this lab?")) return;
+      persistVault([]);
+      updateVaultLabel();
+      byId("nml-status").textContent = "Saved champion vault cleared. Current on-screen champions, if any, remain available until the page closes or you evolve again.";
+    });
+    for (const id of ["nml-gens", "nml-pop", "nml-neurons", "nml-organ-slots", "nml-speed"]) byId(id).addEventListener("input", updateReadouts);
+    for (const id of ["nml-size", "nml-topology", "nml-hebb-evolution"]) byId(id).addEventListener("change", () => {
+      if (!state.running && !state.biopsyRunning) byId("nml-status").textContent = "Experiment settings changed. Evolve new champions for this load.";
+    });
+    let resizeTimer = null;
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        drawChart();
+        if (state.demo) {
+          const organColor = themeColor("--viz-series-1");
+          const liquidColor = themeColor("--viz-series-2");
+          drawMaze(byId("nml-organ-canvas"), state.demo.maze, state.demo.organEpisode, state.demo.organEpisode.trace.length, organColor);
+          drawMaze(byId("nml-liquid-canvas"), state.demo.maze, state.demo.liquidEpisode, state.demo.liquidEpisode.trace.length, liquidColor);
+        }
+      }, 120);
+    });
+
+    updateReadouts();
+    updateVaultLabel();
+    drawChart();
+    const initialMaze = makeMaze(5, nextSeed(), "braid");
+    const emptyGenome = randomGenome(RNG(nextSeed()), 12);
+    state.demo = {
+      maze: initialMaze,
+      organEpisode: runEpisode(emptyGenome, 12, initialMaze, true, true, 0, { organSlots: 128 }),
+      liquidEpisode: runEpisode(emptyGenome, 12, initialMaze, false, true, 0, { organSlots: 128 })
+    };
+    drawMaze(byId("nml-organ-canvas"), initialMaze, state.demo.organEpisode, 0, themeColor("--viz-series-1"));
+    drawMaze(byId("nml-liquid-canvas"), initialMaze, state.demo.liquidEpisode, 0, themeColor("--viz-series-2"));
+    state.demo = null;
+
+    window.__novelMazeMemoryLab = {
+      makeMaze,
+      runEpisode,
+      randomGenome,
+      genomeSize,
+      averageMetrics,
+      mutate,
+      runBiopsy,
+      state
+    };
+  })();
+  </script>
+</div>
+
+<script id="codex-visualization-floating-ui-core" src="https://unpkg.com/@floating-ui/core@1.7.3/dist/floating-ui.core.umd.min.js"></script>
+<script id="codex-visualization-floating-ui-dom" src="https://unpkg.com/@floating-ui/dom@1.7.4/dist/floating-ui.dom.umd.min.js"></script>
+<script id="codex-visualization-lucide" async src="https://unpkg.com/lucide@1.17.0/dist/umd/lucide.js"></script>
+<script id="codex-visualization-tooltip">/* oxlint-disable typescript/no-unsafe-argument, typescript/no-unsafe-call, typescript/no-unsafe-return */
+// Runs inside the visualization sandbox, not the host webview.
+(() => {
+  if (window.FloatingUIDOM == null) {
+    return;
+  }
+  const { autoUpdate, computePosition, flip, offset, shift, size } =
+    window.FloatingUIDOM;
+  const tooltipPlacements = new Set(["top", "right", "bottom", "left"]);
+  const tooltipId = `codex-visualization-tooltip-${
+    window.crypto?.randomUUID?.() ?? Date.now().toString(36)
+  }`;
+  const tooltipGap = 5;
+  const hoverDelay = 700;
+  const skipDelay = 300;
+  let activeTrigger = null;
+  let pendingTrigger = null;
+  let tooltip = null;
+  let openTimeout = null;
+  let autoUpdateCleanup = null;
+  let positionRequest = 0;
+  let skipDelayUntil = 0;
+
+  const getTrigger = (target) =>
+    target?.nodeType === Node.ELEMENT_NODE
+      ? target.closest("[data-tooltip]")
+      : null;
+  const containsTarget = (trigger, target) =>
+    target?.nodeType != null && trigger.contains(target);
+  const getContent = (trigger) =>
+    trigger.getAttribute("data-tooltip")?.trim() ?? "";
+  const getPlacement = (trigger) => {
+    const placement = trigger.getAttribute("data-tooltip-placement");
+    return tooltipPlacements.has(placement) ? placement : "top";
+  };
+  const getTooltip = () => {
+    if (tooltip == null) {
+      tooltip = document.createElement("div");
+      tooltip.id = tooltipId;
+      tooltip.className = "tooltip";
+      tooltip.setAttribute("role", "tooltip");
+    }
+    return tooltip;
+  };
+  const setDescribedBy = (trigger, described) => {
+    const ids = new Set(
+      (trigger.getAttribute("aria-describedby") ?? "")
+        .split(/\s+/)
+        .filter(Boolean),
+    );
+    if (described) {
+      ids.add(tooltipId);
+    } else {
+      ids.delete(tooltipId);
+    }
+    if (ids.size === 0) {
+      trigger.removeAttribute("aria-describedby");
+    } else {
+      trigger.setAttribute("aria-describedby", [...ids].join(" "));
+    }
+  };
+  const clearOpenTimeout = () => {
+    if (openTimeout != null) {
+      window.clearTimeout(openTimeout);
+      openTimeout = null;
+    }
+    pendingTrigger = null;
+  };
+  const closeTooltip = (activateSkipDelay = true) => {
+    clearOpenTimeout();
+    positionRequest += 1;
+    autoUpdateCleanup?.();
+    autoUpdateCleanup = null;
+    if (activeTrigger == null) {
+      return;
+    }
+    setDescribedBy(activeTrigger, false);
+    activeTrigger = null;
+    tooltip?.remove();
+    if (activateSkipDelay) {
+      skipDelayUntil = Date.now() + skipDelay;
+    }
+  };
+  const updatePosition = (trigger, floating) => {
+    const request = ++positionRequest;
+    void computePosition(trigger, floating, {
+      middleware: [
+        offset(tooltipGap),
+        flip({ padding: tooltipGap }),
+        shift({ padding: tooltipGap }),
+        size({
+          padding: tooltipGap,
+          apply({ availableHeight, availableWidth, elements }) {
+            elements.floating.style.setProperty(
+              "--tooltip-available-width",
+              `${Math.max(0, availableWidth)}px`,
+            );
+            elements.floating.style.setProperty(
+              "--tooltip-available-height",
+              `${Math.max(0, availableHeight)}px`,
+            );
+          },
+        }),
+      ],
+      placement: getPlacement(trigger),
+      strategy: "fixed",
+    })
+      .then(({ x, y }) => {
+        if (activeTrigger !== trigger || request !== positionRequest) {
+          return;
+        }
+        const scale = window.devicePixelRatio || 1;
+        floating.style.transform = `translate(${Math.round(x * scale) / scale}px, ${Math.round(y * scale) / scale}px)`;
+        floating.style.visibility = "visible";
+      })
+      .catch(() => {
+        if (activeTrigger === trigger && request === positionRequest) {
+          closeTooltip(false);
+        }
+      });
+  };
+  const openTooltip = (trigger) => {
+    const content = getContent(trigger);
+    if (!trigger.isConnected || content.length === 0) {
+      return;
+    }
+    clearOpenTimeout();
+    if (activeTrigger === trigger) {
+      return;
+    }
+    closeTooltip();
+    const floating = getTooltip();
+    floating.textContent = content;
+    floating.style.visibility = "hidden";
+    floating.style.transform = "translate(0, 0)";
+    document.body.appendChild(floating);
+    activeTrigger = trigger;
+    setDescribedBy(trigger, true);
+    autoUpdateCleanup = autoUpdate(trigger, floating, () => {
+      updatePosition(trigger, floating);
+    });
+  };
+  const requestOpen = (trigger, immediate = false) => {
+    if (
+      getContent(trigger).length === 0 ||
+      activeTrigger === trigger ||
+      pendingTrigger === trigger
+    ) {
+      return;
+    }
+    clearOpenTimeout();
+    pendingTrigger = trigger;
+    const delay =
+      immediate || activeTrigger != null || Date.now() < skipDelayUntil
+        ? 0
+        : hoverDelay;
+    if (delay === 0) {
+      openTooltip(trigger);
+      return;
+    }
+    openTimeout = window.setTimeout(() => {
+      openTimeout = null;
+      pendingTrigger = null;
+      openTooltip(trigger);
+    }, delay);
+  };
+  const handlePointerOpen = (event) => {
+    if (event.pointerType === "touch") {
+      return;
+    }
+    const trigger = getTrigger(event.target);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    requestOpen(trigger);
+  };
+  const handleLeave = (event) => {
+    const trigger = getTrigger(event.target);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const handleFocusIn = (event) => {
+    const trigger = getTrigger(event.target);
+    if (trigger?.matches(":focus-visible")) {
+      requestOpen(trigger, true);
+    }
+  };
+  const handleKeyDown = (event) => {
+    if (event.key === "Escape") {
+      closeTooltip();
+    }
+  };
+  const handleContextMenu = (event) => {
+    const trigger = getTrigger(event.target);
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const destroy = () => {
+    closeTooltip(false);
+    document.removeEventListener("pointerover", handlePointerOpen);
+    document.removeEventListener("pointerout", handleLeave);
+    document.removeEventListener("focusin", handleFocusIn);
+    document.removeEventListener("focusout", handleLeave);
+    document.removeEventListener("keydown", handleKeyDown);
+    document.removeEventListener("contextmenu", handleContextMenu);
+    tooltip = null;
+  };
+
+  document.addEventListener("pointerover", handlePointerOpen);
+  document.addEventListener("pointerout", handleLeave);
+  document.addEventListener("focusin", handleFocusIn);
+  document.addEventListener("focusout", handleLeave);
+  document.addEventListener("keydown", handleKeyDown);
+  document.addEventListener("contextmenu", handleContextMenu);
+  window.addEventListener("pagehide", destroy, { once: true });
+})();
+</script>
+<script id="codex-visualization-lucide-initialization">(() => {
+  const initialize = () => {
+    globalThis.lucide?.createIcons({ attrs: { width: 16, height: 16 } });
+  };
+  if (globalThis.lucide != null) {
+    initialize();
+    return;
+  }
+  document
+    .getElementById("codex-visualization-lucide")
+    ?.addEventListener("load", initialize, { once: true });
+})();
+</script>
+</body>
+</html>
