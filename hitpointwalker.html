@@ -1,0 +1,408 @@
+
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QUADRUPED · HP vs Distance</title>
+<style>
+  :root{--bg:#0d0f17;--panel:#141824;--panel2:#0f131d;--ink:#e8ecf6;--dim:#7b86a0;
+    --cyan:#00f2fe;--gold:#ffd166;--orange:#ff6b6b;--purple:#b388ff;--line:#232a3d;--good:#5ef2a8;}
+  *{box-sizing:border-box}html,body{margin:0;height:100%}
+  body{background:radial-gradient(1200px 700px at 50% -10%,#161b2b,var(--bg) 55%);color:var(--ink);
+    font-family:"SF Mono",ui-monospace,"Cascadia Mono",Menlo,Consolas,monospace;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto;padding:22px 20px 60px}
+  header{display:flex;align-items:baseline;gap:18px;flex-wrap:wrap;margin-bottom:14px}
+  h1{font-size:15px;letter-spacing:.2em;font-weight:600;margin:0;text-transform:uppercase;
+    background:linear-gradient(90deg,var(--cyan),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--dim);font-size:11px;letter-spacing:.03em}
+  .tag{margin-left:auto;font-size:10px;letter-spacing:.2em;color:var(--dim);border:1px solid var(--line);padding:4px 10px;border-radius:999px}
+  .bar{display:flex;gap:18px;align-items:center;margin-bottom:14px;background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:14px;padding:11px 18px;flex-wrap:wrap}
+  .b{display:flex;flex-direction:column;gap:2px}.b .k{font-size:9px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase}
+  .b .v{font-size:15px;font-variant-numeric:tabular-nums}.v.cy{color:var(--cyan)}.v.gd{color:var(--gold)}
+  .maps{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .card{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:14px}
+  .card h2{font-size:10px;letter-spacing:.15em;text-transform:uppercase;margin:0;padding:9px 14px;border-bottom:1px solid var(--line);font-weight:600}
+  .card.cy h2{color:var(--cyan)}.card.gd h2{color:var(--gold)}
+  canvas.view{display:block;width:100%;height:280px;background:#0b0e18;cursor:grab;touch-action:none}
+  canvas.view:active{cursor:grabbing}
+  .stat{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line)}
+  .stat .c{background:var(--panel);padding:6px 12px}.stat .k{font-size:9px;letter-spacing:.08em;color:var(--dim);text-transform:uppercase}
+  .stat .v{font-size:13px;margin-top:1px;font-variant-numeric:tabular-nums}
+  canvas#graph{display:block;width:100%;height:170px;background:var(--panel2)}
+  .controls{display:flex;gap:8px;padding:13px 14px;flex-wrap:wrap;align-items:center}
+  button{font:inherit;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink);background:#1b2233;border:1px solid var(--line);padding:9px 13px;border-radius:9px;cursor:pointer;transition:.15s}
+  button:hover{border-color:var(--cyan);color:var(--cyan)}button.primary{background:linear-gradient(90deg,rgba(0,242,254,.16),rgba(255,209,102,.16));border-color:#2f6f86}
+  .vbtns{display:flex;gap:6px;padding:0 14px 8px}.vbtns button{padding:7px 11px;font-size:10px}
+  .knobs{display:flex;gap:12px;padding:2px 14px 12px;flex-wrap:wrap;align-items:center}
+  .opt{display:flex;flex-direction:column;gap:3px;color:var(--dim);font-size:9px;letter-spacing:.06em;text-transform:uppercase}
+  select{font:inherit;font-size:11px;color:var(--ink);background:#1b2233;border:1px solid var(--line);border-radius:8px;padding:5px 7px}
+  .speed{display:flex;align-items:center;gap:7px;margin-left:auto;color:var(--dim);font-size:10px}
+  input[type=range]{accent-color:var(--cyan)}
+  #biopanel{display:none;padding:12px 14px;border-top:1px solid var(--line)}
+  #bio{width:100%;height:190px;background:#0b0e15;color:var(--good);border:1px solid var(--line);border-radius:8px;font:11px monospace;padding:8px;resize:vertical}
+  .foot{padding:14px;color:var(--dim);font-size:11px;line-height:1.7}.foot b{color:var(--ink)}.foot .cy{color:var(--cyan)}.foot .gd{color:var(--gold)}
+</style></head>
+<body><div class="wrap">
+  <header><h1>HP vs Distance</h1>
+    <span class="sub">health budget (survival &times; distance) vs plain distance &middot; many gens &middot; shared-orbit dual view &middot; running distance graph</span>
+    <span class="tag" id="statetag">idle</span></header>
+  <div class="bar">
+    <div class="b"><div class="k">gen</div><div class="v" id="gen">0 / 0</div></div>
+    <div class="b"><div class="k">HP dist</div><div class="v cy" id="dH">&mdash;</div></div>
+    <div class="b"><div class="k">HP lifespan</div><div class="v cy" id="lH">&mdash;</div></div>
+    <div class="b"><div class="k">dist arm dist</div><div class="v gd" id="dD">&mdash;</div></div>
+    <div class="b"><div class="k">dist arm lifespan</div><div class="v gd" id="lD">&mdash;</div></div>
+    <div class="b"><div class="k">runs</div><div class="v" id="memN">0</div></div>
+  </div>
+  <div class="maps">
+    <div class="card cy"><h2>HP arm &mdash; survival &times; distance</h2><canvas id="viewH" class="view" width="500" height="280"></canvas>
+      <div class="stat"><div class="c"><div class="k">champ dist</div><div class="v cy" id="dH2">&mdash;</div></div><div class="c"><div class="k">&nbsp;</div><div class="v">&nbsp;</div></div></div></div>
+    <div class="card gd"><h2>Distance arm &mdash; plain</h2><canvas id="viewD" class="view" width="500" height="280"></canvas>
+      <div class="stat"><div class="c"><div class="k">champ dist</div><div class="v gd" id="dD2">&mdash;</div></div><div class="c"><div class="k">&nbsp;</div><div class="v">&nbsp;</div></div></div></div>
+  </div>
+  <div class="card"><h2>Running comparison &mdash; champion distance per generation (drag either walker to orbit both)</h2>
+    <canvas id="graph" width="1000" height="170"></canvas>
+    <div class="vbtns"><button id="vReset">reset view</button><button id="vTop">top-down</button>
+      <div class="speed" style="margin-left:auto">speed <input type="range" id="speed" min="1" max="16" value="4"></div></div></div>
+  <div class="card">
+    <div class="controls"><button class="primary" id="run">&#9654; run</button><button id="reset">reset (reseed)</button>
+      <button id="biopsy">biopsy</button><button id="clearmem">clear memory</button></div>
+    <div class="knobs">
+      <span class="opt">HP pool<select id="hpSel"><option value="80">80</option><option value="120" selected>120</option><option value="200">200</option><option value="320">320</option></select></span>
+      <span class="opt">generations<select id="gensSel"><option value="150">150</option><option value="200" selected>200</option><option value="350">350</option></select></span>
+    </div>
+    <div id="biopanel"><div style="font-size:10px;color:var(--dim);letter-spacing:.1em;margin-bottom:6px">RUN MEMORY &middot; <span id="biocount"></span> &middot; select-all &amp; copy, paste to Claude</div><textarea id="bio" readonly></textarea></div>
+  </div>
+  <div class="card"><div class="foot">
+    <b>Does a health budget change the outcome?</b> Two populations from the same seed evolve in parallel. The <b class="cy">HP arm</b> carries a health pool that injuries (impact, joint torque, instability, falls) drain; at 0 it dies, and its fitness is <b>distance &times; survival-fraction</b> &mdash; it must travel far <i>and</i> stay alive. The <b class="gd">distance arm</b> is the plain control: forward distance over a fixed life, no health. The <b>running graph</b> pits their champion distance against each other every generation; the two viewports show both champions from a <b>shared camera</b> (drag either to orbit both, so you compare gaits at the same angle; top-down reveals drift). Biopsy reports whether they tie on raw distance (the honest ceiling) and whether the HP arm buys extra <b>lifespan</b> for the same ground &mdash; a longer-lived animal covering the same distance more sustainably.
+  </div></div>
+</div>
+<script>
+
+
+"use strict";
+// ============ physics (validated) + terrain ============
+const V={sub:(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],add:(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],
+  scale:(a,s)=>[a[0]*s,a[1]*s,a[2]*s],cross:(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]],
+  dot:(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],norm:(a)=>{const l=Math.hypot(a[0],a[1],a[2])||1e-9;return[a[0]/l,a[1]/l,a[2]/l];}};
+function mulberry(s){return function(){let t=s+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;};}
+class PRNG{constructor(s){this.n=mulberry(s>>>0);}next(){return this.n();}gauss(){let u=0,v=0;while(!u)u=this.next();while(!v)v=this.next();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}}
+const LT=0.72,WT=0.44,THIGH=0.30,SHIN=0.33,HIPH=0.52,FOOTF=0.06,GY=0.0,BOXH=0.16;
+const LEGS=[{hip:0,zside:-1},{hip:1,zside:+1},{hip:2,zside:-1},{hip:3,zside:+1}];
+const NTOR=8;const kneeIdx=l=>NTOR+l*2,footIdx=l=>NTOR+l*2+1;
+const SIM={gravity:13.0,damp:0.99,iters:15,substeps:2,vmax:0.06,friction:1.0};const TUNE={kBody:0.7,kSwing:0.5};
+let GAMP=0;                                   // terrain amplitude (curriculum knob)
+function setGamp(a){GAMP=a;}
+function groundH(x,z){return GAMP<=0?GY:GY+GAMP*(Math.sin(x*1.7)+0.6*Math.sin(z*2.7+0.9));}
+function ik2(fx,fy,thigh,shin,bend){const d=Math.hypot(fx,fy);const a1=(d*d+thigh*thigh-shin*shin)/(2*d);
+  const h=Math.sqrt(Math.max(0,thigh*thigh-a1*a1));const ux=fx/d,uy=fy/d;return{a:a1*ux+bend*(-uy)*h,b:a1*uy+bend*ux*h};}
+function makeBody(x0,z0){const P=[],PP=[];const put=(x,y,z)=>{P.push([x,y,z]);PP.push([x,y,z]);};
+  const hx=LT/2,hz=WT/2,hy=HIPH;
+  put(x0+hx,hy,z0-hz);put(x0+hx,hy,z0+hz);put(x0-hx,hy,z0-hz);put(x0-hx,hy,z0+hz);
+  put(x0+hx,hy+BOXH,z0-hz);put(x0+hx,hy+BOXH,z0+hz);put(x0-hx,hy+BOXH,z0-hz);put(x0-hx,hy+BOXH,z0+hz);
+  const ik=ik2(FOOTF,-HIPH,THIGH,SHIN,+1);
+  for(let l=0;l<4;l++){const H=P[LEGS[l].hip];put(H[0]+ik.a,H[1]+ik.b,H[2]);put(H[0]+FOOTF,GY,H[2]);}
+  const D=[];const dist=(i,j)=>D.push([i,j,Math.hypot(P[i][0]-P[j][0],P[i][1]-P[j][1],P[i][2]-P[j][2])]);
+  dist(0,1);dist(2,3);dist(0,2);dist(1,3);dist(0,3);dist(1,2);dist(4,5);dist(6,7);dist(4,6);dist(5,7);dist(4,7);dist(5,6);
+  dist(0,4);dist(1,5);dist(2,6);dist(3,7);dist(0,5);dist(1,4);dist(2,7);dist(3,6);dist(0,6);dist(2,4);dist(1,7);dist(3,5);
+  for(let l=0;l<4;l++){dist(LEGS[l].hip,kneeIdx(l));dist(kneeIdx(l),footIdx(l));}
+  return{P,PP,D,M:[],anchor:[null,null,null,null]};}
+function bodyFrame(P){const FL=P[0],FR=P[1],BL=P[2],BR=P[3];
+  const fMid=V.scale(V.add(FL,FR),.5),bMid=V.scale(V.add(BL,BR),.5);
+  const rMid=V.scale(V.add(FR,BR),.5),lMid=V.scale(V.add(FL,BL),.5);
+  const fwd=V.norm(V.sub(fMid,bMid)),lat=V.norm(V.sub(rMid,lMid));const up=V.norm(V.cross(lat,fwd));
+  const center=V.scale(V.add(V.add(FL,FR),V.add(BL,BR)),.25);return{fwd,lat,up,center};}
+function integrate(body,subdt){const {P,PP}=body,g=SIM.gravity,damp=SIM.damp,vmax=SIM.vmax;
+  for(let i=0;i<P.length;i++){const p=P[i],pp=PP[i];
+    let vx=(p[0]-pp[0])*damp,vy=(p[1]-pp[1])*damp,vz=(p[2]-pp[2])*damp;
+    vy+=-g*subdt*subdt;const sp=Math.hypot(vx,vy,vz);if(sp>vmax){const s=vmax/sp;vx*=s;vy*=s;vz*=s;}
+    pp[0]=p[0];pp[1]=p[1];pp[2]=p[2];p[0]+=vx;p[1]+=vy;p[2]+=vz;}}
+function satisfyDistance(body){const {P,D}=body;
+  for(const [i,j,rest] of D){const a=P[i],b=P[j];const dx=b[0]-a[0],dy=b[1]-a[1],dz=b[2]-a[2];
+    const d=Math.hypot(dx,dy,dz)||1e-9,diff=(d-rest)/d*0.5;const cx=dx*diff,cy=dy*diff,cz=dz*diff;
+    a[0]+=cx;a[1]+=cy;a[2]+=cz;b[0]-=cx;b[1]-=cy;b[2]-=cz;}}
+function satisfyGround(body){const {P,PP,anchor}=body;let impact=0;const CEPS=0.02;
+  for(let l=0;l<4;l++){const fi=footIdx(l),p=P[fi],pp=PP[fi];const gh=groundH(p[0],p[2]);
+    if(p[1]<gh)p[1]=gh;
+    if(p[1]<=gh+CEPS){if(!anchor[l]){anchor[l]=[p[0],p[2]];impact+=Math.max(0,pp[1]-p[1]);}
+      const fr=SIM.friction;p[0]=p[0]+(anchor[l][0]-p[0])*fr;p[2]=p[2]+(anchor[l][1]-p[2])*fr;}else anchor[l]=null;}
+  return impact;}
+function footContact(body,l){const p=body.P[footIdx(l)];return p[1]<=groundH(p[0],p[2])+0.03;}
+function servoFeet(body,frame,offs,kBody,kSwing){const {P}=body;const dP=P.map(()=>[0,0,0]);const bodyD=[0,0,0];let nStance=0;
+  for(let l=0;l<4;l++){const hipI=LEGS[l].hip,footI=footIdx(l),o=offs[l];
+    const offset=[frame.fwd[0]*o.fx+frame.lat[0]*o.lz-frame.up[0]*(HIPH-o.ly),
+      frame.fwd[1]*o.fx+frame.lat[1]*o.lz-frame.up[1]*(HIPH-o.ly),frame.fwd[2]*o.fx+frame.lat[2]*o.lz-frame.up[2]*(HIPH-o.ly)];
+    const foot=P[footI],hip=P[hipI],stance=o.ly<0.03;
+    if(stance){bodyD[0]+=kBody*(foot[0]-offset[0]-hip[0]);bodyD[1]+=kBody*(foot[1]-offset[1]-hip[1]);bodyD[2]+=kBody*(foot[2]-offset[2]-hip[2]);nStance++;}
+    else{dP[footI][0]+=kSwing*(hip[0]+offset[0]-foot[0]);dP[footI][1]+=kSwing*(hip[1]+offset[1]-foot[1]);dP[footI][2]+=kSwing*(hip[2]+offset[2]-foot[2]);}}
+  if(nStance>0){const latc=V.dot(bodyD,frame.lat);bodyD[0]-=frame.lat[0]*latc;bodyD[1]-=frame.lat[1]*latc;bodyD[2]-=frame.lat[2]*latc;
+    for(let c=0;c<NTOR;c++){dP[c][0]+=bodyD[0]/nStance;dP[c][1]+=bodyD[1]/nStance;dP[c][2]+=bodyD[2]/nStance;}}
+  for(let i=0;i<P.length;i++){P[i][0]+=dP[i][0];P[i][1]+=dP[i][1];P[i][2]+=dP[i][2];}}
+function stepPhysics(body,offs){const subdt=1/SIM.substeps;let impact=0;
+  for(let s=0;s<SIM.substeps;s++){integrate(body,subdt);
+    if(offs){const frame=bodyFrame(body.P);servoFeet(body,frame,offs,TUNE.kBody,TUNE.kSwing);}
+    for(let it=0;it<SIM.iters;it++){satisfyDistance(body);impact+=satisfyGround(body);}}
+  return impact;}
+function captureRest(body){const frame=bodyFrame(body.P);body.M=[];
+  for(let l=0;l<4;l++){const rel=V.sub(body.P[footIdx(l)],body.P[LEGS[l].hip]);
+    body.M.push({fx:V.dot(rel,frame.fwd),lz:V.dot(rel,frame.lat),ly:HIPH-(-V.dot(rel,frame.up))});}}
+
+// ============ tangle net (+ importance) ============
+const N_IN=12,N_POOL=28,K_REC=6,N_OUT=8,PROP=2;
+const STRIDE_MAX=0.24,LIFT_MAX=0.16,SPLAY=0.16,RESTH=0.40,CLK=0.05,KIMP=1.0,T_EVAL=550;
+const TOPO=(function(){const rng=new PRNG(0xC0FFEE);const src=[];
+  for(let j=0;j<N_POOL;j++){const s=[];for(let k=0;k<K_REC;k++)s.push(Math.floor(rng.next()*N_POOL));src.push(s);}return{src};})();
+function genomeSize(){return N_POOL*N_IN+N_POOL*K_REC+N_POOL+N_POOL+N_OUT*N_POOL+N_OUT;}
+const OFF={Win:0,Wrec:N_POOL*N_IN,b:N_POOL*N_IN+N_POOL*K_REC,leak:N_POOL*N_IN+N_POOL*K_REC+N_POOL,
+  Wout:N_POOL*N_IN+N_POOL*K_REC+2*N_POOL,bo:N_POOL*N_IN+N_POOL*K_REC+2*N_POOL+N_OUT*N_POOL};
+class Net{constructor(g){this.g=g;this.track=false;this.reset();this.dec();}
+  reset(){this.a=new Float64Array(N_POOL);this.act=this.a;}
+  enableTracking(){this.track=true;this.imp=new Float64Array(this.g.length);this.impN=0;}
+  dec(){let k=0;const g=this.g;
+    this.Win=[];for(let j=0;j<N_POOL;j++){const r=new Float64Array(N_IN);for(let i=0;i<N_IN;i++)r[i]=g[k++];this.Win.push(r);}
+    this.Wrec=[];for(let j=0;j<N_POOL;j++){const r=new Float64Array(K_REC);for(let i=0;i<K_REC;i++)r[i]=g[k++];this.Wrec.push(r);}
+    this.b=new Float64Array(N_POOL);for(let j=0;j<N_POOL;j++)this.b[j]=g[k++];
+    this.leak=new Float64Array(N_POOL);for(let j=0;j<N_POOL;j++)this.leak[j]=0.15+0.7*(1/(1+Math.exp(-g[k++])));
+    this.Wout=[];for(let o=0;o<N_OUT;o++){const r=new Float64Array(N_POOL);for(let j=0;j<N_POOL;j++)r[j]=g[k++];this.Wout.push(r);}
+    this.bo=new Float64Array(N_OUT);for(let o=0;o<N_OUT;o++)this.bo[o]=g[k++];}
+  forward(x){const a=this.a,src=TOPO.src,tr=this.track,imp=this.imp;
+    for(let p=0;p<PROP;p++){const na=new Float64Array(N_POOL);
+      for(let j=0;j<N_POOL;j++){let s=this.b[j];const wi=this.Win[j];
+        for(let i=0;i<N_IN;i++){s+=wi[i]*x[i];if(tr)imp[OFF.Win+j*N_IN+i]+=Math.abs(wi[i]*x[i]);}
+        const wr=this.Wrec[j],sj=src[j];for(let e=0;e<K_REC;e++){s+=wr[e]*a[sj[e]];if(tr)imp[OFF.Wrec+j*K_REC+e]+=Math.abs(wr[e]*a[sj[e]]);}
+        na[j]=(1-this.leak[j])*a[j]+this.leak[j]*Math.tanh(s);}
+      for(let j=0;j<N_POOL;j++)a[j]=na[j];}
+    this.act=a;const out=new Float64Array(N_OUT);
+    for(let o=0;o<N_OUT;o++){let s=this.bo[o];const w=this.Wout[o];for(let j=0;j<N_POOL;j++){s+=w[j]*a[j];if(tr)imp[OFF.Wout+o*N_POOL+j]+=Math.abs(w[j]*a[j]);}
+      out[o]=Math.tanh(s);if(tr)imp[OFF.bo+o]+=Math.abs(out[o]);}
+    if(tr){for(let j=0;j<N_POOL;j++){const av=Math.abs(a[j]);imp[OFF.b+j]+=av;imp[OFF.leak+j]+=av;}this.impN++;}
+    this.outv=out;return out;}}
+function sensors(body,frame,phase,vel){const c=frame.center;
+  return[(c[1]-RESTH)/0.2,frame.up[0]*3,frame.up[2]*3,vel[0]*12,vel[2]*12,
+    footContact(body,0)?1:-1,footContact(body,1)?1:-1,footContact(body,2)?1:-1,footContact(body,3)?1:-1,
+    Math.sin(2*Math.PI*phase),Math.cos(2*Math.PI*phase),1.0];}
+function outToOffsets(out,rest){const offs=new Array(4);
+  for(let l=0;l<4;l++){offs[l]={fx:rest[l].fx+STRIDE_MAX*out[l*2],ly:LIFT_MAX*0.5*(out[l*2+1]+1),lz:rest[l].lz+LEGS[l].zside*SPLAY};}return offs;}
+function evaluate(g,opts){opts=opts||{};const T=opts.T||T_EVAL,track=!!opts.track;
+  const body=makeBody(0,0);captureRest(body);const rest=body.M;const net=new Net(g);if(track)net.enableTracking();
+  const f0=bodyFrame(body.P),c0=f0.center.slice(),fwd0=f0.fwd.slice();
+  let phase=0,prevC=c0.slice(),tiltSum=0,imp=0,surv=0;
+  for(let t=0;t<T;t++){const fr=bodyFrame(body.P);
+    const vel=[fr.center[0]-prevC[0],fr.center[1]-prevC[1],fr.center[2]-prevC[2]];
+    const out=net.forward(sensors(body,fr,phase,vel));imp+=stepPhysics(body,outToOffsets(out,rest));phase+=CLK;
+    const f2=bodyFrame(body.P);const tilt=Math.acos(Math.max(-1,Math.min(1,V.dot(f2.up,[0,1,0]))));
+    tiltSum+=tilt;surv++;prevC=f2.center.slice();
+    if(body.P.some(p=>!isFinite(p[0])||!isFinite(p[1]))||tilt>1.0||f2.center[1]<0.15)break;}
+  const fc=bodyFrame(body.P).center;const dist=(fc[0]-c0[0])*fwd0[0]+(fc[1]-c0[1])*fwd0[1]+(fc[2]-c0[2])*fwd0[2];
+  const avgTilt=tiltSum/Math.max(1,surv),avgImp=imp/Math.max(1,surv),s=surv/T;
+  const upright=Math.max(0,1-avgTilt/0.7);const fit=dist*s*upright-KIMP*avgImp+0.05*s;
+  let impV=null;if(track&&net.impN>0){impV=net.imp;let mx=1e-9;for(let i=0;i<impV.length;i++){impV[i]/=net.impN;if(impV[i]>mx)mx=impV[i];}
+    for(let i=0;i<impV.length;i++)impV[i]/=mx;}
+  return{fit,dist,surv,avgTilt,avgImp,upright,T,imp:impV};}
+function randGenome(rng){const n=genomeSize(),g=new Float64Array(n);for(let i=0;i<n;i++)g[i]=rng.gauss()*0.5;return g;}
+function protectedMutate(g,imp,rng,rate,scale,protect){const c=Float64Array.from(g);
+  for(let i=0;i<c.length;i++){const guard=imp?(1-protect*imp[i]):1;if(rng.next()<rate*guard)c[i]+=rng.gauss()*scale*guard;}return c;}
+function crossover2(a,ia,b,ib,rng){const g=Float64Array.from(a),im=new Float64Array(a.length);
+  for(let i=0;i<g.length;i++){if(rng.next()<0.5){g[i]=b[i];im[i]=ib?ib[i]:0;}else{im[i]=ia?ia[i]:0;}}return{g,im};}
+
+
+// ============ coarse-to-fine schedule (wide -> narrow, spread across all cycles) ============
+const PROTECT=0.85;   // activity-protection strength for the protected arm
+function buildSchedule(cycles,gpc){
+  const s=[]; const popW=44,popN=10, mutW=0.50,mutN=0.14, immW=0.24,immN=0.04;
+  for(let c=0;c<cycles;c++){ const t=cycles<2?0:c/(cycles-1);   // 0 (widest) -> 1 (narrowest)
+    s.push({pop:Math.round(popW+(popN-popW)*t), mut:mutW+(mutN-mutW)*t, imm:immW+(immN-immW)*t, gens:gpc}); }
+  return s;
+}
+
+// ============ one cycle's population; optionally seeded from a champion ============
+class EA2{
+  constructor(rng,protect,cfg,seeds){this.rng=rng;this.protect=protect;this.POP=cfg.pop;this.mut=cfg.mut;this.imm=cfg.imm;
+    this.pop=[];this.hist=[];
+    if(seeds&&seeds.length){this.pop.push(Float64Array.from(seeds[0].g));           // elite = best pantheon member
+      const nImm=Math.max(1,Math.floor(this.POP*this.imm));
+      while(this.pop.length<this.POP-nImm){const e=seeds[(this.rng.next()*seeds.length)|0];   // draw from the pantheon
+        this.pop.push(protectedMutate(Float64Array.from(e.g),this.protect>0?e.imp:null,this.rng,0.6,this.mut,this.protect));}
+      while(this.pop.length<this.POP)this.pop.push(randGenome(this.rng));}
+    else{for(let i=0;i<this.POP;i++)this.pop.push(randGenome(this.rng));}
+    this.i=0;this.fits=new Array(this.POP).fill(-1e9);this.imps=new Array(this.POP).fill(null);
+    this.gen=0;this.genBestFit=-1e9;this.genBestDist=0;this.best=this.pop[0];this.bestImp=null;this.bestEval={fit:-1e9,dist:0};}
+  tick(k){for(let n=0;n<k;n++){if(this.i>=this.POP){this.nextGen();continue;}
+    const e=evaluate(this.pop[this.i],{T:T_EVAL,track:this.protect>0});
+    this.fits[this.i]=e.fit;this.imps[this.i]=e.imp;
+    if(e.fit>this.genBestFit){this.genBestFit=e.fit;this.genBestDist=e.dist;}   // distance of the fittest this gen
+    if(e.fit>this.bestEval.fit){this.bestEval=e;this.best=Float64Array.from(this.pop[this.i]);this.bestImp=e.imp;}
+    this.i++;}}
+  nextGen(){const fits=this.fits;const order=[...fits.keys()].sort((a,b)=>fits[b]-fits[a]);
+    this.hist.push(this.genBestDist);this.genBestFit=-1e9;this.genBestDist=0;
+    const NP=[this.pop[order[0]],this.pop[order[1]]];const nImm=Math.max(1,Math.floor(this.POP*this.imm));
+    const tour=()=>{let bi=0,bf=-1e9;for(let t=0;t<3;t++){const idx=(this.rng.next()*this.POP)|0;if(fits[idx]>bf){bf=fits[idx];bi=idx;}}return bi;};
+    while(NP.length<this.POP-nImm){const ai=tour(),bi=tour();const cx=crossover2(this.pop[ai],this.imps[ai],this.pop[bi],this.imps[bi],this.rng);
+      NP.push(protectedMutate(cx.g,this.protect>0?cx.im:null,this.rng,0.2,this.mut,this.protect));}
+    while(NP.length<this.POP)NP.push(randGenome(this.rng));
+    this.pop=NP;this.gen++;this.i=0;this.fits.fill(-1e9);}
+  champ(){return{g:this.best,imp:this.bestImp,dist:this.bestEval.dist};}
+}
+
+// ================================================================
+//  HP vs DISTANCE — head-to-head, many generations.
+//  HP arm : health pool; injuries drain it; death ends the run.
+//           fitness = distance x survival-fraction  (far AND long-lived).
+//  Distance arm : plain forward distance, fixed life, fall terminates.
+//  Same seeds, parallel evolution, persistent champions, a running
+//  distance-vs-generation graph, orbit inspection of both, biopsy.
+// ================================================================
+const DIST_T=550, HP_TMAX=650;
+const KI=4.0, KE=0.14, KT=1.2, TILT_FREE=0.15;
+let HP0=120, GENS=200;
+
+function rollout(g,mode){
+  setGamp(0);const body=makeBody(0,0);captureRest(body);const rest=body.M;const net=new Net(g);
+  const f0=bodyFrame(body.P);const c0=f0.center.slice(),fwd0=f0.fwd.slice(),lat0=f0.lat.slice();let prevC=c0.slice();
+  let phase=0,surv=0,velSum=0,hp=HP0,fell=false;const Tmax=(mode==='hp')?HP_TMAX:DIST_T;
+  for(let t=0;t<Tmax;t++){const fr=bodyFrame(body.P);const vel=[fr.center[0]-prevC[0],fr.center[1]-prevC[1],fr.center[2]-prevC[2]];
+    const out=net.forward(sensors(body,fr,phase,vel));const impact=stepPhysics(body,outToOffsets(out,rest));phase+=CLK;
+    let eff=0;for(let o=0;o<out.length;o++)eff+=Math.abs(out[o]);eff/=out.length;
+    const f2=bodyFrame(body.P);const fv=(f2.center[0]-prevC[0])*fwd0[0]+(f2.center[2]-prevC[2])*fwd0[2];velSum+=fv;
+    const tilt=Math.acos(Math.max(-1,Math.min(1,f2.up[1])));surv++;prevC=f2.center.slice();
+    const fatal=body.P.some(p=>!isFinite(p[0])||!isFinite(p[1]))||tilt>1.0||f2.center[1]<0.15;
+    if(mode==='hp'){hp-=(impact*KI+eff*KE+Math.max(0,tilt-TILT_FREE)*KT);if(fatal){hp=0;fell=true;}if(hp<=0)break;}
+    else{if(fatal){fell=true;break;}}
+  }
+  const fc=bodyFrame(body.P).center;const dx=fc[0]-c0[0],dz=fc[2]-c0[2];
+  const fwdD=dx*fwd0[0]+dz*fwd0[2], latD=dx*lat0[0]+dz*lat0[2];
+  const n=Math.max(1,surv),spd=velSum/n*100,Tmx=(mode==='hp')?HP_TMAX:DIST_T,survFrac=surv/Tmx;
+  const fit=(mode==='hp')? Math.max(0,fwdD)*(0.5+0.5*survFrac)   // survival x distance
+                         : Math.max(0,fwdD);                     // plain distance
+  return {fit,dist:fwdD,lateral:latD,speed:spd,lifespan:surv,survFrac,fell:fell?1:0};
+}
+
+const POP=16;
+class Arm{
+  constructor(seed,mode){this.rng=new PRNG(seed);this.mode=mode;this.pop=[];for(let i=0;i<POP;i++)this.pop.push(randGenome(this.rng));
+    this.i=0;this.fits=new Array(POP).fill(-1e9);this.gen=0;this.histD=[];this.bestFit=-1e9;this.bestG=this.pop[0];
+    this.champG=this.pop[0];this.champ={dist:0,lifespan:0,speed:0,lateral:0,fell:0,survFrac:0,fit:-1e9,gen:0};}
+  tick(k){for(let n=0;n<k;n++){if(this.i>=POP){this.nextGen();continue;}
+    const e=rollout(this.pop[this.i],this.mode);this.fits[this.i]=e.fit;if(e.fit>this.bestFit){this.bestFit=e.fit;this.bestG=this.pop[this.i].slice();}this.i++;}}
+  nextGen(){const fits=this.fits,order=[...fits.keys()].sort((a,b)=>fits[b]-fits[a]);
+    const cm=rollout(this.bestG,this.mode);this.histD.push(cm.dist);
+    if(this.bestFit>this.champ.fit){this.champ={dist:cm.dist,lifespan:cm.lifespan,speed:cm.speed,lateral:cm.lateral,fell:cm.fell,survFrac:cm.survFrac,fit:this.bestFit,gen:this.gen};this.champG=this.bestG.slice();}
+    const NP=[this.pop[order[0]],this.pop[order[1]]];
+    const tour=()=>{let bi=0,bf=-1e9;for(let t=0;t<3;t++){const idx=(this.rng.next()*POP)|0;if(fits[idx]>bf){bf=fits[idx];bi=idx;}}return bi;};
+    while(NP.length<POP-2){const a=tour(),b=tour();const cx=crossover2(this.pop[a],null,this.pop[b],null,this.rng);NP.push(protectedMutate(cx.g,null,this.rng,0.2,0.3,0));}
+    while(NP.length<POP)NP.push(randGenome(this.rng));this.pop=NP;this.gen++;this.i=0;this.fits.fill(-1e9);}
+}
+
+// ---- looping champion player for a viewport ----
+function mkPlayer(){return {src:null,body:null};}
+function playerSet(pl,g,mode){if(g&&g!==pl.src){pl.src=g;pl.mode=mode;pl.body=makeBody(0,0);captureRest(pl.body);pl.rest=pl.body.M;pl.net=new Net(g);
+  const f=bodyFrame(pl.body.P);pl.prevC=f.center.slice();pl.c0=f.center.slice();pl.phase=0;pl.t=0;pl.hp=HP0;pl.dist=0;}}
+function playerStep(pl){if(!pl.body)return;setGamp(0);const fr=bodyFrame(pl.body.P);
+  const vel=[fr.center[0]-pl.prevC[0],fr.center[1]-pl.prevC[1],fr.center[2]-pl.prevC[2]];
+  const out=pl.net.forward(sensors(pl.body,fr,pl.phase,vel));const impact=stepPhysics(pl.body,outToOffsets(out,pl.rest));pl.phase+=CLK;pl.t++;
+  let eff=0;for(let o=0;o<out.length;o++)eff+=Math.abs(out[o]);eff/=out.length;
+  const f2=bodyFrame(pl.body.P);pl.prevC=f2.center.slice();pl.dist=f2.center[0]-pl.c0[0];
+  const tilt=Math.acos(Math.max(-1,Math.min(1,f2.up[1])));const fatal=tilt>1.0||f2.center[1]<0.15||pl.body.P.some(q=>!isFinite(q[0]));
+  const Tmx=(pl.mode==='hp')?HP_TMAX:DIST_T;
+  if(pl.mode==='hp'){pl.hp-=(impact*KI+eff*KE+Math.max(0,tilt-TILT_FREE)*KT);if(fatal)pl.hp=0;if(pl.hp<=0||pl.t>=Tmx){playerReset(pl);}}
+  else{if(fatal||pl.t>=Tmx){playerReset(pl);}}}
+function playerReset(pl){const g=pl.src;pl.src=null;playerSet(pl,g,pl.mode);}
+
+// ---- shared-orbit renderer (two viewports, same camera angle) ----
+const cam={az:0.7,el:0.4,rad:5};
+function rgbOf(hex){return hex==='#5ef2a8'?[94,242,168]:hex==='#ffd166'?[255,209,102]:[0,242,254];}
+function drawView(canvas,pl,hex,label){const ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height;
+  const bg=ctx.createLinearGradient(0,0,0,h);bg.addColorStop(0,'#0c1220');bg.addColorStop(1,'#080a10');ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);
+  if(!pl.body){ctx.fillStyle='#7b86a0';ctx.font='12px monospace';ctx.fillText('press RUN',18,26);return;}
+  const ctr=bodyFrame(pl.body.P).center;const ce=Math.cos(cam.el),se=Math.sin(cam.el),ca=Math.cos(cam.az),sa=Math.sin(cam.az);
+  const tgt=[ctr[0],0.3,ctr[2]];const pos=[tgt[0]+cam.rad*ce*ca,tgt[1]+cam.rad*se,tgt[2]+cam.rad*ce*sa];
+  const fwd=V.norm(V.sub(tgt,pos));let right=V.cross(fwd,[0,1,0]);if(Math.hypot(right[0],right[1],right[2])<1e-4)right=[1,0,0];right=V.norm(right);const up=V.cross(right,fwd);
+  const f=Math.min(w,h)*0.95;const pr=pt=>{const rel=V.sub(pt,pos),dep=Math.max(0.05,V.dot(rel,fwd));return {x:w/2+f*V.dot(rel,right)/dep,y:h/2-f*V.dot(rel,up)/dep,depth:dep};};
+  const gx0=Math.round(ctr[0]/0.5)*0.5,gz0=Math.round(ctr[2]/0.5)*0.5;
+  for(let i=-10;i<=10;i++){ctx.strokeStyle='rgba(0,242,254,0.06)';ctx.lineWidth=1;ctx.beginPath();let st=false;
+    for(let j=-10;j<=10;j++){const pp=pr([gx0+i*0.5,0,gz0+j*0.5]);if(pp.depth>0.06){st?ctx.lineTo(pp.x,pp.y):ctx.moveTo(pp.x,pp.y);st=true;}}ctx.stroke();
+    ctx.beginPath();st=false;for(let j=-10;j<=10;j++){const pp=pr([gx0+j*0.5,0,gz0+i*0.5]);if(pp.depth>0.06){st?ctx.lineTo(pp.x,pp.y):ctx.moveTo(pp.x,pp.y);st=true;}}ctx.stroke();}
+  const P=pl.body.P;const sc=pr([ctr[0],0.01,ctr[2]]);if(sc.depth>0.06){ctx.fillStyle='rgba(0,0,0,0.26)';ctx.beginPath();ctx.ellipse(sc.x,sc.y,Math.max(5,46/sc.depth),Math.max(3,20/sc.depth),0,0,7);ctx.fill();}
+  const faces=[[0,1,3,2],[4,5,7,6],[0,1,5,4],[2,3,7,6],[0,2,6,4],[1,3,7,5]],sh=[0.4,0.9,0.65,0.55,0.6,0.62],rgb=rgbOf(hex);
+  faces.map((fc,idx)=>{const pts=fc.map(i=>pr(P[i]));return {pts,d:pts.reduce((s,q)=>s+q.depth,0)/4,sh:sh[idx]};}).sort((a,b)=>b.d-a.d)
+    .forEach(fc=>{if(fc.pts.some(q=>q.depth<=0.06))return;ctx.beginPath();ctx.moveTo(fc.pts[0].x,fc.pts[0].y);for(let i=1;i<4;i++)ctx.lineTo(fc.pts[i].x,fc.pts[i].y);ctx.closePath();
+      ctx.fillStyle='rgba('+Math.round(rgb[0]*fc.sh)+','+Math.round(rgb[1]*fc.sh)+','+Math.round(rgb[2]*fc.sh)+',0.92)';ctx.fill();ctx.strokeStyle=hex;ctx.lineWidth=1;ctx.stroke();});
+  for(let l=0;l<4;l++){const ph=pr(P[LEGS[l].hip]),pk=pr(P[kneeIdx(l)]),pf=pr(P[footIdx(l)]);if([ph,pk,pf].some(q=>q.depth<=0.06))continue;const pl2=footContact(pl.body,l);
+    ctx.strokeStyle=pl2?'#ff6b6b':'#b388ff';ctx.lineWidth=Math.max(2,5/Math.max(.5,pk.depth));ctx.lineCap='round';ctx.beginPath();ctx.moveTo(ph.x,ph.y);ctx.lineTo(pk.x,pk.y);ctx.lineTo(pf.x,pf.y);ctx.stroke();
+    ctx.fillStyle=pl2?'#ff9a9a':'#b388ff';ctx.beginPath();ctx.arc(pf.x,pf.y,Math.max(2,3.5/pf.depth),0,7);ctx.fill();}
+  ctx.fillStyle=hex;ctx.font='11px monospace';ctx.fillText(label,10,20);
+  ctx.fillStyle='rgba(94,242,168,0.9)';ctx.font='10px monospace';ctx.fillText('x '+pl.dist.toFixed(2)+'m',10,h-10);
+  if(pl.mode==='hp'){const frac=Math.max(0,pl.hp/HP0);ctx.fillStyle='rgba(255,255,255,0.12)';ctx.fillRect(w-112,10,100,7);ctx.fillStyle=frac>0.5?'#5ef2a8':frac>0.2?'#ffd166':'#ff6b6b';ctx.fillRect(w-112,10,100*frac,7);ctx.fillStyle='#7b86a0';ctx.font='8px monospace';ctx.fillText('HP',w-112,28);}}
+
+// ---- running distance-vs-generation graph ----
+function drawGraph(){const cv=document.getElementById('graph'),ctx=cv.getContext('2d'),w=cv.width,h=cv.height,pL=36,pB=18,pT=12,W=w-pL-12,H=h-pT-pB;ctx.clearRect(0,0,w,h);
+  let mx=0.6;for(const a of [HP,DI])for(const v of a.histD)if(v>mx)mx=v;mx*=1.1;
+  const X=g=>pL+W*g/Math.max(1,GENS-1),Y=v=>pT+H*(1-v/mx);
+  ctx.strokeStyle='rgba(255,255,255,0.06)';ctx.beginPath();ctx.moveTo(pL,pT+H);ctx.lineTo(w-12,pT+H);ctx.stroke();
+  for(let gy=0;gy<=2;gy++){const v=mx*gy/2;ctx.fillStyle='#7b86a0';ctx.font='9px monospace';ctx.fillText(v.toFixed(1)+'m',4,Y(v)+3);ctx.strokeStyle='rgba(255,255,255,0.04)';ctx.beginPath();ctx.moveTo(pL,Y(v));ctx.lineTo(w-12,Y(v));ctx.stroke();}
+  const plot=(hh,st)=>{if(!hh.length)return;ctx.strokeStyle=st;ctx.lineWidth=2;ctx.beginPath();hh.forEach((v,g)=>{const x=X(g),y=Y(v);g?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.stroke();};
+  plot(DI.histD,'#ffd166');plot(HP.histD,'#00f2fe');
+  ctx.font='10px monospace';const lh=(a)=>a.histD.length?a.histD[a.histD.length-1]:0;
+  ctx.fillStyle='#00f2fe';ctx.fillRect(w-190,pT,12,3);ctx.fillStyle='#e8ecf6';ctx.fillText('HP  '+lh(HP).toFixed(2)+'m',w-174,pT+4);
+  ctx.fillStyle='#ffd166';ctx.fillRect(w-190,pT+14,12,3);ctx.fillStyle='#e8ecf6';ctx.fillText('distance  '+lh(DI).toFixed(2)+'m',w-174,pT+18);
+  ctx.fillStyle='#7b86a0';ctx.font='9px monospace';ctx.fillText('champion distance / generation',pL+3,pT+8);}
+
+// ---- memory + biopsy ----
+const MEM=[];let recorded=false;
+function recordRun(){const H=HP.champ,D=DI.champ;MEM.push({seed:SEEDBASE,gens:GENS,HP0,
+  hp:{dist:+H.dist.toFixed(2),lifespan:H.lifespan,speed:+H.speed.toFixed(2),lateral:+H.lateral.toFixed(2),fell:H.fell,found_gen:H.gen},
+  distance:{dist:+D.dist.toFixed(2),lifespan:D.lifespan,speed:+D.speed.toFixed(2),lateral:+D.lateral.toFixed(2),fell:D.fell,found_gen:D.gen},
+  final:{hp:+(HP.histD[HP.histD.length-1]||0).toFixed(2),distance:+(DI.histD[DI.histD.length-1]||0).toFixed(2)}});}
+function biopsy(){const n=MEM.length,el=document.getElementById('bio');if(!n){el.value='(finish a run, do several, then biopsy)';document.getElementById('biopanel').style.display='block';return;}
+  const m=k=>MEM.reduce((s,x)=>s+k(x),0)/n,wr=f=>MEM.filter(f).length+'/'+n;
+  const sum={runs:n,gens:MEM[n-1].gens,HP0:MEM[n-1].HP0,
+    mean_dist_HP:+m(x=>x.hp.dist).toFixed(2),mean_dist_distance:+m(x=>x.distance.dist).toFixed(2),
+    mean_lifespan_HP:Math.round(m(x=>x.hp.lifespan)),mean_lifespan_distance:Math.round(m(x=>x.distance.lifespan)),
+    mean_speed_HP:+m(x=>x.hp.speed).toFixed(2),mean_speed_distance:+m(x=>x.distance.speed).toFixed(2),
+    HP_farther_than_distance:wr(x=>x.hp.dist>x.distance.dist),
+    HP_longer_lived:wr(x=>x.hp.lifespan>x.distance.lifespan)};
+  el.value="=== HP vs DISTANCE BIOPSY (paste to Claude) ===\n"+JSON.stringify(sum,null,2)+
+    "\n\nHP arm fitness = distance x survival-fraction. Distance arm = plain forward distance.\nkey: on raw distance do they tie (honest ceiling)? does HP buy longer LIFESPAN at equal distance?\n\n--- per-run ---\n"+JSON.stringify(MEM,null,1);
+  document.getElementById('biopanel').style.display='block';document.getElementById('biocount').textContent=n+' run'+(n>1?'s':'');}
+
+// ---- controller ----
+let HP,DI,plH,plD,running=false,speed=4,rr=0,SEEDBASE=0;
+function boot(){SEEDBASE=(Math.random()*1e9)|0;HP=new Arm(SEEDBASE,'hp');DI=new Arm(SEEDBASE,'dist');plH=mkPlayer();plD=mkPlayer();recorded=false;}
+function done(){return HP.gen>=GENS&&DI.gen>=GENS;}
+function setTxt(id,t){document.getElementById(id).textContent=t;}
+function frame(){
+  if(running&&!done()){for(let n=0;n<speed;n++){const arm=(rr%2===0)?HP:DI;if(arm.gen<GENS)arm.tick(2);rr++;}}
+  if(running&&done()&&!recorded){recordRun();recorded=true;running=false;setTxt('statetag','done \u00b7 recorded');document.getElementById('run').textContent='\u25b6 run';}
+  playerSet(plH,HP.champG,'hp');playerSet(plD,DI.champG,'dist');playerStep(plH);playerStep(plD);
+  drawView(document.getElementById('viewH'),plH,'#00f2fe','HP (survival \u00d7 distance)');
+  drawView(document.getElementById('viewD'),plD,'#ffd166','DISTANCE (plain)');
+  drawGraph();
+  setTxt('gen',Math.min(HP.gen,DI.gen)+' / '+GENS);
+  setTxt('dH',HP.champ.dist.toFixed(2)+' m');setTxt('lH',HP.champ.lifespan||'\u2014');
+  setTxt('dD',DI.champ.dist.toFixed(2)+' m');setTxt('lD',DI.champ.lifespan||'\u2014');
+  setTxt('memN',MEM.length);
+  requestAnimationFrame(frame);
+}
+boot();
+document.getElementById('run').addEventListener('click',()=>{if(done())boot();running=!running;document.getElementById('run').textContent=running?'\u275a\u275a pause':'\u25b6 run';setTxt('statetag',running?'evolving':'paused');});
+document.getElementById('reset').addEventListener('click',()=>{boot();running=false;document.getElementById('run').textContent='\u25b6 run';setTxt('statetag','idle');});
+document.getElementById('biopsy').addEventListener('click',biopsy);
+document.getElementById('clearmem').addEventListener('click',()=>{MEM.length=0;setTxt('memN','0');document.getElementById('biopanel').style.display='none';});
+document.getElementById('vTop').addEventListener('click',()=>{cam.el=1.4;cam.az=0;});
+document.getElementById('vReset').addEventListener('click',()=>{cam.az=0.7;cam.el=0.4;cam.rad=5;});
+document.getElementById('speed').addEventListener('input',e=>{speed=+e.target.value;});
+function knob(id,set){document.getElementById(id).addEventListener('change',e=>{set(+e.target.value);boot();running=false;document.getElementById('run').textContent='\u25b6 run';setTxt('statetag','idle');});}
+knob('hpSel',v=>HP0=v);knob('gensSel',v=>GENS=v);
+// shared orbit: drag on either viewport rotates both
+let drag=false,lx=0,ly=0;
+['viewH','viewD'].forEach(id=>{const c=document.getElementById(id);
+  c.addEventListener('mousedown',e=>{drag=true;lx=e.clientX;ly=e.clientY;});
+  c.addEventListener('wheel',e=>{e.preventDefault();cam.rad=Math.max(2,Math.min(14,cam.rad*(1+e.deltaY*0.0012)));},{passive:false});
+  c.addEventListener('touchstart',e=>{if(e.touches[0]){drag=true;lx=e.touches[0].clientX;ly=e.touches[0].clientY;}});
+  c.addEventListener('touchmove',e=>{if(drag&&e.touches[0]){cam.az-=(e.touches[0].clientX-lx)*0.008;cam.el=Math.max(-0.1,Math.min(1.45,cam.el+(e.touches[0].clientY-ly)*0.006));lx=e.touches[0].clientX;ly=e.touches[0].clientY;e.preventDefault();}},{passive:false});
+  c.addEventListener('touchend',()=>drag=false);});
+window.addEventListener('mousemove',e=>{if(drag){cam.az-=(e.clientX-lx)*0.008;cam.el=Math.max(-0.1,Math.min(1.45,cam.el+(e.clientY-ly)*0.006));lx=e.clientX;ly=e.clientY;}});
+window.addEventListener('mouseup',()=>drag=false);
+frame();
+
+</script>
+</body>
+</html>
