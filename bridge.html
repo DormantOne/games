@@ -1,0 +1,1694 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LOAD PATH — a bridge rating game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0C1216; --plate:#141E27; --plate2:#0F1821; --rule:#263846;
+  --paper:#DCE3E8; --dim:#7C91A1; --dimmer:#4E606E;
+  --zinc:#F2C14E; --tension:#FF5C6E; --compress:#4FA8E8; --ok:#6FCF97;
+  --disp:'Barlow Condensed','Oswald','Helvetica Neue Condensed',system-ui,sans-serif;
+  --body:'Barlow',system-ui,-apple-system,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--ink);color:var(--paper);font-family:var(--body);overflow:hidden;
+  -webkit-font-smoothing:antialiased}
+button{font-family:inherit;color:inherit;background:none;border:none;cursor:pointer}
+button:focus-visible,.mat:focus-visible{outline:2px solid var(--zinc);outline-offset:2px}
+
+/* ---------- shell ---------- */
+#app{display:grid;height:100vh;
+  grid-template-columns:238px 1fr 268px;
+  grid-template-rows:auto 1fr auto;
+  grid-template-areas:"head head head" "stock stage anal" "foot foot foot"}
+
+/* ---------- header ---------- */
+header{grid-area:head;display:flex;align-items:stretch;border-bottom:1px solid var(--rule);
+  background:var(--plate2)}
+.brand{padding:9px 16px 7px;border-right:1px solid var(--rule);min-width:238px}
+.brand h1{font-family:var(--disp);font-size:23px;font-weight:600;letter-spacing:.16em;line-height:1}
+.brand p{font-family:var(--disp);font-size:10.5px;letter-spacing:.22em;color:var(--dimmer);
+  text-transform:uppercase;margin-top:3px}
+.hstats{display:flex;flex:1;align-items:center;gap:0;overflow-x:auto}
+.stat{padding:7px 15px;border-right:1px solid var(--rule);white-space:nowrap}
+.stat .k{font-family:var(--disp);font-size:9.5px;letter-spacing:.2em;color:var(--dimmer);
+  text-transform:uppercase;display:block}
+.stat .v{font-family:var(--mono);font-size:14px;font-weight:500;letter-spacing:-.02em}
+.stat .v small{font-size:10px;color:var(--dim)}
+.mult{margin-left:auto;padding:7px 16px;text-align:right;border-left:1px solid var(--rule);
+  background:linear-gradient(180deg,rgba(242,193,78,.09),transparent)}
+.mult .v{font-size:21px;color:var(--zinc)}
+.mult.hit{animation:stamp .45s ease-out}
+@keyframes stamp{0%{transform:scale(1.14);filter:brightness(1.7)}100%{transform:scale(1)}}
+
+/* ---------- panels ---------- */
+.panel{background:var(--plate2);overflow-y:auto;scrollbar-width:thin}
+#stock{grid-area:stock;border-right:1px solid var(--rule)}
+#anal{grid-area:anal;border-left:1px solid var(--rule)}
+.sec{font-family:var(--disp);font-size:10px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--dimmer);padding:11px 14px 6px;border-bottom:1px solid var(--rule);
+  display:flex;justify-content:space-between;align-items:baseline}
+.sec b{font-family:var(--mono);font-size:10px;color:var(--dim);font-weight:400;letter-spacing:0}
+
+/* ---------- material cards ---------- */
+.mat{display:block;width:100%;text-align:left;padding:8px 13px;border-bottom:1px solid var(--rule);
+  position:relative;transition:background .12s}
+.mat:hover{background:rgba(255,255,255,.035)}
+.mat[data-sel="1"]{background:rgba(242,193,78,.11)}
+.mat[data-sel="1"]:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--zinc)}
+.mat.out{opacity:.32;cursor:not-allowed}
+.mrow{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.mname{font-family:var(--disp);font-size:14.5px;letter-spacing:.06em;text-transform:uppercase;
+  display:flex;align-items:center;gap:7px}
+.swatch{width:9px;height:9px;flex:none;transform:rotate(45deg)}
+.mcount{font-family:var(--mono);font-size:12px;color:var(--paper)}
+.mspec{font-family:var(--mono);font-size:9.5px;color:var(--dim);margin-top:3px;line-height:1.45;
+  letter-spacing:-.01em}
+.mspec i{font-style:normal;color:var(--dimmer)}
+
+/* ---------- stage ---------- */
+#stage{grid-area:stage;position:relative;background:#070C10;overflow:hidden}
+#gl{display:block;width:100%;height:100%}
+#infl{position:absolute;left:12px;right:12px;bottom:10px;height:56px;pointer-events:none;opacity:.92}
+#hint{position:absolute;left:14px;top:12px;font-family:var(--mono);font-size:11px;color:var(--dim);
+  background:rgba(10,16,21,.82);padding:6px 10px;border-left:2px solid var(--zinc);max-width:340px;
+  line-height:1.5}
+#tip{position:absolute;pointer-events:none;font-family:var(--mono);font-size:10.5px;
+  background:rgba(8,13,17,.94);border:1px solid var(--rule);padding:5px 8px;line-height:1.55;
+  display:none;white-space:pre;z-index:5}
+#viewbtns{position:absolute;right:12px;top:12px;display:flex;gap:5px}
+#viewbtns button{font-family:var(--disp);font-size:10px;letter-spacing:.16em;padding:5px 9px;
+  border:1px solid var(--rule);background:rgba(10,16,21,.8);color:var(--dim);text-transform:uppercase}
+#viewbtns button:hover{color:var(--paper);border-color:var(--dim)}
+
+/* ---------- analysis ---------- */
+.tool{display:block;width:100%;text-align:left;padding:9px 13px;border-bottom:1px solid var(--rule);
+  transition:background .12s}
+.tool:hover:not(:disabled){background:rgba(79,168,232,.09)}
+.tool:disabled{opacity:.35;cursor:not-allowed}
+.tool .t{font-family:var(--disp);font-size:13.5px;letter-spacing:.07em;text-transform:uppercase;
+  display:flex;justify-content:space-between;align-items:baseline}
+.tool .fee{font-family:var(--mono);font-size:11px;color:var(--tension)}
+.tool .d{font-size:11.5px;color:var(--dim);line-height:1.42;margin-top:2px}
+#ledger{padding:0 13px 12px}
+.lrow{display:flex;justify-content:space-between;gap:8px;font-family:var(--mono);font-size:10.5px;
+  padding:5px 0;border-bottom:1px dotted var(--rule);color:var(--dim)}
+.lrow span:last-child{color:var(--tension);flex:none}
+.lempty{font-size:11.5px;color:var(--dimmer);padding:10px 0;line-height:1.5}
+#report{padding:10px 13px;font-family:var(--mono);font-size:11px;line-height:1.6;
+  border-bottom:1px solid var(--rule);color:var(--dim);white-space:pre-wrap}
+#report b{color:var(--paper);font-weight:500}
+#report .bad{color:var(--tension)}#report .good{color:var(--ok)}#report .warn{color:var(--zinc)}
+
+/* ---------- footer ---------- */
+footer{grid-area:foot;display:flex;align-items:stretch;border-top:1px solid var(--rule);
+  background:var(--plate2)}
+.act{font-family:var(--disp);font-size:14px;letter-spacing:.16em;text-transform:uppercase;
+  padding:11px 20px;border-right:1px solid var(--rule);color:var(--dim);transition:.12s}
+.act:hover:not(:disabled){color:var(--paper);background:rgba(255,255,255,.045)}
+.act:disabled{opacity:.3;cursor:not-allowed}
+.act.go{color:var(--ink);background:var(--zinc)}
+.act.go:hover:not(:disabled){background:#ffd166;color:var(--ink)}
+#readout{flex:1;display:flex;align-items:center;gap:0;overflow-x:auto}
+#readout .stat{border-right:1px solid var(--rule);border-left:none}
+#lvlnav{margin-left:auto;display:flex}
+
+/* ---------- modal ---------- */
+#modal{position:fixed;inset:0;background:rgba(6,10,13,.86);display:none;align-items:center;
+  justify-content:center;z-index:20;padding:20px}
+#modal.on{display:flex}
+.sheet{background:var(--plate);border:1px solid var(--rule);max-width:520px;width:100%;
+  max-height:86vh;overflow-y:auto;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+.sheet header{border-bottom:1px solid var(--rule);padding:14px 20px;display:block;background:none}
+.sheet h2{font-family:var(--disp);font-size:22px;letter-spacing:.14em;text-transform:uppercase}
+.sheet .sub{font-family:var(--disp);font-size:10.5px;letter-spacing:.2em;color:var(--dimmer);
+  text-transform:uppercase;margin-top:3px}
+.sheet .bd{padding:16px 20px;font-size:13.5px;line-height:1.62;color:var(--dim)}
+.sheet .bd p{margin-bottom:9px}
+.sheet .bd b{color:var(--paper);font-weight:500}
+.sheet .bd code{font-family:var(--mono);font-size:12px;color:var(--zinc)}
+.invoice{font-family:var(--mono);font-size:12.5px;padding:0 20px 6px}
+.invoice .ir{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dotted var(--rule)}
+.invoice .ir.tot{border-bottom:none;border-top:1px solid var(--dim);margin-top:5px;padding-top:9px;
+  font-size:17px;color:var(--zinc)}
+.sheet footer{border-top:1px solid var(--rule);background:none;padding:0}
+kbd{font-family:var(--mono);font-size:11px;background:var(--plate2);border:1px solid var(--rule);
+  padding:1px 5px}
+@media (max-width:1080px){
+  #app{grid-template-columns:200px 1fr 232px}
+  .brand{min-width:200px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="brand"><h1>LOAD PATH</h1><p>Structural rating trial</p></div>
+    <div class="hstats">
+      <div class="stat"><span class="k">Site</span><span class="v" id="s-site">—</span></div>
+      <div class="stat"><span class="k">Clear span</span><span class="v" id="s-span">—</span></div>
+      <div class="stat"><span class="k">Rolling load</span><span class="v" id="s-ball">—</span></div>
+      <div class="stat"><span class="k">Spent</span><span class="v" id="s-cost">—</span></div>
+    </div>
+    <div class="stat mult" id="multbox"><span class="k">Score multiplier</span><span class="v" id="s-mult">1.00×</span></div>
+  </header>
+
+  <div class="panel" id="stock">
+    <div class="sec">Stock on site <b id="stk-note">click to select</b></div>
+    <div id="mats"></div>
+    <div class="sec">Notes</div>
+    <div style="padding:10px 13px;font-size:11.5px;line-height:1.55;color:var(--dimmer)">
+      Click two joints to place a member. Click a member to remove it and get the credit back.
+      <span style="color:var(--dim)">Cables pull only. Long struts buckle.</span>
+    </div>
+  </div>
+
+  <div id="stage">
+    <canvas id="gl"></canvas>
+    <canvas id="infl"></canvas>
+    <div id="hint">Pick a material, then click joint to joint.</div>
+    <div id="tip"></div>
+    <div id="viewbtns">
+      <button id="b-side">Side</button><button id="b-iso">Iso</button><button id="b-help">?</button>
+    </div>
+  </div>
+
+  <div class="panel" id="anal">
+    <div class="sec">Analysis desk <b>fees deducted</b></div>
+    <div id="tools"></div>
+    <div class="sec">Findings</div>
+    <div id="report">No analysis run. Colours show material, not force.</div>
+    <div class="sec">Services rendered</div>
+    <div id="ledger"><div class="lempty">Nothing billed. Build it by eye and keep the full multiplier.</div></div>
+  </div>
+
+  <footer>
+    <button class="act go" id="b-test">Run the load</button>
+    <button class="act" id="b-reset">Reset</button>
+    <button class="act" id="b-clear">Strip frame</button>
+    <div id="readout">
+      <div class="stat"><span class="k">Phase</span><span class="v" id="r-phase">Build</span></div>
+      <div class="stat"><span class="k">Peak utilisation</span><span class="v" id="r-util">—</span></div>
+      <div class="stat"><span class="k">Max sag</span><span class="v" id="r-sag">—</span></div>
+      <div class="stat"><span class="k">Best here</span><span class="v" id="r-best">—</span></div>
+    </div>
+    <div id="lvlnav">
+      <button class="act" id="b-prev">‹</button>
+      <button class="act" id="b-next">Next site ›</button>
+    </div>
+  </footer>
+</div>
+
+<div id="modal"><div class="sheet" id="sheet"></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+"use strict";
+/* ==========================================================================
+   LOAD PATH
+   Pin-jointed truss with explicit dynamics, plus a linear-static FEM you can
+   hire. Units: m, kg, N, s. Two identical truss planes; each carries half of
+   every live load, so the simulation runs one plane and mirrors it.
+   ========================================================================== */
+const G = 9.81, MAXSTEP = 20;
+
+const MATERIALS = {
+  deck:   { name:'Deck beam',      kind:'strut', EA:4.0e6, maxT:20000, maxC:20000, buckle:5.0e5, dens: 8, cost:0,  hue:'#8D97A3', r:0.11 },
+  pine:   { name:'Pine strut',     kind:'strut', EA:1.4e6, maxT:12000, maxC: 9000, buckle:1.0e5, dens: 6, cost:5,  hue:'#C9A15A', r:0.075 },
+  steel:  { name:'Steel strut',    kind:'strut', EA:4.5e6, maxT:32000, maxC:26000, buckle:4.5e5, dens:14, cost:14, hue:'#9FB3C8', r:0.095 },
+  ti:     { name:'Titanium strut', kind:'strut', EA:9.0e6, maxT:70000, maxC:60000, buckle:1.4e6, dens:22, cost:34, hue:'#E0D3BB', r:0.115 },
+  hemp:   { name:'Hemp cable',     kind:'cable', EA:3.0e5, maxT: 9000, maxC:0, buckle:0, dens:2, cost:3,  hue:'#B99A6B', r:0.035 },
+  wire:   { name:'Steel cable',    kind:'cable', EA:1.6e6, maxT:30000, maxC:0, buckle:0, dens:5, cost:9,  hue:'#7FA8C9', r:0.045 },
+  carbon: { name:'Carbon tendon',  kind:'cable', EA:5.0e6, maxT:70000, maxC:0, buckle:0, dens:3, cost:26, hue:'#5C6B7A', r:0.05 },
+};
+const ORDER = ['pine','steel','ti','hemp','wire','carbon'];
+const capC = (M,L) => M.kind==='cable' ? 0 : Math.min(M.maxC, M.buckle/(L*L));
+
+const LEVELS = [
+  { id:1, name:'Gorge crossing', sub:'16 m gap, rock both sides',
+    half:8,  step:2, yLo:-6, yHi:6,  budget:180, ballM:900,  v0:4.5, maxLen:6.5,
+    stock:{ pine:16, steel:10, ti:2, hemp:10, wire:6, carbon:0 }, clear:null },
+  { id:2, name:'Wide water', sub:'24 m gap, heavier load',
+    half:12, step:2, yLo:-8, yHi:8,  budget:430, ballM:1100, v0:5.0, maxLen:6.5,
+    stock:{ pine:28, steel:30, ti:8, hemp:14, wire:14, carbon:3 }, clear:null },
+  { id:3, name:'Shipping lane', sub:'24 m gap, channel must stay clear',
+    half:12, step:2, yLo:-8, yHi:10, budget:470, ballM:1200, v0:5.5, maxLen:6.5,
+    stock:{ pine:28, steel:30, ti:10, hemp:16, wire:18, carbon:5 },
+    clear:{ x0:-8, x1:8, y:-0.5 } },
+];
+
+const FEES = [
+  { id:'dead',  fee:0.03, label:'Dead-load check',  desc:'Forces in every member under self weight alone. Finds mechanisms and slack cables.' },
+  { id:'sweep', fee:0.08, label:'Load rating sweep', desc:'Walks the ball across every deck position and reports peak utilisation per member.' },
+  { id:'fail',  fee:0.14, label:'Failure oracle',    desc:'Names the member that gives way first and the ball position that does it.' },
+  { id:'brace', fee:0.22, label:'Brace advisor',     desc:'Searches for the one member that buys the most capacity, and marks it.' },
+];
+
+/* ------------------------------------------------------------------ model */
+function mkMember(nodes,a,b,mat,locked){
+  const A=nodes[a],B=nodes[b];
+  return { a,b,mat, L0:Math.hypot(B.x-A.x,B.y-A.y), locked:!!locked,
+           broken:false, f:0, util:0, peak:0, rated:0, flagged:false };
+}
+function buildLevel(idx){
+  const L=LEVELS[idx], nodes=[];
+  for(let x=-(L.half+6); x<=L.half+6+1e-9; x+=L.step)
+    for(let y=L.yLo; y<=L.yHi+1e-9; y+=L.step){
+      const rock=(x<=-L.half+1e-9||x>=L.half-1e-9)&&y<=1e-9;
+      nodes.push({ id:nodes.length, x, y, x0:x, y0:y, vx:0, vy:0, m:0,
+        fixed:rock, deck:(Math.abs(y)<1e-9&&x>=-L.half-1e-9&&x<=L.half+1e-9) });
+    }
+  const members=[];
+  const deckIds=nodes.filter(n=>n.deck).sort((a,b)=>a.x-b.x).map(n=>n.id);
+  for(let i=0;i<deckIds.length-1;i++) members.push(mkMember(nodes,deckIds[i],deckIds[i+1],'deck',true));
+  return { def:L, nodes, members, deckIds };
+}
+function assignMass(S){
+  for(const n of S.nodes) n.m = n.deck?15:0;
+  for(const m of S.members){ if(m.broken) continue;
+    const h=MATERIALS[m.mat].dens*m.L0*0.5; S.nodes[m.a].m+=h; S.nodes[m.b].m+=h; }
+  for(const n of S.nodes) if(n.m<1) n.m=1;
+}
+
+/* --------------------------------------------------- linear static solver */
+function gauss(A,b,n){
+  for(let c=0;c<n;c++){
+    let piv=c,best=Math.abs(A[c*n+c]);
+    for(let r=c+1;r<n;r++){const v=Math.abs(A[r*n+c]); if(v>best){best=v;piv=r;}}
+    if(best<1e-6){ gauss.badDof=c; return null; }
+    if(piv!==c){ for(let k=0;k<n;k++){const t=A[c*n+k];A[c*n+k]=A[piv*n+k];A[piv*n+k]=t;}
+      const t=b[c];b[c]=b[piv];b[piv]=t; }
+    const d=A[c*n+c];
+    for(let r=c+1;r<n;r++){ const f=A[r*n+c]/d; if(!f) continue;
+      for(let k=c;k<n;k++) A[r*n+k]-=f*A[c*n+k]; b[r]-=f*b[c]; }
+  }
+  const x=new Float64Array(n);
+  for(let r=n-1;r>=0;r--){ let s=b[r];
+    for(let k=r+1;k<n;k++) s-=A[r*n+k]*x[k]; x[r]=s/A[r*n+r]; }
+  return x;
+}
+function solveStatic(S,ballX,ballM){
+  const nodes=S.nodes, mem=S.members.filter(m=>!m.broken), off=new Map();
+  let nd=0;
+  for(const m of mem) for(const id of [m.a,m.b])
+    if(!nodes[id].fixed && !off.has(id)) off.set(id,nd++);
+  const zero=new Float64Array(S.members.length);
+  if(nd===0) return { forces:zero, util:zero, singular:false, loose:null, disp:null };
+  const N=nd*2, K=new Float64Array(N*N), F=new Float64Array(N);
+  const load=new Map(), addL=(id,w)=>load.set(id,(load.get(id)||0)+w);
+  for(const m of mem){ const w=MATERIALS[m.mat].dens*m.L0*G*0.5; addL(m.a,w); addL(m.b,w); }
+  for(const n of nodes) if(n.deck) addL(n.id,15*G);
+  if(ballX!==null){
+    const W=ballM*G*0.5, ids=S.deckIds;
+    for(let i=0;i<ids.length-1;i++){
+      const A=nodes[ids[i]],B=nodes[ids[i+1]];
+      if(ballX>=A.x0-1e-9 && ballX<=B.x0+1e-9){
+        const t=(ballX-A.x0)/(B.x0-A.x0);
+        addL(A.id,W*(1-t)); addL(B.id,W*t); break; }
+    }
+  }
+  for(const [id,w] of load){ const o=off.get(id); if(o!==undefined) F[o*2+1]-=w; }
+
+  const active=mem.map(()=>true);
+  let forces=null, singular=false, loose=null, lastU=null;
+  for(let pass=0; pass<8; pass++){
+    K.fill(0);
+    for(let i=0;i<mem.length;i++){
+      if(!active[i]) continue;
+      const m=mem[i],A=nodes[m.a],B=nodes[m.b];
+      const dx=B.x0-A.x0, dy=B.y0-A.y0, L=Math.hypot(dx,dy);
+      const c=dx/L, s=dy/L, k=MATERIALS[m.mat].EA/m.L0;
+      const oa=off.get(m.a), ob=off.get(m.b), dofs=[], sg=[];
+      if(oa!==undefined){ dofs.push(oa*2,oa*2+1); sg.push(-c,-s); }
+      if(ob!==undefined){ dofs.push(ob*2,ob*2+1); sg.push(c,s); }
+      for(let p=0;p<dofs.length;p++) for(let q=0;q<dofs.length;q++)
+        K[dofs[p]*N+dofs[q]] += k*sg[p]*sg[q];
+    }
+    const u=gauss(K.slice(),F.slice(),N);
+    if(!u){ singular=true; const bd=gauss.badDof;
+      for(const [id,o] of off) if(o===(bd>>1)) loose={node:id, dir:(bd&1)?'vertical':'horizontal'};
+      break; }
+    lastU=u; forces=new Float64Array(mem.length); let changed=false;
+    for(let i=0;i<mem.length;i++){
+      if(!active[i]){ forces[i]=0; continue; }
+      const m=mem[i],A=nodes[m.a],B=nodes[m.b];
+      const dx=B.x0-A.x0, dy=B.y0-A.y0, L=Math.hypot(dx,dy), c=dx/L, s=dy/L;
+      const oa=off.get(m.a), ob=off.get(m.b);
+      const ax=oa===undefined?0:u[oa*2], ay=oa===undefined?0:u[oa*2+1];
+      const bx=ob===undefined?0:u[ob*2], by=ob===undefined?0:u[ob*2+1];
+      forces[i]=(MATERIALS[m.mat].EA/m.L0)*((bx-ax)*c+(by-ay)*s);
+      if(MATERIALS[m.mat].kind==='cable' && forces[i]<-1e-6){ active[i]=false; changed=true; }
+    }
+    if(!changed) break;
+  }
+  const out=new Float64Array(S.members.length), util=new Float64Array(S.members.length);
+  if(forces){ let j=0;
+    for(let i=0;i<S.members.length;i++){
+      if(S.members[i].broken) continue;
+      const f=forces[j++]; out[i]=f;
+      const M=MATERIALS[S.members[i].mat], cc=capC(M,S.members[i].L0);
+      util[i]= f>=0 ? f/M.maxT : (cc>0 ? -f/cc : 99);
+    }
+  }
+  return { forces:out, util, singular, loose, disp:lastU?{u:lastU,off}:null };
+}
+function sweep(S,ballM,coarse){
+  const peak=new Float64Array(S.members.length), at=new Array(S.members.length).fill(0);
+  const sgn=new Float64Array(S.members.length).fill(1);
+  let singular=false, loose=null, worst=0, worstMem=-1, worstX=0;
+  const h=S.def.half, dx=coarse?S.def.step:S.def.step/2;
+  for(let x=-h; x<=h+1e-9; x+=dx){
+    const r=solveStatic(S,x,ballM);
+    if(r.singular){ singular=true; loose=r.loose; break; }
+    for(let i=0;i<S.members.length;i++){
+      if(r.util[i]>peak[i]){ peak[i]=r.util[i]; at[i]=x; sgn[i]=r.forces[i]>=0?1:-1; }
+      if(r.util[i]>worst){ worst=r.util[i]; worstMem=i; worstX=x; }
+    }
+  }
+  return { peak, at, sgn, singular, loose, worst, worstMem, worstX };
+}
+function initEquilibrium(S){
+  for(const n of S.nodes){ n.x=n.x0; n.y=n.y0; n.vx=0; n.vy=0; }
+  assignMass(S);
+  const r=solveStatic(S,null,0);
+  if(!r.singular && r.disp)
+    for(const [id,o] of r.disp.off){ const n=S.nodes[id];
+      n.x=n.x0+Math.max(-1.5,Math.min(1.5,r.disp.u[o*2]));
+      n.y=n.y0+Math.max(-1.5,Math.min(1.5,r.disp.u[o*2+1])); }
+  return r;
+}
+
+/* ------------------------------------------------------------- dynamics */
+const closest=(ax,ay,bx,by,px,py)=>{
+  const dx=bx-ax, dy=by-ay, L2=dx*dx+dy*dy;
+  let t=L2<1e-12?0:((px-ax)*dx+(py-ay)*dy)/L2; t=Math.max(0,Math.min(1,t));
+  return { t, px:ax+dx*t, py:ay+dy*t };
+};
+const makeBall=S=>({ x:-(S.def.half+4.5), y:0.75, vx:S.def.v0, vy:0, w:0, spin:0,
+                     r:0.75, m:S.def.ballM, contact:0 });
+const terrainSegs=S=>{ const h=S.def.half, d=S.def.yLo-10;
+  return [[-h-46,0,-h,0],[-h,0,-h,d],[h,0,h+46,0],[h,0,h,d]]; };
+
+let _fx=null,_fy=null;
+function stepPhysics(S,ball,dt,sub,live){
+  const h=dt/sub, nodes=S.nodes, members=S.members, events=[];
+  if(!_fx||_fx.length!==nodes.length){ _fx=new Float64Array(nodes.length); _fy=new Float64Array(nodes.length); }
+  const fx=_fx, fy=_fy;
+  for(let s=0;s<sub;s++){
+    fx.fill(0); fy.fill(0);
+    for(let i=0;i<nodes.length;i++) if(!nodes[i].fixed) fy[i]-=nodes[i].m*G;
+    for(let i=0;i<members.length;i++){
+      const m=members[i]; if(m.broken) continue;
+      const A=nodes[m.a], B=nodes[m.b];
+      let dx=B.x-A.x, dy=B.y-A.y, L=Math.hypot(dx,dy); if(L<1e-6) L=1e-6;
+      const ux=dx/L, uy=dy/L, M=MATERIALS[m.mat], k=M.EA/m.L0;
+      let f=k*(L-m.L0); if(M.kind==='cable'&&f<0) f=0;
+      const mEff=Math.max(1,(A.m+B.m)*0.5), c=0.28*2*Math.sqrt(k*mEff);
+      const vrel=(B.vx-A.vx)*ux+(B.vy-A.vy)*uy;
+      let fd=c*vrel; if(M.kind==='cable'&&f<=0) fd=0;
+      const tot=f+fd;
+      fx[m.a]+=tot*ux; fy[m.a]+=tot*uy; fx[m.b]-=tot*ux; fy[m.b]-=tot*uy;
+      m.f=f;
+      const cc=capC(M,L);
+      m.util = f>=0 ? f/M.maxT : (cc>0 ? -f/cc : 99);
+      if(m.util>m.peak) m.peak=m.util;
+      if(m.util>1){ m.broken=true; events.push({type:'break',i}); }
+    }
+    if(live){
+      const kc=6.0e6, cc2=1.2e5, mu=0.9;
+      let bfx=0, bfy=-ball.m*G, torque=0; ball.contact=0;
+      const hit=(px,py,nx,ny,pen,cvx,cvy,ia,ib,wa,wb)=>{
+        const vn=(ball.vx-cvx)*nx+(ball.vy-cvy)*ny;
+        let Fn=kc*pen-cc2*vn; if(Fn<0) Fn=0;
+        ball.contact=Math.max(ball.contact,Fn);
+        bfx+=Fn*nx; bfy+=Fn*ny;
+        const tx=-ny, ty=nx;
+        const vt=(ball.vx-cvx)*tx+(ball.vy-cvy)*ty-ball.w*ball.r;
+        const Ft=-Math.sign(vt)*Math.min(mu*Fn,Math.abs(vt)*8000);
+        bfx+=Ft*tx; bfy+=Ft*ty; torque+=-Ft*ball.r;
+        if(ia!==undefined){
+          const rx=0.5*(Fn*nx+Ft*tx), ry=0.5*(Fn*ny+Ft*ty);
+          fx[ia]-=rx*wa; fy[ia]-=ry*wa; fx[ib]-=rx*wb; fy[ib]-=ry*wb;
+        }
+      };
+      for(const m of members){
+        if(m.broken||m.mat!=='deck') continue;
+        const A=nodes[m.a], B=nodes[m.b];
+        const r=closest(A.x,A.y,B.x,B.y,ball.x,ball.y);
+        const d=Math.hypot(ball.x-r.px,ball.y-r.py);
+        if(d<ball.r&&d>1e-6){
+          const nx=(ball.x-r.px)/d, ny=(ball.y-r.py)/d;
+          if(ny<0.15) continue;
+          hit(r.px,r.py,nx,ny,ball.r-d, A.vx+(B.vx-A.vx)*r.t, A.vy+(B.vy-A.vy)*r.t,
+              m.a,m.b,1-r.t,r.t);
+        }
+      }
+      for(const sg of terrainSegs(S)){
+        const r=closest(sg[0],sg[1],sg[2],sg[3],ball.x,ball.y);
+        const d=Math.hypot(ball.x-r.px,ball.y-r.py);
+        if(d<ball.r&&d>1e-6) hit(r.px,r.py,(ball.x-r.px)/d,(ball.y-r.py)/d,ball.r-d,0,0);
+      }
+      const I=0.4*ball.m*ball.r*ball.r;
+      ball.vx+=(bfx/ball.m)*h; ball.vy+=(bfy/ball.m)*h; ball.w+=(torque/I)*h;
+      ball.x+=ball.vx*h; ball.y+=ball.vy*h; ball.spin+=ball.w*h;
+    }
+    for(let i=0;i<nodes.length;i++){
+      const n=nodes[i];
+      if(n.fixed){ n.vx=n.vy=0; continue; }
+      n.vx=(n.vx+(fx[i]/n.m)*h)*0.9995;
+      n.vy=(n.vy+(fy[i]/n.m)*h)*0.9995;
+      const sp=Math.hypot(n.vx,n.vy);
+      if(sp>60){ n.vx*=60/sp; n.vy*=60/sp; }
+      n.x+=n.vx*h; n.y+=n.vy*h;
+    }
+  }
+  return events;
+}
+</script>
+
+<script>
+/* ==========================================================================
+   Scene
+   ========================================================================== */
+const PW = 1.7;                       // half-distance between the two truss planes
+const el = id => document.getElementById(id);
+const stage = el('stage');
+let renderer, scene, cam, raycaster, memGroup, nodeGroup, deckGroup, ballMesh, terrainGroup, clearMesh;
+const camS = { az:0.34, el:0.20, dist:42, ty:0 };
+const pointer = new THREE.Vector2();
+
+function skyTexture(){
+  const c=document.createElement('canvas'); c.width=2; c.height=256;
+  const g=c.getContext('2d').createLinearGradient(0,0,0,256);
+  g.addColorStop(0,'#16222E'); g.addColorStop(.55,'#0D151C'); g.addColorStop(1,'#070C10');
+  const x=c.getContext('2d'); x.fillStyle=g; x.fillRect(0,0,2,256);
+  const t=new THREE.CanvasTexture(c); t.magFilter=THREE.LinearFilter; return t;
+}
+function initGL(){
+  renderer=new THREE.WebGLRenderer({canvas:el('gl'),antialias:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  scene=new THREE.Scene();
+  scene.background=skyTexture();
+  scene.fog=new THREE.Fog(0x0A1118,60,180);
+  cam=new THREE.PerspectiveCamera(42,1,0.5,400);
+  raycaster=new THREE.Raycaster(); raycaster.params.Line.threshold=0.3;
+  scene.add(new THREE.HemisphereLight(0x9FB6C8,0x0A0F14,0.72));
+  const key=new THREE.DirectionalLight(0xFFF0D0,0.95); key.position.set(-14,22,20); scene.add(key);
+  const rim=new THREE.DirectionalLight(0x6FA8D8,0.45); rim.position.set(18,8,-22); scene.add(rim);
+  memGroup=new THREE.Group(); nodeGroup=new THREE.Group(); deckGroup=new THREE.Group();
+  terrainGroup=new THREE.Group();
+  scene.add(memGroup,nodeGroup,deckGroup,terrainGroup);
+  const ballMat=new THREE.MeshStandardMaterial({color:0x14181C,roughness:0.34,metalness:0.28});
+  ballMesh=new THREE.Mesh(new THREE.SphereGeometry(0.75,40,28),ballMat);
+  const holeMat=new THREE.MeshStandardMaterial({color:0x05080A,roughness:0.9});
+  [[0,.42],[-.34,-.24],[.34,-.24]].forEach(([hx,hy])=>{
+    const hole=new THREE.Mesh(new THREE.SphereGeometry(0.15,14,10),holeMat);
+    hole.position.set(hx,hy,0.66); ballMesh.add(hole);
+  });
+  scene.add(ballMesh);
+  addEventListener('resize',resize); resize();
+}
+function resize(){
+  const w=stage.clientWidth,h=stage.clientHeight;
+  renderer.setSize(w,h,false); cam.aspect=w/h; cam.updateProjectionMatrix();
+  const ic=el('infl'); ic.width=ic.clientWidth*devicePixelRatio; ic.height=ic.clientHeight*devicePixelRatio;
+}
+function updateCam(){
+  camS.el=Math.max(-0.5,Math.min(1.25,camS.el));
+  const d=camS.dist,ce=Math.cos(camS.el);
+  cam.position.set(d*ce*Math.sin(camS.az), camS.ty+d*Math.sin(camS.el), d*ce*Math.cos(camS.az));
+  cam.lookAt(0,camS.ty,0);
+}
+
+/* ---------------------------------------------------------------- terrain */
+function buildTerrain(S){
+  while(terrainGroup.children.length) terrainGroup.remove(terrainGroup.children[0]);
+  const h=S.def.half, deep=Math.abs(S.def.yLo)+34;
+  const rock=new THREE.MeshStandardMaterial({color:0x2C3742,roughness:0.97,flatShading:true});
+  const cap =new THREE.MeshStandardMaterial({color:0x3A4753,roughness:0.9});
+  for(const s of [-1,1]){
+    const b=new THREE.Mesh(new THREE.BoxGeometry(26,deep,17),rock);
+    b.position.set(s*(h+13),-deep/2,0); terrainGroup.add(b);
+    const t=new THREE.Mesh(new THREE.BoxGeometry(26,0.5,17),cap);
+    t.position.set(s*(h+13),-0.25,0); terrainGroup.add(t);
+  }
+  const water=new THREE.Mesh(new THREE.PlaneGeometry(220,150),
+    new THREE.MeshStandardMaterial({color:0x0B161F,roughness:0.28,metalness:0.55}));
+  water.rotation.x=-Math.PI/2; water.position.y=S.def.yLo-13; terrainGroup.add(water);
+  if(clearMesh){ scene.remove(clearMesh); clearMesh=null; }
+  if(S.def.clear){
+    const c=S.def.clear, hgt=Math.abs(S.def.yLo-3-c.y);
+    clearMesh=new THREE.Mesh(new THREE.BoxGeometry(c.x1-c.x0,hgt,4.6),
+      new THREE.MeshBasicMaterial({color:0xFF5C6E,transparent:true,opacity:0.055}));
+    clearMesh.position.set((c.x0+c.x1)/2,c.y-hgt/2,0); scene.add(clearMesh);
+    const eg=new THREE.LineSegments(new THREE.EdgesGeometry(clearMesh.geometry),
+      new THREE.LineBasicMaterial({color:0xFF5C6E,transparent:true,opacity:0.3}));
+    clearMesh.add(eg);
+  }
+}
+/* ------------------------------------------------------------ node handles */
+const nodeGeo=new THREE.OctahedronGeometry(0.28);
+const anchorGeo=new THREE.BoxGeometry(0.46,0.46,0.46);
+function buildNodes(S){
+  while(nodeGroup.children.length) nodeGroup.remove(nodeGroup.children[0]);
+  for(const n of S.nodes){
+    const mat=new THREE.MeshStandardMaterial({
+      color:n.fixed?0xF2C14E:0x63798A, roughness:0.55,
+      transparent:true, opacity:n.fixed?0.85:0.42 });
+    const m=new THREE.Mesh(n.fixed?anchorGeo:nodeGeo,mat);
+    m.position.set(n.x0,n.y0,PW); m.userData={node:n.id}; m.renderOrder=2;
+    nodeGroup.add(m);
+    const m2=m.clone(); m2.material=mat; m2.position.z=-PW; m2.userData={node:n.id};
+    nodeGroup.add(m2);
+  }
+}
+/* ------------------------------------------------------------ member meshes */
+const cylGeo=new THREE.CylinderGeometry(1,1,1,7);
+const YAX=new THREE.Vector3(0,1,0), TMP=new THREE.Vector3(), QT=new THREE.Quaternion();
+function syncMembers(S){
+  while(memGroup.children.length) memGroup.remove(memGroup.children[0]);
+  while(deckGroup.children.length) deckGroup.remove(deckGroup.children[0]);
+  S.members.forEach((m,i)=>{
+    if(m.mat==='deck'){
+      const mesh=new THREE.Mesh(new THREE.BoxGeometry(1,0.3,3.4),
+        new THREE.MeshStandardMaterial({color:0x4A5764,roughness:0.85}));
+      mesh.userData={mi:i}; deckGroup.add(mesh);
+      const stripe=new THREE.Mesh(new THREE.BoxGeometry(1,0.06,0.3),
+        new THREE.MeshStandardMaterial({color:0xF2C14E,roughness:0.6,
+          transparent:true,opacity:0.55}));
+      stripe.position.y=0.16; stripe.userData={mi:i}; mesh.add(stripe);
+    } else {
+      const M=MATERIALS[m.mat];
+      const mat=new THREE.MeshStandardMaterial({color:new THREE.Color(M.hue),
+        roughness:M.kind==='cable'?0.45:0.68, metalness:M.kind==='cable'?0.5:0.15});
+      for(const s of [1,-1]){
+        const mesh=new THREE.Mesh(cylGeo,mat); mesh.userData={mi:i,side:s}; memGroup.add(mesh);
+      }
+    }
+  });
+  refreshGeom(S);
+}
+function stressColor(u,tension){
+  const t=Math.max(0,Math.min(1,u));
+  const base=tension?new THREE.Color(0x2E6E4A):new THREE.Color(0x24557E);
+  const hot =tension?new THREE.Color(0xFF5C6E):new THREE.Color(0x4FA8E8);
+  const c=base.clone().lerp(hot,Math.pow(t,0.6));
+  if(t>0.85) c.lerp(new THREE.Color(0xFFE08A),(t-0.85)/0.15*0.7);
+  return c;
+}
+function refreshGeom(S){
+  const showStress = ST.phase!=='build' || !!ST.analysis;
+  for(const mesh of memGroup.children){
+    const m=S.members[mesh.userData.mi];
+    if(m.broken){ mesh.visible=false; continue; }
+    mesh.visible=true;
+    const A=S.nodes[m.a],B=S.nodes[m.b];
+    const z=mesh.userData.side*PW;
+    mesh.position.set((A.x+B.x)/2,(A.y+B.y)/2,z);
+    TMP.set(B.x-A.x,B.y-A.y,0);
+    const L=TMP.length()||1e-6;
+    QT.setFromUnitVectors(YAX,TMP.clone().normalize()); mesh.quaternion.copy(QT);
+    const r=MATERIALS[m.mat].r;
+    mesh.scale.set(r,L,r);
+    const i=mesh.userData.mi, an=ST.phase==='build'&&ST.analysis;
+    const u = an ? (ST.analysis.peak[i]||0) : m.util;
+    const ten = an ? (ST.analysis.sgn[i]>=0) : (m.f>=0);
+    if(showStress) mesh.material.color.copy(stressColor(u, ten));
+    else mesh.material.color.set(MATERIALS[m.mat].hue);
+    if(m.flagged) mesh.material.color.set(0xF2C14E);
+  }
+  for(const mesh of deckGroup.children){
+    const m=S.members[mesh.userData.mi];
+    if(m.broken){ mesh.visible=false; continue; }
+    mesh.visible=true;
+    const A=S.nodes[m.a],B=S.nodes[m.b];
+    mesh.position.set((A.x+B.x)/2,(A.y+B.y)/2-0.15,0);
+    mesh.rotation.z=Math.atan2(B.y-A.y,B.x-A.x);
+    mesh.scale.x=Math.hypot(B.x-A.x,B.y-A.y);
+    const i=mesh.userData.mi, an=ST.phase==='build'&&ST.analysis;
+    const u = an ? (ST.analysis.peak[i]||0) : m.util;
+    const ten = an ? (ST.analysis.sgn[i]>=0) : (m.f>=0);
+    if(showStress) mesh.material.color.copy(stressColor(u,ten));
+    else mesh.material.color.set(0x4A5764);
+  }
+  for(const nm of nodeGroup.children){
+    const n=S.nodes[nm.userData.node];
+    nm.position.set(n.x,n.y,nm.position.z<0?-PW:PW);
+  }
+}
+/* ------------------------------------------------ influence / sag readout */
+function drawInfluence(S,ball){
+  const c=el('infl'), g=c.getContext('2d'), W=c.width, H=c.height, dpr=devicePixelRatio;
+  g.clearRect(0,0,W,H);
+  const h=S.def.half, pad=10*dpr;
+  const X=x=>pad+(x+h)/(2*h)*(W-2*pad), Y=y=>H*0.42-y*(H*0.10);
+  g.strokeStyle='rgba(124,145,161,.22)'; g.lineWidth=1*dpr;
+  g.beginPath(); g.moveTo(X(-h),Y(0)); g.lineTo(X(h),Y(0)); g.stroke();
+  g.strokeStyle='#F2C14E'; g.lineWidth=1.6*dpr; g.beginPath();
+  let first=true;
+  for(const id of S.deckIds){ const n=S.nodes[id];
+    const px=X(n.x0), py=Y(n.y);
+    if(first){ g.moveTo(px,py); first=false; } else g.lineTo(px,py); }
+  g.stroke();
+  const bw=(W-2*pad)/(S.deckIds.length-1);
+  for(let i=0;i<S.deckIds.length-1;i++){
+    const m=S.members[i]; if(!m) continue;
+    const u=Math.max(0,Math.min(1.2,m.peak));
+    const col=u>1?'#FF5C6E':u>0.8?'#F2C14E':u>0.5?'#4FA8E8':'#2F4756';
+    g.fillStyle=col; g.globalAlpha=0.75;
+    g.fillRect(pad+i*bw+1,H-9*dpr,bw-2,Math.max(2*dpr,u*7*dpr));
+    g.globalAlpha=1;
+  }
+  if(ball&&ST.phase!=='build'){
+    g.fillStyle='#DCE3E8'; g.beginPath();
+    g.arc(X(Math.max(-h,Math.min(h,ball.x))),Y(ball.y-0.75)-4*dpr,3.2*dpr,0,7); g.fill();
+  }
+  g.fillStyle='rgba(124,145,161,.6)'; g.font=`${9*dpr}px 'IBM Plex Mono',monospace`;
+  g.fillText('DECK PROFILE  ×10',pad,12*dpr);
+}
+</script>
+
+<script>
+/* ==========================================================================
+   Game
+   ========================================================================== */
+const ST = { lvl:0, S:null, ball:null, phase:'build', sel:'pine', stock:{}, spent:0,
+             mult:1, ledger:[], analysis:null, advice:null, pickA:null, design:null,
+             t:0, crossTime:0, best:[0,0,0], maxSag:0, busy:false, lastReport:'' };
+const MIN_MULT = 0.15;
+const RATED = 1.25;                    // dynamic allowance quoted by the rating sweep
+let ghost=null;
+
+/* ------------------------------------------------------------------ setup */
+function loadLevel(i){
+  ST.lvl=i; ST.S=buildLevel(i); ST.phase='build'; ST.spent=0; ST.mult=1;
+  ST.ledger=[]; ST.analysis=null; ST.advice=null; ST.pickA=null; ST.t=0;
+  ST.stock=Object.assign({},ST.S.def.stock);
+  ST.ball=makeBall(ST.S); ST.maxSag=0;
+  assignMass(ST.S);
+  camS.dist=ST.S.def.half*2.5+16; camS.ty=1;
+  buildTerrain(ST.S); buildNodes(ST.S); syncMembers(ST.S); clearGhost();
+  renderMats(); renderLedger(); updateHeader(); updateReadout();
+  report('No analysis run. Member colour shows material, not force.');
+  hint('Pick a material, then click joint to joint. Deck beams are already in place.');
+  el('b-prev').disabled = i===0; el('b-next').textContent = i<LEVELS.length-1?'Next site ›':'Site 3 of 3';
+  el('b-next').disabled = i>=LEVELS.length-1;
+}
+const hint = t => el('hint').textContent = t;
+function report(html){ ST.lastReport=html; el('report').innerHTML=html; }
+
+function updateHeader(){
+  const d=ST.S.def;
+  el('s-site').textContent=`${d.id} · ${d.name}`;
+  el('s-span').innerHTML=`${d.half*2} <small>m</small>`;
+  el('s-ball').innerHTML=`${d.ballM} <small>kg</small>`;
+  el('s-cost').innerHTML=`${ST.spent} <small>/ ${d.budget}</small>`;
+  el('s-mult').textContent=ST.mult.toFixed(2)+'×';
+}
+function updateReadout(){
+  const S=ST.S;
+  el('r-phase').textContent = ST.phase==='build'?'Build':ST.phase==='run'?'Loading':'Rated';
+  const pk = ST.phase==='build'&&ST.analysis
+    ? Math.max(0,...ST.analysis.peak)
+    : Math.max(0,...S.members.filter(m=>!m.broken).map(m=>m.peak));
+  el('r-util').textContent = ST.phase==='build'&&!ST.analysis ? '—' : (pk*100).toFixed(0)+'%';
+  el('r-sag').textContent = ST.phase==='build' ? '—' : (ST.maxSag*1000).toFixed(0)+' mm';
+  el('r-best').textContent = ST.best[ST.lvl] ? ST.best[ST.lvl].toLocaleString() : '—';
+}
+
+/* ------------------------------------------------------------- stock panel */
+function renderMats(){
+  const box=el('mats'); box.innerHTML='';
+  for(const k of ORDER){
+    const M=MATERIALS[k], n=ST.stock[k]||0;
+    if(!ST.S.def.stock[k]) continue;
+    const b=document.createElement('button');
+    b.className='mat'+(n<=0?' out':''); b.dataset.sel=ST.sel===k?'1':'0'; b.tabIndex=0;
+    const cc=capC(M,3).toFixed(0), cc6=capC(M,6).toFixed(0);
+    b.innerHTML=`<div class="mrow"><span class="mname">
+        <span class="swatch" style="background:${M.hue}"></span>${M.name}</span>
+        <span class="mcount">${n}</span></div>
+      <div class="mspec">${M.cost} cr · ${M.dens} kg/m<br>
+        <i>pull</i> ${(M.maxT/1000).toFixed(0)} kN` +
+      (M.kind==='cable' ? ` · <i>push</i> none`
+        : ` · <i>push</i> ${(cc/1000).toFixed(1)}→${(cc6/1000).toFixed(1)} kN <i>(3→6 m)</i>`) +
+      `</div>`;
+    b.onclick=()=>{ if(n<=0) return; ST.sel=k; ST.pickA=null; renderMats(); };
+    box.appendChild(b);
+  }
+}
+function renderLedger(){
+  const box=el('ledger');
+  if(!ST.ledger.length){ box.innerHTML='<div class="lempty">Nothing billed. Build it by eye and keep the full multiplier.</div>'; return; }
+  box.innerHTML=ST.ledger.map((r,i)=>
+    `<div class="lrow"><span>${String(i+1).padStart(2,'0')} ${r.label}</span><span>−${(r.fee*100).toFixed(0)}%</span></div>`).join('')
+    +`<div class="lrow" style="border:none;padding-top:8px"><span style="color:var(--paper)">Multiplier</span><span style="color:var(--zinc)">${ST.mult.toFixed(2)}×</span></div>`;
+}
+function renderTools(){
+  el('tools').innerHTML=FEES.map(f=>
+    `<button class="tool" data-tool="${f.id}"><div class="t">${f.label}
+      <span class="fee">−${(f.fee*100).toFixed(0)}%</span></div>
+     <div class="d">${f.desc}</div></button>`).join('');
+  el('tools').querySelectorAll('.tool').forEach(b=>
+    b.onclick=()=>runTool(b.dataset.tool));
+}
+
+/* ------------------------------------------------------------- validation */
+function segClearsZone(S,A,B){
+  const c=S.def.clear; if(!c) return true;
+  for(let i=0;i<=24;i++){
+    const t=i/24, x=A.x0+(B.x0-A.x0)*t, y=A.y0+(B.y0-A.y0)*t;
+    if(x>c.x0-1e-6 && x<c.x1+1e-6 && y<c.y-1e-6) return false;
+  }
+  return true;
+}
+function canPlace(S,ai,bi,mat){
+  if(ai===bi) return {ok:false,why:'Same joint.'};
+  const A=S.nodes[ai], B=S.nodes[bi];
+  const L=Math.hypot(B.x0-A.x0,B.y0-A.y0);
+  if(L>S.def.maxLen+1e-6) return {ok:false,why:`Too long — ${L.toFixed(2)} m, limit ${S.def.maxLen} m. Chain it through a joint.`};
+  if(S.members.some(m=>!m.broken&&((m.a===ai&&m.b===bi)||(m.a===bi&&m.b===ai))))
+    return {ok:false,why:'A member already runs between those joints.'};
+  if(A.fixed&&B.fixed) return {ok:false,why:'Both ends are anchored in rock — that member can never strain, so it can never carry load.'};
+  if((ST.stock[mat]||0)<=0) return {ok:false,why:`No ${MATERIALS[mat].name.toLowerCase()} left on site.`};
+  if(ST.spent+MATERIALS[mat].cost>S.def.budget) return {ok:false,why:'Over budget.'};
+  if(!segClearsZone(S,A,B)) return {ok:false,why:'That crosses the shipping channel. Nothing below the deck between the markers.'};
+  return {ok:true};
+}
+function place(ai,bi){
+  const S=ST.S, v=canPlace(S,ai,bi,ST.sel);
+  if(!v.ok){ hint(v.why); return false; }
+  S.members.push(mkMember(S.nodes,ai,bi,ST.sel,false));
+  ST.stock[ST.sel]--; ST.spent+=MATERIALS[ST.sel].cost;
+  invalidate(); return true;
+}
+function removeMember(i){
+  const m=ST.S.members[i];
+  if(m.locked){ hint('Deck beams come with the site. They cannot be removed.'); return; }
+  ST.stock[m.mat]++; ST.spent-=MATERIALS[m.mat].cost;
+  ST.S.members.splice(i,1);
+  invalidate();
+}
+function invalidate(){
+  ST.analysis=null; clearGhost(); assignMass(ST.S);
+  syncMembers(ST.S); renderMats(); updateHeader(); updateReadout();
+  if(ST.lastReport.indexOf('superseded')<0)
+    report('Frame changed — any earlier analysis is superseded.');
+}
+
+/* ------------------------------------------------------------ analysis desk */
+function charge(f){
+  ST.mult=Math.max(MIN_MULT, ST.mult-f.fee);
+  ST.ledger.push({label:f.label, fee:f.fee});
+  renderLedger(); updateHeader();
+  const b=el('multbox'); b.classList.remove('hit'); void b.offsetWidth; b.classList.add('hit');
+}
+const nm = (S,i)=>{ const m=S.members[i], A=S.nodes[m.a], B=S.nodes[m.b];
+  return `${MATERIALS[m.mat].name.toLowerCase()} (${A.x0},${A.y0})→(${B.x0},${B.y0})`; };
+
+function runTool(id){
+  if(ST.busy) return;
+  if(ST.phase!=='build'){ hint('Reset to the build phase before running analysis.'); return; }
+  const f=FEES.find(x=>x.id===id), S=ST.S;
+  if(id==='dead'){
+    charge(f); assignMass(S);
+    const r=solveStatic(S,null,0);
+    if(r.singular){ report(mechText(S,r.loose)); ST.analysis=null; }
+    else {
+      let w=0,wi=-1;
+      for(let i=0;i<S.members.length;i++) if(r.util[i]>w){w=r.util[i];wi=i;}
+      ST.analysis={peak:r.util, sgn:Array.from(r.forces,f=>f>=0?1:-1)};
+      report(`<b>Dead load only.</b> No mechanism — every joint is held.\n`+
+        `Worst member ${(w*100).toFixed(0)}% of capacity: ${wi<0?'—':nm(S,wi)}\n`+
+        `<span class="warn">The rolling load is still to come.</span>`);
+    }
+    refreshGeom(S); updateReadout(); return;
+  }
+  if(id==='sweep'){
+    charge(f); assignMass(S);
+    const sw=sweep(S,S.def.ballM);
+    if(sw.singular){ report(mechText(S,sw.loose)); ST.analysis=null; refreshGeom(S); return; }
+    ST.analysis={peak:sw.peak, sgn:sw.sgn};
+    const rated=sw.worst*RATED;
+    const verdict = rated<0.85 ? '<span class="good">Passes with reserve.</span>'
+      : rated<1.00 ? '<span class="warn">Passes, but nothing is spare.</span>'
+      : rated<1.25 ? '<span class="warn">Fails the rating. It may still crawl across — the allowance is gone, not the capacity.</span>'
+      : '<span class="bad">Fails. Expect members to give way.</span>';
+    report(`<b>Load rating sweep.</b> Ball walked across ${(S.def.half*4+1)} positions.\n`+
+      `Governing member: ${nm(S,sw.worstMem)}\n`+
+      `Static ${(sw.worst*100).toFixed(0)}% · with ${RATED}× impact allowance <b>${(rated*100).toFixed(0)}%</b>\n`+
+      `Worst at ball x = ${sw.worstX} m\n${verdict}`);
+    refreshGeom(S); updateReadout(); return;
+  }
+  if(id==='fail'){
+    charge(f); ST.busy=true; hint('Running the load in the back office…');
+    setTimeout(()=>{
+      const res=dryRun(S);
+      ST.busy=false;
+      if(res.crossed) report(`<b>Failure oracle.</b> <span class="good">The ball gets across.</span>\n`+
+        `Crossing time ${res.t.toFixed(2)} s · peak utilisation ${(res.peak*100).toFixed(0)}%\n`+
+        `Max deck sag ${(res.sag*1000).toFixed(0)} mm`);
+      else if(res.firstIdx>=0) report(`<b>Failure oracle.</b> <span class="bad">Collapse.</span>\n`+
+        `First to give way: ${nm(S,res.firstIdx)}\n`+
+        `at t = ${res.firstT.toFixed(2)} s, ball at x = ${res.firstX.toFixed(1)} m\n`+
+        `<span class="warn">Nothing breaks before that — fix this one first.</span>`);
+      else report(`<b>Failure oracle.</b> <span class="bad">The ball does not finish.</span>\n`+
+        `Nothing snapped; it stalls or rolls back at x = ${res.endX.toFixed(1)} m.\n`+
+        `<span class="warn">Usually too much sag. Stiffen the deck.</span>`);
+      hint('Analysis complete.');
+    },30);
+    return;
+  }
+  if(id==='brace'){ charge(f); adviseBrace(); return; }
+}
+function mechText(S,loose){
+  if(!loose) return `<b><span class="bad">Mechanism.</span></b> The frame is not fully triangulated.`;
+  const n=S.nodes[loose.node];
+  return `<b><span class="bad">Mechanism.</span></b> Joint (${n.x0}, ${n.y0}) is free to move `+
+    `${loose.dir}ly — nothing there resists it.\n`+
+    `<span class="warn">Pin joints carry axial force only. Every joint needs members pulling in at least two different directions.</span>\n`+
+    `The static model stops here, so no forces are available.`;
+}
+
+/* deterministic replay of exactly the simulation the Run button will produce */
+function dryRun(S){
+  const snap=S.nodes.map(n=>({x:n.x,y:n.y,vx:n.vx,vy:n.vy,m:n.m}));
+  const msnap=S.members.map(m=>({broken:m.broken,peak:m.peak,util:m.util,f:m.f}));
+  initEquilibrium(S);
+  const ball=makeBall(S);
+  let t=0, firstIdx=-1, firstT=0, firstX=0, sag=0, crossed=false;
+  while(t<26){
+    const ev=stepPhysics(S,ball,1/60,MAXSTEP,true);
+    if(ev.length&&firstIdx<0){ firstIdx=ev[0].i; firstT=t; firstX=ball.x; }
+    for(const id of S.deckIds) sag=Math.max(sag,-S.nodes[id].y);
+    t+=1/60;
+    if(ball.x>S.def.half+2&&ball.y>-3){ crossed=true; break; }
+    if(ball.y<S.def.yLo-6) break;
+  }
+  const peak=Math.max(0,...S.members.filter(m=>!m.broken).map(m=>m.peak));
+  const endX=ball.x;
+  S.nodes.forEach((n,i)=>Object.assign(n,snap[i]));
+  S.members.forEach((m,i)=>Object.assign(m,msnap[i]));
+  return { crossed, t, firstIdx, firstT, firstX, sag, peak, endX };
+}
+
+/* one-member search: which addition buys the most capacity */
+function adviseBrace(){
+  const S=ST.S; ST.busy=true; clearGhost();
+  assignMass(S);
+  const used=new Set(); S.members.forEach(m=>{used.add(m.a);used.add(m.b);});
+  const cands=[];
+  for(const a of used) for(const b of S.nodes.map(n=>n.id)){
+    if(b<=a) continue;
+    if(!used.has(b)&&!S.nodes[b].fixed){
+      const nb=S.nodes[b]; let near=false;
+      for(const u of used){ const nu=S.nodes[u];
+        if(Math.hypot(nb.x0-nu.x0,nb.y0-nu.y0)<=S.def.maxLen){ near=true; break; } }
+      if(!near) continue;
+    }
+    if(canPlace(S,a,b,ST.sel).ok) cands.push([a,b]);
+  }
+  cands.sort((p,q)=>{
+    const d=(i,j)=>Math.hypot(S.nodes[i].x0-S.nodes[j].x0,S.nodes[i].y0-S.nodes[j].y0);
+    return d(p[0],p[1])-d(q[0],q[1]); });
+  const list=cands.slice(0,70);
+  const base=sweep(S,S.def.ballM,true);
+  const baseScore=base.singular?1e9:base.worst;
+  let best=null, k=0;
+  report(`<b>Brace advisor.</b> Testing ${list.length} placements of ${MATERIALS[ST.sel].name.toLowerCase()}…`);
+  const tick=()=>{
+    const t0=performance.now();
+    while(k<list.length && performance.now()-t0<24){
+      const [a,b]=list[k++];
+      S.members.push(mkMember(S.nodes,a,b,ST.sel,false)); assignMass(S);
+      const sw=sweep(S,S.def.ballM,true);
+      const sc=sw.singular?1e9:sw.worst;
+      S.members.pop();
+      if(!best||sc<best.sc) best={a,b,sc};
+    }
+    if(k<list.length){ requestAnimationFrame(tick); return; }
+    assignMass(S); ST.busy=false;
+    if(!best||best.sc>=1e9){
+      report(`<b>Brace advisor.</b> No single ${MATERIALS[ST.sel].name.toLowerCase()} clears the mechanism.\n`+
+        `<span class="warn">More than one member is missing. Triangulate the unsupported joints first.</span>`);
+      return;
+    }
+    const A=S.nodes[best.a], B=S.nodes[best.b];
+    drawGhost(A,B); ST.advice={a:best.a,b:best.b,mat:ST.sel};
+    const before=baseScore>=1e9?'mechanism':(baseScore*100).toFixed(0)+'%';
+    report(`<b>Brace advisor.</b> Best single addition:\n`+
+      `${MATERIALS[ST.sel].name} from (${A.x0}, ${A.y0}) to (${B.x0}, ${B.y0})\n`+
+      `Governing utilisation ${before} → <b>${(best.sc*100).toFixed(0)}%</b>\n`+
+      `<span class="warn">Marked in the view. You still have to place it.</span>`);
+  };
+  requestAnimationFrame(tick);
+}
+function drawGhost(A,B){
+  clearGhost();
+  ghost=new THREE.Group();
+  for(const s of [1,-1]){
+    const m=new THREE.Mesh(cylGeo,new THREE.MeshBasicMaterial({color:0xF2C14E,transparent:true,opacity:0.5}));
+    const L=Math.hypot(B.x0-A.x0,B.y0-A.y0);
+    m.position.set((A.x0+B.x0)/2,(A.y0+B.y0)/2,s*PW);
+    TMP.set(B.x0-A.x0,B.y0-A.y0,0).normalize();
+    m.quaternion.setFromUnitVectors(YAX,TMP);
+    m.scale.set(0.13,L,0.13); ghost.add(m);
+  }
+  scene.add(ghost);
+}
+function clearGhost(){ if(ghost){ scene.remove(ghost); ghost=null; } ST.advice=null; }
+</script>
+
+<script>
+/* ==========================================================================
+   Test run, scoring, input
+   ========================================================================== */
+function snapshot(){ return ST.S.members.map(m=>({a:m.a,b:m.b,mat:m.mat,locked:m.locked})); }
+function restore(){
+  const S=ST.S;
+  S.members=ST.design.map(d=>mkMember(S.nodes,d.a,d.b,d.mat,d.locked));
+  for(const n of S.nodes){ n.x=n.x0; n.y=n.y0; n.vx=0; n.vy=0; }
+  assignMass(S); syncMembers(S);
+}
+function startTest(){
+  if(ST.phase==='run'||ST.busy) return;
+  const S=ST.S;
+  if(ST.phase==='done') restore();
+  ST.design=snapshot();
+  clearGhost(); ST.analysis=null;
+  for(const m of S.members){ m.broken=false; m.peak=0; m.util=0; m.f=0; }
+  initEquilibrium(S);
+  ST.ball=makeBall(S); ST.phase='run'; ST.t=0; ST.maxSag=0; ST.crossTime=0;
+  syncMembers(S);
+  hint('Rolling. Watch where the colour goes hot.');
+  updateReadout(); el('b-test').disabled=true;
+}
+function resetTest(){
+  if(!ST.design){ hint('Nothing to reset.'); return; }
+  restore(); ST.phase='build'; ST.ball=makeBall(ST.S); ST.t=0; ST.maxSag=0;
+  ST.analysis=null; clearGhost();
+  el('b-test').disabled=false;
+  updateHeader(); updateReadout(); renderMats();
+  report('Back to build. The frame is exactly as you left it.');
+  hint('Pick a material, then click joint to joint.');
+}
+function stripFrame(){
+  if(ST.phase==='run') return;
+  const S=ST.S;
+  for(let i=S.members.length-1;i>=0;i--) if(!S.members[i].locked){
+    ST.stock[S.members[i].mat]++; ST.spent-=MATERIALS[S.members[i].mat].cost;
+    S.members.splice(i,1);
+  }
+  ST.design=null; ST.phase='build'; ST.ball=makeBall(S);
+  for(const n of S.nodes){ n.x=n.x0; n.y=n.y0; n.vx=0; n.vy=0; }
+  el('b-test').disabled=false;
+  invalidate(); report('Frame stripped. Credits and stock returned.');
+}
+function finish(won,why){
+  ST.phase='done'; el('b-test').disabled=false;
+  const d=ST.S.def, tIdeal=1.4*(2*d.half+6.5)/d.v0;   // 1.4 = sphere spin-up loss
+  let base=0,econ=0,speed=0;
+  if(won){
+    base=1000;
+    econ=Math.round(700*Math.max(0,1-ST.spent/d.budget));
+    speed=Math.round(200*Math.max(0,Math.min(1,1-(ST.crossTime-tIdeal)/(tIdeal*1.2))));
+  }
+  const gross=base+econ+speed, net=Math.round(gross*ST.mult);
+  if(net>ST.best[ST.lvl]) ST.best[ST.lvl]=net;
+  const rows = won ? [
+      ['Crossing achieved','1 000'],
+      [`Materials unused — ${d.budget-ST.spent} cr of ${d.budget}`, econ.toLocaleString()],
+      [`Serviceability — crossed in ${ST.crossTime.toFixed(2)} s`, speed.toLocaleString()],
+    ] : [['No rating issued', '0']];
+  const fees = ST.ledger.map(r=>[r.label,`−${(r.fee*100).toFixed(0)}%`]);
+  sheet(`
+    <header><h2>${won?'Rating issued':'Collapse'}</h2>
+      <div class="sub">${d.name} · ${d.half*2} m · ${d.ballM} kg rolling load</div></header>
+    <div class="bd" style="padding-bottom:4px">${won
+      ? `The load crossed. Peak member utilisation reached <b>${(Math.max(0,...ST.S.members.filter(m=>!m.broken).map(m=>m.peak))*100).toFixed(0)}%</b>
+         and the deck sagged <b>${(ST.maxSag*1000).toFixed(0)} mm</b> at worst.`
+      : `<b>${why}</b> Reset and look at where the colour went hot — that is where the load path ran out.`}</div>
+    <div class="invoice">
+      ${rows.map(r=>`<div class="ir"><span>${r[0]}</span><span>${r[1]}</span></div>`).join('')}
+      <div class="ir"><span style="color:var(--paper)">Gross</span><span style="color:var(--paper)">${gross.toLocaleString()}</span></div>
+      ${fees.length?`<div class="ir" style="border:none;padding-bottom:2px;color:var(--dimmer)"><span>Consulting engineer</span><span></span></div>`:''}
+      ${fees.map(r=>`<div class="ir" style="color:var(--dim)"><span style="padding-left:12px">${r[0]}</span><span style="color:var(--tension)">${r[1]}</span></div>`).join('')}
+      <div class="ir"><span>Multiplier</span><span>${ST.mult.toFixed(2)}×</span></div>
+      <div class="ir tot"><span>Score</span><span>${net.toLocaleString()}</span></div>
+    </div>
+    <div class="bd" style="padding-top:6px;color:var(--dimmer);font-size:12.5px">
+      Best at this site: ${ST.best[ST.lvl].toLocaleString()}</div>
+    <footer><button class="act" onclick="closeSheet()">Close</button>
+      <button class="act" onclick="closeSheet();resetTest()">Back to build</button>
+      ${won&&ST.lvl<LEVELS.length-1?`<button class="act go" onclick="closeSheet();loadLevel(${ST.lvl+1})">Next site</button>`:''}
+    </footer>`);
+  updateReadout();
+}
+
+/* ------------------------------------------------------------------ modal */
+function sheet(html){ el('sheet').innerHTML=html; el('modal').classList.add('on'); }
+function closeSheet(){ el('modal').classList.remove('on'); }
+el('modal').onclick=e=>{ if(e.target===el('modal')) closeSheet(); };
+function helpSheet(){ sheet(`
+  <header><h2>How it holds up</h2><div class="sub">Read once, then ignore the analysis desk if you dare</div></header>
+  <div class="bd">
+    <p><b>The frame.</b> Two identical truss planes stand either side of the roadway, so each one
+    carries half of everything. You build one; both get built.</p>
+    <p><b>Pin joints.</b> Members carry force straight along their own length and nothing else.
+    A joint with only two members in a straight line is free to swing sideways — that is a
+    mechanism, and it is why a bare deck falls even though every beam is strong.
+    Every deck joint needs something pulling on it from a different direction.</p>
+    <p><b>Cables pull only.</b> Push on one and it just goes slack.</p>
+    <p><b>Struts buckle.</b> Compression capacity is <code>P = C / L²</code>, so a strut twice as
+    long holds a quarter as much. Two short struts through a middle joint beat one long one.</p>
+    <p><b>Depth is cheaper than strength.</b> Chord force is roughly <code>M / d</code>. Doubling
+    the depth of your truss halves the force in the chords for free.</p>
+    <p><b>The analysis desk is optional.</b> Every tool you buy comes off the score multiplier,
+    permanently, for that site. It is an honest linear-static model: conservative, and it will
+    call a slack cable system a mechanism even when large deflections would eventually save it.
+    The failure oracle is the exception — it replays the real simulation.</p>
+    <p style="color:var(--dimmer)"><b>Controls.</b> Drag to orbit · scroll to zoom ·
+    click joint then joint to place · click a member to take it back ·
+    <kbd>1</kbd>–<kbd>6</kbd> pick material · <kbd>Esc</kbd> cancel.</p>
+  </div>
+  <footer><button class="act go" onclick="closeSheet()">Start building</button></footer>`);
+}
+
+/* ------------------------------------------------------------------ input */
+let dragging=false, downAt=null, hoverNode=-1, hoverMem=-1;
+const glc=el('gl');
+function ndc(e){
+  const r=glc.getBoundingClientRect();
+  pointer.x=((e.clientX-r.left)/r.width)*2-1;
+  pointer.y=-((e.clientY-r.top)/r.height)*2+1;
+}
+function pick(){
+  raycaster.setFromCamera(pointer,cam);
+  hoverNode=-1; hoverMem=-1;
+  if(ST.phase!=='run'){
+    const hn=raycaster.intersectObjects(nodeGroup.children,false);
+    if(hn.length){ hoverNode=hn[0].object.userData.node; return; }
+  }
+  const hm=raycaster.intersectObjects(memGroup.children.concat(deckGroup.children),true);
+  if(hm.length){
+    let o=hm[0].object; while(o&&o.userData.mi===undefined) o=o.parent;
+    if(o) hoverMem=o.userData.mi;
+  }
+}
+glc.addEventListener('pointerdown',e=>{ ndc(e); downAt={x:e.clientX,y:e.clientY}; dragging=false;
+  glc.setPointerCapture(e.pointerId); });
+glc.addEventListener('pointermove',e=>{
+  ndc(e);
+  if(downAt&&(e.buttons&1)){
+    const dx=e.clientX-downAt.x, dy=e.clientY-downAt.y;
+    if(Math.abs(dx)+Math.abs(dy)>4) dragging=true;
+    if(dragging){
+      camS.az-=dx*0.006; camS.el+=dy*0.005;
+      downAt={x:e.clientX,y:e.clientY}; updateCam();
+    }
+    el('tip').style.display='none'; return;
+  }
+  pick(); tooltip(e);
+});
+glc.addEventListener('pointerup',e=>{
+  if(!dragging){ pick(); onClick(); }
+  downAt=null; dragging=false;
+});
+glc.addEventListener('pointerleave',()=>{ el('tip').style.display='none'; downAt=null; });
+glc.addEventListener('wheel',e=>{ e.preventDefault();
+  camS.dist=Math.max(10,Math.min(110,camS.dist*(1+Math.sign(e.deltaY)*0.09))); updateCam(); },{passive:false});
+glc.addEventListener('contextmenu',e=>{ e.preventDefault(); ST.pickA=null; hint('Cancelled.'); });
+
+function onClick(){
+  if(ST.phase==='run') return;
+  if(ST.phase==='done'&&(hoverNode>=0||hoverMem>=0)) resetTest();
+  if(hoverNode>=0){
+    if(ST.pickA===null){ ST.pickA=hoverNode;
+      const n=ST.S.nodes[hoverNode];
+      hint(`From joint (${n.x0}, ${n.y0}) — pick the far end.`); }
+    else if(ST.pickA===hoverNode){ ST.pickA=null; hint('Cancelled.'); }
+    else { const a=ST.pickA; ST.pickA=null;
+      if(place(a,hoverNode)) hint('Placed. Keep going, or run the load.'); }
+    return;
+  }
+  if(hoverMem>=0){ removeMember(hoverMem); hint('Member removed, credit returned.'); return; }
+  ST.pickA=null;
+}
+function tooltip(e){
+  const t=el('tip');
+  if(hoverMem<0&&hoverNode<0){ t.style.display='none'; return; }
+  let s='';
+  if(hoverNode>=0){
+    const n=ST.S.nodes[hoverNode];
+    s=`joint (${n.x0}, ${n.y0})${n.fixed?'\nanchored in rock':''}`;
+  } else {
+    const m=ST.S.members[hoverMem], M=MATERIALS[m.mat];
+    const cc=capC(M,m.L0);
+    s=`${M.name}   ${m.L0.toFixed(2)} m\n`+
+      `pull ${(M.maxT/1000).toFixed(0)} kN`+(M.kind==='cable'?'':` · push ${(cc/1000).toFixed(1)} kN`);
+    const u = ST.analysis ? (ST.analysis.peak[hoverMem]||0) : (ST.phase!=='build'?m.peak:null);
+    const ten = ST.analysis ? ST.analysis.sgn[hoverMem]>=0 : m.f>=0;
+    if(u!==null) s+=`\n${ten?'tension':'compression'} · ${(u*100).toFixed(0)}% of capacity`;
+    if(m.locked) s+='\ndeck beam — fixed';
+  }
+  t.textContent=s; t.style.display='block';
+  const r=stage.getBoundingClientRect();
+  t.style.left=Math.min(e.clientX-r.left+14,r.width-190)+'px';
+  t.style.top=(e.clientY-r.top+14)+'px';
+}
+addEventListener('keydown',e=>{
+  if(e.key==='Escape'){ ST.pickA=null; closeSheet(); hint('Cancelled.'); }
+  if(e.key>='1'&&e.key<='6'){ const k=ORDER[+e.key-1];
+    if(k&&ST.S.def.stock[k]){ ST.sel=k; ST.pickA=null; renderMats(); } }
+  if(e.key==='r'||e.key==='R') resetTest();
+  if(e.key===' '){ e.preventDefault(); startTest(); }
+});
+el('b-test').onclick=startTest;
+el('b-reset').onclick=resetTest;
+el('b-clear').onclick=stripFrame;
+el('b-help').onclick=helpSheet;
+el('b-side').onclick=()=>{ camS.az=0; camS.el=0; updateCam(); };
+el('b-iso').onclick=()=>{ camS.az=0.34; camS.el=0.20; updateCam(); };
+el('b-prev').onclick=()=>loadLevel(Math.max(0,ST.lvl-1));
+el('b-next').onclick=()=>loadLevel(Math.min(LEVELS.length-1,ST.lvl+1));
+
+/* ------------------------------------------------------------------- loop */
+let last=performance.now();
+function animate(){
+  requestAnimationFrame(animate);
+  const now=performance.now(); const dt=Math.min(0.05,(now-last)/1000); last=now;
+  const S=ST.S, b=ST.ball;
+  if(ST.phase==='run'){
+    stepPhysics(S,b,1/60,MAXSTEP,true);
+    ST.t+=1/60;
+    for(const id of S.deckIds) ST.maxSag=Math.max(ST.maxSag,-S.nodes[id].y);
+    if(b.x>S.def.half+2&&b.y>-3){ ST.crossTime=ST.t; finish(true); }
+    else if(b.y<S.def.yLo-6) finish(false,'The ball went into the water.');
+    else if(ST.t>26) finish(false,'The ball never made it across.');
+    if(ST.t%0.5<1/60) updateReadout();
+  }
+  ballMesh.position.set(b.x,b.y,0);
+  ballMesh.rotation.z=b.spin;
+  ballMesh.scale.setScalar(b.r/0.75);
+  refreshGeom(S);
+  for(const nmesh of nodeGroup.children){
+    const isA=ST.pickA===nmesh.userData.node, isH=hoverNode===nmesh.userData.node;
+    nmesh.scale.setScalar(isA?1.9:isH?1.5:1);
+    nmesh.material.opacity = ST.phase==='run' ? 0.10
+      : (isA?1:isH?0.9:(S.nodes[nmesh.userData.node].fixed?0.8:0.36));
+  }
+  drawInfluence(S,b);
+  updateCam();
+  renderer.render(scene,cam);
+}
+/* ------------------------------------------------------------------- boot */
+initGL(); renderTools(); loadLevel(0); helpSheet(); animate();
+</script>
+
+<style>
+/* ---------- outside help (extension) ---------- */
+#xtools .tool .t{color:var(--paper)}
+#xtools .tool .fee.free{color:var(--ok)}
+.sheet textarea{width:100%;min-height:190px;background:var(--plate2);color:var(--paper);
+  border:1px solid var(--rule);font-family:var(--mono);font-size:11px;line-height:1.5;
+  padding:9px;resize:vertical}
+.sheet textarea:focus{outline:1px solid var(--zinc);outline-offset:0}
+.sheet .lab{font-family:var(--disp);font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--dimmer);margin:14px 0 5px}
+.sheet .lab:first-child{margin-top:0}
+#impnote{font-family:var(--mono);font-size:11px;line-height:1.55;color:var(--dim);
+  margin-top:9px;white-space:pre-wrap}
+#impnote .bad{color:var(--tension)}#impnote .good{color:var(--ok)}
+</style>
+
+<script>
+/* ==========================================================================
+   EXTENSION — outside help: LLM brief, design import, and an in-house solver.
+   Purely additive: nothing above is modified.
+   ========================================================================== */
+const XFEES = {
+  llm:    { fee:0.40, label:'Imported outside design' },
+  claude: { fee:0.50, label:'Claude design office' },
+  auto:   { fee:0.65, label:'In-house auto-build' },
+};
+const AUTO_TARGET = 0.68;              // static utilisation the solver designs to
+
+/* ------------------------------------------------------------ joint lookup */
+function nodeMap(S){
+  const m=new Map();
+  for(const n of S.nodes) m.set(`${Math.round(n.x0)}|${Math.round(n.y0)}`,n.id);
+  return m;
+}
+function placeMat(S,a,b,mat){
+  const v=canPlace(S,a,b,mat);
+  if(!v.ok) return v;
+  S.members.push(mkMember(S.nodes,a,b,mat,false));
+  ST.stock[mat]--; ST.spent+=MATERIALS[mat].cost;
+  return {ok:true};
+}
+
+/* ------------------------------------------------- force envelope (design) */
+/* Like sweep(), but also records the min/max axial force each member ever
+   sees, which is what tells you whether a strut could become a cable.       */
+function forceEnvelope(S,ballM,coarse){
+  const n=S.members.length;
+  const peak=new Float64Array(n), minF=new Float64Array(n), maxF=new Float64Array(n);
+  minF.fill(Infinity); maxF.fill(-Infinity);
+  let singular=false, worst=0, worstMem=-1;
+  const h=S.def.half, dx=coarse?S.def.step:S.def.step/2;
+  const take=r=>{
+    for(let i=0;i<n;i++){
+      if(S.members[i].broken) continue;
+      if(r.forces[i]<minF[i]) minF[i]=r.forces[i];
+      if(r.forces[i]>maxF[i]) maxF[i]=r.forces[i];
+      if(r.util[i]>peak[i]) peak[i]=r.util[i];
+      if(r.util[i]>worst){ worst=r.util[i]; worstMem=i; }
+    }
+  };
+  const dead=solveStatic(S,null,0);
+  if(dead.singular) return { peak, minF, maxF, singular:true, loose:dead.loose, worst:1e9, worstMem:-1 };
+  take(dead);
+  for(let x=-h;x<=h+1e-9;x+=dx){
+    const r=solveStatic(S,x,ballM);
+    if(r.singular){ singular=true; break; }
+    take(r);
+  }
+  return { peak, minF, maxF, singular, worst:singular?1e9:worst, worstMem };
+}
+const estUtil=(f,mat,L)=>{
+  const M=MATERIALS[mat];
+  if(M.kind==='cable') return f>=0 ? f/M.maxT : 99;
+  return f>=0 ? f/M.maxT : (capC(M,L)>0 ? -f/capC(M,L) : 99);
+};
+const envUtil=(env,i,mat,L)=>Math.max(estUtil(env.maxF[i],mat,L),estUtil(env.minF[i],mat,L));
+
+/* ---------------------------------------------------------- layout builder */
+function genLayout(S,chordY,panel,mat){
+  const h=S.def.half, maxL=S.def.maxLen, map=nodeMap(S), out=[];
+  const key=(x,y)=>map.get(`${Math.round(x)}|${Math.round(y)}`);
+  const leg=Math.hypot(panel,Math.abs(chordY));
+  if(leg>maxL) return null;
+  const chordX=[];
+  for(let x=-h+panel;x<=h-panel+1e-9;x+=panel) chordX.push(x);
+  if(chordX.length<1) return null;
+  const seen=new Set();
+  const push=(x1,y1,x2,y2,m)=>{
+    const a=key(x1,y1), b=key(x2,y2);
+    if(a===undefined||b===undefined) return;
+    const k=a<b?`${a}-${b}`:`${b}-${a}`;
+    if(seen.has(k)) return; seen.add(k);
+    if(Math.hypot(x2-x1,y2-y1)>maxL+1e-6) return;
+    if(S.nodes[a].fixed&&S.nodes[b].fixed) return;
+    if(!segClearsZone(S,S.nodes[a],S.nodes[b])) return;
+    out.push([a,b,m]);
+  };
+  for(let i=0;i<chordX.length-1;i++) push(chordX[i],chordY,chordX[i+1],chordY,mat);
+  push(-h,0,chordX[0],chordY,mat);
+  push(h,0,chordX[chordX.length-1],chordY,mat);
+  for(let x=-h+S.def.step;x<=h-S.def.step+1e-9;x+=S.def.step){
+    const near=chordX.map(cx=>({cx,d:Math.hypot(cx-x,chordY)}))
+                     .filter(o=>o.d<=maxL+1e-6).sort((p,q)=>p.d-q.d).slice(0,2);
+    for(const o of near) push(x,0,o.cx,chordY,mat);
+  }
+  return out.length?out:null;
+}
+function scratchFrom(S,layout){
+  return { def:S.def, nodes:S.nodes, deckIds:S.deckIds,
+    members: S.members.filter(m=>m.locked).map(m=>mkMember(S.nodes,m.a,m.b,m.mat,true))
+      .concat(layout.map(([a,b,m])=>mkMember(S.nodes,a,b,m,false))) };
+}
+const frameCost=F=>F.members.filter(m=>!m.locked).reduce((a,m)=>a+MATERIALS[m.mat].cost,0);
+function frameTally(F){ const t={}; for(const m of F.members) if(!m.locked) t[m.mat]=(t[m.mat]||0)+1; return t; }
+function fitsStock(S,F){
+  const t=frameTally(F);
+  for(const k in t) if(t[k]>(S.def.stock[k]||0)) return false;
+  return true;
+}
+
+/* --------------------------------------------------------------- refinement
+   Start heavy, then spend the analysis on making it cheap: downgrade what is
+   lightly worked, upgrade whatever governs, and turn always-tension struts
+   into cable. Every move is checked against a fresh envelope.               */
+function refineFrame(S,F,budget){
+  const free=F.members.map((m,i)=>i).filter(i=>!F.members[i].locked);
+  let env=forceEnvelope(F,S.def.ballM,true), calls=1;
+  if(env.singular) return { ok:false, why:'mechanism', calls };
+  const DOWN={ ti:'steel', steel:'pine' };
+  for(let round=0;round<3;round++){
+    let moved=false;
+    for(const i of free){
+      const m=F.members[i], cheaper=DOWN[m.mat];
+      if(!cheaper) continue;
+      if(envUtil(env,i,cheaper,m.L0)<AUTO_TARGET*0.92){ m.mat=cheaper; moved=true; }
+    }
+    if(!moved) break;
+    assignMass(F); env=forceEnvelope(F,S.def.ballM,true); calls++;
+    if(env.singular) return { ok:false, why:'mechanism', calls };
+  }
+  const UP={ pine:'steel', steel:'ti' };
+  for(let g=0; g<14 && env.worst>AUTO_TARGET; g++){
+    const i=env.worstMem;
+    if(i<0) break;
+    const m=F.members[i];
+    if(m.locked||!UP[m.mat]) break;
+    m.mat=UP[m.mat];
+    assignMass(F); env=forceEnvelope(F,S.def.ballM,true); calls++;
+    if(env.singular) return { ok:false, why:'mechanism', calls };
+  }
+  if(env.worst>AUTO_TARGET) return { ok:false, why:'overstressed', worst:env.worst, calls };
+  const CABLE=['hemp','wire','carbon'];
+  const before=F.members.map(m=>m.mat);
+  let swapped=false;
+  for(const i of free){
+    const m=F.members[i];
+    if(MATERIALS[m.mat].kind==='cable') continue;
+    if(!(env.minF[i]>200)) continue;
+    for(const c of CABLE){
+      if(!S.def.stock[c]) continue;
+      if(MATERIALS[c].cost>=MATERIALS[m.mat].cost) continue;
+      if(env.maxF[i]/MATERIALS[c].maxT<AUTO_TARGET*0.9){ m.mat=c; swapped=true; break; }
+    }
+  }
+  if(swapped){
+    assignMass(F); const e2=forceEnvelope(F,S.def.ballM,true); calls++;
+    if(e2.singular||e2.worst>AUTO_TARGET) F.members.forEach((m,i)=>m.mat=before[i]);
+    else env=e2;
+  }
+  assignMass(F);
+  return { ok:!env.singular&&env.worst<=AUTO_TARGET, worst:env.worst,
+           cost:frameCost(F), overBudget:frameCost(F)>budget, calls };
+}
+</script>
+
+
+<script>
+/* ---------------------------------------------------------------- the brief */
+function buildBrief(S){
+  const d=S.def, h=d.half;
+  const xLo=-(h+6), xHi=h+6;
+  const rows=ORDER.filter(k=>d.stock[k]).map(k=>{
+    const M=MATERIALS[k];
+    return '  '+k.padEnd(8)+M.name.padEnd(16)+M.kind.padEnd(7)+
+      String(M.maxT).padStart(11)+String(M.maxC).padStart(12)+
+      String(M.buckle).padStart(13)+String(M.dens).padStart(6)+
+      String(M.cost).padStart(6)+String(d.stock[k]).padStart(7);
+  }).join('\n');
+  const cur=S.members.filter(m=>!m.locked).map(m=>
+    `  {"a":[${S.nodes[m.a].x0},${S.nodes[m.a].y0}],"b":[${S.nodes[m.b].x0},${S.nodes[m.b].y0}],"mat":"${m.mat}"}`
+  ).join(',\n');
+  const deck=[]; for(let x=-h;x<h;x+=d.step) deck.push(`(${x},0)-(${x+d.step},0)`);
+  return `LOAD PATH — BRIDGE DESIGN BRIEF
+Site ${d.id}: ${d.name}. Clear span ${h*2} m.
+
+You are designing one plane of a planar pin-jointed truss. Return a list of members.
+
+JOINTS
+Members may only connect grid joints. Valid joints are every (x, y) with
+  x in {${xLo}, ${xLo+d.step}, ..., ${xHi}}  (step ${d.step})
+  y in {${d.yLo}, ${d.yLo+d.step}, ..., ${d.yHi}}  (step ${d.step})
+Anchored joints (immovable, buried in rock): any joint with |x| >= ${h} AND y <= 0.
+Deck joints: y = 0 with -${h} <= x <= ${h}.
+
+ALREADY BUILT — do not repeat these, and you cannot remove them
+Deck beams join every pair of consecutive deck joints:
+  ${deck.join(' ')}
+Deck beam capacity: ${MATERIALS.deck.maxT} N tension, ${MATERIALS.deck.maxC} N compression,
+buckling coefficient ${MATERIALS.deck.buckle} N*m^2, ${MATERIALS.deck.dens} kg/m.
+
+RULES — a member is rejected if it breaks any of these
+1. Length must be <= ${d.maxLen} m. Chain longer runs through an intermediate joint.
+2. Both ends anchored in rock is rejected: such a member can never strain, so it can
+   never carry load.
+3. No second member between the same pair of joints.${d.clear?`
+4. Clearance: no member may pass through the shipping channel, the region
+   ${d.clear.x0} <= x <= ${d.clear.x1} with y < ${d.clear.y}. Everything must carry from above the deck.`:''}
+
+MECHANICS
+- Pin joints transmit no moment. Members carry axial force only, along their own length.
+- A joint whose members all lie on one straight line is free to move perpendicular to
+  that line. That is a mechanism and the bridge falls, however strong the members are.
+  Every deck joint strictly between the abutments therefore needs at least one member
+  that is NOT along the deck line.
+- Cables carry tension only. Push on one and it goes slack, contributing nothing.
+- Strut compression capacity = min(comp_yield, buckle_coefficient / L^2), L in metres.
+  A 6 m strut carries a quarter of what the same 3 m strut carries.
+- Two identical planes are built from your design. Each carries half of every load.
+
+LOADS
+Self weight of every member (kg/m * length * 9.81), 15 kg at each deck joint, and a
+rolling ${d.ballM} kg ball crossing the deck. Each plane takes half the ball weight,
+shared between the two deck joints either side of wherever it is.
+
+INVENTORY
+${'  '+'key'.padEnd(8)+'name'.padEnd(16)+'kind'.padEnd(7)+'tension_N'.padStart(11)+'comp_yield'.padStart(12)+'buckle_Nm2'.padStart(13)+'kg/m'.padStart(6)+'cost'.padStart(6)+'stock'.padStart(7)}
+${rows}
+
+BUDGET: ${d.budget} credits. Cost is the sum of member costs. Unused credits score points.
+
+OBJECTIVE
+Keep the worst member utilisation (force / capacity) at or below 0.65 for every ball
+position — the dynamic simulation amplifies static forces by roughly 1.25, so anything
+above about 0.8 static will break something. Spend as few credits as you can.
+
+DESIGN NOTES
+- Chord force is roughly bending moment / truss depth. Depth is cheaper than material:
+  a truss 4 m deep halves the chord force of one 2 m deep, for the same members.
+- Keep members that are in compression short, or they buckle long before they yield.
+- A member in tension at every ball position can be cable, which is far cheaper.
+- Work out the load path from every deck joint to an anchored joint before choosing sizes.
+
+${cur?`CURRENT DESIGN — this will be replaced wholesale by your answer, so include
+anything from it you want to keep:
+[
+${cur}
+]
+`:'CURRENT DESIGN: none. The deck is bare.\n'}
+OUTPUT
+Return ONLY this JSON object, no prose, no markdown fence:
+{"members":[{"a":[-${h},0],"b":[-${h-d.step*2},-4],"mat":"steel"},{"a":[-${h-d.step*2},-4],"b":[0,-4],"mat":"steel"}]}
+"a" and "b" are [x, y] joint coordinates. "mat" is one of the inventory keys above.
+Do not include deck beams.`;
+}
+
+/* --------------------------------------------------------------- importing */
+function extractDesignJSON(text){
+  if(!text||!text.trim()) return {err:'Nothing to read.'};
+  const t=text.replace(/```(?:json)?/gi,'').trim();
+  let obj=null;
+  const tries=[t];
+  const i=t.indexOf('{'), j=t.lastIndexOf('}');
+  if(i>=0&&j>i) tries.push(t.slice(i,j+1));
+  const a=t.indexOf('['), b=t.lastIndexOf(']');
+  if(a>=0&&b>a) tries.push(t.slice(a,b+1));
+  for(const c of tries){ try{ obj=JSON.parse(c); break; }catch(e){} }
+  if(!obj) return {err:'That did not parse as JSON.'};
+  const list=Array.isArray(obj)?obj:(obj.members||obj.design||obj.bridge||obj.truss);
+  if(!Array.isArray(list)) return {err:'No "members" array in there.'};
+  return {list};
+}
+function normMember(e){
+  if(Array.isArray(e)&&e.length>=5)
+    return {ax:+e[0],ay:+e[1],bx:+e[2],by:+e[3],mat:String(e[4]).toLowerCase()};
+  if(!e||typeof e!=='object') return null;
+  const g=v=>Array.isArray(v)?{x:+v[0],y:+v[1]}
+    :(v&&typeof v==='object'&&'x' in v?{x:+v.x,y:+v.y}:null);
+  const A=g(e.a!==undefined?e.a:(e.from!==undefined?e.from:e.start));
+  const B=g(e.b!==undefined?e.b:(e.to!==undefined?e.to:e.end));
+  if(!A||!B||!isFinite(A.x)||!isFinite(B.x)) return null;
+  const mat=String(e.mat||e.material||e.type||'').toLowerCase();
+  return {ax:A.x,ay:A.y,bx:B.x,by:B.y,mat};
+}
+function importDesign(text,fee,who){
+  if(ST.phase!=='build'){ hint('Reset to the build phase first.'); return false; }
+  const got=extractDesignJSON(text);
+  if(got.err){ note(`<span class="bad">${got.err}</span>`);
+    report(`<b>${who}.</b> <span class="bad">${got.err}</span>`); return false; }
+  charge(fee);
+  stripFrame();
+  const S=ST.S, map=nodeMap(S), fails=[];
+  let placed=0;
+  for(const raw of got.list){
+    const e=normMember(raw);
+    if(!e){ fails.push('an entry was not a readable member'); continue; }
+    if(!MATERIALS[e.mat]||!S.def.stock[e.mat]){
+      fails.push(`"${e.mat||'(none)'}" is not stocked here`); continue; }
+    const ai=map.get(`${Math.round(e.ax)}|${Math.round(e.ay)}`);
+    const bi=map.get(`${Math.round(e.bx)}|${Math.round(e.by)}`);
+    if(ai===undefined||bi===undefined){
+      fails.push(`(${e.ax},${e.ay})→(${e.bx},${e.by}) is off the joint grid`); continue; }
+    const r=placeMat(S,ai,bi,e.mat);
+    if(r.ok) placed++;
+    else fails.push(`(${e.ax},${e.ay})→(${e.bx},${e.by}): ${r.why}`);
+  }
+  assignMass(S); syncMembers(S); renderMats(); updateHeader(); updateReadout();
+  const uniq=[...new Set(fails)].slice(0,6);
+  const body=`<b>${who}.</b> ${placed} of ${got.list.length} members accepted · `+
+    `${ST.spent} of ${S.def.budget} cr spent`+
+    (fails.length?`\n<span class="bad">${fails.length} rejected</span>\n`+
+      uniq.map(f=>'· '+f).join('\n')+(fails.length>uniq.length?`\n· …and ${fails.length-uniq.length} more`:'')
+      :`\n<span class="good">Every member was legal.</span>`)+
+    `\n<span class="warn">Nothing is proven yet. Run the load, or buy a rating sweep.</span>`;
+  report(body); note(body);
+  hint(placed?'Design imported. Run the load and see.':'Nothing usable was imported.');
+  return true;
+}
+function note(html){ const n=el('impnote'); if(n) n.innerHTML=html; }
+
+/* --------------------------------------------------------- the LLM handoff */
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function openLLM(){
+  if(ST.phase!=='build'){ hint('Reset to the build phase first.'); return; }
+  const brief=buildBrief(ST.S);
+  sheet(`<header><h2>Hand it to an LLM</h2>
+      <div class="sub">Site ${ST.S.def.id} · ${ST.S.def.half*2} m · ${ST.S.def.budget} cr</div></header>
+    <div class="bd" style="padding-bottom:6px">
+      <div class="lab">The brief — everything the rules say, in one block</div>
+      <textarea id="briefbox" readonly spellcheck="false">${esc(brief)}</textarea>
+      <div class="lab">Its answer — paste the JSON back</div>
+      <textarea id="designbox" spellcheck="false" placeholder='{"members":[{"a":[-8,0],"b":[-4,-4],"mat":"steel"}]}'
+        style="min-height:110px"></textarea>
+      <div id="impnote">Importing replaces your whole frame and refunds what is on the deck now.</div>
+    </div>
+    <footer>
+      <button class="act" id="x-copy">Copy brief</button>
+      <button class="act go" id="x-import">Import −${(XFEES.llm.fee*100).toFixed(0)}%</button>
+      <button class="act" onclick="closeSheet()">Close</button>
+    </footer>`);
+  el('x-copy').onclick=function(){
+    const t=el('briefbox'); t.select();
+    const done=()=>{ this.textContent='Copied'; setTimeout(()=>this.textContent='Copy brief',1600); };
+    if(navigator.clipboard&&navigator.clipboard.writeText)
+      navigator.clipboard.writeText(brief).then(done,()=>{ try{document.execCommand('copy');done();}catch(e){} });
+    else { try{ document.execCommand('copy'); done(); }catch(e){} }
+  };
+  el('x-import').onclick=()=>{
+    if(importDesign(el('designbox').value, XFEES.llm, 'Imported design')) closeSheet();
+  };
+}
+function askClaude(){
+  if(ST.busy) return;
+  if(ST.phase!=='build'){ hint('Reset to the build phase first.'); return; }
+  ST.busy=true;
+  report('<b>Claude design office.</b> Brief sent. Waiting on a design…');
+  hint('Asking Claude to size the frame…');
+  let settled=false;
+  const giveUp=setTimeout(()=>{
+    if(settled) return; settled=true; ST.busy=false;
+    report('<b>Claude design office.</b> <span class="bad">No answer inside 45 s.</span>\n'+
+      'Use <b>Hand it to an LLM</b> and paste the reply back instead.');
+    hint('Timed out waiting on the model.');
+  },45000);
+  fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ model:'claude-sonnet-4-6', max_tokens:1000,
+      messages:[{role:'user',content:buildBrief(ST.S)+'\n\nReturn only the JSON object.'}] })
+  }).then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+   .then(data=>{
+      if(settled) return; settled=true; clearTimeout(giveUp); ST.busy=false;
+      const text=(data.content||[]).map(c=>c.type==='text'?c.text:'').join('\n');
+      if(!text.trim()) throw new Error('empty reply');
+      importDesign(text, XFEES.claude, 'Claude design office');
+   })
+   .catch(err=>{
+      if(settled) return; settled=true; clearTimeout(giveUp); ST.busy=false;
+      report(`<b>Claude design office.</b> <span class="bad">No answer</span> — ${err.message}.\n`+
+        `This needs the in-app connection. Use <b>Hand it to an LLM</b> and paste the reply back instead.`);
+      hint('Could not reach the model from here.');
+   });
+}
+
+/* ------------------------------------------------------------- auto-build */
+function autoBuild(){
+  if(ST.busy) return;
+  if(ST.phase!=='build'){ hint('Reset to the build phase first.'); return; }
+  const S=ST.S;
+  ST.busy=true; charge(XFEES.auto); clearGhost();
+  const above=!!S.def.clear;
+  const depths=above?[4,6,2]:[-4,-6,-2,4];
+  const cands=[];
+  for(const y of depths) for(const panel of [4,2]) cands.push({y,panel});
+  let k=0, best=null, tried=0, calls=0;
+  report(`<b>In-house auto-build.</b> Trying ${cands.length} frame layouts…`);
+  const tick=()=>{
+    const t0=performance.now();
+    while(k<cands.length && performance.now()-t0<70){
+      const c=cands[k++];
+      const lay=genLayout(S,c.y,c.panel,'steel');
+      if(!lay) continue;
+      tried++;
+      const F=scratchFrom(S,lay); assignMass(F);
+      const r=refineFrame(S,F,S.def.budget); calls+=r.calls||0;
+      if(r.ok && !r.overBudget && fitsStock(S,F))
+        if(!best||r.cost<best.cost) best={cost:r.cost,worst:r.worst,F,c};
+    }
+    report(`<b>In-house auto-build.</b> ${k}/${cands.length} layouts, ${calls} analyses…`+
+      (best?`\nbest so far ${best.cost} cr at ${(best.worst*100).toFixed(0)}%`:''));
+    if(k<cands.length){ requestAnimationFrame(tick); return; }
+    applyAuto(best,tried,calls);
+  };
+  requestAnimationFrame(tick);
+}
+function applyAuto(best,tried,calls){
+  const S=ST.S; ST.busy=false; assignMass(S);
+  if(!best){
+    report(`<b>In-house auto-build.</b> <span class="bad">Nothing found.</span>\n`+
+      `${tried} layouts tried, ${calls} analyses. None came in under budget and stock `+
+      `at ${(AUTO_TARGET*100).toFixed(0)}% utilisation.\n`+
+      `<span class="warn">This site wants a shape the generator does not know. Yours to solve.</span>`);
+    hint('Auto-build came up empty.'); return;
+  }
+  stripFrame();
+  let placed=0, refused=0;
+  for(const m of best.F.members){
+    if(m.locked) continue;
+    if(placeMat(S,m.a,m.b,m.mat).ok) placed++; else refused++;
+  }
+  assignMass(S); syncMembers(S); renderMats(); updateHeader();
+  const env=forceEnvelope(S,S.def.ballM,false);
+  ST.analysis={peak:env.peak, sgn:Array.from(env.maxF,(f,i)=>Math.abs(f)>=Math.abs(env.minF[i])?1:-1)};
+  const dr=dryRun(S);
+  const t=frameTally(S);
+  const bill=Object.keys(t).map(k=>`${t[k]}× ${k}`).join(', ');
+  report(`<b>In-house auto-build.</b> ${best.c.y<0?'Under-deck':'Through'} truss, `+
+    `${Math.abs(best.c.y)} m deep, ${best.c.panel} m panels.\n`+
+    `${placed} members${refused?` (${refused} refused)`:''} · ${bill}\n`+
+    `${ST.spent} of ${S.def.budget} cr · worst static ${(env.worst*100).toFixed(0)}%\n`+
+    (dr.crossed?`<span class="good">Crosses in ${dr.t.toFixed(2)} s</span>, peak ${(dr.peak*100).toFixed(0)}%, sag ${(dr.sag*1000).toFixed(0)} mm`
+               :`<span class="bad">Still collapses</span> — first out is ${dr.firstIdx>=0?nm(S,dr.firstIdx):'nothing, it stalls'}`)+
+    `\n<span class="warn">${tried} layouts, ${calls} analyses. You can still edit it.</span>`);
+  refreshGeom(S); updateReadout();
+  hint('Auto-build placed a frame. Edit it, or run the load.');
+}
+
+/* ------------------------------------------------------------ panel wiring */
+el('tools').insertAdjacentHTML('afterend',
+ `<div class="sec">Outside help <b>fees deducted</b></div>
+  <div id="xtools">
+    <button class="tool" id="x-llm"><div class="t">Hand it to an LLM
+      <span class="fee">−${(XFEES.llm.fee*100).toFixed(0)}%</span></div>
+      <div class="d">Copies the whole rulebook as a brief. Paste an LLM's JSON back and it builds it.
+        The fee lands on import, not on reading.</div></button>
+    <button class="tool" id="x-claude"><div class="t">Ask Claude directly
+      <span class="fee">−${(XFEES.claude.fee*100).toFixed(0)}%</span></div>
+      <div class="d">Sends the brief and builds whatever comes back. No solver, no forces — it designs blind.</div></button>
+    <button class="tool" id="x-auto"><div class="t">Auto-build
+      <span class="fee">−${(XFEES.auto.fee*100).toFixed(0)}%</span></div>
+      <div class="d">The in-house solver: generates frames, then spends analysis downgrading
+        whatever is lightly worked until it is cheap.</div></button>
+  </div>`);
+el('x-llm').onclick=openLLM;
+el('x-claude').onclick=askClaude;
+el('x-auto').onclick=autoBuild;
+</script>
+
+</body>
+</html>
