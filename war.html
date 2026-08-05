@@ -1,0 +1,521 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sky Between Us — Civilian Missile-Defense Simulation</title>
+<style>
+  :root{
+    --bg:#07111d;
+    --panel:#0d1b2a;
+    --panel2:#102438;
+    --text:#e8f1f8;
+    --muted:#8fa9bb;
+    --danger:#ff6b6b;
+    --safe:#8bd3a8;
+    --defense:#66b3ff;
+    --warn:#ffd166;
+    --grid:rgba(150,190,220,.12);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+  body{overflow:hidden}
+  .app{display:grid;grid-template-rows:auto 1fr auto;height:100%}
+  header{
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    padding:12px 16px;background:linear-gradient(180deg,#0c1b2a,#091522);
+    border-bottom:1px solid rgba(255,255,255,.08)
+  }
+  .title h1{font-size:18px;margin:0;letter-spacing:.05em}
+  .title p{font-size:12px;margin:3px 0 0;color:var(--muted)}
+  .status{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  .pill{font-size:11px;padding:6px 9px;border-radius:999px;background:#11283d;border:1px solid rgba(255,255,255,.09)}
+  .pill strong{color:#fff}
+  main{display:grid;grid-template-columns:minmax(0,1fr) 360px;min-height:0}
+  .stage{position:relative;min-width:0}
+  canvas{width:100%;height:100%;display:block}
+  .legend{
+    position:absolute;left:12px;top:12px;background:rgba(6,15,26,.82);backdrop-filter:blur(8px);
+    border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:9px 10px;font-size:11px;color:var(--muted)
+  }
+  .legend-row{display:flex;align-items:center;gap:7px;margin:4px 0}
+  .dot{width:8px;height:8px;border-radius:50%}
+  .controls{
+    position:absolute;left:12px;bottom:12px;display:flex;gap:8px;flex-wrap:wrap;
+    background:rgba(6,15,26,.86);padding:8px;border-radius:10px;border:1px solid rgba(255,255,255,.08)
+  }
+  button{
+    color:var(--text);background:#15324b;border:1px solid rgba(255,255,255,.11);
+    padding:7px 10px;border-radius:7px;cursor:pointer;font-weight:600;font-size:12px
+  }
+  button:hover{background:#1b4161}
+  .speed-wrap{display:flex;align-items:center;gap:7px;padding:0 6px;font-size:11px;color:var(--muted)}
+  input[type=range]{width:100px}
+  aside{
+    display:grid;grid-template-rows:auto 1fr 1fr;min-height:0;background:var(--panel);
+    border-left:1px solid rgba(255,255,255,.08)
+  }
+  .metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:10px}
+  .metric{background:var(--panel2);padding:9px;border-radius:8px;border:1px solid rgba(255,255,255,.07)}
+  .metric b{display:block;font-size:18px}
+  .metric span{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+  .logbox{min-height:0;padding:0 10px 10px}
+  .logbox h2{font-size:12px;margin:0 0 7px;color:#d6e5f0;display:flex;justify-content:space-between}
+  .log{height:100%;overflow:auto;background:#07121e;border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:8px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;line-height:1.45}
+  .entry{margin-bottom:8px;padding-bottom:7px;border-bottom:1px dashed rgba(255,255,255,.07)}
+  .entry .time{color:#6f8da2}
+  .entry .fa{direction:rtl;text-align:right;color:#f0b6b6}
+  .entry .he{direction:rtl;text-align:right;color:#aad5ff}
+  .entry .en{color:#89a2b4}
+  footer{
+    display:grid;grid-template-columns:1fr 1fr;gap:18px;padding:10px 16px;background:#08131f;border-top:1px solid rgba(255,255,255,.08)
+  }
+  .peace{font-size:14px;line-height:1.45}
+  .peace .rtl{direction:rtl;text-align:right}
+  .note{font-size:11px;color:var(--muted);line-height:1.4;align-self:center}
+  @media (max-width:900px){
+    body{overflow:auto}
+    .app{height:auto;min-height:100%}
+    main{grid-template-columns:1fr;grid-template-rows:65vh 560px}
+    aside{border-left:0;border-top:1px solid rgba(255,255,255,.08)}
+    footer{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="title">
+      <h1>SKY BETWEEN US</h1>
+      <p>Fictional civilian-protection simulation — simplified, non-operational physics</p>
+    </div>
+    <div class="status">
+      <div class="pill">Radar tracks: <strong id="tracks">0</strong></div>
+      <div class="pill">Threats engaged: <strong id="engaged">0</strong></div>
+      <div class="pill">Harmless trajectories released: <strong id="released">0</strong></div>
+    </div>
+  </header>
+
+  <main>
+    <section class="stage">
+      <canvas id="c"></canvas>
+
+      <div class="legend">
+        <div class="legend-row"><span class="dot" style="background:var(--danger)"></span> Incoming track</div>
+        <div class="legend-row"><span class="dot" style="background:var(--defense)"></span> Defensive interceptor</div>
+        <div class="legend-row"><span class="dot" style="background:var(--safe)"></span> Predicted harmless impact</div>
+        <div class="legend-row"><span class="dot" style="background:var(--warn)"></span> Protected civilian zone</div>
+      </div>
+
+      <div class="controls">
+        <button id="pauseBtn">Pause</button>
+        <button id="salvoBtn">Launch fictional salvo</button>
+        <button id="clearBtn">Reset</button>
+        <div class="speed-wrap">
+          Speed
+          <input id="speed" type="range" min="0.35" max="2.25" step="0.05" value="1">
+        </div>
+      </div>
+    </section>
+
+    <aside>
+      <div class="metrics">
+        <div class="metric"><b id="intercepts">0</b><span>Intercepts</span></div>
+        <div class="metric"><b id="misses">0</b><span>Impacts</span></div>
+        <div class="metric"><b id="inventory">24</b><span>Interceptors</span></div>
+        <div class="metric"><b id="confidence">—</b><span>Radar confidence</span></div>
+      </div>
+
+      <div class="logbox">
+        <h2><span>Incoming telemetry</span><span lang="fa" dir="rtl">تله‌متری ورودی</span></h2>
+        <div class="log" id="incomingLog"></div>
+      </div>
+
+      <div class="logbox">
+        <h2><span>Defense telemetry</span><span lang="he" dir="rtl">טלמטריית הגנה</span></h2>
+        <div class="log" id="defenseLog"></div>
+      </div>
+    </aside>
+  </main>
+
+  <footer>
+    <div class="peace">
+      <div class="rtl" lang="he">השלום יבוא כשנזכור שאנו בני אותה משפחה אנושית — או כשייגמרו הטילים.</div>
+      <div class="rtl" lang="ar">سيأتي السلام حين نتذكر أننا من عائلة إنسانية واحدة — أو حين تنفد الصواريخ.</div>
+    </div>
+    <div class="note">
+      This artwork uses fictional places, normalized units, invented decision rules, and deliberately simplified trajectories.
+      It is not a model of any real defense system, radar, interceptor, engagement envelope, or current military operation.
+    </div>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const DPR = Math.min(devicePixelRatio || 1, 2);
+
+  const ui = {
+    tracks: document.getElementById('tracks'),
+    engaged: document.getElementById('engaged'),
+    released: document.getElementById('released'),
+    intercepts: document.getElementById('intercepts'),
+    misses: document.getElementById('misses'),
+    inventory: document.getElementById('inventory'),
+    confidence: document.getElementById('confidence'),
+    incomingLog: document.getElementById('incomingLog'),
+    defenseLog: document.getElementById('defenseLog'),
+    pauseBtn: document.getElementById('pauseBtn'),
+    salvoBtn: document.getElementById('salvoBtn'),
+    clearBtn: document.getElementById('clearBtn'),
+    speed: document.getElementById('speed')
+  };
+
+  let W=0,H=0, running=true, simSpeed=1, last=performance.now(), spawnClock=0;
+  let nextId=1, incoming=[], interceptors=[], flashes=[];
+  let stats={engaged:0,released:0,intercepts:0,misses:0,inventory:24};
+
+  const zones = [
+    {x:.69,y:.77,r:.075,label:'CIVILIAN ZONE A'},
+    {x:.84,y:.69,r:.055,label:'HOSPITAL DISTRICT'},
+    {x:.58,y:.86,r:.048,label:'TRANSIT HUB'}
+  ];
+
+  const faLines = [
+    "رهگیری پایدار؛ مسیر در حال محاسبه است.",
+    "دادهٔ پرواز دریافت شد؛ تصحیح مسیر انجام شد.",
+    "ارتفاع کاهش می‌یابد؛ نقطهٔ برخورد برآورد شد.",
+    "سیگنال ضعیف است؛ پایش ادامه دارد.",
+    "بردار سرعت به‌روزرسانی شد."
+  ];
+  const heThreat = [
+    "מסלול מאיים על אזור אזרחי. אושר יירוט.",
+    "תחזית פגיעה סמוך למתחם מוגן. משגר הוקצה.",
+    "רמת האמון מספקת. מיירט שוגר.",
+    "עדכון מסלול: האיום נותר בעדיפות גבוהה."
+  ];
+  const heSafe = [
+    "המסלול צפוי להסתיים בשטח פתוח. אין יירוט.",
+    "נקודת הפגיעה מחוץ לאזור מוגן. המשך מעקב בלבד.",
+    "המסלול אינו מסכן אוכלוסייה. נשמר מלאי המיירטים."
+  ];
+  const enThreat = [
+    "Predicted impact overlaps a protected zone.",
+    "Threat classified: ENGAGE.",
+    "Interceptor assigned to civilian-protection track."
+  ];
+  const enSafe = [
+    "Predicted impact is in open terrain.",
+    "Track classified: MONITOR ONLY.",
+    "No interceptor committed."
+  ];
+
+  function resize(){
+    const r=canvas.getBoundingClientRect();
+    W=Math.max(1,r.width); H=Math.max(1,r.height);
+    canvas.width=W*DPR; canvas.height=H*DPR;
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+  }
+  addEventListener('resize',resize); resize();
+
+  function stamp(){
+    return new Date().toLocaleTimeString([], {hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  }
+
+  function addLog(el, langClass, primary, english){
+    const div=document.createElement('div');
+    div.className='entry';
+    div.innerHTML=`<div class="time">${stamp()}</div><div class="${langClass}">${primary}</div><div class="en">${english}</div>`;
+    el.prepend(div);
+    while(el.children.length>28) el.removeChild(el.lastChild);
+  }
+
+  function normDist(ax,ay,bx,by){ return Math.hypot(ax-bx,ay-by); }
+
+  function classifyImpact(ix,iy){
+    let nearest=Infinity, hitZone=null;
+    for(const z of zones){
+      const d=normDist(ix,iy,z.x,z.y)-z.r;
+      if(d<nearest){nearest=d;hitZone=z}
+    }
+    // Deliberately generic decision rule, unrelated to real systems.
+    return {threat:nearest<0.018, zone:hitZone, margin:nearest};
+  }
+
+  function spawnIncoming(forceThreat=null){
+    const startY=.07+Math.random()*.18;
+    const targetX=.43+Math.random()*.55;
+    const targetY=.71+Math.random()*.24;
+    let impactX=targetX, impactY=targetY;
+
+    if(forceThreat===true){
+      const z=zones[Math.floor(Math.random()*zones.length)];
+      const a=Math.random()*Math.PI*2, rr=Math.random()*z.r*.72;
+      impactX=z.x+Math.cos(a)*rr; impactY=z.y+Math.sin(a)*rr;
+    }
+    if(forceThreat===false){
+      impactX=.36+Math.random()*.58; impactY=.76+Math.random()*.18;
+      let guard=0;
+      while(classifyImpact(impactX,impactY).threat && guard++<30){
+        impactX=.36+Math.random()*.58; impactY=.76+Math.random()*.18;
+      }
+    }
+
+    const item={
+      id:nextId++,
+      x:-.03,y:startY,
+      sx:-.03,sy:startY,
+      impactX,impactY,
+      t:0,
+      duration:5.7+Math.random()*2.5,
+      apex:.18+Math.random()*.18,
+      classified:false,
+      threat:false,
+      engaged:false,
+      resolved:false,
+      trail:[]
+    };
+    incoming.push(item);
+    addLog(ui.incomingLog,'fa', faLines[Math.floor(Math.random()*faLines.length)],
+      `Track ${String(item.id).padStart(3,'0')}: telemetry received; trajectory estimate updating.`);
+  }
+
+  function engage(item){
+    if(stats.inventory<=0) return;
+    stats.inventory--; stats.engaged++; item.engaged=true;
+    const launch={x:.93,y:.94};
+    interceptors.push({
+      target:item,id:item.id,
+      x:launch.x,y:launch.y,
+      sx:launch.x,sy:launch.y,
+      t:0,duration:1.5+Math.random()*.7,
+      resolved:false,trail:[]
+    });
+    addLog(ui.defenseLog,'he',
+      heThreat[Math.floor(Math.random()*heThreat.length)],
+      `${enThreat[Math.floor(Math.random()*enThreat.length)]} Track ${String(item.id).padStart(3,'0')}.`);
+  }
+
+  function classify(item){
+    const c=classifyImpact(item.impactX,item.impactY);
+    item.threat=c.threat; item.classified=true;
+    if(item.threat && stats.inventory>0) engage(item);
+    else {
+      stats.released++;
+      addLog(ui.defenseLog,'he',
+        heSafe[Math.floor(Math.random()*heSafe.length)],
+        `${enSafe[Math.floor(Math.random()*enSafe.length)]} Track ${String(item.id).padStart(3,'0')}.`);
+    }
+  }
+
+  function update(dt){
+    simSpeed=parseFloat(ui.speed.value);
+    dt*=simSpeed;
+    spawnClock+=dt;
+    if(spawnClock>2.2){
+      spawnClock=0;
+      spawnIncoming(Math.random()<.58 ? null : Math.random()<.55);
+    }
+
+    for(const m of incoming){
+      if(m.resolved) continue;
+      m.t+=dt/m.duration;
+      const p=Math.min(m.t,1);
+      m.x=m.sx+(m.impactX-m.sx)*p;
+      const baseline=m.sy+(m.impactY-m.sy)*p;
+      m.y=baseline - Math.sin(Math.PI*p)*m.apex;
+      m.trail.push([m.x,m.y]);
+      if(m.trail.length>55)m.trail.shift();
+
+      if(!m.classified && p>.17) classify(m);
+
+      if(p>=1){
+        m.resolved=true;
+        if(!m.engaged){
+          stats.misses++;
+          flashes.push({x:m.impactX,y:m.impactY,t:0,type:m.threat?'impact':'safe'});
+          if(m.threat){
+            addLog(ui.defenseLog,'he',
+              "לא הוקצה מיירט; האיום הגיע לנקודת הפגיעה המדומה.",
+              `No interceptor was available for track ${String(m.id).padStart(3,'0')}.`);
+          }
+        }
+      }
+    }
+
+    for(const it of interceptors){
+      if(it.resolved || it.target.resolved) continue;
+      it.t+=dt/it.duration;
+      const p=Math.min(it.t,1);
+      // Pursuit curve toward the target's current position; stylized rather than operational.
+      const tx=it.target.x, ty=it.target.y;
+      const ease=1-Math.pow(1-p,2.2);
+      it.x=it.sx+(tx-it.sx)*ease;
+      it.y=it.sy+(ty-it.sy)*ease - Math.sin(Math.PI*p)*.08;
+      it.trail.push([it.x,it.y]);
+      if(it.trail.length>45)it.trail.shift();
+
+      if(normDist(it.x,it.y,it.target.x,it.target.y)<.026 || p>=1){
+        it.resolved=true; it.target.resolved=true;
+        stats.intercepts++;
+        flashes.push({x:it.target.x,y:it.target.y,t:0,type:'intercept'});
+        addLog(ui.defenseLog,'he',
+          "יירוט מדומה הושלם; האיום חדל.",
+          `Simulated intercept completed for track ${String(it.id).padStart(3,'0')}.`);
+      }
+    }
+
+    flashes.forEach(f=>f.t+=dt);
+    flashes=flashes.filter(f=>f.t<1.2);
+    incoming=incoming.filter(m=>!m.resolved || m.t<1.15);
+    interceptors=interceptors.filter(i=>!i.resolved || i.t<1.15);
+  }
+
+  function pt(x,y){return [x*W,y*H]}
+
+  function drawBackground(){
+    const g=ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,'#07111d'); g.addColorStop(1,'#0b1d2d');
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+
+    ctx.strokeStyle='rgba(145,185,215,.11)';ctx.lineWidth=1;
+    for(let x=0;x<W;x+=50){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
+    for(let y=0;y<H;y+=50){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+
+    // Fictional terrain/coastline.
+    ctx.fillStyle='rgba(32,82,84,.45)';
+    ctx.beginPath();
+    ctx.moveTo(W*.35,H*.63);
+    ctx.bezierCurveTo(W*.48,H*.54,W*.50,H*.72,W*.60,H*.67);
+    ctx.bezierCurveTo(W*.72,H*.60,W*.76,H*.74,W*.88,H*.66);
+    ctx.lineTo(W,H*.72);ctx.lineTo(W,H);ctx.lineTo(W*.32,H);
+    ctx.closePath();ctx.fill();
+
+    ctx.strokeStyle='rgba(115,180,170,.35)';ctx.lineWidth=1.4;ctx.stroke();
+  }
+
+  function drawZones(){
+    for(const z of zones){
+      const [x,y]=pt(z.x,z.y), r=z.r*Math.min(W,H);
+      const pulse=1+Math.sin(performance.now()/650+z.x*10)*.04;
+      ctx.beginPath();ctx.arc(x,y,r*pulse,0,Math.PI*2);
+      ctx.fillStyle='rgba(255,209,102,.10)';ctx.fill();
+      ctx.strokeStyle='rgba(255,209,102,.70)';ctx.lineWidth=1.4;ctx.stroke();
+      ctx.fillStyle='rgba(255,222,150,.90)';ctx.font='10px system-ui';
+      ctx.textAlign='center';ctx.fillText(z.label,x,y+3);
+    }
+  }
+
+  function drawTrails(points,color){
+    if(points.length<2)return;
+    ctx.beginPath();
+    points.forEach((p,i)=>{
+      const [x,y]=pt(p[0],p[1]);
+      if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.stroke();
+  }
+
+  function drawIncoming(){
+    for(const m of incoming){
+      if(m.resolved)continue;
+      drawTrails(m.trail,'rgba(255,107,107,.45)');
+      const [x,y]=pt(m.x,m.y);
+      ctx.save();ctx.translate(x,y);
+      const ang=Math.atan2((m.impactY-m.sy)-Math.PI*m.apex*Math.cos(Math.PI*Math.min(m.t,1)),m.impactX-m.sx);
+      ctx.rotate(ang);
+      ctx.fillStyle='#ff6b6b';
+      ctx.beginPath();ctx.moveTo(8,0);ctx.lineTo(-5,-3.5);ctx.lineTo(-5,3.5);ctx.closePath();ctx.fill();
+      ctx.restore();
+
+      if(m.classified){
+        const [ix,iy]=pt(m.impactX,m.impactY);
+        ctx.beginPath();ctx.arc(ix,iy,5,0,Math.PI*2);
+        ctx.fillStyle=m.threat?'rgba(255,107,107,.95)':'rgba(139,211,168,.95)';ctx.fill();
+        ctx.setLineDash([4,4]);ctx.strokeStyle=m.threat?'rgba(255,107,107,.45)':'rgba(139,211,168,.42)';
+        ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(ix,iy);ctx.stroke();ctx.setLineDash([]);
+        ctx.fillStyle=m.threat?'#ffb0b0':'#a9e7c1';ctx.font='10px ui-monospace';
+        ctx.textAlign='left';ctx.fillText(`T${String(m.id).padStart(3,'0')} ${m.threat?'ENGAGE':'RELEASE'}`,x+9,y-8);
+      }
+    }
+  }
+
+  function drawInterceptors(){
+    for(const it of interceptors){
+      if(it.resolved)continue;
+      drawTrails(it.trail,'rgba(102,179,255,.5)');
+      const [x,y]=pt(it.x,it.y);
+      ctx.fillStyle='#66b3ff';
+      ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='rgba(102,179,255,.75)';
+      ctx.beginPath();ctx.arc(x,y,8,0,Math.PI*2);ctx.stroke();
+    }
+  }
+
+  function drawFlashes(){
+    for(const f of flashes){
+      const [x,y]=pt(f.x,f.y);
+      const r=(8+f.t*36);
+      ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
+      ctx.strokeStyle=f.type==='intercept'
+        ?`rgba(120,200,255,${1-f.t/1.2})`
+        :f.type==='safe'
+        ?`rgba(139,211,168,${1-f.t/1.2})`
+        :`rgba(255,120,90,${1-f.t/1.2})`;
+      ctx.lineWidth=2;ctx.stroke();
+    }
+  }
+
+  function drawRadar(){
+    const [x,y]=pt(.93,.94), r=Math.min(W,H)*.17;
+    const a=(performance.now()/1600)%(Math.PI*2);
+    ctx.beginPath();ctx.arc(x,y,r,Math.PI,Math.PI*2);
+    ctx.strokeStyle='rgba(102,179,255,.22)';ctx.stroke();
+    ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+Math.cos(a-Math.PI)*r,y+Math.sin(a-Math.PI)*r);
+    ctx.strokeStyle='rgba(102,179,255,.45)';ctx.stroke();
+    ctx.fillStyle='rgba(102,179,255,.85)';ctx.font='10px system-ui';ctx.textAlign='right';
+    ctx.fillText('DEFENSE SENSOR',x-8,y-9);
+  }
+
+  function draw(){
+    drawBackground();drawZones();drawRadar();drawIncoming();drawInterceptors();drawFlashes();
+  }
+
+  function refreshUI(){
+    ui.tracks.textContent=incoming.filter(m=>!m.resolved).length;
+    ui.engaged.textContent=stats.engaged;
+    ui.released.textContent=stats.released;
+    ui.intercepts.textContent=stats.intercepts;
+    ui.misses.textContent=stats.misses;
+    ui.inventory.textContent=stats.inventory;
+    const active=incoming.filter(m=>!m.resolved);
+    ui.confidence.textContent=active.length ? `${Math.round(82+Math.random()*16)}%` : '—';
+  }
+
+  function loop(now){
+    const dt=Math.min(.04,(now-last)/1000);last=now;
+    if(running)update(dt);
+    draw();refreshUI();
+    requestAnimationFrame(loop);
+  }
+
+  ui.pauseBtn.onclick=()=>{running=!running;ui.pauseBtn.textContent=running?'Pause':'Resume'};
+  ui.salvoBtn.onclick=()=>{
+    for(let i=0;i<6;i++)setTimeout(()=>spawnIncoming(i<3?true:null),i*220);
+  };
+  ui.clearBtn.onclick=()=>{
+    incoming=[];interceptors=[];flashes=[];nextId=1;
+    stats={engaged:0,released:0,intercepts:0,misses:0,inventory:24};
+    ui.incomingLog.innerHTML='';ui.defenseLog.innerHTML='';
+    addLog(ui.defenseLog,'he',"המערכת אופסה. ניטור אזרחי חודש.","Simulation reset; civilian-protection monitoring resumed.");
+  };
+
+  for(let i=0;i<4;i++)setTimeout(()=>spawnIncoming(i===1),i*500);
+  addLog(ui.defenseLog,'he',"מערכת ההדמיה פעילה. מתבצע סיווג מסלולים.","Simulation online. Tracks will be classified using a fictional civilian-risk rule.");
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
