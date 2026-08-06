@@ -1,0 +1,2236 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>Slit Lamp — Ophthalmic Vignette Trainer</title>
+<style>
+:root{
+  --ink:#070b10; --slate:#101a22; --slate2:#16232d; --steel:#22333f; --steel2:#2d4351;
+  --bone:#e9e6df; --dim:#8b9aa5; --dimmer:#5f7280;
+  --fluor:#c8e130; --cobalt:#3a6df0; --heme:#d1443a; --brass:#e0a33c; --teal:#4fd1c5;
+  --good:#7fc98b;
+  --r:10px;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  --display:Georgia,"Iowan Old Style","Times New Roman",serif;
+  --body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:var(--body); background:
+    radial-gradient(1200px 700px at 22% -10%, #14222c 0%, transparent 60%),
+    linear-gradient(170deg,#0a1016,#070b10 65%);
+  color:var(--bone); line-height:1.5; min-height:100vh; -webkit-font-smoothing:antialiased;
+}
+.eyebrow{font-family:var(--mono);font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--dimmer)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* ---------- masthead ---------- */
+header.top{
+  display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+  padding:14px 20px;border-bottom:1px solid var(--steel);
+  background:linear-gradient(180deg,rgba(22,35,45,.92),rgba(10,16,22,.75));
+  position:sticky;top:0;z-index:40;backdrop-filter:blur(10px)
+}
+header.top h1{font-family:var(--display);font-size:1.22rem;font-weight:400;letter-spacing:.01em}
+header.top h1 em{font-style:italic;color:var(--teal)}
+.tagline{font-size:.78rem;color:var(--dim);max-width:44ch}
+.spacer{flex:1}
+.casetabs{display:flex;gap:6px;flex-wrap:wrap}
+.casetab{
+  font-family:var(--mono);font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;
+  padding:7px 11px;border:1px solid var(--steel);border-radius:999px;background:#0c141b;color:var(--dim);cursor:pointer;transition:.16s
+}
+.casetab:hover{color:var(--bone);border-color:var(--steel2)}
+.casetab[aria-selected="true"]{background:var(--teal);color:#06131a;border-color:var(--teal);font-weight:700}
+
+/* ---------- layout ---------- */
+.wrap{max-width:1560px;margin:0 auto;padding:18px;display:grid;grid-template-columns:minmax(0,1.02fr) minmax(0,.98fr);gap:18px;align-items:start}
+@media(max-width:1080px){.wrap{grid-template-columns:1fr}}
+.col{display:grid;gap:16px;min-width:0}
+
+.card{background:linear-gradient(180deg,var(--slate2),var(--slate));border:1px solid var(--steel);border-radius:var(--r);overflow:hidden}
+.card > h2{
+  font-family:var(--mono);font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;font-weight:600;
+  color:var(--dim);padding:11px 14px;border-bottom:1px solid var(--steel);background:#0d151c;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap
+}
+.card > h2 .spacer{flex:1}
+.body{padding:14px}
+.body.tight{padding:10px}
+
+/* ---------- the eye stage ---------- */
+.stage{position:relative;background:radial-gradient(60% 70% at 50% 42%,#0f1a22 0%,#06090d 100%)}
+.stage svg{display:block;width:100%;height:auto}
+.viewtabs{display:flex;gap:0;border-bottom:1px solid var(--steel);background:#0b1218}
+.viewtab{
+  flex:1;padding:9px 6px;background:none;border:0;border-bottom:2px solid transparent;cursor:pointer;
+  font-family:var(--mono);font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--dimmer);transition:.16s
+}
+.viewtab:hover{color:var(--bone)}
+.viewtab[aria-selected="true"]{color:var(--teal);border-bottom-color:var(--teal);background:#101c24}
+.viewtab:disabled{opacity:.3;cursor:not-allowed}
+.stagefoot{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:9px 12px;border-top:1px solid var(--steel);background:#0b1218}
+.caption{font-size:.73rem;color:var(--dimmer);flex:1;min-width:180px}
+
+.toggle{
+  display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:.66rem;letter-spacing:.08em;
+  text-transform:uppercase;padding:6px 10px;border:1px solid var(--steel);border-radius:999px;background:#0c141b;color:var(--dim);cursor:pointer;transition:.16s
+}
+.toggle:hover{border-color:var(--steel2);color:var(--bone)}
+.toggle[aria-pressed="true"]{color:#06131a;font-weight:700}
+#tg-fluor[aria-pressed="true"]{background:var(--fluor);border-color:var(--fluor)}
+#tg-slit[aria-pressed="true"]{background:var(--brass);border-color:var(--brass)}
+.toggle .sw{width:8px;height:8px;border-radius:50%;background:currentColor;opacity:.55}
+.toggle[aria-pressed="true"] .sw{opacity:1}
+
+/* ---------- vitals ---------- */
+.vitals{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:1px;background:var(--steel)}
+.vital{background:#0b1218;padding:9px 11px}
+.vital .k{font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--dimmer)}
+.vital .v{font-family:var(--mono);font-size:1.02rem;font-weight:600;margin-top:2px;letter-spacing:-.01em}
+.vital.alarm .v{color:var(--heme)}
+.vital.warn .v{color:var(--brass)}
+.vital.ok .v{color:var(--good)}
+
+/* ---------- chart / vignette ---------- */
+.vig h3{font-family:var(--display);font-size:1.3rem;font-weight:400;line-height:1.25;margin-bottom:2px}
+.vig .meta{font-size:.78rem;color:var(--teal);font-family:var(--mono);margin-bottom:11px}
+.vig p{font-size:.9rem;margin-bottom:9px;color:#d8d5cd}
+.vig p strong{color:var(--bone)}
+.exam{list-style:none;border-top:1px solid var(--steel);margin-top:4px}
+.exam li{display:grid;grid-template-columns:118px 1fr;gap:10px;padding:6px 0;border-bottom:1px solid #17242e;font-size:.84rem}
+.exam li b{font-family:var(--mono);font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:var(--dimmer);padding-top:3px}
+@media(max-width:520px){.exam li{grid-template-columns:1fr;gap:1px}}
+@media(max-width:560px){.dxrow{grid-template-columns:minmax(0,1fr) 96px 40px}}
+
+/* ---------- differential ---------- */
+.dxrow{display:grid;grid-template-columns:minmax(0,1fr) 132px 44px;gap:9px;align-items:center;padding:7px 0;border-bottom:1px solid #17242e}
+.dxrow label{font-size:.85rem}
+.dxrow input[type=range]{width:100%;accent-color:var(--teal);background:transparent}
+.dxrow .pv{font-family:var(--mono);font-size:.82rem;text-align:right;color:var(--dim)}
+.dxrow.istrue label{color:var(--fluor);font-weight:600}
+.summeter{display:flex;align-items:center;gap:10px;margin-top:11px}
+.sumbar{flex:1;height:7px;border-radius:999px;background:#0b1218;border:1px solid var(--steel);overflow:hidden}
+.sumbar i{display:block;height:100%;background:linear-gradient(90deg,var(--cobalt),var(--teal));transition:width .2s}
+.sumbar.over i{background:linear-gradient(90deg,var(--brass),var(--heme))}
+
+/* ---------- orders ---------- */
+.ordergroup + .ordergroup{margin-top:13px}
+.ordergroup > .glab{font-family:var(--mono);font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:var(--dimmer);margin-bottom:6px;display:flex;gap:8px;align-items:center}
+.ordergroup > .glab:after{content:"";flex:1;height:1px;background:var(--steel)}
+.orders{display:grid;gap:6px}
+.order{
+  display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;text-align:left;
+  background:#0c141b;border:1px solid var(--steel);border-left:3px solid var(--steel2);border-radius:8px;
+  padding:9px 11px;color:var(--bone);font:inherit;font-size:.86rem;cursor:pointer;transition:.14s
+}
+.order:hover:not(:disabled){border-color:var(--teal);transform:translateX(2px)}
+.order:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.order .sub{display:block;font-size:.73rem;color:var(--dimmer);margin-top:2px}
+.order .cost{font-family:var(--mono);font-size:.68rem;color:var(--dimmer);white-space:nowrap}
+.order:disabled{opacity:.42;cursor:not-allowed}
+.order.done{border-left-color:var(--teal);background:#0e1a20}
+.order.done .cost{color:var(--teal)}
+.order.harm.done{border-left-color:var(--heme);background:#1c1013}
+
+/* ---------- log ---------- */
+.log{display:grid;gap:0;max-height:280px;overflow:auto}
+.logrow{display:grid;grid-template-columns:52px 1fr;gap:10px;padding:8px 0;border-bottom:1px solid #17242e;font-size:.82rem}
+.logrow .t{font-family:var(--mono);font-size:.72rem;color:var(--dimmer);padding-top:2px}
+.logrow .msg strong{display:block;font-size:.85rem;margin-bottom:1px}
+.logrow.v-good .msg strong{color:var(--good)}
+.logrow.v-harm .msg strong{color:var(--heme)}
+.logrow.v-neutral .msg strong{color:var(--dim)}
+.logrow.v-dx .msg strong{color:var(--cobalt)}
+.logrow.v-crit .msg strong{color:var(--fluor)}
+.logrow.v-warn .msg strong{color:var(--brass)}
+.logrow .msg span{color:var(--dim)}
+.empty{color:var(--dimmer);font-size:.83rem;font-style:italic;padding:8px 0}
+
+/* ---------- buttons ---------- */
+.btn{font-family:var(--body);font-size:.83rem;font-weight:600;padding:9px 14px;border-radius:8px;border:1px solid transparent;cursor:pointer;transition:.15s}
+.btn:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.btn-primary{background:var(--teal);color:#06131a}
+.btn-primary:hover{filter:brightness(1.08)}
+.btn-ghost{background:transparent;border-color:var(--steel2);color:var(--bone)}
+.btn-ghost:hover{background:#16232d}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* ---------- callouts ---------- */
+.note{border-left:3px solid var(--steel2);background:#0c141b;border-radius:0 8px 8px 0;padding:10px 12px;font-size:.83rem;color:var(--dim)}
+.note b{color:var(--bone)}
+.note.teach{border-left-color:var(--fluor)}
+.note.warn{border-left-color:var(--brass)}
+.note.harm{border-left-color:var(--heme)}
+.pearl{font-size:.83rem;color:var(--dim);padding:8px 0;border-bottom:1px solid #17242e}
+.pearl b{color:var(--bone);display:block;font-size:.85rem}
+
+.chip{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:#0c141b;border:1px solid var(--steel);color:var(--dim)}
+.chip.good{color:var(--good);border-color:#2c4a35}
+.chip.harm{color:var(--heme);border-color:#4a2a28}
+.chip.fluor{color:var(--fluor);border-color:#49521a}
+
+.scoregrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:12px}
+.scorebox{background:#0b1218;border:1px solid var(--steel);border-radius:8px;padding:10px}
+.scorebox .k{font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--dimmer)}
+.scorebox .v{font-family:var(--mono);font-size:1.3rem;font-weight:600;margin-top:3px}
+
+dialog{border:1px solid var(--steel2);border-radius:12px;background:var(--slate);color:var(--bone);max-width:690px;width:calc(100% - 32px);padding:0}
+dialog::backdrop{background:rgba(4,7,10,.78);backdrop-filter:blur(3px)}
+dialog h2{font-family:var(--display);font-size:1.34rem;font-weight:400;padding:18px 22px 0;letter-spacing:.01em}
+dialog .dbody{padding:12px 22px 20px;max-height:72vh;overflow:auto}
+dialog .dbody > *+*{margin-top:13px}
+
+/* ---------- flow strip: where am I in the case ---------- */
+.flow{max-width:1560px;margin:0 auto;padding:13px 18px 0;display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.flow .fstep{display:inline-flex;align-items:center;gap:8px;padding:7px 13px;border:1px solid var(--steel);
+  border-radius:999px;background:#0c141b;color:var(--dimmer);font:inherit;font-size:.79rem;cursor:pointer;transition:.16s}
+.flow .fstep i{font-family:var(--mono);font-size:.66rem;font-style:normal;width:18px;height:18px;border-radius:50%;
+  background:var(--steel2);color:var(--bone);display:grid;place-items:center;flex:none}
+.flow .fstep:hover{color:var(--bone);border-color:var(--steel2)}
+.flow .fstep.done{color:var(--dim);border-color:#24402f}
+.flow .fstep.done i{background:var(--good);color:#06131a}
+.flow .fstep.now{color:#06131a;background:var(--teal);border-color:var(--teal);font-weight:700}
+.flow .fstep.now i{background:rgba(0,0,0,.24);color:#06131a}
+.flow .arrow{color:var(--dimmer);font-size:.78rem}
+
+/* ---------- the panel that wants your attention ---------- */
+.card.active{border-color:var(--teal);box-shadow:0 0 0 1px rgba(79,209,197,.34),0 0 30px rgba(79,209,197,.09)}
+.card.active > h2{color:var(--teal);background:#0e1c22}
+.cue{display:none}
+.card.active .cue{display:inline-flex;align-items:center;font-family:var(--mono);font-size:.58rem;letter-spacing:.14em;
+  text-transform:uppercase;color:#06131a;background:var(--teal);border-radius:999px;padding:3px 9px;font-weight:700}
+@keyframes cardFlash{
+  0%,100%{box-shadow:0 0 0 1px rgba(79,209,197,.34),0 0 30px rgba(79,209,197,.09)}
+  50%{box-shadow:0 0 0 2px var(--teal),0 0 42px rgba(79,209,197,.28)}}
+.card.flash{animation:cardFlash 1.1s ease-in-out 2}
+
+/* ---------- rollover: what is this panel asking me? ---------- */
+.ask{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:50%;flex:none;
+  border:1px solid var(--steel2);background:#0b1218;color:var(--dim);
+  font-family:var(--mono);font-size:.63rem;cursor:help;transition:.15s}
+.ask:hover,.ask:focus-visible{border-color:var(--teal);color:var(--teal);outline:none;transform:scale(1.12)}
+#tip{position:fixed;z-index:90;max-width:340px;background:#0a1218;border:1px solid var(--teal);border-radius:9px;
+  padding:11px 13px;font-size:.83rem;line-height:1.52;color:#d6d3cb;box-shadow:0 16px 44px rgba(0,0,0,.55);pointer-events:none}
+#tip[hidden]{display:none}
+#tip b{display:block;color:var(--teal);font-family:var(--mono);font-size:.68rem;letter-spacing:.12em;
+  text-transform:uppercase;margin-bottom:5px}
+
+/* ---------- how-this-works sheet ---------- */
+.howto{counter-reset:hstep;display:block}
+.howto li{
+  list-style:none;
+  display:grid;grid-template-columns:26px minmax(0,1fr);
+  column-gap:14px;row-gap:3px;align-items:start;
+  padding:12px 0;border-top:1px solid #1a2831
+}
+.howto li:first-child{border-top:0;padding-top:2px}
+.howto li:before{
+  counter-increment:hstep;content:counter(hstep);
+  grid-column:1;grid-row:1 / span 2;
+  font-family:var(--mono);font-size:.72rem;font-weight:700;color:#06131a;background:var(--teal);
+  width:26px;height:26px;border-radius:50%;display:grid;place-items:center;margin-top:1px
+}
+.howto li.gate:before{background:var(--fluor)}
+.howto b{grid-column:2;font-size:.93rem;line-height:1.35;color:var(--bone)}
+.howto span{grid-column:2;font-size:.865rem;color:var(--dim);line-height:1.52;max-width:62ch}
+.howto span em{color:var(--teal);font-style:normal}
+.howto kbd{font-family:var(--mono);font-size:.76rem;background:#0b1218;border:1px solid var(--steel2);
+  border-radius:4px;padding:1px 6px;color:var(--bone);white-space:nowrap}
+
+/* welcome pane */
+.welc p{font-size:.9rem;color:var(--dim);line-height:1.55}
+.welc p.lead{font-size:1rem;color:#dcd9d1;margin-bottom:9px}
+.welc p.lead b{color:var(--bone)}
+.welc p.fine{font-size:.8rem;color:var(--dimmer);margin-top:13px}
+.welc p.fine a{color:var(--teal)}
+.welc .btnrow{margin-top:16px}
+.unlock{border-left:3px solid var(--fluor);background:#141a0c;border-radius:0 8px 8px 0;padding:10px 12px;
+  font-size:.84rem;color:var(--dim);margin-bottom:13px}
+.unlock b{color:var(--fluor)}
+
+/* ---------- guided walkthrough ---------- */
+.tourbtn{background:var(--fluor);color:#14180a;border-color:var(--fluor);font-weight:700}
+.tourbtn:hover{filter:brightness(1.07);color:#14180a;border-color:var(--fluor)}
+body.coached{padding-bottom:236px}
+.coach{
+  position:fixed;left:0;right:0;bottom:0;z-index:60;
+  background:linear-gradient(180deg,#16232d,#0c141b);border-top:2px solid var(--fluor);
+  box-shadow:0 -18px 48px rgba(4,7,10,.62);
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:end;
+  padding:14px 22px 16px
+}
+.coach[hidden]{display:none}
+.coach .rail{position:absolute;left:0;top:-2px;height:2px;background:var(--fluor);transition:width .3s}
+.coach .step{font-family:var(--mono);font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;color:var(--fluor);margin-bottom:5px}
+.coach .talk{font-size:.94rem;max-width:88ch;color:#dfdcd4;max-height:132px;overflow:auto}
+.coach .talk p+p{margin-top:7px}
+.coach .talk b{color:var(--bone)}
+.coach .talk .already{color:var(--brass);font-size:.86rem;margin-top:8px}
+.coach .talk em{color:var(--teal);font-style:normal}
+.coach .talk .say-hand{color:var(--fluor);font-weight:600}
+.coach .acts{display:flex;gap:8px;flex-direction:column;align-items:stretch;min-width:186px}
+.coach .acts .btn{width:100%}
+.coach .pair{display:flex;gap:6px}
+.coach .pair .btn{flex:1}
+.btn-mini{padding:7px 9px;font-size:.76rem}
+.coach .step:after{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;
+  background:var(--fluor);margin-left:8px;opacity:0;vertical-align:middle}
+.coach.speaking .step:after{opacity:1;animation:coachSpk 1s ease-in-out infinite}
+@keyframes coachSpk{0%,100%{transform:scale(.7);opacity:.45}50%{transform:scale(1.3);opacity:1}}
+.coach .hint{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--dimmer);text-align:center}
+@media(max-width:760px){
+  .coach{grid-template-columns:1fr;padding:12px 14px 14px}
+  .coach .acts{flex-direction:row;min-width:0}
+  body.coached{padding-bottom:260px}
+}
+.coach-focus{position:relative;z-index:5;outline:2px solid var(--fluor);outline-offset:3px;border-radius:10px;
+  box-shadow:0 0 0 6px rgba(200,225,48,.14),0 0 26px rgba(200,225,48,.3)}
+@keyframes coachPulse{0%,100%{box-shadow:0 0 0 6px rgba(200,225,48,.14),0 0 26px rgba(200,225,48,.28)}
+  50%{box-shadow:0 0 0 11px rgba(200,225,48,.05),0 0 34px rgba(200,225,48,.5)}}
+.coach-focus.pulse{animation:coachPulse 1.5s ease-in-out infinite}
+
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div>
+    <h1>Slit Lamp <em>·</em> ophthalmic vignette trainer</h1>
+    <div class="tagline">Three sight-threatening cases. Commit to a differential, then order. The eye responds to what you do — and to what you get wrong.</div>
+  </div>
+  <div class="spacer"></div>
+  <div class="casetabs" role="tablist" aria-label="Cases" id="casetabs"></div>
+  <button class="casetab tourbtn" id="tour-btn" hidden>▶ Guided walkthrough</button>
+  <button class="casetab" id="help-btn" title="How this works">? How this works</button>
+</header>
+
+<nav class="flow" id="flow" aria-label="Where you are in the case"></nav>
+
+<main class="wrap">
+  <div class="col">
+    <section class="card" id="eye-card">
+      <div class="viewtabs" role="tablist" aria-label="Examination view">
+        <button class="viewtab" role="tab" data-view="external" aria-selected="true">External · OD</button>
+        <button class="viewtab" role="tab" data-view="cross" aria-selected="false">Cross-section</button>
+        <button class="viewtab" role="tab" data-view="fundus" aria-selected="false">Fundus</button>
+      </div>
+      <div class="stage" id="stage"></div>
+      <div class="stagefoot">
+        <button class="toggle" id="tg-fluor" aria-pressed="false"><span class="sw"></span>Fluorescein + cobalt</button>
+        <button class="toggle" id="tg-slit" aria-pressed="false"><span class="sw"></span>Slit beam</button>
+        <span class="ask" tabindex="0" role="button" aria-label="About these controls" data-ask="What can you see?|The three tabs above are views of the same patient. These two toggles are examination manoeuvres. All of it is free: looking never changes the patient and never moves the clock. Only orders do that.">?</span>
+        <span class="caption" id="stage-caption"></span>
+      </div>
+      <div class="vitals" id="vitals"></div>
+    </section>
+
+    <section class="card" id="log-card">
+      <h2>Actions taken — what have you done so far?
+        <span class="ask" tabindex="0" role="button" aria-label="About this panel" data-ask="Actions taken|Every order you place, in order, with the finding it produced. Green helped, amber was defensible or was bad news, red did harm. The clock only advances when you order something — reading and looking are free.">?</span>
+        <span class="spacer"></span><span class="num" id="clock">t + 0 min</span></h2>
+      <div class="body tight"><div class="log" id="log"></div></div>
+    </section>
+  </div>
+
+  <div class="col">
+    <section class="card" id="vignette-card">
+      <h2>Presentation — what is wrong with this patient?
+        <span class="ask" tabindex="0" role="button" aria-label="About this panel" data-ask="Presentation|The history first, then the examination findings somebody has already measured for you. Anything you discover yourself — a gonioscopy, a fluorescein stain, a blood result — gets appended at the bottom under &lsquo;Findings you generated&rsquo;.">?</span>
+        <span class="spacer"></span><span class="cue">start here</span></h2>
+      <div class="body vig" id="vignette"></div>
+    </section>
+
+    <section class="card" id="dxcard">
+      <h2>Differential — what do you think this is?
+        <span class="ask" tabindex="0" role="button" aria-label="About this panel" data-ask="Differential|Distribute 100 points of belief across the options, then press Commit. Two things happen: you are scored for calibration before you are shown the answer, and treatment unlocks. Leaving weight on &lsquo;undifferentiated&rsquo; is a legitimate answer, not a hedge.">?</span>
+        <span class="spacer"></span><span class="cue">do this next</span></h2>
+      <div class="body">
+        <p style="font-size:.83rem;color:var(--dim);margin-bottom:8px">Distribute 100 points of belief. Leave weight on <em>undifferentiated</em> if the evidence isn't there yet — that's a legitimate answer, not a hedge.</p>
+        <div id="dxlist"></div>
+        <div class="summeter">
+          <div class="sumbar" id="sumbar"><i style="width:0%"></i></div>
+          <span class="num" id="sumval" style="width:52px;text-align:right">0</span>
+          <button class="btn btn-ghost" id="normalize">Normalize</button>
+          <button class="btn btn-primary" id="commit" disabled>Commit</button>
+        </div>
+        <div id="dxresult" style="margin-top:12px"></div>
+      </div>
+    </section>
+
+    <section class="card" id="orders-card">
+      <h2>Orders — what will you do about it?
+        <span class="ask" tabindex="0" role="button" aria-label="About this panel" data-ask="Orders|Click to place. Each order costs time and changes the patient. Harmful options are deliberately included and deliberately clickable — nothing stops you, the eye simply gets worse. Examination and bedside orders work straight away; treatment unlocks once you commit a differential.">?</span>
+        <span class="spacer"></span><span class="cue">do this next</span><span class="chip" id="ordercount">0 placed</span></h2>
+      <div class="body" id="orders"></div>
+    </section>
+
+    <section class="card" id="debrief-card">
+      <h2>Debrief — did it work?
+        <span class="ask" tabindex="0" role="button" aria-label="About this panel" data-ask="Debrief|Conclude the case to score it: critical actions taken, harmful orders placed, how well calibrated your differential was, and how long you took to give the treatment that mattered. Then the teaching points, and buttons to restart or export the run.">?</span>
+        <span class="spacer"></span><span class="cue">do this next</span></h2>
+      <div class="body" id="debrief"></div>
+    </section>
+  </div>
+</main>
+
+<div id="tip" hidden></div>
+
+<section class="coach" id="coach" hidden aria-live="polite" aria-label="Guided walkthrough">
+  <i class="rail" id="coach-rail" style="width:0%"></i>
+  <div>
+    <div class="step" id="coach-step">Step 1</div>
+    <div class="talk" id="coach-talk"></div>
+  </div>
+  <div class="acts">
+    <button class="btn btn-primary" id="coach-next">Continue</button>
+    <div class="pair">
+      <button class="btn btn-ghost btn-mini" id="coach-again" title="Say that again">↻ Repeat</button>
+      <button class="btn btn-ghost btn-mini" id="coach-mute" aria-pressed="true">🔊 Voice on</button>
+    </div>
+    <button class="btn btn-ghost btn-mini" id="coach-skip" hidden>Skip this step →</button>
+    <button class="btn btn-ghost btn-mini" id="coach-exit">Leave</button>
+    <div class="hint" id="coach-hint">or press Enter</div>
+  </div>
+</section>
+
+<dialog id="modal">
+  <h2 id="modal-title">Slit Lamp</h2>
+  <div class="dbody" id="modal-body">
+    <div id="help-welcome" class="welc">
+      <p class="lead">Four ophthalmic patients. You <b>commit to a diagnosis</b>, order tests and treatment, and the eye responds to what you do — including the wrong things.</p>
+      <p>The controls aren't obvious, so there's a practice patient who talks you through them. It blinks whichever knob you need next and says out loud what it does. Two minutes.</p>
+      <div class="btnrow">
+        <button class="btn btn-primary" id="go-practice">▶ Start guided practice</button>
+        <button class="btn btn-ghost" id="go-skip">Skip, I'll explore</button>
+      </div>
+      <p class="fine">Rather read it? <a href="#" id="go-reference">Written instructions</a>. Both stay available from <b>? How this works</b> in the header.</p>
+    </div>
+    <ol class="howto" id="help-reference" hidden>
+      <li><b>Pick a case</b><span>The three tabs at the top right. Each one resets to a fresh presentation.</span></li>
+      <li><b>Read the presentation</b><span>Right-hand column: the story, then the examination findings. Everything you need to make the call is in there.</span></li>
+      <li class="gate"><b>Commit a differential — this unlocks treatment</b><span>Drag the sliders until they total 100, then press <kbd>Commit</kbd>. Until you do, the treatment and procedure orders stay greyed out; only <em>examination</em> and <em>bedside</em> orders are live. If nothing seems clickable, this is why. Leaving weight on <em>undifferentiated</em> is a legitimate answer.</span></li>
+      <li><b>Place orders and watch the eye</b><span>Click any order to place it. Each one spends time on the clock and changes the patient — pupil, corneal clarity, pressure, retina. Harmful orders are deliberately clickable, and the log tells you what you did. Some are gated: order a laser through a hazy cornea and you'll get a <em>Blocked</em> line explaining what to fix first.</span></li>
+      <li><b>Conclude the case</b><span>The <kbd>Conclude case</kbd> button in Debrief scores critical actions, harms, calibration and time-to-treatment, then gives the teaching points. <kbd>Export session</kbd> saves the whole run as JSON; <kbd>Restart case</kbd> wipes it.</span></li>
+    </ol>
+    <div class="note"><b>The controls around the eye don't change the patient.</b> The three view tabs (external, cross-section, fundus) and the two toggles beneath it are ways of <em>looking</em>: fluorescein-plus-cobalt and the slit beam are examination manoeuvres, so switching them on and off is free and costs no time.</div>
+    <div class="btnrow" id="help-cta" hidden><button class="btn btn-primary" id="go-practice-2">▶ Start guided practice instead</button></div>
+    <div class="note teach" id="help-note" hidden><b>Two guided runs.</b> Case <em>00 · Practice</em> teaches the interface with voice and blinking controls. Case <em>01</em> has a walkthrough that narrates the medicine and places the orders for you, pausing for you to click Continue. Both start from the <em>▶</em> button in the header.</div>
+  </div>
+  <div class="btnrow" style="padding:0 22px 20px"><button class="btn btn-primary" id="modal-close">Got it</button></div>
+</dialog>
+
+<script>
+(function(){
+'use strict';
+
+/* ═══════════════════════════════════════════════════════════════
+   0 · helpers
+   ═══════════════════════════════════════════════════════════════ */
+const $ = s => document.querySelector(s);
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const lerp  = (a,b,t) => a + (b-a)*t;
+const mix   = (c1,c2,t) => {           // hex blend
+  const p = h => [parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+  const [r1,g1,b1]=p(c1),[r2,g2,b2]=p(c2);
+  return '#'+[lerp(r1,r2,t),lerp(g1,g2,t),lerp(b1,b2,t)].map(v=>Math.round(clamp(v,0,255)).toString(16).padStart(2,'0')).join('');
+};
+function rng(seed){ let a=seed>>>0; return ()=>{ a=(a+0x6D2B79F5)>>>0; let t=Math.imul(a^(a>>>15),1|a); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; }; }
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* visual acuity: internal logMAR → chart notation */
+function vaText(logmar){
+  if(logmar>=2.95) return 'NLP';
+  if(logmar>=2.55) return 'LP';
+  if(logmar>=2.2)  return 'HM';
+  if(logmar>=1.85) return 'CF 2ft';
+  const ladder=[20,25,30,40,50,60,70,80,100,150,200,400,800];
+  const d=20*Math.pow(10,logmar);
+  let best=ladder[0]; ladder.forEach(x=>{ if(Math.abs(x-d)<Math.abs(best-d)) best=x; });
+  return '20/'+best;
+}
+function dur(m){
+  if(m<90)   return Math.round(m)+' min';
+  if(m<1440) return Math.floor(m/60)+' h '+String(Math.round(m%60)).padStart(2,'0');
+  return (m/1440).toFixed(1)+' days';
+}
+const MM = 12.3;   // px per mm at the cornea
+
+/* ═══════════════════════════════════════════════════════════════
+   1 · EXTERNAL EYE (OD, viewed from the front — nasal is to the right)
+   ═══════════════════════════════════════════════════════════════ */
+const CX=310, CY=196, R=74;          // corneal centre + radius
+const FISSURE =
+  'M 74,198 C 140,132 236,124 322,128 C 424,132 508,158 550,202 '+
+  'C 512,250 424,272 324,274 C 232,276 142,252 74,198 Z';
+
+function conjVessels(seed){
+  const rand=rng(seed), out=[];
+  for(let i=0;i<34;i++){
+    const side = i%2 ? 1 : -1;                       // grow from both canthi
+    const y0 = CY + (rand()-0.5)*150;
+    const x0 = side>0 ? 552 - rand()*30 : 72 + rand()*30;
+    const tgt = R + 12 + rand()*30;                  // stop short of the limbus
+    const ang = Math.atan2(y0-CY, x0-CX);
+    const x3 = CX + Math.cos(ang)*tgt, y3 = CY + Math.sin(ang)*tgt;
+    const wob = (rand()-0.5)*70, wob2=(rand()-0.5)*55;
+    out.push({
+      d:`M ${x0.toFixed(1)},${y0.toFixed(1)} C ${lerp(x0,x3,.35).toFixed(1)},${(lerp(y0,y3,.35)+wob).toFixed(1)} `+
+        `${lerp(x0,x3,.7).toFixed(1)},${(lerp(y0,y3,.7)+wob2).toFixed(1)} ${x3.toFixed(1)},${y3.toFixed(1)}`,
+      w: 0.9+rand()*2.3, o: .45+rand()*.55
+    });
+  }
+  return out;
+}
+function ciliaryVessels(seed){
+  const rand=rng(seed), out=[];
+  for(let i=0;i<76;i++){
+    const a = (i/76)*Math.PI*2 + rand()*.05;
+    const r1=R+2, r2=R+9+rand()*11;
+    out.push({d:`M ${(CX+Math.cos(a)*r1).toFixed(1)},${(CY+Math.sin(a)*r1).toFixed(1)} L ${(CX+Math.cos(a)*r2).toFixed(1)},${(CY+Math.sin(a)*r2).toFixed(1)}`, w:1+rand()*1.8});
+  }
+  return out;
+}
+function irisFibres(seed){
+  const rand=rng(seed), out=[];
+  for(let i=0;i<190;i++){
+    const a=(i/190)*Math.PI*2 + (rand()-.5)*.06;
+    const r1=8+rand()*6, r2=R-1-rand()*7;
+    const bend=(rand()-.5)*.13;
+    const mx=CX+Math.cos(a+bend)*lerp(r1,r2,.55), my=CY+Math.sin(a+bend)*lerp(r1,r2,.55);
+    out.push({d:`M ${(CX+Math.cos(a)*r1).toFixed(1)},${(CY+Math.sin(a)*r1).toFixed(1)} Q ${mx.toFixed(1)},${my.toFixed(1)} ${(CX+Math.cos(a)*r2).toFixed(1)},${(CY+Math.sin(a)*r2).toFixed(1)}`,
+      w:.55+rand()*1.5, o:.16+rand()*.5});
+  }
+  const crypts=[];
+  for(let i=0;i<26;i++){ const a=rand()*Math.PI*2, r=R*.42+rand()*10;
+    crypts.push({cx:CX+Math.cos(a)*r, cy:CY+Math.sin(a)*r, rx:2.2+rand()*4, ry:1.4+rand()*2.6, rot:a*57.3}); }
+  return {out,crypts};
+}
+/* irregular closed blob, used for ulcers / epithelial defects */
+function blob(cx,cy,r,seed,irr){
+  const rand=rng(seed), n=13, pts=[];
+  for(let i=0;i<n;i++){ const a=(i/n)*Math.PI*2, rr=r*(1-irr/2+rand()*irr); pts.push([cx+Math.cos(a)*rr, cy+Math.sin(a)*rr]); }
+  let d=`M ${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
+  for(let i=0;i<n;i++){ const p=pts[(i+1)%n], q=pts[i], m=[(q[0]+p[0])/2,(q[1]+p[1])/2];
+    d+=` Q ${q[0].toFixed(1)},${q[1].toFixed(1)} ${m[0].toFixed(1)},${m[1].toFixed(1)}`; }
+  return d+' Z';
+}
+/* dendritic (herpetic) figure — kept for extensibility */
+function dendrite(cx,cy,s,seed){
+  const rand=rng(seed); let d='';
+  for(let b=0;b<5;b++){
+    const a=rand()*Math.PI*2; let x=cx,y=cy; d+=`M ${x.toFixed(1)},${y.toFixed(1)}`;
+    for(let k=0;k<4;k++){ const aa=a+(rand()-.5)*1.5, L=s*(.3+rand()*.4); x+=Math.cos(aa)*L; y+=Math.sin(aa)*L; d+=` L ${x.toFixed(1)},${y.toFixed(1)}`; }
+  }
+  return d;
+}
+
+function buildExternal(){
+  const cv=conjVessels(7), ci=ciliaryVessels(19), ir=irisFibres(31);
+  return `
+<svg viewBox="0 0 620 400" role="img" aria-label="External photograph of the right eye" id="svg-ext">
+ <defs>
+  <clipPath id="clipFissure"><path d="${FISSURE}"/></clipPath>
+  <clipPath id="clipCornea"><circle cx="${CX}" cy="${CY}" r="${R}"/></clipPath>
+
+  <radialGradient id="gSclera" cx="50%" cy="42%" r="72%">
+    <stop offset="0%"  stop-color="#fdfaf4"/><stop offset="58%" stop-color="#efe6da"/>
+    <stop offset="100%" stop-color="#c9b7a6"/>
+  </radialGradient>
+  <linearGradient id="gLidShadow" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#000" stop-opacity=".55"/><stop offset="42%" stop-color="#000" stop-opacity="0"/>
+    <stop offset="76%" stop-color="#000" stop-opacity="0"/><stop offset="100%" stop-color="#000" stop-opacity=".3"/>
+  </linearGradient>
+  <radialGradient id="gIris" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#000" stop-opacity=".55"/><stop offset="46%" stop-color="#000" stop-opacity=".08"/>
+    <stop offset="88%" stop-color="#000" stop-opacity=".1"/><stop offset="100%" stop-color="#000" stop-opacity=".62"/>
+  </radialGradient>
+  <radialGradient id="gHaze" cx="46%" cy="42%" r="62%">
+    <stop offset="0%" stop-color="#ffffff" stop-opacity=".95"/><stop offset="62%" stop-color="#f2f6f8" stop-opacity=".8"/>
+    <stop offset="100%" stop-color="#dfe8ec" stop-opacity=".25"/>
+  </radialGradient>
+  <linearGradient id="gPus" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#fffbe8"/><stop offset="30%" stop-color="#f3e6b4"/><stop offset="100%" stop-color="#d8c489"/>
+  </linearGradient>
+  <linearGradient id="gLid" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#c99a86"/><stop offset="55%" stop-color="#ab7a68"/><stop offset="100%" stop-color="#7d5346"/>
+  </linearGradient>
+
+  <filter id="fEdema" x="-25%" y="-25%" width="150%" height="150%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.09" numOctaves="4" seed="4" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="7" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+  <filter id="fMicrocyst" x="-20%" y="-20%" width="140%" height="140%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.35" numOctaves="3" seed="9" result="t"/>
+    <feColorMatrix in="t" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  1.1 0 0 0 -0.42"/>
+  </filter>
+  <filter id="fSoft6" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="6"/></filter>
+  <filter id="fSoft3" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="3"/></filter>
+  <filter id="fSoft1" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="1.2"/></filter>
+  <filter id="fGlow" x="-60%" y="-60%" width="220%" height="220%">
+    <feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+ </defs>
+
+ <rect width="620" height="400" fill="#080c11"/>
+ <!-- periorbital skin -->
+ <path d="M 40,196 C 120,60 300,36 420,60 C 520,80 580,140 596,204 C 570,300 440,344 320,342 C 190,340 80,290 40,196 Z"
+       fill="#8b6252" opacity=".5" filter="url(#fSoft6)"/>
+
+ <g clip-path="url(#clipFissure)">
+   <rect x="60" y="100" width="500" height="200" fill="url(#gSclera)"/>
+   <!-- conjunctival injection (superficial, mobile, brick red) -->
+   <g id="ex-conj" opacity="0" fill="none" stroke-linecap="round">
+     ${cv.map(v=>`<path d="${v.d}" stroke="#c0392b" stroke-width="${v.w.toFixed(2)}" opacity="${v.o.toFixed(2)}"/>`).join('')}
+   </g>
+   <!-- ciliary flush (deep, violaceous, hugging the limbus) -->
+   <g id="ex-ciliary" opacity="0" fill="none" stroke-linecap="round">
+     <circle cx="${CX}" cy="${CY}" r="${R+11}" fill="#a2405c" opacity=".28" stroke="none" filter="url(#fSoft6)"/>
+     ${ci.map(v=>`<path d="${v.d}" stroke="#8e3a58" stroke-width="${v.w.toFixed(2)}"/>`).join('')}
+   </g>
+   <!-- subconjunctival haemorrhage / chemosis reserve -->
+   <ellipse id="ex-chemosis" cx="${CX}" cy="${CY+6}" rx="220" ry="86" fill="#f2d9d2" opacity="0" filter="url(#fSoft6)"/>
+
+   <!-- ═══ intraocular contents: blurred as a whole when the cornea is oedematous ═══ -->
+   <g id="ex-inside">
+     <circle id="ex-irisbase" cx="${CX}" cy="${CY}" r="${R}" fill="#6b4526"/>
+     <g id="ex-fibres" fill="none" stroke-linecap="round">
+       ${ir.out.map(f=>`<path d="${f.d}" stroke="#c79a5e" stroke-width="${f.w.toFixed(2)}" opacity="${f.o.toFixed(2)}"/>`).join('')}
+     </g>
+     <g id="ex-crypts">
+       ${ir.crypts.map(c=>`<ellipse cx="${c.cx.toFixed(1)}" cy="${c.cy.toFixed(1)}" rx="${c.rx.toFixed(1)}" ry="${c.ry.toFixed(1)}" transform="rotate(${c.rot.toFixed(0)} ${c.cx.toFixed(1)} ${c.cy.toFixed(1)})" fill="#000" opacity=".22"/>`).join('')}
+     </g>
+     <circle id="ex-collarette" cx="${CX}" cy="${CY}" r="${(R*.55).toFixed(1)}" fill="none" stroke="#000" stroke-opacity=".2" stroke-width="4"/>
+     <circle cx="${CX}" cy="${CY}" r="${R}" fill="url(#gIris)"/>
+     <!-- peripheral iridotomy: a patent hole at 11 o'clock, under the lid -->
+     <ellipse id="ex-lpi" cx="${(CX-42).toFixed(1)}" cy="${(CY-58).toFixed(1)}" rx="5.5" ry="4" fill="#0a0a0c" opacity="0"/>
+     <!-- pupil -->
+     <ellipse id="ex-pupil" cx="${CX}" cy="${CY}" rx="26" ry="26" fill="#08080a"/>
+     <ellipse id="ex-pupil-edge" cx="${CX}" cy="${CY}" rx="26" ry="26" fill="none" stroke="#3a2411" stroke-width="2" opacity=".7"/>
+   </g>
+
+   <!-- ═══ corneal plane ═══ -->
+   <g clip-path="url(#clipCornea)">
+     <path id="ex-hypopyon" d="" fill="url(#gPus)" opacity="0"/>
+     <g id="ex-infiltrate" opacity="0">
+       <path id="ex-infil-halo" d="" fill="#dfe6e2" opacity=".45" filter="url(#fSoft6)"/>
+       <path id="ex-infil-core" d="" fill="#f4f6f1" opacity=".92" filter="url(#fSoft1)"/>
+     </g>
+     <path id="ex-scar" d="" fill="#e2e6e0" opacity="0" filter="url(#fSoft3)"/>
+     <g id="ex-edema" opacity="0">
+       <circle cx="${CX}" cy="${CY}" r="${R}" fill="url(#gHaze)"/>
+       <circle cx="${CX}" cy="${CY}" r="${R}" filter="url(#fMicrocyst)" opacity=".5"/>
+     </g>
+     <!-- fluorescein pooling in the epithelial defect: only bright under cobalt -->
+     <path id="ex-stain" d="" fill="#8aa22a" opacity="0"/>
+   </g>
+   <circle id="ex-limbus" cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="#6f5a4a" stroke-width="3" opacity=".38"/>
+   <circle cx="${CX}" cy="${CY}" r="${R+3}" fill="none" stroke="#cbb9a4" stroke-width="4" opacity=".3"/>
+
+   <!-- slit beam -->
+   <g id="ex-slit" opacity="0">
+     <g transform="rotate(-32 ${CX} ${CY})">
+       <rect x="${CX-13}" y="${CY-140}" width="26" height="280" fill="#fff8e0" opacity=".1"/>
+       <rect id="ex-slit-section" x="${CX-11}" y="${CY-R-4}" width="22" height="${R*2+8}" fill="#fdf6e3" opacity=".62" filter="url(#fSoft1)"/>
+       <rect id="ex-slit-flare" x="${CX-9}" y="${CY-R+6}" width="18" height="${R*2-12}" fill="#fff" opacity="0" filter="url(#fSoft3)"/>
+     </g>
+   </g>
+
+   <!-- tear film + specular reflex -->
+   <g id="ex-reflex">
+     <ellipse id="ex-reflex-main" cx="${CX-26}" cy="${CY-30}" rx="13" ry="9" fill="#fff" opacity=".85" transform="rotate(-24 ${CX-26} ${CY-30})"/>
+     <ellipse cx="${CX+30}" cy="${CY+34}" rx="20" ry="8" fill="#fff" opacity=".12" filter="url(#fSoft3)"/>
+   </g>
+   <g id="ex-reflex-broken" opacity="0">
+     <ellipse cx="${CX-30}" cy="${CY-32}" rx="6" ry="4" fill="#fff" opacity=".7"/>
+     <ellipse cx="${CX-18}" cy="${CY-24}" rx="4" ry="3" fill="#fff" opacity=".5"/>
+     <ellipse cx="${CX-34}" cy="${CY-20}" rx="3" ry="2.4" fill="#fff" opacity=".45"/>
+   </g>
+
+   <!-- discharge at the lid margins -->
+   <g id="ex-discharge" opacity="0" fill="#efe1a8">
+     <path d="M 120,250 Q 200,268 300,266 Q 400,264 500,240 Q 420,282 300,284 Q 190,284 120,250 Z" opacity=".8" filter="url(#fSoft3)"/>
+     <ellipse cx="516" cy="216" rx="26" ry="14" opacity=".75" filter="url(#fSoft3)"/>
+   </g>
+   <rect x="60" y="90" width="500" height="220" fill="url(#gLidShadow)"/>
+ </g>
+
+ <!-- cobalt-blue wash -->
+ <g id="ex-cobalt" opacity="0">
+   <path d="${FISSURE}" fill="#0f2a7a" opacity=".72"/>
+   <path id="ex-stain-glow" d="" fill="#c3f52e" opacity=".95" filter="url(#fGlow)"/>
+   <path id="ex-stain-glow2" d="" fill="#e9ff86" opacity=".9"/>
+ </g>
+
+ <!-- lids -->
+ <path d="M 74,198 C 140,132 236,124 322,128 C 424,132 508,158 550,202 C 520,120 430,64 300,66 C 170,68 96,124 74,198 Z" fill="url(#gLid)"/>
+ <path d="M 74,198 C 142,252 232,276 324,274 C 424,272 512,250 550,202 C 540,286 430,336 306,334 C 176,332 92,278 74,198 Z" fill="url(#gLid)" opacity=".95"/>
+ <path d="M 74,198 C 140,132 236,124 322,128 C 424,132 508,158 550,202" fill="none" stroke="#5c3a30" stroke-width="4" stroke-linecap="round"/>
+ <path d="M 74,198 C 142,252 232,276 324,274 C 424,272 512,250 550,202" fill="none" stroke="#5c3a30" stroke-width="3.4" stroke-linecap="round"/>
+ <path d="M 74,198 C 90,178 96,168 100,158 M 130,150 C 132,132 130,124 126,112 M 190,134 C 190,116 186,106 180,96
+          M 254,128 C 254,110 250,100 246,90 M 318,128 C 320,108 318,98 314,88 M 382,132 C 386,112 386,102 384,92
+          M 444,142 C 450,124 452,114 452,104 M 500,158 C 508,142 512,132 514,122"
+       stroke="#3d2620" stroke-width="2.6" fill="none" stroke-linecap="round" opacity=".85"/>
+ <!-- medial canthus & caruncle sit nasally: to the viewer's right in a right eye -->
+ <ellipse cx="556" cy="202" rx="13" ry="11" fill="#c4796f"/>
+ <path d="M 546,182 Q 566,202 546,222" fill="none" stroke="#a9685f" stroke-width="3"/>
+ <text x="20" y="382" class="svglab" font-family="ui-monospace,monospace" font-size="11" fill="#5f7280" letter-spacing="1.6">TEMPORAL</text>
+ <text x="524" y="382" font-family="ui-monospace,monospace" font-size="11" fill="#5f7280" letter-spacing="1.6">NASAL</text>
+</svg>`;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   2 · SAGITTAL CROSS-SECTION (anterior segment; cornea faces left)
+   ═══════════════════════════════════════════════════════════════ */
+function buildCross(){
+  return `
+<svg viewBox="0 0 620 400" role="img" aria-label="Sagittal cross-section of the anterior segment" id="svg-cross">
+ <defs>
+  <linearGradient id="cAqueous" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%" stop-color="#1b3d4d"/><stop offset="100%" stop-color="#14303d"/>
+  </linearGradient>
+  <linearGradient id="cCornea" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%" stop-color="#d8ecf2" stop-opacity=".9"/><stop offset="100%" stop-color="#9fc6d2" stop-opacity=".65"/>
+  </linearGradient>
+  <linearGradient id="cLens" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%" stop-color="#e6f2f6" stop-opacity=".92"/><stop offset="50%" stop-color="#c2dbe4" stop-opacity=".8"/>
+    <stop offset="100%" stop-color="#a8c6d1" stop-opacity=".9"/>
+  </linearGradient>
+  <linearGradient id="cIris" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0%" stop-color="#8d6135"/><stop offset="100%" stop-color="#5a3c1f"/>
+  </linearGradient>
+  <marker id="cArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M 0,1 L 9,5 L 0,9 z" fill="#5fd8e8"/>
+  </marker>
+  <marker id="cArrowHot" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M 0,1 L 9,5 L 0,9 z" fill="#c8e130"/>
+  </marker>
+  <filter id="cGlow" x="-60%" y="-60%" width="220%" height="220%">
+    <feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+  <filter id="cSoft" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="4"/></filter>
+ </defs>
+
+ <rect width="620" height="400" fill="#070c11"/>
+
+ <!-- sclera -->
+ <path d="M 206,100 C 300,70 440,72 560,104 L 604,104 L 604,292 L 560,292 C 440,324 300,326 206,296 Z" fill="#e8e2d6" opacity=".92"/>
+ <path d="M 214,116 C 300,92 440,94 560,124 L 604,124 L 604,272 L 560,272 C 440,302 300,304 214,280 Z" fill="#0e1a22"/>
+ <!-- vitreous / posterior -->
+ <rect x="380" y="124" width="228" height="148" fill="#0b1a24"/>
+
+ <!-- anterior chamber -->
+ <path id="cr-ac" d="M 206,114 C 156,124 132,156 132,198 C 132,240 156,272 206,282 L 250,282 L 250,114 Z" fill="url(#cAqueous)"/>
+ <!-- posterior chamber -->
+ <path d="M 250,120 L 268,120 L 268,276 L 250,276 Z" fill="#16323f" opacity=".9"/>
+
+ <!-- lens -->
+ <g id="cr-lens">
+   <ellipse cx="306" cy="198" rx="58" ry="94" fill="url(#cLens)"/>
+   <ellipse cx="306" cy="198" rx="58" ry="94" fill="none" stroke="#eaf6fa" stroke-width="1.6" opacity=".7"/>
+   <ellipse cx="306" cy="198" rx="34" ry="62" fill="#fff" opacity=".07"/>
+ </g>
+ <!-- zonules + ciliary body -->
+ <g stroke="#9a7b52" stroke-width="1.6" opacity=".8">
+   <path d="M 288,108 L 262,116 M 296,102 L 272,110 M 288,288 L 262,280 M 296,294 L 272,286" fill="none"/>
+ </g>
+ <path d="M 214,116 C 244,118 266,132 268,152 L 250,150 C 246,132 232,124 214,124 Z" fill="#7d5b34"/>
+ <path d="M 214,280 C 244,278 266,264 268,244 L 250,246 C 246,264 232,272 214,272 Z" fill="#7d5b34"/>
+
+ <!-- iris leaflets (pupil margin and bombé are state-driven) -->
+ <path id="cr-iris-up" d="" fill="url(#cIris)" stroke="#3a2611" stroke-width="1"/>
+ <path id="cr-iris-lo" d="" fill="url(#cIris)" stroke="#3a2611" stroke-width="1"/>
+ <!-- patent iridotomy -->
+ <g id="cr-lpi" opacity="0">
+   <rect x="219" y="130" width="9" height="13" rx="3" fill="#0d2530"/>
+   <path id="cr-lpi-jet" d="M 224,131 C 214,120 200,116 188,118" stroke="#c8e130" stroke-width="2.4" fill="none"
+         marker-end="url(#cArrowHot)" stroke-dasharray="5 5" opacity=".95"/>
+ </g>
+
+ <!-- cornea, drawn over the chamber; thickness swells with oedema -->
+ <path id="cr-cornea" d="" fill="url(#cCornea)" stroke="#eaf7fb" stroke-width="1.4" stroke-opacity=".65"/>
+ <g id="cr-cornea-edema" opacity="0">
+   <path id="cr-cornea-edema-p" d="" fill="#ffffff" opacity=".55" filter="url(#cSoft)"/>
+ </g>
+ <path id="cr-hypopyon-x" d="" fill="#f0e3b0" opacity="0"/>
+
+ <!-- aqueous circulation -->
+ <g id="cr-flow" fill="none" stroke="#5fd8e8" stroke-width="2.2" opacity=".9" stroke-linecap="round">
+   <path d="M 258,240 C 258,224 256,212 254,204" marker-end="url(#cArrow)" stroke-dasharray="5 5" class="flowdash"/>
+   <path id="cr-flow-pupil" d="M 254,196 C 244,186 228,176 208,166" marker-end="url(#cArrow)" stroke-dasharray="5 5" class="flowdash"/>
+   <path d="M 196,162 C 178,150 176,132 190,120" marker-end="url(#cArrow)" stroke-dasharray="5 5" class="flowdash"/>
+ </g>
+ <g id="cr-block" opacity="0" stroke="#d1443a" stroke-width="4" stroke-linecap="round">
+   <path d="M 236,182 L 260,206 M 260,182 L 236,206"/>
+   <text x="196" y="172" font-family="ui-monospace,monospace" font-size="11" fill="#d1443a" letter-spacing="1">PUPIL BLOCK</text>
+ </g>
+
+ <!-- angle magnifier -->
+ <circle cx="206" cy="107" r="24" fill="none" stroke="#4fd1c5" stroke-width="1.4" opacity=".55"/>
+ <line x1="224" y1="93" x2="452" y2="46" stroke="#4fd1c5" stroke-width="1" opacity=".35"/>
+ <line x1="226" y1="120" x2="452" y2="150" stroke="#4fd1c5" stroke-width="1" opacity=".35"/>
+ <g id="cr-inset">
+   <circle cx="516" cy="98" r="76" fill="#0b141b" stroke="#22333f" stroke-width="1.5"/>
+   <clipPath id="clipInset"><circle cx="516" cy="98" r="76"/></clipPath>
+   <g clip-path="url(#clipInset)">
+     <path d="M 440,30 L 596,30 L 596,66 C 540,72 500,90 480,174 L 440,174 Z" fill="#e8e2d6" opacity=".9"/>
+     <rect x="470" y="60" width="20" height="9" fill="#6b5a3a" transform="rotate(28 480 64)"/>
+     <rect x="474" y="70" width="17" height="7" fill="#3d3320" transform="rotate(28 482 73)"/>
+     <text x="500" y="52" font-family="ui-monospace,monospace" font-size="8.5" fill="#8b9aa5">SCHWALBE</text>
+     <text x="500" y="66" font-family="ui-monospace,monospace" font-size="8.5" fill="#c8e130">TRABECULAR MESHWORK</text>
+     <text x="502" y="86" font-family="ui-monospace,monospace" font-size="8.5" fill="#8b9aa5">SCLERAL SPUR</text>
+     <path id="cr-inset-iris" d="" fill="url(#cIris)" stroke="#3a2611" stroke-width="1"/>
+     <text id="cr-inset-label" x="452" y="158" font-family="ui-monospace,monospace" font-size="10" fill="#d1443a" letter-spacing=".6"></text>
+   </g>
+ </g>
+
+ <!-- IOP dial -->
+ <g id="cr-gauge" transform="translate(78,326)">
+   <path d="M -52,0 A 52,52 0 0 1 52,0" fill="none" stroke="#1a2a34" stroke-width="11"/>
+   <path d="M -52,0 A 52,52 0 0 1 -30.6,-42.1" fill="none" stroke="#7fc98b" stroke-width="11"/>
+   <path d="M -30.6,-42.1 A 52,52 0 0 1 -11.7,-50.7" fill="none" stroke="#e0a33c" stroke-width="11"/>
+   <path d="M -11.7,-50.7 A 52,52 0 0 1 52,0" fill="none" stroke="#d1443a" stroke-width="11"/>
+   <text x="-40" y="-46" font-family="ui-monospace,monospace" font-size="8" fill="#5f7280">21</text>
+   <text x="-6" y="-58" font-family="ui-monospace,monospace" font-size="8" fill="#5f7280">30</text>
+   <line id="cr-needle" x1="0" y1="0" x2="-48" y2="0" stroke="#e9e6df" stroke-width="3" stroke-linecap="round"/>
+   <circle cx="0" cy="0" r="5" fill="#e9e6df"/>
+   <text id="cr-iop-text" x="0" y="26" text-anchor="middle" font-family="ui-monospace,monospace" font-size="19" font-weight="700" fill="#e9e6df">—</text>
+   <text x="0" y="42" text-anchor="middle" font-family="ui-monospace,monospace" font-size="9" fill="#5f7280" letter-spacing="1.4">IOP mmHg</text>
+ </g>
+
+ <text x="120" y="356" font-family="ui-monospace,monospace" font-size="10" fill="#5f7280" letter-spacing="1.2">ANTERIOR SEGMENT · HORIZONTAL SECTION</text>
+ <text id="cr-acd-label" x="120" y="374" font-family="ui-monospace,monospace" font-size="10" fill="#4fd1c5" letter-spacing=".8"></text>
+</svg>`;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   3 · FUNDUS (OD — disc lies nasal, i.e. to the viewer's right)
+   ═══════════════════════════════════════════════════════════════ */
+const FX=280, FY=198, FR=172;        // fundus circle
+const DX=392, DY=188;                // optic disc
+const MX=272, MY=202;                // fovea
+
+const ARTERIOLES=[
+  `M ${DX-6},${DY-24} C ${DX-46},130 ${DX-108},116 ${DX-166},130 C ${DX-216},142 ${DX-252},164 ${DX-272},188`,
+  `M ${DX-6},${DY+24} C ${DX-42},262 ${DX-104},280 ${DX-164},268 C ${DX-214},258 ${DX-250},236 ${DX-272},214`,
+  `M ${DX+14},${DY-22} C ${DX+34},152 ${DX+50},130 ${DX+58},106`,
+  `M ${DX+14},${DY+22} C ${DX+36},242 ${DX+52},262 ${DX+58},284`
+];
+const VENULES=[
+  `M ${DX-12},${DY-18} C ${DX-52},142 ${DX-112},128 ${DX-170},142 C ${DX-218},154 ${DX-254},172 ${DX-274},196`,
+  `M ${DX-12},${DY+18} C ${DX-48},250 ${DX-108},268 ${DX-168},256 C ${DX-216},246 ${DX-252},228 ${DX-274},206`,
+  `M ${DX+8},${DY-26} C ${DX+26},150 ${DX+40},126 ${DX+46},100`,
+  `M ${DX+8},${DY+26} C ${DX+28},246 ${DX+42},268 ${DX+46},290`
+];
+const BRANCHES=[
+  `M ${DX-88},124 C ${DX-96},150 ${DX-100},166 ${DX-104},178`,
+  `M ${DX-150},134 C ${DX-158},158 ${DX-160},170 ${DX-162},180`,
+  `M ${DX-92},272 C ${DX-100},248 ${DX-104},232 ${DX-106},220`,
+  `M ${DX-152},262 C ${DX-158},240 ${DX-160},226 ${DX-162},216`
+];
+
+function buildFundus(){
+  const rand=rng(53);
+  let cotton='', hems='';
+  for(let i=0;i<7;i++){
+    const a=rand()*Math.PI*2, r=50+rand()*105;
+    cotton+=`<path d="${blob(FX+Math.cos(a)*r,FY+Math.sin(a)*r,7+rand()*5,100+i,.5)}" fill="#f2f4e8" opacity=".85"/>`;
+  }
+  for(let i=0;i<12;i++){
+    const a=rand()*Math.PI*2, r=40+rand()*120, x=FX+Math.cos(a)*r, y=FY+Math.sin(a)*r, w=5+rand()*9;
+    hems+=`<ellipse cx="${x.toFixed(0)}" cy="${y.toFixed(0)}" rx="${w.toFixed(1)}" ry="${(w*.35).toFixed(1)}" transform="rotate(${(rand()*180).toFixed(0)} ${x.toFixed(0)} ${y.toFixed(0)})" fill="#8d1f18" opacity=".9"/>`;
+  }
+  return `
+<svg viewBox="0 0 620 400" role="img" aria-label="Dilated fundus examination, right eye" id="svg-fundus">
+ <defs>
+  <clipPath id="clipFundus"><circle cx="${FX}" cy="${FY}" r="${FR}"/></clipPath>
+  <clipPath id="clipFellow"><circle cx="530" cy="126" r="70"/></clipPath>
+  <radialGradient id="fBg" cx="42%" cy="45%" r="62%">
+    <stop offset="0%" stop-color="#d4703a"/><stop offset="52%" stop-color="#b8542a"/>
+    <stop offset="84%" stop-color="#8e3a1c"/><stop offset="100%" stop-color="#5e2411"/>
+  </radialGradient>
+  <radialGradient id="fMac" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#69240f"/><stop offset="55%" stop-color="#8f3a1c" stop-opacity=".82"/>
+    <stop offset="100%" stop-color="#a8471f" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="fDisc" cx="42%" cy="38%" r="66%">
+    <stop offset="0%" stop-color="#ffeccd"/><stop offset="70%" stop-color="#f6d5a4"/><stop offset="100%" stop-color="#e0b078"/>
+  </radialGradient>
+  <filter id="fChoroid" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.021 0.05" numOctaves="4" seed="12" result="t"/>
+    <feColorMatrix in="t" type="matrix" values="0 0 0 0 .45  0 0 0 0 .16  0 0 0 0 .07  .55 0 0 0 -.08"/>
+  </filter>
+  <filter id="fSoftF" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="9"/></filter>
+  <filter id="fSoftF3" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="3"/></filter>
+  <mask id="fWhiteMask">
+    <rect x="0" y="0" width="620" height="400" fill="#fff"/>
+    <circle cx="${MX}" cy="${MY}" r="26" fill="#000" filter="url(#fSoftF3)"/>
+    <ellipse cx="${DX}" cy="${DY}" rx="34" ry="37" fill="#000" filter="url(#fSoftF3)"/>
+  </mask>
+ </defs>
+
+ <rect width="620" height="400" fill="#07090c"/>
+
+ <g clip-path="url(#clipFundus)">
+   <circle cx="${FX}" cy="${FY}" r="${FR}" fill="url(#fBg)"/>
+   <rect x="${FX-FR}" y="${FY-FR}" width="${FR*2}" height="${FR*2}" filter="url(#fChoroid)" opacity=".5"/>
+   <circle cx="${MX}" cy="${MY}" r="62" fill="url(#fMac)"/>
+
+   <!-- vasculature: venules are wider and darker, arterioles brighter -->
+   <g fill="none" stroke-linecap="round" opacity=".95">
+     ${VENULES.map(d=>`<path d="${d}" stroke="#8e2418" stroke-width="6.4"/>`).join('')}
+     ${BRANCHES.map(d=>`<path d="${d}" stroke="#94291a" stroke-width="3"/>`).join('')}
+   </g>
+   <g id="fu-art" fill="none" stroke-linecap="round">
+     ${ARTERIOLES.map((d,i)=>`<path class="fu-a" data-i="${i}" d="${d}" stroke="#d9422c" stroke-width="4.4"/>`).join('')}
+   </g>
+   <!-- segmented ("boxcar") blood column -->
+   <g id="fu-boxcar" fill="none" opacity="0" stroke-linecap="butt">
+     ${ARTERIOLES.map(d=>`<path d="${d}" stroke="#f0e6d2" stroke-width="4.6" stroke-dasharray="7 9"/>`).join('')}
+   </g>
+   <ellipse id="fu-embolus" cx="${DX-16}" cy="${DY-26}" rx="6" ry="4.4" fill="#ffe9a8" opacity="0" stroke="#fff8dc" stroke-width="1"/>
+
+   <!-- optic disc -->
+   <g id="fu-disc">
+     <ellipse id="fu-disc-edema" cx="${DX}" cy="${DY}" rx="42" ry="45" fill="#f7e6cd" opacity="0" filter="url(#fSoftF)"/>
+     <ellipse id="fu-disc-body" cx="${DX}" cy="${DY}" rx="27" ry="30" fill="url(#fDisc)"/>
+     <ellipse id="fu-cup" cx="${DX+2}" cy="${DY}" rx="10" ry="11" fill="#fdf3e2" opacity=".85"/>
+     <ellipse cx="${DX}" cy="${DY}" rx="27" ry="30" fill="none" stroke="#a4633a" stroke-width="1.6" opacity=".7"/>
+   </g>
+
+   <!-- retinal infarction: opaque, oedematous inner retina sparing the thin fovea -->
+   <g id="fu-white" opacity="0" mask="url(#fWhiteMask)">
+     <ellipse cx="${FX+6}" cy="${FY}" rx="158" ry="140" fill="#e9e5d6" filter="url(#fSoftF)"/>
+   </g>
+   <g id="fu-cotton" opacity="0" filter="url(#fSoftF3)">${cotton}</g>
+   <g id="fu-hem" opacity="0">${hems}</g>
+
+   <!-- foveal reflex -->
+   <circle cx="${MX}" cy="${MY}" r="7" fill="#5e1d0c" opacity=".8"/>
+   <circle cx="${MX-2}" cy="${MY-2}" r="2.2" fill="#ffd9b0" opacity=".5"/>
+   <circle cx="${FX}" cy="${FY}" r="${FR}" fill="none" stroke="#000" stroke-width="26" opacity=".28"/>
+ </g>
+ <circle cx="${FX}" cy="${FY}" r="${FR}" fill="none" stroke="#22333f" stroke-width="2"/>
+ <text x="${FX-FR}" y="${FY+FR+22}" font-family="ui-monospace,monospace" font-size="10" fill="#5f7280" letter-spacing="1.4">OD · DILATED FUNDUS</text>
+ <text x="${DX+40}" y="${FY-FR+14}" font-family="ui-monospace,monospace" font-size="10" fill="#5f7280">N →</text>
+ <text x="${FX-FR+6}" y="${FY-FR+14}" font-family="ui-monospace,monospace" font-size="10" fill="#5f7280">← T</text>
+
+ <!-- fellow eye -->
+ <g id="fu-fellow">
+   <g clip-path="url(#clipFellow)">
+     <circle cx="530" cy="126" r="70" fill="url(#fBg)"/>
+     <rect x="460" y="56" width="140" height="140" filter="url(#fChoroid)" opacity=".45"/>
+     <ellipse cx="500" cy="126" rx="26" ry="26" fill="url(#fMac)"/>
+     <g fill="none" stroke="#8e2418" stroke-width="3">
+       <path d="M 560,112 C 536,96 508,92 484,100"/><path d="M 560,142 C 536,158 508,162 484,152"/>
+     </g>
+     <g fill="none" stroke="#d9422c" stroke-width="2.1">
+       <path d="M 562,116 C 538,102 512,98 486,106"/><path d="M 562,138 C 538,152 512,156 486,146"/>
+     </g>
+     <ellipse id="fu-fellow-edema" cx="566" cy="126" rx="24" ry="25" fill="#f7e6cd" opacity="0" filter="url(#fSoftF)"/>
+     <ellipse id="fu-fellow-disc" cx="566" cy="126" rx="15" ry="16" fill="url(#fDisc)"/>
+     <ellipse cx="566" cy="126" rx="15" ry="16" fill="none" stroke="#a4633a" stroke-width="1.2" opacity=".7"/>
+   </g>
+   <circle cx="530" cy="126" r="70" fill="none" stroke="#22333f" stroke-width="1.6"/>
+   <text x="470" y="216" font-family="ui-monospace,monospace" font-size="10" fill="#5f7280" letter-spacing="1.2">OS · FELLOW EYE</text>
+   <text id="fu-fellow-status" x="470" y="232" font-family="ui-monospace,monospace" font-size="10" fill="#7fc98b" letter-spacing=".6">normal</text>
+ </g>
+</svg>`;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   4 · BASELINE PHYSIOLOGY
+   ═══════════════════════════════════════════════════════════════ */
+const BASE = {
+  iop:15, pupil:3.4, oval:0, edema:0, conj:0, ciliary:0, chemosis:0,
+  infiltrate:0, epiDefect:0, hypopyon:0, discharge:0, scar:0, thinning:0,
+  acDepth:1, bombe:0, angleOpen:1, lpi:0, flare:0,
+  whitening:0, boxcar:0, atten:0, embolus:0, pallor:0, discEdema:0, cotton:0, hem:0, fellow:0,
+  va:0, pain:0, analg:0, esr:12, crp:2
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   5 · CASES
+   ═══════════════════════════════════════════════════════════════ */
+const CASES = [
+{
+  id:'practice', tab:'00 · Practice', view:'external', views:['external','cross'],
+  iris:{base:'#5d4a3a', fibre:'#b99a72'}, practice:true,
+  title:'Practice patient — a scratched cornea',
+  meta:'26 F · 40 minutes ago · caught her eye with a mascara wand',
+  paras:[
+    'She scratched the surface of her right eye with a mascara wand three quarters of an hour ago. It has been <strong>watering and stinging</strong> ever since, and bright light makes it worse. She keeps wanting to hold it shut.',
+    'No contact lenses, no chemicals, nothing flew into it at speed. This is a deliberately easy case: it exists so you can learn the controls without having to think hard about the medicine.'
+  ],
+  exam:[['Acuity OD','20/50, improves when she blinks'],['Acuity OS','20/20'],
+        ['Cornea OD','Surface irregularity paracentrally; no white infiltrate'],
+        ['Anterior chamber','Clear and deep'],['Pupil','3.4 mm, briskly reactive'],['IOP','15 mmHg']],
+  caption:{external:'A clean epithelial injury. No infiltrate, no hypopyon, and the pupil behaves normally.',
+           cross:'Nothing dramatic in a surface injury — the chamber is deep and the angle is open.'},
+  initial:{epiDefect:.55, va:.44, pain:6, pupil:3.4, iop:15},
+  derive(t){
+    t.va      = clamp(.05 + t.epiDefect*.72 + t.infiltrate*.8, 0, 1.4);
+    t.pain    = clamp(t.epiDefect*11 - t.analg, 0, 10);
+    t.conj    = clamp(.14 + t.epiDefect*.72, 0, 1);
+    t.ciliary = clamp(t.epiDefect*.42 + t.infiltrate*.6, 0, 1);
+    t.discharge = clamp(t.epiDefect*.3,0,1);
+  },
+  dx:[{l:'Simple corneal abrasion',t:true},{l:'Microbial keratitis'},{l:'Acute angle closure'},
+      {l:'Viral conjunctivitis'},{l:'Undifferentiated — need more data'}],
+  dxTeach:'Trauma with a clean mechanism, a stained epithelial break, no white infiltrate, no cells in the chamber and a normal pressure. There is nothing subtle here — which is the point of a practice case. Keratitis would show a white stromal infiltrate; angle closure would give a hard eye and an oval fixed pupil; conjunctivitis does not blur vision.',
+  vitals:[
+    {k:'Acuity OD', f:s=>vaText(s.va), z:s=>s.va>0.7?'alarm':s.va>0.25?'warn':'ok'},
+    {k:'Epi defect', f:s=>s.epiDefect<.04?'healed':(s.epiDefect*6).toFixed(1)+' mm', z:s=>s.epiDefect>.4?'warn':s.epiDefect>.04?'warn':'ok'},
+    {k:'Infiltrate', f:s=>s.infiltrate<.04?'nil':(s.infiltrate*6.8).toFixed(1)+' mm', z:s=>s.infiltrate>.05?'alarm':'ok'},
+    {k:'Pain', f:s=>Math.round(s.pain)+'/10', z:s=>s.pain>6?'alarm':s.pain>3?'warn':'ok'},
+    {k:'IOP OD', f:s=>Math.round(s.iop)+' mmHg', z:s=>'ok'}
+  ],
+  critical:['evert','abx','review48'],
+  orders:[
+    {id:'acuity', g:'Examination', label:'Recheck acuity with a pinhole', sub:'Rule out an unrelated cause of blur', min:3, v:'good',
+     reveal:'Pinhole acuity 20/30 — the blur is surface irregularity and tearing.',
+     note:'The order buttons all show a time cost. Looking is free; ordering spends minutes on the clock at the top of the log.'},
+    {id:'evert', g:'Examination', label:'Evert the upper lid and sweep', sub:'Look for a retained foreign body', min:3, v:'crit',
+     reveal:'Upper and lower lids everted: no retained foreign body, no vertical linear abrasions.',
+     note:'The classic miss. A subtarsal foreign body scratches the cornea with every blink, so an abrasion that will not heal is a lid that was never everted. Vertical linear scratches are the giveaway.'},
+    {id:'seidel', g:'Examination', label:'Seidel test', sub:'Exclude a full-thickness leak', min:2, v:'dx',
+     reveal:'Seidel negative — no aqueous leak, the injury is partial thickness.'},
+
+    {id:'abx', g:'Treatment', label:'Chloramphenicol ointment four times daily', sub:'Prophylaxis while the epithelium closes', min:2, v:'crit',
+     note:'An abrasion is a breach in the eye\u2019s only real barrier. Ointment also lubricates, which is most of the comfort.'},
+    {id:'analgesia', g:'Treatment', label:'Oral analgesia and dark glasses', sub:'Regular paracetamol and an NSAID', min:2, v:'good', ap:t=>{t.analg+=2.2;}},
+    {id:'cyclo', g:'Treatment', label:'Cyclopentolate 1%, single dose', sub:'For photophobia and ciliary spasm', min:2, v:'good',
+     ap:t=>{t.analg+=1.6; t.pupil=6.4;}, note:'Watch the pupil dilate in the external view. This is the cheapest way to see the app respond to something you ordered.'},
+    {id:'anesthetic', g:'Treatment', label:'Topical anaesthetic to take home', sub:'It stops the pain instantly', min:1, v:'harm',
+     ap:t=>{t.epiDefect=clamp(t.epiDefect+.3,0,1);},
+     note:'Never. It is directly toxic to the healing epithelium and it removes the pain that stops her rubbing. Watch the defect get bigger and the log entry turn red — harmful orders are clickable on purpose here.'},
+    {id:'steroid', g:'Treatment', label:'Topical steroid', sub:'The eye is red and sore', min:2, v:'harm',
+     ap:t=>{t.epiDefect=clamp(t.epiDefect+.16,0,1);},
+     note:'Delays epithelial healing and converts a trivial injury into a risk of infection. Redness after trauma is not an indication for steroid.'},
+    {id:'patch', g:'Treatment', label:'Pressure patch for 24 hours', sub:'The traditional answer', min:3, v:'neutral',
+     note:'Trials show patching does not speed healing and probably slows it, while leaving her monocular for a day. Avoid it entirely in contact-lens or organic-matter injuries.'},
+
+    {id:'review48', g:'Follow-up', label:'Review in 48 hours', sub:'Or sooner if worse', min:2880, v:'crit',
+     ap:(t,c)=>{
+       const harmed=c.done.has('anesthetic')||c.done.has('steroid');
+       const treated=c.done.has('abx');
+       t.analg=0;
+       if(harmed && treated){ t.epiDefect=0; t.infiltrate=0;
+         return {v:'warn', note:'48 hours: closed — but it took the full two days instead of one, and the surface is faintly hazy where it was slow to heal. Stopping the anaesthetic and covering her with an antibiotic is what rescued this. One prescription caught at the first review is usually recoverable; a fortnight of it is not.'}; }
+       if(harmed){ t.epiDefect=clamp(t.epiDefect-.1,0,1); t.infiltrate=.13;
+         return {v:'warn', note:'48 hours: still a defect, and now an infiltrate forming at its edge. What should have closed in a day has been held open by something you prescribed, and nothing was given to protect it.'}; }
+       if(!treated){ t.epiDefect=clamp(t.epiDefect-.35,0,1);
+         return {v:'warn', note:'48 hours: healing, but slower than it should, and it healed without any cover against infection. It worked out. It does not always.'}; }
+       t.epiDefect=0;
+       return {note:'48 hours: fully re-epithelialised, comfortable, acuity back to normal. Most simple abrasions close inside 24 to 72 hours.'}; }},
+    {id:'discharge', g:'Follow-up', label:'Discharge with no follow-up', sub:'It is only a scratch', min:3, v:'harm',
+     note:'Most would be fine. The ones that are not are the retained foreign body you missed and the abrasion that becomes an ulcer, and neither announces itself by post.'}
+  ],
+  outcome(c,s){
+    if(s.epiDefect<.05 && s.infiltrate<.05 && !c.harms.length) return {tone:'good', h:'Healed clean, nothing made worse.',
+      t:'Epithelium closed, acuity '+vaText(s.va)+', comfortable, no infection. That is the whole job in a simple abrasion: prophylaxis, pain relief, evert the lid, and see her again. You have also now used every control in the app — go and do case 01.'};
+    if(s.epiDefect<.05) return {tone:'warn', h:'Healed — and the scorecard still remembers.',
+      t:'Epithelium closed, acuity '+vaText(s.va)+', eye comfortable. But it took two days instead of one and the harmful-orders count reads 1, because you prescribed something that held it open. If you were following the practice run, that was the take-home anaesthetic and I asked you to click it on purpose — the app scores what you did, not what you meant. That is the whole accounting, and the real cases use exactly the same one.'};
+    if(c.done.has('anesthetic')||c.done.has('steroid')) return {tone:'bad', h:'A trivial injury, held open by treatment.',
+      t:'An abrasion that has not closed at 48 hours with an infiltrate forming is on its way to being an ulcer. Both of the drugs that do this were offered to you as reasonable-sounding options.'};
+    return {tone:'warn', h:'Not followed to closure.',
+      t:'You never brought her back, so you do not know whether it healed. That is the one thing an abrasion needs from you.'};
+  },
+  pearls:[
+    ['Evert the lid, every time','An abrasion that will not heal is usually a subtarsal foreign body still scratching with each blink.'],
+    ['Never a take-home anaesthetic','Epitheliotoxic, and it removes the reflex that protects the eye.'],
+    ['Patching has fallen out of favour','No faster healing, and it blindfolds the patient for a day.'],
+    ['Ask about contact lenses and organic matter','Both change this from a scratch into a possible ulcer, and both change the antibiotic.']
+  ]
+},
+{
+  id:'acg', tab:'01 · Red painful eye', view:'external', views:['external','cross'],
+  iris:{base:'#6b4526', fibre:'#c79a5e'},
+  title:'“The lights all have rainbows round them”',
+  meta:'64 F · hyperopic · 21:40, brought in by her daughter',
+  paras:[
+    'She was two hours into a film in a darkened cinema when her <strong>right eye began to ache</strong>. Within an hour the ache became a boring pain behind the brow, she vomited twice in the foyer, and the vision in that eye turned to fog with coloured haloes around the exit signs.',
+    'She has never had eye trouble beyond reading glasses she describes as “strong”. No trauma, no contact lenses, no discharge. Her daughter mentions she took an over-the-counter cold remedy this afternoon.'
+  ],
+  exam:[['Acuity OD','20/200, no improvement with pinhole'],['Acuity OS','20/25'],
+        ['Pupil OD','5.5 mm, vertically oval, fixed to light'],['Cornea OD','Diffusely hazy; iris detail lost'],
+        ['Anterior chamber','Very shallow peripherally'],['Globe','Firm to gentle palpation; eye is intensely tender'],
+        ['Systemic','Nauseated, BP 158/88, afebrile']],
+  caption:{external:'Mid-dilated vertically oval pupil, microcystic corneal oedema, circumcorneal ciliary flush.',
+           cross:'Aqueous cannot cross the pupil, so it lifts the peripheral iris forward onto the meshwork.'},
+  initial:{iop:52, pupil:5.5, oval:1, edema:.78, conj:.55, ciliary:.9, acDepth:.15, bombe:.9, angleOpen:.05, va:1.0, pain:9},
+  /* dependent variables — the eye is not a set of independent sliders */
+  derive(t){
+    t.edema  = clamp((t.iop-22)/34, 0, .85) * (1 - t.lpi*0.12);
+    t.ciliary= clamp((t.iop-20)/34, 0, .9);
+    t.conj   = clamp((t.iop-20)/44, 0, .6);
+    t.pain   = clamp((t.iop-14)/4.4, 0, 10);
+    t.va     = clamp(0.1 + t.edema*1.15, 0, 1.3);
+    t.acDepth= clamp(1 - t.bombe*0.85, .12, 1);
+    t.angleOpen = clamp(1 - t.bombe, .05, 1);
+    t.flare  = t.edema*.5;
+  },
+  dx:[{l:'Acute primary angle closure',t:true},{l:'Acute anterior uveitis'},{l:'Microbial keratitis'},
+      {l:'Bacterial conjunctivitis'},{l:'Neovascular glaucoma'},{l:'Undifferentiated — need more data'}],
+  dxTeach:'Pain + vomiting + haloes + a firm eye + a <em>mid-dilated oval fixed</em> pupil is the classic quartet. Uveitis gives a small, sticky, painful pupil and a soft-to-normal eye; keratitis gives a focal infiltrate and a stained epithelium; conjunctivitis never blurs vision or hardens the globe. Hyperopia, female sex, East Asian ancestry, dim light and an anticholinergic cold remedy are all mid-dilation risk factors.',
+  vitals:[
+    {k:'IOP OD', f:s=>Math.round(s.iop)+' mmHg', z:s=>s.iop>30?'alarm':s.iop>21?'warn':'ok'},
+    {k:'Acuity OD', f:s=>vaText(s.va), z:s=>s.va>0.7?'alarm':s.va>0.3?'warn':'ok'},
+    {k:'Pupil', f:s=>s.pupil.toFixed(1)+' mm', z:s=>s.pupil>4.5?'warn':'ok'},
+    {k:'Pain', f:s=>Math.round(s.pain)+'/10', z:s=>s.pain>6?'alarm':s.pain>3?'warn':'ok'},
+    {k:'Angle', f:s=>s.angleOpen>.6?'open':s.angleOpen>.3?'narrow':'closed', z:s=>s.angleOpen>.6?'ok':s.angleOpen>.3?'warn':'alarm'}
+  ],
+  critical:['acetazolamide','timolol','lpi_od','lpi_os'],
+  orders:[
+    {id:'gonio', g:'Bedside assessment', label:'Gonioscopy, both eyes', sub:'Indentation gonioscopy at the slit lamp', min:4, v:'dx',
+     reveal:'Gonioscopy: OD angle closed in all four quadrants, no structures visible. OS occludable — meshwork seen only on indentation.',
+     note:'The fellow eye is the whole reason this case has a second half. An occludable angle OS means a 40–80% lifetime risk of the same attack there.'},
+    {id:'supine', g:'Bedside assessment', label:'Lie her flat, supine', sub:'Lets the lens fall posteriorly', min:2, v:'good',
+     ap:t=>{t.iop-=3;}, note:'Free, immediate, and it deepens the chamber a little. Do it while the drops are being drawn up.'},
+    {id:'analgesia', g:'Bedside assessment', label:'IV antiemetic and analgesia', sub:'Ondansetron + morphine titrated', min:4, v:'good',
+     ap:t=>{}, note:'Does nothing to the pressure, but a vomiting patient cannot keep down oral acetazolamide and cannot hold still for a laser.'},
+
+    {id:'timolol', g:'Topical drops', label:'Timolol 0.5%', sub:'β-blocker — reduces aqueous production', min:2, v:'good',
+     ap:t=>{t.iop-=8;}, note:'Ask about asthma and bradycardia first.'},
+    {id:'brimonidine', g:'Topical drops', label:'Brimonidine 0.2%', sub:'α₂-agonist — reduces production, increases outflow', min:2, v:'good', ap:t=>{t.iop-=6;}},
+    {id:'pred', g:'Topical drops', label:'Prednisolone acetate 1%', sub:'Quietens the intense inflammatory response', min:2, v:'good',
+     ap:t=>{t.iop-=1;}, note:'Angle closure is an inflammatory event as well as a mechanical one. Steroid also improves the corneal clarity you need for the laser.'},
+    {id:'pilo', g:'Topical drops', label:'Pilocarpine 2%', sub:'Miotic — pulls the peripheral iris off the meshwork', min:2, v:'good', repeat:true,
+     ap:(t,c)=>{
+       if(t.iop>40) return {v:'neutral', note:'No effect. Above roughly 40–50 mmHg the iris sphincter is ischaemic and simply will not respond to a miotic. Bring the pressure down first, then give it — this is the single most common sequencing error in this case.'};
+       if(t.lpi>.5) return {v:'neutral', note:'The iridotomy has already relieved the block; the miotic adds little now.'};
+       t.pupil=2.4; t.oval=0; t.bombe=.12;
+       return {v:'crit', note:'The pupil constricts, the peripheral iris pulls away from the meshwork and the attack breaks. Notice the chamber deepen in the cross-section.'};
+     }},
+    {id:'mydriatic', g:'Topical drops', label:'Tropicamide + phenylephrine', sub:'Dilate to get a better fundus view', min:2, v:'harm',
+     ap:t=>{t.pupil=7.2; t.oval=.4; t.bombe=1; t.iop+=14;},
+     note:'Mid-dilation is the mechanism of the disease. You have just widened the block: pressure up, chamber flatter, angle sealed. Never dilate an eye with a shallow chamber and a hard globe.'},
+    {id:'latanoprost', g:'Topical drops', label:'Latanoprost 0.005%', sub:'Prostaglandin analogue', min:2, v:'neutral',
+     ap:t=>{t.iop-=2;}, note:'Works through the very outflow pathway that is mechanically blocked, so it is a weak choice acutely — and it is pro-inflammatory in an already inflamed eye.'},
+
+    {id:'acetazolamide', g:'Systemic', label:'Acetazolamide 500 mg IV', sub:'Carbonic anhydrase inhibitor', min:6, v:'good',
+     ap:t=>{t.iop-=11;}, note:'Check for sulfonamide reaction, sickle cell disease and renal impairment. IV beats oral in a vomiting patient.'},
+    {id:'mannitol', g:'Systemic', label:'IV mannitol 20%, 1–1.5 g/kg', sub:'Osmotic — dehydrates the vitreous', min:12, v:'good',
+     ap:(t,c)=>{ if(t.iop<32) return {v:'neutral', note:'The pressure was already controlled; an osmotic load in a 64-year-old is not free. Reserve it for pressures that will not come down.'};
+       t.iop-=14; return {note:'Reserved for pressure that resists topical and oral therapy. Watch cardiac and renal status, and warn her about the diuresis.'}; }},
+
+    {id:'indent', g:'Procedures', label:'Corneal indentation with a gonioprism', sub:'Mechanically forces aqueous into the angle', min:4, v:'good',
+     ap:t=>{t.iop-=5; t.bombe=Math.max(.3,t.bombe-.25);}, note:'A neat bedside manoeuvre that can break an attack when drops stall.'},
+    {id:'paracent', g:'Procedures', label:'Anterior chamber paracentesis', sub:'Drain aqueous at the slit lamp', min:10, v:'neutral',
+     ap:t=>{t.iop=Math.min(t.iop,16);}, note:'Drops the pressure within seconds and rescues an eye that is not responding — but it is an intraocular procedure with real risk. Not a first move.'},
+    {id:'lpi_od', g:'Procedures', label:'Nd:YAG laser peripheral iridotomy — right eye', sub:'Definitive: bypasses the pupil block', min:20, v:'crit',
+     need:t=>t.edema<.34, needText:'The cornea is too hazy to aim a laser through. Lower the pressure first.',
+     ap:t=>{t.lpi=1; t.bombe=0; t.pupil=Math.min(t.pupil,3.2); t.oval=0; t.iop=Math.min(t.iop,17);},
+     note:'The definitive treatment. A hole in the peripheral iris lets aqueous cross regardless of the pupil, so the iris flattens and the angle reopens. Medical therapy only buys you the clear cornea you needed to do this.'},
+    {id:'lpi_os', g:'Procedures', label:'Prophylactic iridotomy — left eye', sub:'The fellow eye has an occludable angle', min:14, v:'crit',
+     ap:t=>{}, note:'Untreated, the fellow eye of an acute angle closure has roughly a 40–80% chance of its own attack. Treating it is not optional.'},
+    {id:'discharge', g:'Disposition', label:'Discharge on drops, clinic in four weeks', sub:'Pressure is coming down, she feels better', min:5, v:'harm',
+     ap:t=>{}, note:'Medical therapy is a bridge, not a treatment. Send her home without an iridotomy and the attack recurs — often as a chronic, painless, quietly blinding closure with peripheral anterior synechiae.'},
+    {id:'admit', g:'Disposition', label:'Keep her until the pressure is stable, then laser both eyes', sub:'Recheck IOP hourly', min:8, v:'good', ap:t=>{}}
+  ],
+  outcome(c,s){
+    const ok = c.done.has('lpi_od') && c.done.has('lpi_os');
+    if(ok && s.iop<22) return {tone:'good', h:'Sight preserved, and the fellow eye protected.',
+      t:'Pressure controlled medically, cornea cleared, iridotomies placed in both eyes. Acuity recovered to 20/25 by the two-week visit. She needs long-term follow-up: about a third of these eyes develop chronic pressure elevation from synechial damage even after a patent iridotomy.'};
+    if(c.done.has('lpi_od') && !c.done.has('lpi_os')) return {tone:'warn', h:'This eye saved. The other one is still loaded.',
+      t:'You broke the attack and treated the right eye definitively, but left an occludable angle in the left. That is a coin-flip risk of the same emergency, and next time she may not be brought in within three hours.'};
+    if(s.iop<22) return {tone:'warn', h:'Pressure down, disease untreated.',
+      t:'Drops lowered the pressure and she felt better, which is exactly how this diagnosis gets discharged. Without an iridotomy the block remains and the angle scars shut over months.'};
+    return {tone:'bad', h:'The pressure never came down.',
+      t:'Sustained pressure at this level infarcts the optic nerve and the iris sphincter. Expect permanent field loss, a fixed pupil and a segmental iris atrophy that will be visible for the rest of her life.'};
+  },
+  pearls:[
+    ['Mid-dilated, not constricted','Pupil block is maximal at mid-dilation, so the pupil you find is 4–6 mm, vertically oval and unreactive — not the small sticky pupil of uveitis.'],
+    ['Pilocarpine has a ceiling','Above ~40–50 mmHg the sphincter is ischaemic. Lower the pressure first, then miose.'],
+    ['Systemic symptoms mislead','Headache and vomiting send these patients to medicine and neurology. Someone has to palpate the globe and look at the pupil.'],
+    ['Both eyes, always','The fellow angle is anatomically identical. Prophylactic iridotomy is part of the treatment, not follow-up.']
+  ]
+},
+{
+  id:'ker', tab:'02 · Contact lens ulcer', view:'external', views:['external','cross'],
+  iris:{base:'#4a5f6b', fibre:'#9fb6c2'},
+  title:'Two days out of a swimming pool',
+  meta:'21 M · monthly soft lenses, slept in them ·  presents at 07:00',
+  paras:[
+    'He swam on Saturday in his lenses, then slept in them. He woke on Sunday with a gritty right eye, and by this morning he cannot open it in daylight. The pain is <strong>severe and boring</strong>, out of proportion to how the eye looked yesterday.',
+    'There is thick yellow discharge stuck to his lashes and he has been rinsing the eye with tap water. He last replaced this pair of lenses “a while ago” and tops up the solution in the case rather than emptying it.'
+  ],
+  exam:[['Acuity OD','20/100, worse with glare'],['Acuity OS','20/20'],
+        ['Lids','Mucopurulent discharge, marked photophobia, blepharospasm'],
+        ['Cornea OD','Dense 4 mm paracentral stromal infiltrate with an overlying epithelial break'],
+        ['Anterior chamber','1.5 mm layered hypopyon, intense flare'],
+        ['Injection','Diffuse conjunctival injection plus circumcorneal flush'],['IOP','14 mmHg']],
+  caption:{external:'Dense stromal infiltrate, overlying epithelial defect and a hypopyon layered flat by gravity.',
+           cross:'The infiltrate sits in the stroma; the hypopyon is sterile inflammatory cells pooling in the chamber.'},
+  initial:{infiltrate:.62, epiDefect:.7, hypopyon:.5, discharge:.85, conj:.85, ciliary:.8, edema:.28, flare:.9, va:.7, pain:8, iop:14, pupil:3.2},
+  derive(t){
+    t.ciliary = clamp(t.infiltrate*1.05,0,.95);
+    t.edema   = clamp(t.infiltrate*.45,0,.48);
+    t.flare   = clamp(t.hypopyon*1.5 + t.infiltrate*.45,0,1);
+    t.va      = clamp(.1 + t.infiltrate*1.1 + t.scar*.6,0,1.5);
+    t.pain    = clamp(t.infiltrate*6.4 + t.epiDefect*3.6 - t.analg,0,10);
+  },
+  dx:[{l:'Pseudomonas microbial keratitis',t:true},{l:'Herpes simplex epithelial keratitis'},
+      {l:'Acanthamoeba keratitis'},{l:'Sterile contact-lens infiltrate'},{l:'Fungal keratitis'},
+      {l:'Undifferentiated — need more data'}],
+  dxTeach:'Overnight wear plus water exposure plus rapid progression over 48 hours with a dense suppurative infiltrate and a hypopyon is Pseudomonas until culture says otherwise. Herpes gives a dendritic <em>epithelial</em> ulcer with reduced corneal sensation and no hypopyon. Acanthamoeba is the great mimic — same risk factors, but it declares itself over weeks with pain grossly exceeding the signs, radial keratoneuritis and a ring infiltrate. Sterile infiltrates are small, peripheral, multiple, and the epithelium is usually intact.',
+  vitals:[
+    {k:'Acuity OD', f:s=>vaText(s.va), z:s=>s.va>0.7?'alarm':s.va>0.3?'warn':'ok'},
+    {k:'Infiltrate', f:s=>s.infiltrate<.14?'trace':(s.infiltrate*6.8).toFixed(1)+' mm', z:s=>s.infiltrate>.5?'alarm':s.infiltrate>.2?'warn':'ok'},
+    {k:'Hypopyon', f:s=>s.hypopyon<.04?'nil':(s.hypopyon*3).toFixed(1)+' mm', z:s=>s.hypopyon>.3?'alarm':s.hypopyon>.05?'warn':'ok'},
+    {k:'Epi defect', f:s=>s.epiDefect<.04?'healed':(s.epiDefect*6).toFixed(1)+' mm', z:s=>s.epiDefect>.5?'alarm':s.epiDefect>.05?'warn':'ok'},
+    {k:'Thinning', f:s=>s.thinning<.05?'nil':Math.round(s.thinning*100)+'%', z:s=>s.thinning>.4?'alarm':s.thinning>.1?'warn':'ok'},
+    {k:'Pain', f:s=>Math.round(s.pain)+'/10', z:s=>s.pain>6?'alarm':s.pain>3?'warn':'ok'}
+  ],
+  critical:['scrape','fortified','stoplens','review24'],
+  orders:[
+    {id:'fluor', g:'Examination', label:'Fluorescein and cobalt blue', sub:'Stain the epithelium and look again', min:1, v:'dx',
+     ap:(t,c)=>{ c.setFluor(true); return {note:'The epithelial defect lights up green: 4.2 × 3.8 mm, overlying the infiltrate. An intact epithelium over an infiltrate would have pushed you toward a sterile immune reaction instead.'}; },
+     reveal:'Fluorescein: 4.2 × 3.8 mm epithelial defect directly over the infiltrate. Seidel negative.'},
+    {id:'measure', g:'Examination', label:'Photograph and measure the infiltrate', sub:'Document size, depth and location', min:3, v:'good',
+     note:'You cannot tell tomorrow whether an ulcer is improving unless you wrote down its dimensions today. Draw it if you have no camera.'},
+    {id:'sens', g:'Examination', label:'Test corneal sensation before instilling drops', sub:'Cotton wisp, compare both eyes', min:2, v:'dx',
+     reveal:'Corneal sensation intact and symmetrical.', note:'Intact sensation argues against herpes simplex, which is the diagnosis that would make steroids catastrophic and antivirals essential.'},
+    {id:'scrape', g:'Examination', label:'Corneal scrape for Gram stain and culture', sub:'Blade or needle at the ulcer edge, at the slit lamp', min:8, v:'crit',
+     ap:(t,c)=>{ const abx = c.done.has('fortified')||c.done.has('moxi');
+       return abx ? {v:'warn', note:'You scraped after starting antibiotics. Cultures are often sterile within hours of the first drop — you have kept the risk of the procedure and given away much of the yield. Scrape first, then treat.'}
+                  : {note:'Gram stain shows Gram-negative rods; culture later confirms Pseudomonas aeruginosa, sensitive to ceftazidime and tobramycin. Any central, large or vision-threatening ulcer is scraped before treatment.'}; },
+     reveal:'Gram stain: Gram-negative rods. Culture: Pseudomonas aeruginosa.'},
+    {id:'lensculture', g:'Examination', label:'Culture the lens, case and solution', sub:'Send the whole kit with him', min:2, v:'good',
+     note:'Frequently positive when the corneal scrape is not, and it makes the hygiene conversation concrete rather than abstract.'},
+
+    {id:'moxi', g:'Treatment', label:'Moxifloxacin 0.5% hourly', sub:'Fluoroquinolone monotherapy', min:2, v:'good',
+     ap:t=>{}, note:'Reasonable for a small peripheral ulcer. For a 4 mm paracentral infiltrate with a hypopyon, most would reach for fortified agents instead or as well.'},
+    {id:'fortified', g:'Treatment', label:'Fortified tobramycin 1.4% + vancomycin 5%', sub:'Alternating every hour, day and night', min:5, v:'crit',
+     ap:t=>{}, note:'Broad Gram-negative and Gram-positive cover at concentrations a commercial bottle cannot reach. Hourly means hourly — including overnight — for the first 48 hours.'},
+    {id:'cyclo', g:'Treatment', label:'Cyclopentolate 1% three times daily', sub:'Cycloplegia', min:2, v:'good',
+     ap:t=>{t.analg+=2.5; t.pupil=6.4;}, note:'Relieves the ciliary spasm that is causing most of his pain, and prevents posterior synechiae while the chamber is full of inflammatory cells.'},
+    {id:'doxy', g:'Treatment', label:'Oral doxycycline 100 mg twice daily', sub:'Anticollagenase', min:2, v:'good',
+     ap:t=>{t.thinning=Math.max(0,t.thinning-.1);}, note:'Inhibits matrix metalloproteinases and slows stromal melt in a thinning ulcer. Add oral vitamin C for the same reason.'},
+    {id:'analgesia', g:'Treatment', label:'Oral analgesia and dark glasses', sub:'Regular paracetamol and an NSAID', min:2, v:'good', ap:t=>{t.analg+=1.5;}},
+    {id:'stoplens', g:'Treatment', label:'Stop lens wear; discard lenses and case', sub:'And no swimming or showering in lenses ever again', min:1, v:'crit',
+     note:'Sounds trivial. It is the intervention that stops this happening to the other eye, and topping up rather than emptying a case is how Pseudomonas biofilm forms.'},
+    {id:'steroid', g:'Treatment', label:'Prednisolone acetate 1% four times daily', sub:'Damp down the inflammation', min:2, v:'harm',
+     ap:t=>{t.infiltrate=clamp(t.infiltrate+.22,0,1); t.thinning+=.3; t.hypopyon=clamp(t.hypopyon+.15,0,1);},
+     note:'Not now. Steroid before the organism is controlled promotes replication and stromal melt, and if this turned out to be fungal, acanthamoeba or nocardia it is frankly dangerous. Adjunctive steroid is considered later, once the ulcer is sterilising and re-epithelialising.'},
+    {id:'anesthetic', g:'Treatment', label:'Topical proparacaine to take home', sub:'He is in agony and asking for it', min:1, v:'harm',
+     ap:t=>{t.epiDefect=clamp(t.epiDefect+.28,0,1); t.infiltrate=clamp(t.infiltrate+.14,0,1); t.thinning+=.25;},
+     note:'Never. Topical anaesthetic is epitheliotoxic and removes the pain that stops him rubbing. Abuse produces a neurotrophic, ring-shaped melt that can perforate. Treat his pain with cycloplegia and systemic analgesia.'},
+    {id:'patch', g:'Treatment', label:'Firm pressure patch overnight', sub:'Standard for a large epithelial defect', min:3, v:'harm',
+     ap:t=>{t.infiltrate=clamp(t.infiltrate+.18,0,1); t.hypopyon=clamp(t.hypopyon+.18,0,1); t.discharge=1;},
+     note:'Correct for a sterile abrasion, wrong here. A warm closed space with no drops reaching it is an incubator, and Pseudomonas can perforate a cornea in days.'},
+
+    {id:'review24', g:'Follow-up', label:'Review at 24 hours', sub:'Same observer, same measurements', min:1440, v:'crit',
+     ap:(t,c)=>{
+       const abx = c.done.has('fortified')||c.done.has('moxi');
+       const good = abx && c.done.has('stoplens');
+       const bad  = c.done.has('steroid')||c.done.has('anesthetic')||c.done.has('patch');
+       if(good && !bad){ t.infiltrate-=.24; t.hypopyon-=.34; t.epiDefect-=.22; t.discharge-=.5;
+         return {note:'Day 1: the infiltrate edges are less feathery, the hypopyon has halved and the epithelium is beginning to creep in from the edge. Do not reduce the drop frequency yet.'}; }
+       if(bad){ t.infiltrate+=.16; t.thinning+=.15; t.epiDefect+=.1;
+         return {v:'warn', note:'Day 1: bigger, deeper, and the stroma is thinning centrally. The eye has been actively harmed by treatment.'}; }
+       t.infiltrate+=.14; t.hypopyon+=.12;
+       return {v:'warn', note:'Day 1: progression. Untreated or under-treated Pseudomonas advances by the hour, not the week.'};
+     }},
+    {id:'review7', g:'Follow-up', label:'Review at one week', sub:'Requires the day-1 review first', min:8640, v:'good',
+     need:(t,c)=>c.done.has('review24'), needText:'See him at 24 hours first.',
+     ap:(t,c)=>{
+       const bad = c.done.has('steroid')||c.done.has('anesthetic')||c.done.has('patch');
+       if(!bad && (c.done.has('fortified')||c.done.has('moxi'))){
+         t.infiltrate=.1; t.hypopyon=0; t.epiDefect=0; t.discharge=0; t.scar=.5; t.conj=.2; t.ciliary=.15;
+         return {note:'Week 1: epithelium closed, chamber quiet, and a residual anterior stromal scar where the infiltrate was. That scar is why the acuity will not return fully to 20/20 — the vision he ends up with was largely decided in the first 48 hours.'};
+       }
+       t.thinning+=.2; t.infiltrate=clamp(t.infiltrate+.1,0,1); t.scar=.3;
+       return {v:'warn', note:'Week 1: a descemetocele has formed centrally. This eye now needs tissue glue or a tectonic graft to stay intact.'};
+     }},
+    {id:'graft', g:'Follow-up', label:'Refer for tectonic keratoplasty', sub:'For impending or actual perforation', min:120, v:'neutral',
+     ap:(t,c)=> t.thinning<.35 ? {v:'neutral', note:'Not indicated — the stroma is not thin enough to warrant grafting an actively infected cornea.'}
+                               : {v:'good', note:'Appropriate. Grafting an infected cornea has a poor prognosis, but a perforated eye has a worse one.'}},
+    {id:'discharge', g:'Follow-up', label:'Discharge with drops, review in one week', sub:'He has a diagnosis and treatment', min:5, v:'harm',
+     note:'A central microbial ulcer with a hypopyon is reviewed daily until it is clearly turning. A week is long enough to lose the eye.'}
+  ],
+  outcome(c,s){
+    if(s.thinning>.4) return {tone:'bad', h:'Structural failure.',
+      t:'The cornea thinned to the point of a descemetocele. Whatever the eventual acuity, this eye now needs surgery it would not have needed if the treatment had been antimicrobial rather than anti-inflammatory or anaesthetic.'};
+    if(c.done.has('review7') && s.scar>0 && s.infiltrate<.2) return {tone:'good', h:'Ulcer sterilised, with a scar to show for it.',
+      t:'Final acuity '+vaText(s.va)+'. The eye is comfortable and structurally sound. A paracentral scar of this size will always cost a line or two and cause glare at night — an honest result, and the best available once a 4 mm central ulcer has formed. He will need a serious conversation about ever wearing lenses again.'};
+    if(s.infiltrate<.35) return {tone:'warn', h:'Heading the right way, not yet finished.',
+      t:'The ulcer is responding but you have not followed it to closure. These eyes relapse when hourly drops are tapered early or reviews are spaced out.'};
+    return {tone:'bad', h:'The ulcer is still advancing.',
+      t:'Nothing you have done has controlled the organism. Expect progression to a descemetocele or perforation, with endophthalmitis a real possibility.'};
+  },
+  pearls:[
+    ['Scrape before you treat','The first drop can sterilise the culture. For any central, large or sight-threatening ulcer, the microbiology comes first.'],
+    ['Pain out of proportion, over weeks','That is the Acanthamoeba story, and it needs a different drug entirely. Ask about water, always.'],
+    ['No steroid until the organism is controlled','And never in an undiagnosed ulcer. The temptation is strongest when the eye looks most inflamed.'],
+    ['Topical anaesthetic is never a take-home','It abolishes healing and protective reflexes and produces its own melting ulcer.'],
+    ['The scar decides the vision','Outcome is set by how fast the infiltrate stops growing, so the first 48 hours matter more than anything that follows.']
+  ]
+},
+{
+  id:'crao', tab:'03 · Sudden painless loss', view:'fundus', views:['external','fundus'], t0:40,
+  iris:{base:'#5a5f52', fibre:'#a9b09c'},
+  title:'“A curtain came down and never went up”',
+  meta:'78 F · 40 minutes from onset · walked into triage alone',
+  paras:[
+    'Forty minutes ago the vision in her right eye went <strong>completely and painlessly</strong>. She describes a grey curtain falling from above that then filled everything. She can tell where the window is and nothing more.',
+    'On direct questioning: six weeks of a new left-sided temporal headache, scalp tenderness when she combs her hair, and — she volunteers this reluctantly — she has been <strong>stopping halfway through meals because her jaw aches when she chews</strong>. Three kilograms down, shoulders stiff in the mornings. Two brief episodes of the vision “greying out” for a minute last week, which resolved, so she did not come in.'
+  ],
+  exam:[['Acuity OD','Light perception only'],['Acuity OS','20/30'],
+        ['Pupils','Brisk OS; right relative afferent pupillary defect'],
+        ['External eye','White, quiet, comfortable, normal cornea and chamber'],
+        ['IOP','16 mmHg both eyes'],['Fundus OD','Diffuse retinal whitening with a cherry-red spot; segmented arteriolar blood column'],
+        ['Fundus OS','Normal disc and vessels']],
+  caption:{fundus:'Infarcted inner retina turns opaque; the fovea is too thin to opacify, so the choroidal blush shows through as a cherry-red spot.',
+           external:'The external eye is entirely normal. Nothing here will tell you the retina is dying — which is exactly why this diagnosis gets sent home.'},
+  initial:{whitening:.8, boxcar:.85, atten:.55, va:2.6, pupil:4.6, iop:16, esr:12, crp:2},
+  derive(t){ t.pain=0; },
+  dx:[{l:'Arteritic CRAO from giant cell arteritis',t:true},{l:'Embolic (non-arteritic) CRAO'},
+      {l:'Retinal detachment'},{l:'Non-arteritic anterior ischaemic optic neuropathy'},
+      {l:'Vitreous haemorrhage'},{l:'Undifferentiated — need more data'}],
+  dxTeach:'The fundus tells you it is a central retinal artery occlusion. The <em>history</em> tells you why, and the why changes everything: jaw claudication is the single most specific symptom of giant cell arteritis, and with scalp tenderness, weight loss, polymyalgic stiffness and preceding amaurotic episodes this is arteritic until proven otherwise. Embolic occlusion threatens the brain; arteritic occlusion threatens the other eye within days. A detachment gives a mobile grey retina and flashes and floaters, not a cherry-red spot; NAION gives a swollen disc and altitudinal loss with a normal retina.',
+  vitals:[
+    {k:'Since onset', f:(s,c)=>dur(c.elapsed), z:(s,c)=>c.elapsed>240?'alarm':c.elapsed>120?'warn':'ok'},
+    {k:'Acuity OD', f:s=>vaText(s.va), z:s=>'alarm'},
+    {k:'ESR', f:s=>s.esr<15?'—':Math.round(s.esr)+' mm/h', z:s=>s.esr>50?'alarm':'ok'},
+    {k:'CRP', f:s=>s.crp<3?'—':Math.round(s.crp)+' mg/L', z:s=>s.crp>20?'alarm':'ok'},
+    {k:'Fellow eye', f:s=>s.fellow<.05?'normal':s.fellow<.4?'at risk':'involved', z:s=>s.fellow>.4?'alarm':s.fellow>.05?'warn':'ok'}
+  ],
+  critical:['bloods','methylpred','biopsy','vascular'],
+  orders:[
+    {id:'temporal', g:'Bedside assessment', label:'Palpate the temporal arteries', sub:'Tenderness, thickening, pulsation', min:2, v:'dx',
+     reveal:'Left temporal artery thickened, tender, nodular and pulseless.',
+     note:'A prominent, tender, non-pulsatile temporal artery in this history makes giant cell arteritis the working diagnosis at the bedside — before any test comes back.'},
+    {id:'bloods', g:'Bedside assessment', label:'Urgent ESR, CRP, platelets, FBC', sub:'Phlebotomy now, results within the hour', min:25, v:'crit',
+     ap:t=>{t.esr=96; t.crp=88;},
+     reveal:'ESR 96 mm/h · CRP 88 mg/L · platelets 486 · normocytic anaemia.',
+     note:'Grossly raised inflammatory markers support the diagnosis, but normal markers do not exclude it — roughly 4% of biopsy-proven cases have a normal ESR. Never let a pending result delay the steroid.'},
+    {id:'bp', g:'Bedside assessment', label:'ECG, blood pressure, cardiac auscultation', sub:'Looking for atrial fibrillation and murmurs', min:12, v:'good',
+     reveal:'Sinus rhythm, BP 148/82, no murmur.', note:'You still have to exclude an embolic source; the two mechanisms are not mutually exclusive in a 78-year-old.'},
+    {id:'oct', g:'Bedside assessment', label:'OCT of the macula', sub:'Confirm inner retinal oedema', min:10, v:'dx',
+     reveal:'OCT: hyperreflective, thickened inner retina with loss of layer definition; outer retina preserved.',
+     note:'Confirms inner retinal infarction and helps when the whitening is subtle. Useful, but it must not consume time you owe the steroid.'},
+
+    {id:'massage', g:'Attempts at reperfusion', label:'Ocular massage', sub:'Digital pressure, release, repeat for 10 minutes', min:12, v:'neutral',
+     note:'Cheap, harmless, and of unproven benefit. The theory is dislodging an embolus distally; the evidence is a handful of case reports. Reasonable while more important things are being organised — not instead of them.'},
+    {id:'acetaz', g:'Attempts at reperfusion', label:'IV acetazolamide to lower IOP', sub:'Increase the perfusion gradient', min:10, v:'neutral',
+     ap:t=>{t.iop=10;}, note:'The pressure is 16 — this is not a pressure problem. The rationale is to raise the perfusion gradient across an occluded vessel, and it has never been shown to change the outcome.'},
+    {id:'paracent', g:'Attempts at reperfusion', label:'Anterior chamber paracentesis', sub:'Abruptly decompress the globe', min:15, v:'neutral',
+     note:'Same logic, more risk. Practice varies widely; most units have abandoned it. If you are considering it at four hours from onset, ask what you are treating.'},
+    {id:'thrombolysis', g:'Attempts at reperfusion', label:'Discuss intra-arterial thrombolysis with the stroke team', sub:'Within a narrow window from onset', min:20, v:'neutral',
+     ap:(t,c)=> c.elapsed>270 ? {v:'neutral', note:'Too late to be plausible. Any thrombolysis window here is measured in a small number of hours, and it is still investigational — and it is the wrong treatment entirely if this is arteritic.'}
+                              : {note:'Still investigational and only in selected centres, but a CRAO is now widely handled as a stroke equivalent. Discussing it is defensible — giving the steroid is not optional either way.'}},
+
+    {id:'methylpred', g:'Systemic treatment', label:'IV methylprednisolone 1 g now', sub:'Do not wait for anything', min:30, v:'crit',
+     ap:(t,c)=>{ c.freezeFellow=true;
+       if(c.elapsed>180) return {v:'warn', note:'Given, and it will still help the fellow eye — but you spent three hours getting here. In arteritic disease the second eye can go within days, and sometimes within hours.'};
+       return {note:'The right move. The sight already lost in this eye is not coming back; the whole purpose of the steroid is the other eye and the vertebrobasilar circulation. Every hour of delay is untreated arteritis.'}; }},
+    {id:'oralpred', g:'Systemic treatment', label:'Oral prednisolone 1 mg/kg daily', sub:'If IV is not immediately available', min:15, v:'good',
+     ap:(t,c)=>{ c.freezeFellow=true; return {note:'Acceptable, and far better than waiting. High-dose IV is generally preferred when vision is already lost, but the drug getting into the patient beats the ideal route arriving later.'}; }},
+    {id:'aspirin', g:'Systemic treatment', label:'Aspirin 300 mg', sub:'Antiplatelet', min:5, v:'good',
+     note:'Sensible as part of vascular secondary prevention. On its own it is nowhere near adequate treatment for arteritis — this is the classic half-treatment that gets a second eye blinded.'},
+    {id:'gastro', g:'Systemic treatment', label:'Gastroprotection, bone protection, glucose monitoring', sub:'PPI, calcium and vitamin D, bisphosphonate review', min:8, v:'good',
+     note:'She is about to take high-dose steroid for a year or more. The complications of the treatment are now part of her problem list.'},
+    {id:'waitbiopsy', g:'Systemic treatment', label:'Hold steroids until the biopsy is done', sub:'Avoid confounding the histology', min:45, v:'harm',
+     ap:t=>{}, note:'A dangerous misconception. Giant cell arteritis is treated on clinical suspicion; the histology survives days to weeks of steroid, and skip lesions mean a negative biopsy would not have reassured you anyway. Nobody waits.'},
+
+    {id:'biopsy', g:'Definitive workup', label:'Arrange temporal artery biopsy', sub:'Long segment, within two weeks', min:20, v:'crit',
+     note:'Still worth doing after steroids have started — the yield holds for days to weeks. Take a long segment because skip lesions are common, and consider ultrasound of the temporal arteries (halo sign) where available.'},
+    {id:'vascular', g:'Definitive workup', label:'Treat as a stroke equivalent: admit and refer', sub:'Carotid imaging, echocardiogram, telemetry, stroke team review', min:25, v:'crit',
+     note:'A retinal artery occlusion carries a materially raised early risk of cerebral stroke. These patients belong in a stroke pathway on the day, not in a clinic in a fortnight.'},
+    {id:'day3', g:'Definitive workup', label:'Review at 72 hours', sub:'Repeat fundus examination', min:4320, v:'good',
+     ap:(t,c)=>{ t.whitening=.18; t.boxcar=.1; t.atten=.85; t.pallor=.75; t.va=Math.max(t.va,2.5);
+       return {note:'The retinal whitening has largely resolved, which is a trap — it looks better while the retina is now thin and dead. The arterioles are attenuated and the disc is turning pale. This is the chronic appearance of an infarcted retina.'}; }},
+    {id:'senddx', g:'Definitive workup', label:'Reassure and arrange outpatient MRI in two weeks', sub:'Painless loss, eye looks normal', min:20, v:'harm',
+     ap:t=>{}, note:'The commonest way this patient is harmed. The eye looks normal from the outside, the loss is painless, and she is polite about it — so she goes home with untreated arteritis and a 25–50% chance of losing the other eye within days.'}
+  ],
+  afterOrder(c,t){
+    if(!c.freezeFellow) t.fellow = clamp((c.elapsed-100)/420, 0, .9);
+    if(t.fellow>.45) t.va = Math.max(t.va, 2.6);
+  },
+  outcome(c,s){
+    const steroid = c.done.has('methylpred')||c.done.has('oralpred');
+    if(steroid && s.fellow<.2 && c.done.has('biopsy') && c.done.has('vascular')) return {tone:'good', h:'One eye lost. One eye kept.',
+      t:'The right eye stays at light perception — that retina infarcted before she reached the door and no treatment recovers it. But the left eye is still 20/30, the arteritis is being treated, the biopsy will confirm it, and her stroke risk is being managed. That is the win available in this case, and it was won in the first two hours.'};
+    if(steroid && s.fellow>=.2) return {tone:'warn', h:'Treated late; the second eye is declaring itself.',
+      t:'The left disc is now swollen and pallid. Steroid started after the second eye becomes involved rarely restores what has been lost. The margin in arteritic disease is hours, not days.'};
+    if(!steroid && s.fellow>.45) return {tone:'bad', h:'Bilateral blindness.',
+      t:'Untreated giant cell arteritis took the second eye. This is the outcome the whole specialty is organised to prevent, and it is prevented by one decision made on clinical suspicion alone, before any test returns.'};
+    if(!steroid) return {tone:'bad', h:'The arteritis is still untreated.',
+      t:'Whatever else you have arranged, the inflammation occluding her arteries is unopposed. The fellow eye and the posterior circulation remain at immediate risk.'};
+    return {tone:'warn', h:'Partially managed.',
+      t:'Steroid is in, but the workup is incomplete — without a biopsy the diagnosis will be doubted at every future steroid taper, and without vascular assessment her stroke risk goes unaddressed.'};
+  },
+  pearls:[
+    ['Jaw claudication is the money symptom','It has the highest positive likelihood ratio of any GCA feature. Ask it directly: does your jaw ache and force you to stop chewing?'],
+    ['Steroid before the biopsy, always','Histology tolerates days to weeks of treatment. The fellow eye does not tolerate any delay.'],
+    ['Amaurosis fugax is the warning shot','Transient monocular loss in this age group is an emergency in its own right. Both her episodes last week were treatable moments.'],
+    ['A CRAO is a stroke','Same-day carotid imaging, echo, rhythm assessment and stroke team involvement — not a routine clinic slot.'],
+    ['Normal markers do not exclude it','A small minority of biopsy-proven cases have a normal ESR. Treat the clinical picture.']
+  ]
+}];
+
+/* ═══════════════════════════════════════════════════════════════
+   6 · MOUNT + RENDER
+   ═══════════════════════════════════════════════════════════════ */
+const stage = $('#stage');
+stage.innerHTML =
+  `<div data-v="external">${buildExternal()}</div>`+
+  `<div data-v="cross">${buildCross()}</div>`+
+  `<div data-v="fundus">${buildFundus()}</div>`;
+const panes = {}; stage.querySelectorAll('[data-v]').forEach(d=>{panes[d.dataset.v]=d; d.style.display='none';});
+const E = {}; ['ex-conj','ex-ciliary','ex-chemosis','ex-inside','ex-irisbase','ex-collarette','ex-lpi','ex-pupil','ex-pupil-edge',
+ 'ex-hypopyon','ex-infiltrate','ex-infil-halo','ex-infil-core','ex-scar','ex-edema','ex-stain','ex-slit','ex-slit-flare',
+ 'ex-reflex-main','ex-reflex-broken','ex-discharge','ex-cobalt','ex-stain-glow','ex-stain-glow2',
+ 'cr-cornea','cr-cornea-edema','cr-cornea-edema-p','cr-iris-up','cr-iris-lo','cr-lpi','cr-flow-pupil','cr-block',
+ 'cr-inset-iris','cr-inset-label','cr-needle','cr-iop-text','cr-acd-label','cr-hypopyon-x',
+ 'fu-white','fu-boxcar','fu-embolus','fu-disc-body','fu-disc-edema','fu-cotton','fu-hem',
+ 'fu-fellow-edema','fu-fellow-disc','fu-fellow-status'].forEach(id=>E[id]=document.getElementById(id));
+const EX_FIBRES = [...document.querySelectorAll('#ex-fibres path')];
+const FU_ART    = [...document.querySelectorAll('#fu-art path')];
+const FU_BOX    = [...document.querySelectorAll('#fu-boxcar path')];
+
+let cur = {...BASE}, tgt = {...BASE};
+let flags = {view:'external', fluor:false, slit:false};
+const memo = {};
+
+function render(s){
+  /* ── external ── */
+  const prx = s.pupil*MM/2, pry = prx*(1+s.oval*.30);
+  E['ex-pupil'].setAttribute('rx',prx.toFixed(1));      E['ex-pupil'].setAttribute('ry',pry.toFixed(1));
+  E['ex-pupil-edge'].setAttribute('rx',prx.toFixed(1)); E['ex-pupil-edge'].setAttribute('ry',pry.toFixed(1));
+  E['ex-conj'].setAttribute('opacity', s.conj.toFixed(3));
+  E['ex-ciliary'].setAttribute('opacity', s.ciliary.toFixed(3));
+  E['ex-chemosis'].setAttribute('opacity', (s.conj*.22).toFixed(3));
+  E['ex-edema'].setAttribute('opacity', s.edema.toFixed(3));
+  E['ex-inside'].style.filter = s.edema>.01 ? `blur(${(s.edema*3.4).toFixed(2)}px)` : 'none';
+  E['ex-lpi'].setAttribute('opacity', s.lpi.toFixed(3));
+  E['ex-discharge'].setAttribute('opacity', s.discharge.toFixed(3));
+  E['ex-slit'].setAttribute('opacity', flags.slit?1:0);
+  E['ex-slit-flare'].setAttribute('opacity', (flags.slit? s.flare*.55 : 0).toFixed(3));
+  E['ex-reflex-main'].setAttribute('opacity', (0.85*(1-clamp(s.epiDefect*1.4,0,1))).toFixed(3));
+  E['ex-reflex-broken'].setAttribute('opacity', clamp(s.epiDefect*1.4,0,1).toFixed(3));
+
+  /* hypopyon: cells settle flat under gravity */
+  if(memo.hyp!==Math.round(s.hypopyon*200)){
+    memo.hyp=Math.round(s.hypopyon*200);
+    const h=s.hypopyon*36, top=CY+R-h;
+    E['ex-hypopyon'].setAttribute('d', h<0.4?'':
+      `M ${CX-R-6},${top.toFixed(1)} Q ${CX},${(top-4).toFixed(1)} ${CX+R+6},${top.toFixed(1)} L ${CX+R+6},${CY+R+8} L ${CX-R-6},${CY+R+8} Z`);
+  }
+  E['ex-hypopyon'].setAttribute('opacity', clamp(s.hypopyon*4,0,.95).toFixed(3));
+
+  /* infiltrate, epithelial defect, scar — all paracentral, same site */
+  const IX=CX-16, IY=CY+8;
+  if(memo.inf!==Math.round(s.infiltrate*120)){
+    memo.inf=Math.round(s.infiltrate*120);
+    const r=6+s.infiltrate*30;
+    E['ex-infil-core'].setAttribute('d', blob(IX,IY,r,17,.36));
+    E['ex-infil-halo'].setAttribute('d', blob(IX,IY,r*1.55,23,.44));
+  }
+  E['ex-infiltrate'].setAttribute('opacity', clamp(s.infiltrate*2.4,0,1).toFixed(3));
+  if(memo.epi!==Math.round(s.epiDefect*120)){
+    memo.epi=Math.round(s.epiDefect*120);
+    const d=blob(IX,IY,5+s.epiDefect*26,41,.5);
+    E['ex-stain'].setAttribute('d',d); E['ex-stain-glow'].setAttribute('d',d);
+    E['ex-stain-glow2'].setAttribute('d', blob(IX,IY,3+s.epiDefect*19,41,.5));
+  }
+  E['ex-stain'].setAttribute('opacity', (s.epiDefect*.16).toFixed(3));
+  if(memo.scar!==Math.round(s.scar*120)){
+    memo.scar=Math.round(s.scar*120);
+    E['ex-scar'].setAttribute('d', blob(IX,IY,5+s.scar*24,57,.4));
+  }
+  E['ex-scar'].setAttribute('opacity', (s.scar*.72).toFixed(3));
+  E['ex-cobalt'].setAttribute('opacity', flags.fluor?1:0);
+
+  /* ── cross-section ── */
+  const th=16+s.edema*12, o=th*.85;
+  const cpath = `M 206,100 C 146,112 116,150 116,198 C 116,246 146,284 206,296`+
+    ` L 206,${(296-o).toFixed(1)} C ${(146+o*.8).toFixed(1)},${(284-o*.75).toFixed(1)} ${(116+th).toFixed(1)},${(246-th*.3).toFixed(1)} ${(116+th).toFixed(1)},198`+
+    ` C ${(116+th).toFixed(1)},${(150+th*.3).toFixed(1)} ${(146+o*.8).toFixed(1)},${(112+o*.75).toFixed(1)} 206,${(100+o).toFixed(1)} Z`;
+  E['cr-cornea'].setAttribute('d',cpath);
+  E['cr-cornea-edema-p'].setAttribute('d',cpath);
+  E['cr-cornea-edema'].setAttribute('opacity', s.edema.toFixed(3));
+  const ph=s.pupil*5.4, b=s.bombe, pmx=248;
+  [['cr-iris-up',-1],['cr-iris-lo',1]].forEach(([id,dir])=>{
+    const el=E[id];
+    el.setAttribute('d', `M 212,${198+dir*88} C ${(240-b*50).toFixed(0)},${198+dir*70} ${(246-b*40).toFixed(0)},${(198+dir*(ph+16)).toFixed(0)} ${pmx},${(198+dir*ph).toFixed(0)}`);
+    el.setAttribute('fill','none'); el.setAttribute('stroke','url(#cIris)'); el.setAttribute('stroke-width','8'); el.setAttribute('stroke-linecap','round');
+  });
+  E['cr-lpi'].setAttribute('opacity', s.lpi.toFixed(3));
+  E['cr-flow-pupil'].setAttribute('opacity', clamp(1-s.bombe*1.15,0,1).toFixed(3));
+  E['cr-block'].setAttribute('opacity', clamp((s.bombe-.3)/.35,0,1).toFixed(3));
+  const tipx=lerp(486,508,s.angleOpen), tipy=lerp(80,126,s.angleOpen);
+  E['cr-inset-iris'].setAttribute('d', `M 604,196 C 570,182 ${(tipx+34).toFixed(0)},${(tipy+46).toFixed(0)} ${tipx.toFixed(0)},${tipy.toFixed(0)}`);
+  E['cr-inset-iris'].setAttribute('fill','none'); E['cr-inset-iris'].setAttribute('stroke','url(#cIris)');
+  E['cr-inset-iris'].setAttribute('stroke-width','20'); E['cr-inset-iris'].setAttribute('stroke-linecap','round');
+  E['cr-inset-label'].textContent = s.angleOpen>.6?'ANGLE OPEN':s.angleOpen>.3?'ANGLE NARROW':'ANGLE CLOSED — IRIS ON THE MESHWORK';
+  E['cr-inset-label'].setAttribute('fill', s.angleOpen>.6?'#7fc98b':s.angleOpen>.3?'#e0a33c':'#d1443a');
+  E['cr-needle'].setAttribute('transform', `rotate(${(clamp(s.iop,0,70)/70*180).toFixed(1)})`);
+  E['cr-iop-text'].textContent = Math.round(s.iop);
+  E['cr-iop-text'].setAttribute('fill', s.iop>30?'#d1443a':s.iop>21?'#e0a33c':'#e9e6df');
+  E['cr-acd-label'].textContent = 'CHAMBER '+(s.acDepth>.7?'DEEP':s.acDepth>.4?'SHALLOW':'CRITICALLY SHALLOW')+
+    ' · ' + (s.lpi>.5?'IRIDOTOMY PATENT':s.bombe>.4?'PUPIL BLOCK PRESENT':'NO BLOCK');
+  const hy=282-s.hypopyon*18;
+  E['cr-hypopyon-x'].setAttribute('d', s.hypopyon<.03?'':`M 146,${hy.toFixed(0)} L 244,${hy.toFixed(0)} L 244,282 C 200,288 168,286 146,278 Z`);
+  E['cr-hypopyon-x'].setAttribute('opacity', clamp(s.hypopyon*3,0,.9).toFixed(3));
+
+  /* ── fundus ── */
+  E['fu-white'].setAttribute('opacity', (s.whitening*.94).toFixed(3));
+  E['fu-boxcar'].setAttribute('opacity', s.boxcar.toFixed(3));
+  const aw=(4.4-s.atten*2.5).toFixed(2);
+  FU_ART.forEach(p=>p.setAttribute('stroke-width',aw));
+  FU_BOX.forEach(p=>p.setAttribute('stroke-width',(4.4-s.atten*2.5+.3).toFixed(2)));
+  E['fu-embolus'].setAttribute('opacity', s.embolus.toFixed(3));
+  E['fu-disc-edema'].setAttribute('opacity', s.discEdema.toFixed(3));
+  E['fu-disc-body'].setAttribute('fill', s.pallor>.02 ? mix('#f4d3a0','#fdfaf4',s.pallor) : 'url(#fDisc)');
+  E['fu-cotton'].setAttribute('opacity', s.cotton.toFixed(3));
+  E['fu-hem'].setAttribute('opacity', s.hem.toFixed(3));
+  E['fu-fellow-edema'].setAttribute('opacity', s.fellow.toFixed(3));
+  E['fu-fellow-disc'].setAttribute('fill', s.fellow>.02 ? mix('#f4d3a0','#fbf4e6',s.fellow*.9) : 'url(#fDisc)');
+  const fs=E['fu-fellow-status'];
+  fs.textContent = s.fellow<.05?'normal': s.fellow<.45?'at risk — arteritis untreated':'pallid disc swelling';
+  fs.setAttribute('fill', s.fellow<.05?'#7fc98b': s.fellow<.45?'#e0a33c':'#d1443a');
+}
+
+/* smooth tween so every intervention is a visible change, not a jump */
+function tick(){
+  let moving=false;
+  for(const k in tgt){
+    if(typeof tgt[k]!=='number') continue;
+    const d=tgt[k]-cur[k];
+    if(Math.abs(d)<0.0015){ cur[k]=tgt[k]; } else { cur[k]+= d*(reduceMotion?1:0.11); moving=true; }
+  }
+  render(cur);
+  if(moving) paintVitals();
+  requestAnimationFrame(tick);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   7 · SESSION ENGINE
+   ═══════════════════════════════════════════════════════════════ */
+const TIMETO = {
+  acg :{label:'Time to first IOP-lowering agent', ids:['timolol','brimonidine','acetazolamide','mannitol','paracent']},
+  ker :{label:'Time to first antibiotic',          ids:['fortified','moxi']},
+  crao:{label:'Time to corticosteroid',            ids:['methylpred','oralpred']}
+};
+let CASE=null, ctx=null;
+
+function clampAll(t){
+  t.iop=clamp(t.iop,4,80); t.pupil=clamp(t.pupil,1,8.6); t.va=clamp(t.va,0,3); t.analg=clamp(t.analg,0,6);
+  ['oval','edema','conj','ciliary','chemosis','infiltrate','epiDefect','hypopyon','discharge','scar','thinning',
+   'acDepth','bombe','angleOpen','lpi','flare','whitening','boxcar','atten','embolus','pallor','discEdema','cotton','hem','fellow']
+   .forEach(k=>t[k]=clamp(t[k],0,1));
+}
+function fmtClock(m){
+  const pre = CASE && CASE.t0 ? 'onset + ' : 't + ';
+  if(m<90)   return pre+Math.round(m)+' min';
+  if(m<1440) return pre+Math.floor(m/60)+' h '+String(Math.round(m%60)).padStart(2,'0')+' min';
+  return 'day '+(m/1440).toFixed(1);
+}
+function paintClock(){ $('#clock').textContent = fmtClock(ctx.elapsed); }
+function paintVitals(){
+  if(!CASE) return;
+  $('#vitals').innerHTML = CASE.vitals.map(v=>
+    `<div class="vital ${v.z?v.z(cur,ctx):''}"><div class="k">${v.k}</div><div class="v">${v.f(cur,ctx)}</div></div>`).join('');
+}
+function logRow(v,title,note){
+  const row=document.createElement('div');
+  row.className='logrow v-'+v;
+  row.innerHTML=`<div class="t">${fmtClock(ctx.elapsed).replace(/^(t|onset) \+ /,'')}</div>
+    <div class="msg"><strong>${title}</strong>${note?`<span>${note}</span>`:''}</div>`;
+  const L=$('#log'); if(L.querySelector('.empty')) L.innerHTML='';
+  L.appendChild(row); L.scrollTop=L.scrollHeight;
+  ctx.log.push({t:Math.round(ctx.elapsed), verdict:v, action:title, note});
+}
+function addFinding(text){
+  const box=$('#findings');
+  box.hidden=false;
+  const li=document.createElement('li');
+  li.innerHTML=`<b>New</b><span>${text}</span>`;
+  box.querySelector('ul').appendChild(li);
+}
+const PRE_GROUPS=/bedside|examination/i;
+
+function paintOrders(){
+  const groups=[];
+  CASE.orders.forEach(o=>{ let g=groups.find(x=>x.name===o.g); if(!g){g={name:o.g,items:[]};groups.push(g);} g.items.push(o); });
+  const banner = ctx.committed ? '' :
+    `<div class="unlock"><b>Treatment is locked.</b> Examine first, then commit a differential above — treatment and procedure orders unlock once you do.</div>`;
+  $('#orders').innerHTML = banner + groups.map(g=>{
+    const locked = !ctx.committed && !PRE_GROUPS.test(g.name);
+    return `<div class="ordergroup"><div class="glab">${g.name}${locked?' · locked until you commit':''}</div><div class="orders">`+
+      g.items.map(o=>{
+        const done=ctx.done.has(o.id);
+        const dis = locked || (done && !o.repeat);
+        return `<button class="order ${done?'done':''} ${o.v==='harm'?'harm':''}" data-id="${o.id}" ${dis?'disabled':''}>
+          <span>${o.label}<span class="sub">${o.sub||''}</span></span>
+          <span class="cost">${done?'✓ done':'+'+(o.min>=1440?(o.min/1440)+' d':o.min+' min')}</span></button>`;
+      }).join('')+`</div></div>`;
+  }).join('');
+  $('#ordercount').textContent = ctx.done.size+' placed';
+  $('#orders').querySelectorAll('.order').forEach(b=>b.onclick=()=>place(CASE.orders.find(o=>o.id===b.dataset.id)));
+  applyFocus();
+}
+
+function place(o){
+  if(!o) return;
+  if(o.need && !o.need(tgt,ctx)){
+    logRow('neutral','Blocked — '+o.label, o.needText||'Not possible yet.');
+    paintClock(); return;
+  }
+  ctx.elapsed += o.min;
+  const res = (o.ap ? o.ap(tgt,ctx) : null) || {};
+  const v = res.v || o.v;
+  if(!ctx.times[o.id]) ctx.times[o.id]=ctx.elapsed;
+  ctx.done.add(o.id);
+  if(o.reveal) addFinding(o.reveal);
+  if(CASE.derive) CASE.derive(tgt);
+  if(CASE.afterOrder) CASE.afterOrder(ctx,tgt);
+  clampAll(tgt);
+  if(v==='harm') ctx.harms.push(o.label);
+  logRow(v,o.label,res.note||o.note||'');
+  paintOrders(); paintVitals(); paintClock(); paintFlow();
+  coachEvent('order:'+o.id);
+}
+
+/* ── differential ── */
+function paintDx(){
+  $('#dxlist').innerHTML = CASE.dx.map((d,i)=>
+    `<div class="dxrow" data-i="${i}"><label for="dx${i}">${d.l}</label>
+      <input id="dx${i}" type="range" min="0" max="100" step="5" value="0" aria-label="${d.l} probability">
+      <span class="pv">0%</span></div>`).join('');
+  $('#dxlist').querySelectorAll('input').forEach(inp=>inp.oninput=dxSum);
+  $('#dxresult').innerHTML=''; $('#commit').disabled=true; $('#commit').textContent='Commit';
+  dxSum();
+}
+function dxVals(){ return [...$('#dxlist').querySelectorAll('input')].map(i=>+i.value); }
+function dxSum(){
+  const v=dxVals(), s=v.reduce((a,b)=>a+b,0);
+  $('#dxlist').querySelectorAll('.dxrow').forEach((r,i)=>r.querySelector('.pv').textContent=v[i]+'%');
+  $('#sumval').textContent=s;
+  const bar=$('#sumbar'); bar.querySelector('i').style.width=Math.min(100,s)+'%';
+  bar.classList.toggle('over', s>100);
+  $('#commit').disabled = (s!==100) || ctx.committed;
+  $('#sumval').style.color = s===100?'var(--teal)':s>100?'var(--heme)':'var(--dim)';
+  if(s===100) coachEvent('dx:100');
+  paintFlow();
+}
+function commitDx(){
+  const v=dxVals(), p=v.map(x=>x/100);
+  let brier=0; CASE.dx.forEach((d,i)=>{ const o=d.t?1:0; brier+=(p[i]-o)*(p[i]-o); });
+  const truth=CASE.dx.findIndex(d=>d.t);
+  const top=p.indexOf(Math.max(...p));
+  ctx.committed=true; ctx.brier=brier; ctx.dxTop=CASE.dx[top].l; ctx.dxWeights=CASE.dx.map((d,i)=>[d.l,v[i]]);
+  $('#dxlist').querySelectorAll('input').forEach(i=>i.disabled=true);
+  $('#dxlist').querySelectorAll('.dxrow')[truth].classList.add('istrue');
+  const band = brier<0.2?['good','well calibrated']:brier<0.6?['warn','defensible']:['harm','poorly calibrated'];
+  $('#dxresult').innerHTML=
+    `<div class="scoregrid">
+       <div class="scorebox"><div class="k">Brier score</div><div class="v" style="color:var(--${band[0]==='good'?'good':band[0]==='warn'?'brass':'heme'})">${brier.toFixed(2)}</div></div>
+       <div class="scorebox"><div class="k">Leading call</div><div class="v" style="font-size:.86rem;line-height:1.3">${ctx.dxTop}</div></div>
+       <div class="scorebox"><div class="k">Correct</div><div class="v" style="color:var(--${top===truth?'good':'heme'})">${top===truth?'yes':'no'}</div></div>
+     </div>
+     <div class="note teach"><b>${CASE.dx[truth].l}</b> — ${band[1]} (0 is perfect, 2 is as wrong as possible).<br>${CASE.dxTeach}</div>`;
+  $('#commit').textContent='Committed';
+  logRow('dx','Differential committed', `Leading call: ${ctx.dxTop}. Brier ${brier.toFixed(2)}.`);
+  paintOrders(); paintClock(); paintFlow(); coachEvent('commit');
+}
+
+/* ── flow: which panel wants you, and why ── */
+const FLOW=[
+  {k:'read',   label:'Read the case',         panel:'#vignette-card'},
+  {k:'commit', label:'Commit a differential', panel:'#dxcard'},
+  {k:'treat',  label:'Examine and treat',     panel:'#orders-card'},
+  {k:'close',  label:'Debrief',               panel:'#debrief-card'}
+];
+function dxTotal(){ const i=$('#dxlist').querySelectorAll('input'); return [...i].reduce((a,b)=>a+ +b.value,0); }
+function phase(){
+  if(!ctx) return 'read';
+  if(ctx.concluded)  return 'close';
+  if(ctx.committed)  return 'treat';
+  return dxTotal()>0 ? 'commit' : 'read';
+}
+function flashPanel(el){
+  if(!el) return;
+  el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+  setTimeout(()=>el.classList.remove('flash'),2400);
+}
+function paintFlow(){
+  const idx=Math.max(0,FLOW.findIndex(f=>f.k===phase()));
+  $('#flow').innerHTML=FLOW.map((f,i)=>
+    `<button class="fstep ${i<idx?'done':''} ${i===idx?'now':''}" data-panel="${f.panel}">`+
+    `<i>${i<idx?'✓':i+1}</i>${f.label}</button>`).join('<span class="arrow">→</span>');
+  $('#flow').querySelectorAll('.fstep').forEach(b=>b.onclick=()=>{
+    const el=document.querySelector(b.dataset.panel);
+    if(!el) return;
+    el.scrollIntoView({block:'center',behavior:reduceMotion?'auto':'smooth'});
+    flashPanel(el);
+  });
+  document.querySelectorAll('.card.active').forEach(c=>c.classList.remove('active'));
+  const active=document.querySelector(FLOW[idx].panel);
+  if(active) active.classList.add('active');
+}
+
+/* ── rollover: one floating tip, so nothing can clip it ── */
+const tipEl=$('#tip');
+function showTip(el){
+  const [title,...rest]=(el.dataset.ask||'').split('|');
+  tipEl.innerHTML='<b>'+title+'</b>'+rest.join('|');
+  tipEl.hidden=false;
+  tipEl.style.maxWidth=Math.min(340,window.innerWidth-24)+'px';
+  const r=el.getBoundingClientRect(), tw=tipEl.offsetWidth, th=tipEl.offsetHeight;
+  let x=r.left-6, y=r.bottom+9;
+  if(x+tw>window.innerWidth-12) x=window.innerWidth-12-tw;
+  if(y+th>window.innerHeight-12) y=r.top-9-th;
+  tipEl.style.left=Math.max(12,x)+'px';
+  tipEl.style.top=Math.max(12,y)+'px';
+}
+function hideTip(){ tipEl.hidden=true; }
+document.querySelectorAll('[data-ask]').forEach(el=>{
+  el.addEventListener('mouseenter',()=>showTip(el));
+  el.addEventListener('mouseleave',hideTip);
+  el.addEventListener('focus',()=>showTip(el));
+  el.addEventListener('blur',hideTip);
+  el.addEventListener('click',e=>{ e.preventDefault(); tipEl.hidden?showTip(el):hideTip(); });
+});
+window.addEventListener('scroll',hideTip,{passive:true});
+
+/* ── debrief ── */
+function paintDebrief(){
+  $('#debrief').innerHTML =
+    `<p style="font-size:.85rem;color:var(--dim);margin-bottom:11px">Work the case, then close it out. The debrief scores what you did, not how the eye happened to look.</p>
+     <div class="btnrow"><button class="btn btn-primary" id="conclude">Conclude case</button>
+     <button class="btn btn-ghost" id="reset">Restart case</button>
+     <button class="btn btn-ghost" id="export">Export session</button></div>`;
+  $('#conclude').onclick=conclude; $('#reset').onclick=()=>loadCase(CASE.id); $('#export').onclick=exportSession;
+}
+function conclude(){
+  const out=CASE.outcome(ctx,tgt);
+  const missed=CASE.critical.filter(id=>!ctx.done.has(id)).map(id=>CASE.orders.find(o=>o.id===id).label);
+  const doneCrit=CASE.critical.length-missed.length;
+  const tt=TIMETO[CASE.id], ttv=Math.min(...tt.ids.map(id=>ctx.times[id]||Infinity));
+  const tone={good:'good',warn:'warn',bad:'harm'}[out.tone];
+  ctx.concluded={outcome:out.h, missed, harms:ctx.harms, criticalDone:doneCrit, timeTo:isFinite(ttv)?Math.round(ttv):null};
+  $('#debrief').innerHTML=
+    `<div class="scoregrid">
+      <div class="scorebox"><div class="k">Critical actions</div><div class="v" style="color:var(--${doneCrit===CASE.critical.length?'good':'brass'})">${doneCrit}/${CASE.critical.length}</div></div>
+      <div class="scorebox"><div class="k">Harmful orders</div><div class="v" style="color:var(--${ctx.harms.length?'heme':'good'})">${ctx.harms.length}</div></div>
+      <div class="scorebox"><div class="k">Brier</div><div class="v">${ctx.brier==null?'—':ctx.brier.toFixed(2)}</div></div>
+      <div class="scorebox"><div class="k">${tt.label}</div><div class="v">${isFinite(ttv)?fmtClock(ttv).replace(/^(t|onset) \+ /,''):'never'}</div></div>
+     </div>
+     <div class="note ${tone==='good'?'teach':tone==='warn'?'warn':'harm'}"><b>${out.h}</b><br>${out.t}</div>
+     ${missed.length?`<div class="note harm" style="margin-top:10px"><b>Critical actions not taken</b><br>${missed.join(' · ')}</div>`:''}
+     ${ctx.harms.length?`<div class="note warn" style="margin-top:10px"><b>Orders that harmed the eye</b><br>${ctx.harms.join(' · ')}</div>`:''}
+     <div style="margin-top:14px"><div class="eyebrow" style="margin-bottom:6px">Take away</div>
+       ${CASE.pearls.map(p=>`<div class="pearl"><b>${p[0]}</b>${p[1]}</div>`).join('')}</div>
+     <div class="btnrow" style="margin-top:14px"><button class="btn btn-ghost" id="reset">Restart case</button>
+       <button class="btn btn-ghost" id="export">Export session</button></div>`;
+  $('#reset').onclick=()=>loadCase(CASE.id); $('#export').onclick=exportSession;
+  logRow(out.tone==='good'?'crit':out.tone==='warn'?'neutral':'harm','Case concluded',out.h);
+  paintFlow();
+  coachEvent('conclude');
+}
+function exportSession(){
+  const data={ app:'slit-lamp-vignette-trainer', exported:new Date().toISOString(), case:CASE.id, title:CASE.title,
+    differential:ctx.dxWeights, brier:ctx.brier, elapsed_min:Math.round(ctx.elapsed),
+    actions:ctx.log, final_findings:Object.fromEntries(Object.entries(tgt).map(([k,v])=>[k,+(+v).toFixed(3)])),
+    result:ctx.concluded||null };
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));
+  a.download=`slitlamp_${CASE.id}_${Date.now()}.json`; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+}
+
+/* ── case loading ── */
+function loadCase(id){
+  if(tour) endTour();
+  CASE=CASES.find(c=>c.id===id);
+  ctx={done:new Set(), elapsed:CASE.t0||0, log:[], harms:[], times:{}, committed:false, brier:null,
+       dxWeights:null, freezeFellow:false, setFluor:on=>setFluor(on)};
+  tgt={...BASE, ...CASE.initial};
+  if(CASE.derive) CASE.derive(tgt);
+  clampAll(tgt);
+  /* start from a quiet eye and let the pathology develop, so the baseline is legible */
+  cur={...BASE, pupil:tgt.pupil, iop:BASE.iop, acDepth:1, angleOpen:1};
+  memo.hyp=memo.inf=memo.epi=memo.scar=null;
+
+  document.querySelectorAll('.casetab').forEach(t=>t.setAttribute('aria-selected', String(t.dataset.id===id)));
+  document.querySelectorAll('.viewtab').forEach(t=>{ t.disabled=!CASE.views.includes(t.dataset.view); });
+  setFluor(false); setSlit(false); setView(CASE.view);
+
+  E['ex-irisbase'].setAttribute('fill',CASE.iris.base);
+  EX_FIBRES.forEach(p=>p.setAttribute('stroke',CASE.iris.fibre));
+  document.getElementById('fu-fellow').style.display = CASE.id==='crao' ? '' : 'none';
+
+  $('#vignette').innerHTML=
+    `<h3>${CASE.title}</h3><div class="meta">${CASE.meta}</div>
+     ${CASE.paras.map(p=>`<p>${p}</p>`).join('')}
+     <ul class="exam">${CASE.exam.map(e=>`<li><b>${e[0]}</b><span>${e[1]}</span></li>`).join('')}</ul>
+     <div id="findings" hidden style="margin-top:12px"><div class="eyebrow" style="margin-bottom:4px">Findings you generated</div><ul class="exam"></ul></div>`;
+  $('#log').innerHTML='<div class="empty">Nothing ordered yet. Examination and bedside assessment are open before you commit to a diagnosis.</div>';
+  const tb=$('#tour-btn');
+  tb.hidden = !TUTORIALS[CASE.id];
+  if(TUTORIALS[CASE.id]) tb.textContent = TUTORIALS[CASE.id].label;
+  paintDx(); paintOrders(); paintVitals(); paintClock(); paintDebrief(); paintFlow();
+}
+function setView(v){
+  flags.view=v;
+  Object.entries(panes).forEach(([k,el])=>el.style.display = k===v?'':'none');
+  document.querySelectorAll('.viewtab').forEach(t=>t.setAttribute('aria-selected',String(t.dataset.view===v)));
+  $('#stage-caption').textContent = (CASE.caption&&CASE.caption[v]) || '';
+  coachEvent('view:'+v);
+}
+function setFluor(on){
+  flags.fluor=!!on; $('#tg-fluor').setAttribute('aria-pressed',String(flags.fluor));
+  if(on && flags.view!=='external' && CASE.views.includes('external')) setView('external');
+  render(cur);
+  if(flags.fluor) coachEvent('fluor:on');
+}
+function setSlit(on){ flags.slit=!!on; $('#tg-slit').setAttribute('aria-pressed',String(flags.slit)); render(cur); if(flags.slit) coachEvent('slit:on'); }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   8 · GUIDED WALKTHROUGH
+   A tutorial is just an array of steps. Each step may carry:
+     say   string | fn(api) → HTML shown in the dock
+     do    fn(api)          → drive the app (place orders, switch view…)
+     view  'external'|'cross'|'fundus'
+     focus CSS selector, or {order:'id'} to ring an order button
+     hold  'orderId'        → hand over: Continue is disabled until the
+                              learner clicks that order themselves
+     next  string           → label for the Continue button
+   Add a TUTORIALS[caseId] array and the ▶ button appears for that case.
+   ═══════════════════════════════════════════════════════════════ */
+const TUTORIALS = {
+ practice:{label:'▶ Start guided practice', blink:true, steps:[
+  {say:`<p><b>Practice patient.</b> Nothing here can go wrong, and the medicine is deliberately easy — this run is about the controls.</p>
+        <p>I'll <span class="say-hand">blink whichever knob you need</span> and say out loud what it does. You press it; I'll carry on when you have.</p>`,
+   voice:"This is a practice patient, and nothing here can go wrong. I'll blink whichever control you need and tell you what it does. Press continue to start.",
+   next:'Start'},
+
+  {focus:'#vignette',
+   say:`<p>Everything starts on the right. That panel holds her story, and under it the examination findings you were handed at the door.</p>
+        <p>Read it the way you'd read a referral: mechanism first, then what somebody has already measured.</p>`,
+   voice:"Everything starts on the right. That panel is her story, and underneath it the examination findings. Read it like a referral."},
+
+  {focus:'#tg-fluor', hold:'fluor:on',
+   say:`<p>Under the eye are two toggles. They are <b>ways of looking</b>, not treatments — using them is free and costs no time.</p>
+        <p>Press the blinking one: <b>fluorescein and cobalt</b>.</p>`,
+   voice:"Under the eye there are two toggles. They're ways of looking, not treatments, so they're free. Press the blinking one, fluorescein and cobalt.",
+   next:'Waiting for you…'},
+
+  {focus:'#stage',
+   say:`<p>There is the scratch, glowing green. Fluorescein pools wherever the surface layer is missing, and the blue filter makes it fluoresce.</p>
+        <p>You have just examined her, and the clock has not moved. Looking is always free.</p>`,
+   voice:"There's the scratch, glowing green. Fluorescein pools wherever the surface is missing, and the blue filter makes it light up. Notice the clock hasn't moved. Looking is always free."},
+
+  {focus:'.viewtab[data-view="cross"]', hold:'view:cross',
+   say:`<p>Above the eye are three views of the same patient. Press the blinking tab: <b>cross-section</b>.</p>`,
+   voice:"Above the eye are three views of the same patient. Press the blinking tab, cross section.",
+   next:'Waiting for you…'},
+
+  {focus:'.viewtab[data-view="external"]', hold:'view:external',
+   say:`<p>A slice through the front of the eye, with a pressure gauge and a magnifier on the drainage angle. Quiet in a surface scratch — in case 01 this view <em>is</em> the diagnosis.</p>
+        <p>Go back to <b>external</b>.</p>`,
+   voice:"A slice through the front of the eye, with a pressure gauge and a magnified view of the drainage angle. It's quiet in a scratch, but in case one this view is the diagnosis. Now go back to external.",
+   next:'Waiting for you…'},
+
+  {focus:'#orders',
+   say:`<p>Now look at the orders panel. Everything under <em>Treatment</em> and <em>Follow-up</em> is greyed out, with a banner explaining why.</p>
+        <p><b>This is the step that catches everyone.</b> You cannot treat until you have committed to a diagnosis.</p>`,
+   voice:"Now look at the orders panel. Treatment and follow up are greyed out. This is the step that catches everyone: you can't treat until you've committed to a diagnosis."},
+
+  {focus:'#dxlist', hold:'dx:100',
+   say:`<p>Drag the blinking sliders until the bar reads <b>100</b>. Put most of the weight on <em>simple corneal abrasion</em> and a little on the others.</p>
+        <p>Leaving weight on <em>undifferentiated</em> is allowed, and sometimes it is the honest answer.</p>`,
+   voice:"Drag the blinking sliders until the bar reads one hundred. Put most of your weight on simple corneal abrasion, and a little on the others.",
+   next:'Waiting for you…'},
+
+  {focus:'#commit', hold:'commit',
+   say:`<p>Now press <b>Commit</b>.</p>`,
+   voice:"Now press commit.",
+   next:'Waiting for you…'},
+
+  {focus:'#orders',
+   say:`<p>That is the gate. The banner has gone, treatment has unlocked, and you were scored on how well calibrated that guess was before you saw the answer.</p>
+        <p>You cannot un-commit. That is deliberate — in this specialty the wrong drop makes the disease worse, so the diagnosis has to come first.</p>`,
+   voice:"That's the gate. Treatment has unlocked, and you were scored on how well calibrated your guess was before you saw the answer. You can't un-commit, and that's deliberate."},
+
+  {focus:{order:'evert'}, hold:'order:evert',
+   say:`<p>Orders cost time — each button shows how many minutes. Press the blinking one: <b>evert the upper lid</b>.</p>`,
+   voice:"Orders cost time. Each button shows how many minutes it takes. Press the blinking one, evert the upper lid.",
+   next:'Waiting for you…'},
+
+  {focus:'#log',
+   say:`<p>Three things happened at once. The finding went into her chart under <em>Findings you generated</em>, the clock at the top of this panel moved, and the action was logged.</p>
+        <p>Log entries are colour-coded: green did good, amber was defensible, red did harm.</p>`,
+   voice:"Three things happened. The finding went into her chart, the clock moved, and the action was logged. Log entries are colour coded: green did good, amber was defensible, red did harm."},
+
+  {focus:{order:'anesthetic'}, hold:'order:anesthetic',
+   say:`<p>Now make a mistake on purpose, so you can see what that looks like.</p>
+        <p>Press the blinking order: <b>topical anaesthetic to take home</b>.</p>`,
+   voice:"Now make a mistake on purpose, so you can see what that looks like. Press the blinking order, topical anaesthetic to take home.",
+   next:'Waiting for you…'},
+
+  {focus:'#vitals',
+   say:`<p>Watch the defect grow and the log entry turn red, and read what it says.</p>
+        <p><b>Harmful orders are clickable on purpose.</b> Nothing stops you doing the wrong thing — the eye simply gets worse and the debrief remembers.</p>`,
+   voice:"Watch the defect grow and the entry turn red. Harmful orders are clickable on purpose. Nothing stops you doing the wrong thing. The eye just gets worse, and the debrief remembers."},
+
+  {focus:{order:'abx'}, hold:'order:abx',
+   say:`<p>Put it right. Order the <b>chloramphenicol ointment</b>.</p>`,
+   voice:"Put it right. Order the chloramphenicol ointment.",
+   next:'Waiting for you…'},
+
+  {focus:{order:'review48'}, hold:'order:review48',
+   say:`<p>And bring her back — press <b>review in 48 hours</b>.</p>`,
+   voice:"And bring her back. Press review in forty eight hours.",
+   next:'Waiting for you…'},
+
+  {focus:'#stage',
+   say:`<p>The clock jumped two days and the eye healed — though it took the full two days instead of one, because of that anaesthetic.</p>
+        <p><b>Time only moves when you order something.</b> There is no real-time pressure; the cost of dithering is measured in minutes on the clock, and in case 03 that genuinely matters.</p>`,
+   voice:"The clock jumped two days and the eye healed, though it took twice as long because of that anaesthetic. Time only moves when you order something. There's no real time pressure, but in case three the minutes on the clock genuinely matter."},
+
+  {focus:'#conclude', hold:'conclude',
+   say:`<p>One control left. In the <b>Debrief</b> panel at the bottom right, press <b>Conclude case</b>.</p>`,
+   voice:"One control left. In the debrief panel at the bottom right, press conclude case.",
+   next:'Waiting for you…'},
+
+  {focus:'#debrief',
+   say:`<p>That is the scorecard: critical actions taken, harmful orders placed, how well calibrated your differential was, and how long you took to treat. Then the teaching points, and buttons to restart or export the run as JSON.</p>
+        <p><b>You have now used every control in the app.</b> Cases <em>01</em>, <em>02</em> and <em>03</em> are the real ones — a red painful eye, a contact lens ulcer, and sudden painless loss of vision. Case 01 has a walkthrough that narrates the medicine if you want it.</p>`,
+   voice:"That's the scorecard. Critical actions, harmful orders, how well calibrated you were, and how long you took. You've now used every control in the app. Cases one, two and three are the real ones.",
+   next:'Finish'}
+ ]},
+ acg:{label:'▶ Guided walkthrough', blink:false, steps:[
+  {say:`<p><b>The red painful eye.</b> I'll walk you through this one from the door to the laser, and I'll give the answer away as we go — the point is the reasoning, not the guess.</p>
+        <p>I drive the app; you press <em>Continue</em> to move on. Twice near the end I'll hand you the controls.</p>`,
+   next:'Start'},
+
+  {focus:'#vignette',
+   say:`<p>Read the story before you look at the eye. Three details in that first paragraph are doing real work, and none of them is the pain.</p>
+        <p><b>A darkened cinema.</b> <b>Reading glasses she calls “strong.”</b> <b>An over-the-counter cold remedy.</b> Hold onto those.</p>`},
+
+  {focus:'#vignette',
+   say:`<p>Now the decoy. She has a boring frontal headache and she has vomited twice — so she gets triaged to medicine, or neurology, or gastro. This is the single commonest way acute angle closure is missed.</p>
+        <p>The vomiting is vagal, driven by the pressure. It is a sign of the eye, not of the gut.</p>`},
+
+  {view:'external', focus:'#stage',
+   say:`<p>Look at the eye. Note <em>where</em> the redness is: densest in a ring hugging the cornea, fading as you move outward.</p>
+        <p>That is <b>ciliary flush</b> — deep, violaceous, immobile vessels signalling intraocular inflammation. A conjunctivitis does the opposite: brightest at the lids and periphery, sparing the limbus, and it moves when you push it with a cotton bud.</p>`},
+
+  {focus:'#stage',
+   say:`<p>Now the pupil, which is the most discriminating sign in the whole case. It is <b>mid-dilated at 5.5 mm, vertically oval, and fixed</b>.</p>
+        <p>Compare: acute uveitis gives you a <em>small</em>, sluggish, sticky pupil. Angle closure gives you a mid-dilated oval one. If you learn one pupil in ophthalmology, learn this pair.</p>`},
+
+  {focus:'#stage', do:a=>a.slit(true),
+   say:`<p>I've turned the slit beam on. The corneal section is thickened and milky — <b>microcystic oedema</b>, because the endothelial pump is being overwhelmed by pressure.</p>
+        <p>That haze is why her acuity is 20/200 and why the exit signs have coloured haloes: light is being scattered inside a waterlogged cornea. It is also, as you'll see, the reason you cannot treat her definitively yet.</p>`},
+
+  {view:'cross', do:a=>a.slit(false),
+   say:`<p>Switch to the cross-section — the mechanism lives here.</p>
+        <p>Aqueous is made by the ciliary body <em>behind</em> the iris. To leave the eye it has exactly one route: forward through the pupil, across the anterior chamber, and out through the trabecular meshwork in the angle.</p>`},
+
+  {view:'cross', focus:'#stage',
+   say:`<p>At mid-dilation the iris lies against the lens over its widest area, and the pupil route seals. That is the red cross: <b>pupil block</b>.</p>
+        <p>Aqueous keeps being made behind a closed door, so pressure builds in the posterior chamber and bows the peripheral iris forward. That forward bowing is <b>iris bombé</b>, and you can see the chamber has gone from deep to a slit.</p>`},
+
+  {view:'cross', focus:'#stage',
+   say:`<p>Follow the bowing iris out to the magnifier. The iris root is now lying <b>directly on the trabecular meshwork</b>. Outflow is not reduced — it is mechanically abolished.</p>
+        <p>Hence 52 mmHg. Normal is up to 21. Look at the gauge.</p>`},
+
+  {view:'cross',
+   say:`<p>Back to those three details. <b>“Strong” reading glasses</b> means hyperopia: a short eye with a crowded anterior segment and a shallow chamber to begin with. <b>The dark cinema</b> put her pupil at mid-dilation, the worst possible position. <b>The cold remedy</b> was anticholinergic, and dilated her a little further.</p>
+        <p>Female, over 55, hyperopic, East Asian ancestry — the risk factors are anatomical, which is why the fellow eye matters later.</p>`},
+
+  {view:'external', focus:'#dxcard',
+   do:a=>a.dx([80,5,5,0,5,5]),
+   say:`<p>Commit before you treat. I've weighted it: <b>80% acute primary angle closure</b>, and a few points spread over the others.</p>
+        <p>Why not 100? Because you have not done gonioscopy yet. Why is uveitis only 5? Wrong pupil, wrong pressure. Keratitis? No infiltrate, no stain. Conjunctivitis gets <b>zero</b> — it does not blur vision or harden a globe. Neovascular glaucoma would also give a hard red eye, but she has no diabetes, no vein occlusion, and no rubeosis.</p>`},
+
+  {focus:'#dxcard', do:a=>a.commit(),
+   say:`<p>Committed. A <b>Brier score of 0.05</b> — near-perfect calibration, which is what you get from being confident when confidence is earned and leaving a little probability elsewhere.</p>
+        <p>Notice the treatment groups have now unlocked. That ordering is deliberate: in this specialty the wrong drop makes the disease worse, so the diagnosis has to come first.</p>`},
+
+  {focus:'#orders',
+   say:`<p>The whole plan in one sentence: <b>lower the pressure by every route available, so the cornea clears, so you can put a hole in the iris.</b></p>
+        <p>Everything medical is a bridge to that hole. Keep it in mind as we go.</p>`},
+
+  {focus:{order:'pilo'}, do:a=>a.order('pilo'),
+   say:`<p>First, let's make the classic mistake on purpose. The mechanism is a mid-dilated pupil, so every instinct says <b>give the miotic now</b>. I've given pilocarpine.</p>
+        <p>Watch the eye. <b>Nothing happened.</b></p>`},
+
+  {focus:'#log',
+   say:`<p>Read the log entry. Above roughly 40–50 mmHg the <b>iris sphincter is ischaemic</b> — the pressure has outrun its own blood supply, and the muscle physically cannot contract. Pilocarpine into a pressure of 52 is a wasted drop.</p>
+        <p>This is a sequencing error, not a drug error. The right drug at the wrong time is the wrong drug.</p>`},
+
+  {view:'cross', focus:{order:'supine'}, do:a=>{a.order('supine'); a.order('analgesia');},
+   say:`<p>Start with what costs nothing. <b>Lie her flat</b> — the lens falls back a fraction and the chamber deepens a fraction. Two or three millimetres of mercury for free.</p>
+        <p>And treat the vomiting. A patient who cannot keep anything down cannot take oral acetazolamide, and a patient in agony cannot hold still at a laser.</p>`},
+
+  {focus:{order:'timolol'}, do:a=>{a.order('timolol'); a.order('brimonidine');},
+   say:s=>`<p>Now attack production from two directions: <b>timolol</b>, a beta-blocker, and <b>brimonidine</b>, an alpha-2 agonist. Ask about asthma and bradycardia before the timolol.</p>
+        <p>Watch the needle swing down off the top of the scale to <em>${Math.round(s.tgt.iop)} mmHg</em> — still deep in the red. And the chamber is still a slit, because nothing you have given touches the block itself.</p>`},
+
+  {focus:{order:'acetazolamide'}, do:a=>{a.order('acetazolamide'); a.order('pred');},
+   say:`<p><b>Acetazolamide 500 mg intravenously</b> — intravenous rather than oral because she is vomiting. Check for sulfonamide reaction, sickle cell disease and renal impairment first.</p>
+        <p>And <b>topical steroid</b>, because this is an inflammatory event as well as a mechanical one, and because it helps clear the cornea you are about to shoot through.</p>`},
+
+  {view:'external', focus:'#vitals',
+   say:s=>`<p>Stop and reassess, because the eye has changed and that is the whole point of this app.</p>
+        <p>Pressure <em>${Math.round(s.tgt.iop)} mmHg</em>. Acuity back to <em>${vaText(s.tgt.va)}</em>. The corneal haze has lifted and you can see iris detail again. Pain down from 9.</p>
+        <p>But the pupil is still 5.5 mm and oval, and the angle is still shut. You have treated the pressure, not the disease.</p>`},
+
+  {focus:{order:'pilo'}, do:a=>a.order('pilo'),
+   say:`<p><b>Now</b> give the pilocarpine. Same drug, same dose, forty minutes later.</p>
+        <p>The pupil constricts to 2.4 mm and rounds off. This is the moment the attack breaks.</p>`},
+
+  {view:'cross', focus:'#stage',
+   say:`<p>Cross-section, and this is the payoff. As the sphincter contracted it dragged the peripheral iris <b>off</b> the meshwork. The bombé has flattened, the chamber has deepened, the pupil-block cross is gone and the magnifier now reads <em>angle open</em>.</p>
+        <p>Aqueous is flowing again along its normal route.</p>`},
+
+  {view:'external', focus:{order:'gonio'}, do:a=>a.order('gonio'),
+   say:`<p>Gonioscopy, both eyes — and read the finding it just added to her chart.</p>
+        <p>The right angle was closed in all four quadrants. The <b>left angle is occludable</b>. Of course it is: the anatomy that did this is bilateral. That single line is the reason this case has a second half.</p>`},
+
+  {focus:{order:'lpi_od'}, hold:'lpi_od',
+   say:`<p class="say-hand">Your turn. Place the definitive treatment.</p>
+        <p>The cornea is clear enough to aim through now, so the <b>Nd:YAG laser peripheral iridotomy</b> is unlocked. It's ringed in the orders list — click it.</p>`,
+   next:'Waiting for you…'},
+
+  {view:'cross', focus:'#stage',
+   say:`<p>There it is. A small hole in the peripheral iris means aqueous can cross <b>regardless of the pupil</b> — you can see the jet through the iridotomy in the section, and the iris now sits flat because there is nothing left to push it forward.</p>
+        <p>The pupil block is anatomically bypassed. Every drop you gave existed to get you to this.</p>`},
+
+  {view:'external', focus:{order:'lpi_os'}, hold:'lpi_os',
+   say:`<p class="say-hand">Your turn again. Treat the other eye.</p>
+        <p>Untreated, the fellow eye of an acute angle closure has roughly a <b>40–80% chance</b> of its own attack — and next time she may not be sitting in a cinema three miles from an eye department.</p>`,
+   next:'Waiting for you…'},
+
+  {focus:'#orders',
+   say:`<p>Two traps you have now walked past, worth naming out loud.</p>
+        <p><b>Discharge on drops, clinic in four weeks.</b> She feels better and the pressure is 17, so this looks safe. It is not — the block is untreated and the angle scars shut over months, painlessly.</p>
+        <p><b>Dilating drops.</b> Somebody always wants a fundus view. Mid-dilation is the mechanism; try it later in free play and watch the pressure climb past 50.</p>`},
+
+  {do:a=>a.conclude(), focus:'#debrief',
+   say:`<p>Closing the case out. Four of four critical actions, no harmful orders, Brier 0.05, and time-to-first-pressure-lowering-agent measured from the door.</p>
+        <p>That last number is the one that matters clinically, and it's why the walkthrough gave the wasted pilocarpine before anything else — so you'd feel the cost of a step out of order.</p>`},
+
+  {say:`<p><b>That's the case.</b> One eye rescued, one eye protected, and a patient who needs lifelong follow-up because about a third of these eyes still develop chronic pressure damage from a partly scarred angle.</p>
+        <p>Now go and work cases <em>02</em> and <em>03</em> without a guide — the ulcer and the sudden painless loss both punish a different habit. Or press ▶ again to rerun this one, and try the mistakes deliberately.</p>`,
+   next:'Finish'}
+ ]}
+};
+
+/* spoken instructions — Web Speech API, no network, degrades to silence */
+const speech={supported:(typeof speechSynthesis!=='undefined'), on:true, voice:null};
+function loadVoices(){
+  if(!speech.supported) return;
+  const vs=speechSynthesis.getVoices()||[];
+  const named=['Google UK English Female','Google UK English Male','Samantha','Daniel','Serena','Google US English'];
+  speech.voice = vs.find(v=>named.includes(v.name)) || vs.find(v=>/^en-GB/i.test(v.lang))
+              || vs.find(v=>/^en/i.test(v.lang)) || vs[0] || null;
+}
+if(speech.supported){ loadVoices(); speechSynthesis.onvoiceschanged=loadVoices; }
+function speak(text){
+  if(!speech.supported || !speech.on || !text) return;
+  try{
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(String(text));
+    u.rate=0.97; u.pitch=1; u.volume=1;
+    if(speech.voice) u.voice=speech.voice;
+    u.onstart=()=>coach.box.classList.add('speaking');
+    u.onend=u.onerror=()=>coach.box.classList.remove('speaking');
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+function stopSpeech(){
+  if(speech.supported){ try{ speechSynthesis.cancel(); }catch(e){} }
+  if(coach && coach.box) coach.box.classList.remove('speaking');
+}
+
+let tour=null;
+const coach={box:$('#coach'), talk:$('#coach-talk'), step:$('#coach-step'), rail:$('#coach-rail'),
+             next:$('#coach-next'), exit:$('#coach-exit'), hint:$('#coach-hint'),
+             mute:$('#coach-mute'), again:$('#coach-again'), skip:$('#coach-skip')};
+
+const tourApi = {
+  order:id=>place(CASE.orders.find(o=>o.id===id)),
+  view:v=>setView(v), fluor:b=>setFluor(b), slit:b=>setSlit(b),
+  dx(weights){
+    const inputs=[...$('#dxlist').querySelectorAll('input')];
+    weights.forEach((w,i)=>{ if(inputs[i]) inputs[i].value=w; });
+    dxSum();
+  },
+  commit:()=>commitDx(), conclude:()=>conclude(),
+  get tgt(){return tgt;}, get cur(){return cur;}
+};
+
+function clearFocus(){ document.querySelectorAll('.coach-focus').forEach(e=>e.classList.remove('coach-focus','pulse')); }
+function selFor(f){ return typeof f==='string' ? f : `#orders .order[data-id="${f.order}"]`; }
+function applyFocus(){
+  if(!tour || !tour.sels || !tour.sels.length) return;
+  clearFocus();
+  const blink = tour.awaiting || tour.blink;
+  let first=null;
+  tour.sels.forEach(sel=>{
+    document.querySelectorAll(sel).forEach(el=>{
+      el.classList.add('coach-focus');
+      if(blink) el.classList.add('pulse');
+      if(!first) first=el;
+    });
+  });
+  if(!first) return;
+  const r=first.getBoundingClientRect();
+  if(r.top<70 || r.bottom>window.innerHeight-260)
+    first.scrollIntoView({block:'center', behavior:reduceMotion?'auto':'smooth'});
+}
+/* the learner completing the asked-for action is what advances a hold step.
+   Tokens: order:<id> · commit · conclude · fluor:on · slit:on · view:<name> · dx:100
+   A bare hold is shorthand for an order id, except for these standalone tokens. */
+const BARE_TOKENS=['commit','conclude'];
+function normToken(h){ return (h.includes(':')||BARE_TOKENS.includes(h)) ? h : 'order:'+h; }
+/* If the learner already did the thing before the tour asked, the hold is
+   already satisfied — otherwise the step waits forever on a spent button. */
+function holdSatisfied(hold){
+  const t=normToken(hold);
+  if(t.startsWith('order:')) return ctx.done.has(t.slice(6));
+  if(t.startsWith('view:'))  return flags.view===t.slice(5);
+  if(t==='commit')   return !!ctx.committed;
+  if(t==='conclude') return !!ctx.concluded;
+  if(t==='fluor:on') return !!flags.fluor;
+  if(t==='slit:on')  return !!flags.slit;
+  if(t==='dx:100')   return dxTotal()===100;
+  return false;
+}
+function coachEvent(token){
+  if(!tour || !tour.awaiting) return;
+  const want = normToken(tour.awaiting);
+  if(want!==token) return;
+  tour.awaiting=null;                       // consume, so a second click can't double-advance
+  coach.skip.hidden=true;
+  coach.hint.textContent='good — carrying on';
+  setTimeout(()=>{ if(tour) advance(); }, 340);
+}
+function startTour(id){
+  if(!TUTORIALS[id]) return;
+  clearFocus(); tour=null;
+  loadCase(id);
+  tour={id, steps:TUTORIALS[id].steps, blink:!!TUTORIALS[id].blink, i:-1, sels:null, awaiting:null};
+  document.body.classList.add('coached');
+  coach.box.hidden=false;
+  advance();
+}
+function endTour(){
+  stopSpeech();
+  tour=null; clearFocus();
+  coach.box.hidden=true;
+  document.body.classList.remove('coached');
+}
+function advance(){
+  if(!tour) return;
+  stopSpeech();
+  tour.i++; tour.awaiting=null; tour.sels=null;
+  if(tour.i>=tour.steps.length){ endTour(); toastDone(); return; }
+  const st=tour.steps[tour.i];
+  clearFocus();
+  if(st.view) setView(st.view);
+  if(st.do) st.do(tourApi);
+  coach.talk.innerHTML = typeof st.say==='function' ? st.say(tourApi) : st.say;
+  coach.talk.scrollTop=0;
+  coach.step.textContent = `Step ${tour.i+1} of ${tour.steps.length}`;
+  coach.rail.style.width = ((tour.i+1)/tour.steps.length*100).toFixed(1)+'%';
+  coach.next.textContent = st.next || (tour.i===tour.steps.length-1 ? 'Finish' : 'Continue');
+  const holding = st.hold && !holdSatisfied(st.hold);
+  if(holding){
+    tour.awaiting=normToken(st.hold);
+    coach.next.disabled=true;
+    coach.skip.hidden=false;
+    coach.hint.textContent='press the blinking control';
+  }else{
+    if(st.hold){
+      coach.talk.innerHTML += '<p class="already">You had already done this one, so I won\u2019t make you do it twice.</p>';
+      coach.next.textContent = st.next && /waiting/i.test(st.next) ? 'Continue' : coach.next.textContent;
+    }
+    coach.next.disabled=false;
+    coach.skip.hidden=true;
+    coach.hint.textContent='or press Enter';
+  }
+  if(st.focus) tour.sels = (Array.isArray(st.focus)?st.focus:[st.focus]).map(selFor);
+  paintFlow();
+  applyFocus();
+  tour.voiceLine = st.voice || coach.talk.textContent.trim();
+  speak(tour.voiceLine);
+}
+function toastDone(){
+  const b=$('#tour-btn');
+  b.textContent='▶ Replay';
+  b.focus();
+}
+coach.next.onclick=()=>advance();
+coach.exit.onclick=()=>endTour();
+coach.again.onclick=()=>speak(tour?tour.voiceLine:'');
+coach.skip.onclick=()=>{ if(tour){ tour.awaiting=null; advance(); } };
+coach.mute.onclick=()=>{
+  speech.on=!speech.on;
+  coach.mute.setAttribute('aria-pressed',String(speech.on));
+  coach.mute.textContent = speech.on ? '🔊 Voice on' : '🔇 Voice off';
+  if(!speech.on) stopSpeech(); else if(tour) speak(tour.voiceLine);
+};
+if(!speech.supported){ coach.mute.hidden=true; coach.again.hidden=true; }
+document.addEventListener('keydown',e=>{
+  if(!tour || coach.box.hidden) return;
+  if(/^(INPUT|TEXTAREA)$/.test(document.activeElement.tagName)) return;
+  if(e.key==='Enter'||e.key==='ArrowRight'){ if(!coach.next.disabled){ e.preventDefault(); advance(); } }
+  if(e.key==='Escape') endTour();
+});
+$('#tour-btn').onclick=()=>startTour(CASE.id);
+
+/* ── wiring ── */
+$('#casetabs').innerHTML = CASES.map(c=>`<button class="casetab" role="tab" data-id="${c.id}" aria-selected="false">${c.tab}</button>`).join('');
+$('#casetabs').querySelectorAll('.casetab').forEach(b=>b.onclick=()=>loadCase(b.dataset.id));
+document.querySelectorAll('.viewtab').forEach(t=>t.onclick=()=>setView(t.dataset.view));
+$('#tg-fluor').onclick=()=>setFluor(!flags.fluor);
+$('#tg-slit').onclick=()=>setSlit(!flags.slit);
+$('#normalize').onclick=()=>{
+  const inputs=[...$('#dxlist').querySelectorAll('input')], v=inputs.map(i=>+i.value), s=v.reduce((a,b)=>a+b,0);
+  if(!s){ inputs[inputs.length-1].value=100; dxSum(); return; }
+  let acc=0; const scaled=v.map(x=>Math.round(x/s*20)*5);
+  scaled.forEach((x,i)=>{ inputs[i].value=x; acc+=x; });
+  if(acc!==100){ const i=scaled.indexOf(Math.max(...scaled)); inputs[i].value=clamp(+inputs[i].value+(100-acc),0,100); }
+  dxSum();
+};
+$('#commit').onclick=commitDx;
+function openHelp(mode){
+  const welcome = mode==='welcome';
+  $('#modal-title').textContent = welcome ? 'Slit Lamp' : 'How this works';
+  $('#help-welcome').hidden   = !welcome;
+  $('#help-reference').hidden = welcome;
+  $('#help-note').hidden      = welcome;
+  $('#help-cta').hidden       = welcome;
+  $('#modal-close').textContent = welcome ? 'Close' : 'Got it';
+  if(!$('#modal').open) $('#modal').showModal();
+}
+$('#modal-close').onclick=()=>$('#modal').close();
+$('#help-btn').onclick=()=>openHelp('reference');
+$('#go-reference').onclick=e=>{ e.preventDefault(); openHelp('reference'); };
+$('#go-skip').onclick=()=>$('#modal').close();
+const goPractice=()=>{ $('#modal').close(); startTour('practice'); };
+$('#go-practice').onclick=goPractice;
+$('#go-practice-2').onclick=goPractice;
+
+loadCase('acg');
+requestAnimationFrame(tick);
+openHelp('welcome');   // one decision, not a wall of text
+})();
+</script>
+</body>
+</html>
