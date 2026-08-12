@@ -1,0 +1,1738 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stigmergy Lab X — continuous evolution, honest fitness</title>
+<style>
+  :root{
+    --ink:#07080b; --plate:#0e1016; --plate-2:#141822; --rule:#242a38;
+    --bone:#e8e4d9; --dim:#7d8496;
+    --crimson:#ff4d46; --steel:#5fb0ff; --sulphur:#ffc21f; --spore:#43e08a; --violet:#8f5cff;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--ink);color:var(--bone);font-family:var(--mono);font-size:13px;line-height:1.45}
+  body{padding:18px}
+  .wrap{max-width:1400px;margin:0 auto}
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;
+    border-bottom:1px solid var(--rule);padding-bottom:10px;margin-bottom:14px}
+  h1{margin:0;font-size:15px;font-weight:600;letter-spacing:.22em;text-transform:uppercase}
+  .sub{color:var(--dim);font-size:11px;letter-spacing:.1em}
+  #bloom{color:var(--spore);opacity:0;transition:opacity .4s;letter-spacing:.18em}
+  #bloom.on{opacity:1}
+  .grid{display:grid;grid-template-columns:minmax(0,1fr) 336px;gap:14px}
+  @media (max-width:960px){.grid{grid-template-columns:1fr}}
+  .plate{background:var(--plate);border:1px solid var(--rule);border-radius:2px}
+  .plate h2{margin:0;padding:7px 10px;font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--dim);border-bottom:1px solid var(--rule)}
+  .body{padding:10px}
+  canvas{display:block;width:100%;height:auto;image-rendering:pixelated;background:#05060a;cursor:crosshair}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  button{font:inherit;color:var(--bone);background:var(--plate-2);border:1px solid var(--rule);
+    padding:5px 9px;border-radius:2px;cursor:pointer;letter-spacing:.06em}
+  button:hover{border-color:#3d4658}
+  button:disabled{opacity:.45;cursor:default}
+  button:focus-visible{outline:2px solid var(--sulphur);outline-offset:1px}
+  button.on{background:#20283a;border-color:#46536e;color:#fff}
+  label.ctl{display:flex;align-items:center;gap:6px;color:var(--dim);font-size:11px;flex:1 1 150px}
+  input[type=range]{flex:1;min-width:70px;accent-color:var(--sulphur)}
+  .kv{display:grid;grid-template-columns:auto repeat(6,1fr);gap:2px 6px;font-size:11px;align-items:baseline}
+  .kv .k{color:var(--dim)}
+  .kv .hd{color:var(--dim);font-size:10px;letter-spacing:.16em}
+  .kv .r{color:var(--crimson);text-align:right;font-variant-numeric:tabular-nums}
+  .kv .b{color:var(--steel);text-align:right;font-variant-numeric:tabular-nums}
+  .kv .sep{grid-column:1/-1;border-top:1px solid var(--rule);margin:4px 0}
+  .tag{display:inline-flex;align-items:center;gap:5px;color:var(--dim);font-size:11px}
+  .sw{width:9px;height:9px;border-radius:1px;display:inline-block}
+  #scope{background:#04050a;border:1px solid var(--rule);width:100%;height:auto;image-rendering:pixelated}
+  .regs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:8px}
+  .reg{border:1px solid var(--rule);background:#04050a;padding:4px}
+  .reg .n{font-size:9px;color:var(--dim);letter-spacing:.12em}
+  .bar{height:5px;background:#1a1f2b;margin-top:3px;position:relative}
+  .bar i{position:absolute;top:0;bottom:0;left:50%;background:var(--sulphur)}
+  .act{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--sulphur);margin-top:8px}
+  .note{color:var(--dim);font-size:11px;margin-top:6px}
+  .spark{width:100%;height:46px;background:#04050a;border:1px solid var(--rule);display:block;margin-top:8px}
+  footer{color:var(--dim);font-size:11px;margin-top:14px;border-top:1px solid var(--rule);padding-top:10px}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px}
+  .ledger{margin-top:9px;border-top:1px solid var(--rule);padding-top:7px;
+    display:grid;grid-template-columns:1fr auto;gap:1px 8px;font-size:11px}
+  .kv .hd{color:var(--dim);font-size:9px;letter-spacing:.1em;text-align:right}
+  .kv>span:nth-child(7n+1){text-align:left}
+  .ledger .lk{color:var(--dim)}
+  .ledger .lv{text-align:right;font-variant-numeric:tabular-nums}
+  .ledger .lt{color:var(--spore)}
+  .evtop{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:9px}
+  .evk{color:var(--dim);font-size:9px;letter-spacing:.12em;text-transform:uppercase}
+  .evv{font-size:16px;font-variant-numeric:tabular-nums;color:var(--bone)}
+  #graph{background:#04050a;border:1px solid var(--rule);width:100%;height:auto;image-rendering:auto}
+  .glegend{display:flex;gap:12px;margin-top:6px}
+  .ntlegend{display:flex;gap:12px;margin-top:6px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>Stigmergy Lab X</h1>
+    <div class="sub">256 liquid neurons · excitatory, inhibitory and tonic · micro-Hebbian mutation · evolving continuously in the background</div>
+  </div>
+  <div style="text-align:right">
+    <div class="sub" id="clock">tick 0</div>
+    <div class="sub" id="bloom">◆ BLOOM</div>
+  </div>
+</header>
+
+<div class="grid">
+  <div>
+    <div class="plate">
+      <h2>Arena</h2>
+      <canvas id="view" width="808" height="568"></canvas>
+    </div>
+    <div class="plate" style="margin-top:14px">
+      <h2>Controls</h2>
+      <div class="body">
+        <div class="row">
+          <button id="play">Pause arena</button>
+          <button id="step1">Step</button>
+          <button id="reset">Reset arena</button>
+          <button id="fresh">New brains</button>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <label class="ctl">arena speed <input type="range" id="spd" min="1" max="24" value="2"><span id="spdv">2</span></label>
+          <label class="ctl">bloom size <input type="range" id="fd" min="20" max="260" value="110"><span id="fdv">110</span></label>
+          <label class="ctl">bloom every <input type="range" id="bt" min="80" max="600" step="20" value="260"><span id="btv">260</span></label>
+          <label class="ctl">mutation <input type="range" id="mu" min="1" max="30" value="8"><span id="muv">.08</span></label>
+          <label class="ctl">nest spacing <input type="range" id="sp" min="20" max="100" value="35"><span id="spv">35</span></label>
+          <label class="ctl">world food <input type="range" id="ft" min="600" max="8000" step="50" value="3000"><span id="ftv">3000</span></label>
+          <label class="ctl">scent half-life <input type="range" id="ev" min="20" max="1200" step="10" value="150"><span id="evv">150</span></label>
+          <label class="ctl">food out in maze <input type="range" id="fs" min="10" max="90" value="55"><span id="fsv">55%</span></label>
+          <label class="ctl">instinct strength <input type="range" id="ins" min="0" max="150" step="5" value="100"><span id="insv">100%</span></label>
+          <label class="ctl">carry capacity <input type="range" id="cc" min="1" max="6" value="2"><span id="ccv">2</span></label>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <span class="sub">instinct dial applies on New brains</span>
+          <button id="tPher" class="on">Trails</button>
+          <button id="tPois" class="on">Poison</button>
+          <button id="tNest">Nest scent</button>
+          <button id="tSeed" class="on">Seed instincts</button>
+          <button id="tRec" class="on">Seed recruitment</button>
+          <span class="sub" style="margin-left:6px">showing scent</span>
+          <button id="ch0" class="on">ch 1</button>
+          <button id="ch1">ch 2</button>
+          <button id="ch2">ch 3</button>
+        </div>
+        <div class="legend">
+          <span class="tag"><i class="sw" style="background:#ff4d46"></i>red</span>
+          <span class="tag"><i class="sw" style="background:#ffb02e"></i>amber</span>
+          <span class="tag"><i class="sw" style="background:#b06cff"></i>violet</span>
+          <span class="tag"><i class="sw" style="background:#5fb0ff"></i>blue</span>
+          <span class="tag"><i class="sw" style="background:#96be3c"></i>poison (any colony)</span>
+          <span class="tag"><i class="sw" style="background:var(--spore)"></i>food</span>
+          <span class="tag"><i class="sw" style="background:#cfcabc"></i>repellent to that colony</span>
+          <span class="tag">bright ant = full crop</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="plate">
+      <h2>Evolution &mdash; running in the background</h2>
+      <div class="body">
+        <div class="evtop">
+          <div><div class="evk">generation</div><div class="evv" id="evGen">0</div></div>
+          <div><div class="evk">best ever</div><div class="evv" id="evBest">0</div></div>
+          <div><div class="evk">archive</div><div class="evv" id="evArc">0</div></div>
+          <div><div class="evk">stagnant</div><div class="evv" id="evStag">0</div></div>
+        </div>
+        <canvas id="graph" width="314" height="130"></canvas>
+        <div class="glegend">
+          <span class="tag"><i class="sw" style="background:#43e08a"></i>selected champions</span>
+          <span class="tag"><i class="sw" style="background:#7d8496"></i>random drift control</span>
+        </div>
+        <div class="note" id="evPhase">starting up</div>
+        <div class="row" style="margin-top:8px">
+          <button id="evRun" class="on">Evolving</button>
+          <button id="evReseed">Reseed from archive</button>
+          <button id="evRestart">Restart lineage</button>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label class="ctl">effort <input type="range" id="evBudget" min="1" max="40" value="14"><span id="evBudgetv">14 ms</span></label>
+          <label class="ctl">episode <input type="range" id="evEp" min="600" max="3600" step="100" value="1800"><span id="evEpv">1800</span></label>
+          <label class="ctl">mazes per trial <input type="range" id="evTr" min="1" max="3" value="2"><span id="evTrv">2</span></label>
+          <label class="ctl">distance premium <input type="range" id="evHp" min="0" max="40" value="5"><span id="evHpv">0.05</span></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="plate" style="margin-top:14px">
+      <h2>Colonies &mdash; champions on show</h2>
+      <div class="body">
+        <div class="kv" id="colonyTable"></div>
+        <div class="ledger" id="ledger"></div>
+        <div class="note">Food is conserved: every unit is in one of these places and the total never
+        changes, so all four colonies divide one fixed pie. Uncollected food and carcasses rot back into
+        the reservoir and bloom again elsewhere, which is why nothing stays stranded.</div>
+      </div>
+    </div>
+
+    <div class="plate" style="margin-top:14px">
+      <h2>Brain scope</h2>
+      <div class="body">
+        <div class="row" style="margin-bottom:7px">
+          <button id="fc0" class="on">red</button>
+          <button id="fc1">blue</button>
+          <button id="fc2">amber</button>
+          <button id="fc3">violet</button>
+          <button id="biopsy" style="margin-left:auto">Biopsy</button>
+        </div>
+        <canvas id="scope" width="288" height="144"></canvas>
+        <div class="act" id="scopeAct">click an ant to wire it up</div>
+        <div class="regs" id="regs"></div>
+        <canvas id="curves" width="300" height="96"></canvas>
+        <div class="row" style="margin-top:6px">
+          <button id="cs0" class="on">own</button>
+          <button id="cs1">rival +1</button>
+          <button id="cs2">rival +2</button>
+          <button id="cs3">rival +3</button>
+        </div>
+        <div class="note">What each scent channel means to this colony &mdash; the response curve is
+        in the genome, so selection reshapes it. Above the axis the ant walks toward that
+        concentration; below it, away.</div>
+        <div class="ntlegend">
+          <span class="tag"><i class="sw" style="background:#ff4d46"></i>excitatory</span>
+          <span class="tag"><i class="sw" style="background:#5fb0ff"></i>inhibitory</span>
+          <span class="tag"><i class="sw" style="background:#ffc21f"></i>tonic pacemaker</span>
+        </div>
+        <div class="note" id="scopeInfo">256 liquid neurons, 20 of them hand-wired reflexes when seeded. Amber = negative state. Bars: the four memory registers the net writes, plus the crop it is running on.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+<b>Read this first: fitness was exploitable, and 1900 generations found the exploit.</b> Corpses inside a
+chamber used to be recycled into the larder, and fitness counted larder and population. An ant that never
+walks burns almost nothing, dies at home, and funds its replacement &mdash; a near-lossless loop that pays
+without foraging. The archive told the story plainly: the top-scoring genomes (fitness 399, 379, 376) all
+had <b>deliver 0.00</b> and a range of 0.06&ndash;0.41, while entries from generations 4&ndash;24 that
+actually delivered scored 231&ndash;311. The scent genome showed the strategy directly: two colonies had
+inverted their own footprint channel to <b>1.28 and 2.10 at high concentration</b> &mdash; attractive when
+thick, so their own tracks became a reason to stay put. The one colony that kept the band-pass intact
+(&minus;0.75) was the only one still foraging, and had the lowest fitness of the four. Both holes are now
+shut: the dead are carried out to a midden so their material returns to the world, and fitness counts
+income only &mdash; food carried in, part credit for finding it, and combat. A colony physically unable to
+walk now scores <b>0.2 against 83.7</b>. If you are resuming an old run, press <b>Restart lineage</b>: an
+archive built under the old fitness is full of genomes that farm their own dead.
+<br><br>
+<b>Episode length matters more than generation count.</b> At equal compute, twelve 900-tick generations
+lifted champions 12% but lifted the random-drift control 14% too &mdash; over a short window a coin
+stumbles into looking competent. Six 1800-tick generations lifted champions 20% while drift collapsed 55%.
+The founding wave needs ~1500 ticks to settle to the sustainable population, and recruitment trails last
+900&ndash;1800 ticks, so a short window cannot watch a trail pay off at all. Default is 1800 with a 45%
+burn-in. Because champion and challenger run the identical maze the comparison has no measurement noise,
+so the remaining noise is generalisation &mdash; that is what <b>mazes per trial</b> is for, and with
+income-only fitness (a small-count statistic) 2&ndash;3 is worth the cost.
+<br><br>
+<b>256 liquid neurons</b> under Dale's law, 204 excitatory and 44 inhibitory, plus 8 <b>tonic pacemakers</b>
+that ignore their senses and oscillate at an evolvable tempo &mdash; runs have produced periods from 12 to
+667 ticks in the same brain. <b>Micro-Hebbian mutation</b>: active pathways mutate 4.6&times; more often in
+1.6&times; smaller steps, quiet ones rarely but boldly. A <b>diversity archive</b> keeps champions for
+being different on a four-dimensional behaviour descriptor, and reseeds the lineage when the record stalls
+for twelve generations.
+<br><br>
+<b>What selection found before it went astray.</b> All four colonies independently pushed their recruitment
+channel to 865&ndash;1800 ticks while holding footprints short &mdash; the persistence/density relationship
+that took a hand-run parameter sweep to discover. Three of four then pinned the old ceiling of 1800 exactly,
+which made it a clamp artefact rather than an optimum, so the ceiling is raised: trails may now persist for
+thousands of ticks. Rival readings became opinions rather than defaults, with colonies following one
+neighbour's trails while fleeing another's, and disagreeing about each other.
+<br><br>
+<b>Underneath:</b> food conserved to a fixed total and circulating; three scent channels whose meaning,
+valence and fade rate are genomic; recruitment where picking food up marks the spot; homing by nest odour;
+instinct on a dial from blank slate to fully wired. <b>Biopsy</b> dumps the archive, pacemaker periods,
+evolved scent curves and the champion-versus-drift gap &mdash; and the archive is the first place to look
+when a number seems too good.
+</footer>
+</div>
+
+<script>
+"use strict";
+/* ============================================================ rng */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function gauss(r){let u=0,v=0;while(u===0)u=r();while(v===0)v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+
+/* ============================================================ shape */
+const W=101,H=71,N_CELL=W*H;
+const M=4;                 // memory registers
+const NSP=4;               // colonies
+const NCH=3;               // scent channels per colony. what each one MEANS is genomic, not fixed.
+const NH=256, REC_DEN=0.12;
+// Three kinds of neuron. Dale's law is enforced on the recurrent web -- a cell either excites
+// everything it touches or inhibits everything it touches, never both -- which is what gives real
+// networks their push-pull dynamics. A tiny minority are TONIC pacemakers: they ignore their input
+// entirely and simply oscillate, giving the colony an internal clock nobody had to wire.
+const T_EXC=0,T_INH=1,T_TONIC=2;
+const NTYPE=new Int8Array(NH);
+const TONIC_N=8;                     // ~3% of the net
+(function(){
+  const r=mulberry32(31337);
+  for(let j=0;j<NH;j++)NTYPE[j]=r()<0.22?T_INH:T_EXC;
+  // pacemakers live in the upper range so the seeded reflexes (which take the low indices) are safe
+  let placed=0;
+  for(let j=NH-1;j>=64&&placed<TONIC_N;j--){NTYPE[j]=T_TONIC;placed++;}
+})();
+const NEXC=(()=>{let n=0;for(let j=0;j<NH;j++)if(NTYPE[j]===T_EXC)n++;return n;})();
+const NINH=(()=>{let n=0;for(let j=0;j<NH;j++)if(NTYPE[j]===T_INH)n++;return n;})();
+const A_FWD=0,A_LEFT=1,A_RIGHT=2,A_BACK=3,A_TAKE=4,A_DROP=5,A_MARK=6,A_POIS=7,A_SCRUB=8,A_FIGHT=9,A_FLEE=10,NACT=11;
+const ACTNAME=["step ahead","step left","step right","turn back","pick up","put down","lay scent","lay poison","scrub rival marks","press attack","break away"];
+
+/* Sense layout. Everything before PH_BASE is a fixed physical sense; from PH_BASE on it is scent.
+   Foreign colonies are indexed by RELATIVE offset -- slot k means the colony at (me+k)%NSP -- so a
+   shared brain has a stable identity for each of its three neighbours and can learn about them
+   separately. Slot 0 is the colony's own scent. */
+const S_WALL_F=0,S_WALL_L=1,S_WALL_R=2,S_WALL_B=3,
+      S_PO_H=4,S_PO_F=5,S_EPO_H=6,S_EPO_F=7,
+      S_FOOD_H=8,S_FOOD_F=9,
+      S_CARRY=10,S_LOAD=11,S_EN=12,S_HP=13,S_GUT=14,
+      S_HOME=15,S_DHF=16,S_DHL=17,S_DHR=18,S_DHB=19,
+      S_FOE_HOME=20,S_DFF=21,S_INROOM=22,
+      S_ALLY=23,S_FOE=24,S_FOE_H=25,
+      S_SIN=26,S_COS=27,S_BIAS=28,
+      S_MEM=29,                       // 29..32
+      PH_BASE=33;
+// per channel: own here/ahead/left/right/behind, own raw strength, then here+ahead per rival
+const K_H=0,K_F=1,K_L=2,K_R=3,K_B=4,K_RAW=5,K_PER=6+2*(NSP-1);
+const KFH=k=>6+(k-1)*2, KFF=k=>7+(k-1)*2;
+const SPH=(c,k)=>PH_BASE+c*K_PER+k;
+const TRAF_BASE=PH_BASE+NCH*K_PER;    // own channel-1 traffic, raw, one per direction
+const S_TRAF_F=TRAF_BASE,S_TRAF_L=TRAF_BASE+1,S_TRAF_R=TRAF_BASE+2,S_TRAF_B=TRAF_BASE+3;
+// Which way does our own colony's scent get THICKER. Traffic converges on the nest, so climbing this
+// is homing by nest odour rather than by the BFS distance field, which is effectively GPS.
+const OWN_BASE=TRAF_BASE+4;
+const S_OWN_F=OWN_BASE,S_OWN_L=OWN_BASE+1,S_OWN_R=OWN_BASE+2,S_OWN_B=OWN_BASE+3;
+const NIN=OWN_BASE+4;                 // 77
+const NOUT=NACT+NCH+1+2*M;            // actions + one amount per channel + poison + memory
+const NSLOT=NSP*NCH;                  // one learned response curve per (rival slot, channel)
+const HP0=60,HPMAX=110,ENMAX=200,EN0=ENMAX,GUTMAX=1;
+const CAL=240, BODY=1.0, MIN_SOURCE_DIST=30;
+let CARRY_CAP=2;           // how many units an ant can shift at once. the whole reason a finder
+                           // needs to recruit rather than simply make another trip.
+// Finding food marks the spot, automatically, the way a real forager does -- and the mark is
+// stronger for a richer patch, so the trail carries information about how much is there.
+const PICKUP_MARK=4.5;
+const DT=0.5, FAR=9999, LARDER_RESERVE=1;
+// Fitness per (unit x step) that a delivered load travelled. At 0.05 this was worth only 5-8% of
+// the delivered term and 136 generations left mean haul distance unmoved at 24-30 steps, so it is a
+// dial now: at 0.20 a 100-step haul outscores a doorstep one two to one.
+let HAUL_PREMIUM=0.05;
+const FOOTPRINT=2.4;       // passive marking, and it always goes to channel 0
+// Uncollected food -- above all the carcasses of ants that died far from anywhere -- used to sit on
+// the floor forever, quietly draining the world's pot into piles nobody would ever walk to. It now
+// rots back into the reservoir and blooms again somewhere else. Half-life about 1400 ticks.
+const FOOD_DECAY=0.0005;
+let FLOOR_SHARE=0.55;      // fraction of the world's pot lying out in the maze at any moment
+const FOUNDERS=9, POP_CAP=60;
+let INSTINCT=1.0;          // how loudly the seeded reflexes argue (0 = blank slate)
+let seedInstincts=true;    // hand-wired reflexes at all
+let SEED_RECRUIT=true;     // and the recruitment loop in particular
+const COL=[[255,77,70],[95,176,255],[255,176,46],[176,108,255]];
+const CNAME=["red","blue","amber","violet"];
+const DX=[1,0,-1,0],DY=[0,1,0,-1];
+
+/* ============================================================ sparse recurrent wiring, shared by every colony */
+const recPtr=new Int32Array(NH+1);
+let recIdx,REC_NNZ;
+(function(){
+  const r=mulberry32(9091),lists=[];let nnz=0;
+  for(let j=0;j<NH;j++){const l=[];for(let k=0;k<NH;k++)if(r()<REC_DEN)l.push(k);lists.push(l);nnz+=l.length;}
+  recIdx=new Int32Array(nnz);let p=0;
+  for(let j=0;j<NH;j++){recPtr[j]=p;for(const k of lists[j])recIdx[p++]=k;}
+  recPtr[NH]=p;REC_NNZ=p;
+})();
+
+/* ============================================================ liquid brain */
+class Brain{
+  constructor(seed){
+    this.Win=new Float32Array(NH*NIN);
+    this.Wrec=new Float32Array(REC_NNZ);
+    this.b=new Float32Array(NH);
+    this.A=new Float32Array(NH);
+    this.tau=new Float32Array(NH);
+    this.Wout=new Float32Array(NOUT*NH);
+    this.bout=new Float32Array(NOUT);
+    // What a scent MEANS is genomic. Per channel: where attraction peaks, how strong the pull is,
+    // and how strong the aversion at high concentration is. Mutating these can turn a channel from
+    // a follow-me trail into a keep-out sign, with no line of code deciding which.
+    // One curve per (slot, channel): slot 0 is our own scent, slots 1..3 are our three neighbours
+    // in relative order. So a colony evolves not just what its own marks mean but what each
+    // rival's marks mean TO IT -- follow one neighbour's trail, flee another's.
+    this.chPeak=new Float32Array(NSLOT);
+    this.chGain=new Float32Array(NSLOT);
+    this.chAvers=new Float32Array(NSLOT);
+    this.chP=new Float32Array(NSLOT);    // cached exp(chPeak), refreshed by sync()
+    // How long each channel PERSISTS is genomic too. A mark that fades faster than the behaviour it
+    // was meant to guide is noise; one that never fades walls the colony in behind its own history.
+    // This is a log-multiplier on the master half-life, so a deliberate recruitment mark can outlive
+    // a passive footprint by an order of magnitude if that turns out to pay.
+    this.chFade=new Float32Array(NCH);
+    this.chF=new Float32Array(NCH);      // cached exp(chFade), clamped
+    this.invTau=new Float32Array(NH);    // cached exp(tau), likewise
+    this.freq=new Float32Array(NH);      // pacemaker rate, only meaningful for tonic cells
+    this.phase=new Float32Array(NH);
+    // Micro-Hebbian traces. What was ACTIVE while the colony did well is what gets refined; what
+    // never fired gets explored boldly. Kept as a rank-1 factorisation (per-input x per-neuron)
+    // rather than a full per-synapse matrix, which would be 20k counters per genome.
+    this.hTrace=new Float32Array(NH);
+    this.inTrace=new Float32Array(NIN);
+    this.traceN=0;
+    if(seed!==undefined)this.init(mulberry32(seed));
+  }
+  init(r){
+    for(let i=0;i<this.Win.length;i++)this.Win[i]=gauss(r)*0.45;
+    for(let i=0;i<REC_NNZ;i++)this.Wrec[i]=gauss(r)*0.5;
+    for(let i=0;i<NH;i++){this.b[i]=gauss(r)*0.3;this.A[i]=gauss(r);this.tau[i]=gauss(r)*0.4;
+      this.freq[i]=0.004+r()*0.05;this.phase[i]=r();}
+    for(let i=0;i<this.Wout.length;i++)this.Wout[i]=gauss(r)*0.035;
+    for(let i=0;i<NOUT;i++)this.bout[i]=gauss(r)*0.06;
+    // channel 0 is seeded as the follow-then-recoil curve that makes a walk self-avoiding.
+    // channels 1 and 2 start mildly attractive and semantically empty.
+    // ch1 band-pass (self-avoidance), ch2 broadly attractive (recruitment: a strong trail must
+    // stay inviting, not tip over into a keep-out sign), ch3 left neutral and unclaimed.
+    const sp0=[Math.log(1.5),Math.log(6.0),Math.log(2.0)],sg=[1.4,1.3,1.0],sa=[1.4,0.25,0.6];
+    for(let c=0;c<NCH;c++){this.chPeak[c]=sp0[c];this.chGain[c]=sg[c];this.chAvers[c]=sa[c];}
+    // a rival's scent starts nearly meaningless: barely attractive, barely repellent. whether
+    // a neighbour's trail is worth following or worth avoiding is left entirely to selection.
+    // channel 1 collects passive footprints and wants a short memory; the two deliberate channels
+    // start with a longer one, because a mark you spend energy on ought to outlast a footstep
+    // Footprints want a short memory. A recruitment trail must outlive the GAP BETWEEN FORAGERS,
+    // and with three or four ants out at once that gap is long: raising ch2's half-life from 375 to
+    // 1200 ticks lifted trail-led finds from 26% to well over 40%. Evolution found this too --
+    // three of four colonies independently lengthened their deliberate channels.
+    this.chFade[0]=0;this.chFade[1]=Math.log(8.0);this.chFade[2]=Math.log(2.5);
+    for(let k=1;k<NSP;k++)for(let c=0;c<NCH;c++){
+      const i=k*NCH+c;
+      this.chPeak[i]=Math.log(2.0);this.chGain[i]=0.25;this.chAvers[i]=0.25;
+    }
+    this.dale();this.sync();
+  }
+  /* twelve reflex neurons: enough to forage and come home, nowhere near enough to play well */
+  seedInstincts(){
+    const wi=(n,s,w)=>{this.Win[n*NIN+s]=w;};
+    // Every seeded reflex speaks through this dial. At 0 the ants are pure blank slate and only
+    // mutation can give them behaviour; at 1 they start competent. The senses and the learned
+    // scent curves are untouched by it -- only how loudly instinct argues.
+    const wo=(o,n,w)=>{this.Wout[o*NH+n]=w*INSTINCT;};
+    // A reflex must resolve inside one tick. Food underfoot is visible for exactly one tick, so a
+    // slow-charging TAKE neuron loses to an already-saturated outbound drive and the ant walks
+    // straight over its dinner. Short time constant plus high gain makes these near-feedforward,
+    // while the other 110 neurons keep slow dynamics for integrating over time.
+    const arm=n=>{this.A[n]=5.5;this.b[n]=-4;this.tau[n]=1.2;
+      for(let p=recPtr[n];p<recPtr[n+1];p++)this.Wrec[p]=0;
+      for(let i=0;i<NIN;i++)this.Win[n*NIN+i]=0;
+      for(let o=0;o<NOUT;o++)this.Wout[o*NH+n]=0;};
+    // Every reflex is an AND of its triggers. With trigger weight w the bias must be about
+    // -1.5w: all triggers together clear the threshold, any one alone does not. Getting this
+    // wrong gives you ants that attack empty corridors and turn toward nothing.
+    // Because a turn now carries the ant with it, one neuron per (goal, direction) pair is
+    // enough, and there is no way to spin on the spot without going anywhere.
+    const DIRS=[[S_DHF,S_WALL_F,SPH(0,K_F),A_FWD],[S_DHL,S_WALL_L,SPH(0,K_L),A_LEFT],
+                [S_DHR,S_WALL_R,SPH(0,K_R),A_RIGHT],[S_DHB,S_WALL_B,SPH(0,K_B),A_BACK]];
+    let n=0;
+    const nav=(dh,wall,ph,action,mode,w)=>{
+      arm(n);
+      wi(n,wall,-8);                              // never step into a wall
+      wi(n,ph,2.5);                               // faint scent invites, thick scent forbids
+      if(mode==="out"){ this.b[n]=-10.5;
+        wi(n,S_BIAS,5);wi(n,S_CARRY,-5);wi(n,dh,-5);wi(n,S_EN,4); }   // empty, fuelled, leads away
+      else if(mode==="home"){ this.b[n]=-9;
+        wi(n,S_CARRY,6);wi(n,dh,6); }                                  // laden, leads home
+      else { this.b[n]=-9;
+        wi(n,S_BIAS,6);wi(n,S_EN,-6);wi(n,dh,6); }                     // low on fuel, leads home
+      wo(action,n,w);n++;
+    };
+    for(const [dh,wall,ph,action] of DIRS){
+      nav(dh,wall,ph,action,"out", action===A_FWD?3.8:3.2);
+      nav(dh,wall,ph,action,"home",action===A_FWD?3.8:3.2);
+      nav(dh,wall,ph,action,"fuel",action===A_FWD?3.6:3.0);
+    }
+    // THE EXPLORER. Without this an ant covered 63 cells in 750 ticks and died having never once
+    // stood on food: descending the distance-from-home field walks into a local maximum and sticks.
+    // Preferring the least-trodden opening spreads a colony across its whole domain instead, and it
+    // is what finally makes the passive footprints earn their keep.
+    const EXPL=[[S_TRAF_F,S_WALL_F,A_FWD,3.6],[S_TRAF_L,S_WALL_L,A_LEFT,3.2],
+                [S_TRAF_R,S_WALL_R,A_RIGHT,3.2],[S_TRAF_B,S_WALL_B,A_BACK,2.4]];
+    for(const [traf,wall,action,wt] of EXPL){
+      arm(n);this.b[n]=-13;
+      wi(n,S_BIAS,11);wi(n,S_CARRY,-6);wi(n,S_EN,4);wi(n,traf,-7);wi(n,wall,-9);
+      wo(action,n,wt);n++;
+    }
+    // food: walk onto it, then pick it up. TAKE must beat a saturated stride in a single tick,
+    // because food underfoot is visible for exactly one tick before the ant moves on.
+    arm(n);this.b[n]=-9;wi(n,S_FOOD_F,6);wi(n,S_BIAS,6);wi(n,S_CARRY,-6);wi(n,S_WALL_F,-8);
+      wo(A_FWD,n,4.0);n++;
+    arm(n);this.b[n]=-9;wi(n,S_FOOD_H,6);wi(n,S_BIAS,6);wi(n,S_LOAD,-8);wo(A_TAKE,n,9.0);n++;
+    // trail-laying on the way home, so a productive route becomes a shared one
+    arm(n);this.b[n]=-4;wi(n,S_CARRY,6);wi(n,SPH(0,K_RAW),-4);wo(A_MARK,n,3.0);n++;
+    // follow a nestmate's trail outward when you have no better idea
+    arm(n);this.b[n]=-9;wi(n,SPH(0,K_F),8);wi(n,S_BIAS,6);wi(n,S_CARRY,-6);wi(n,S_WALL_F,-8);
+      wo(A_FWD,n,2.6);n++;
+    // a thick mark ahead reads negative, so a negative weight makes it a wall the ant turns from
+    arm(n);this.b[n]=-4;wi(n,SPH(0,K_F),-7);wo(A_FWD,n,-3.2);wo(A_LEFT,n,2.4);n++;
+    // one recoil reflex per neighbour, keyed on that rival's channel-1 mark ahead. because a
+    // rival's response curve starts near-neutral, these fire weakly at first: whether a
+    // neighbour's trail is a warning or an invitation is left to selection.
+    for(let k=1;k<NSP;k++){
+      arm(n);this.b[n]=-4;wi(n,SPH(0,KFF(k)),-7);wo(A_FWD,n,-2.0);wo(A_RIGHT,n,1.8);n++;
+    }
+    // step off enemy poison rather than through it
+    arm(n);this.b[n]=-4;wi(n,S_EPO_F,7);wo(A_FWD,n,-3.0);wo(A_BACK,n,2.6);n++;
+    // Cul-de-sac: back out only when ahead AND both sides are blocked. Requiring all three
+    // matters -- keyed on "forward is blocked" alone this fires at every ordinary corner, and
+    // (having once been duplicated here) it outvoted the navigation reflexes and turned 59% of
+    // every ant's life into backtracking.
+    arm(n);this.b[n]=-16;wi(n,S_WALL_F,6);wi(n,S_WALL_L,6);wi(n,S_WALL_R,6);
+      wi(n,S_BIAS,3);wi(n,S_WALL_B,-8);wo(A_BACK,n,2.6);n++;
+    // HOMING BY NEST ODOUR. Traffic converges on the chamber, so our own scent thickens toward it:
+    // a laden ant that climbs its own colony's gradient is walking home on stigmergy alone rather
+    // than on the BFS distance field. Runs alongside the GPS reflexes; dial instinct down to see
+    // how far this one gets on its own.
+    const ODOUR=[[S_OWN_F,S_WALL_F,A_FWD,3.2],[S_OWN_L,S_WALL_L,A_LEFT,2.8],
+                 [S_OWN_R,S_WALL_R,A_RIGHT,2.8],[S_OWN_B,S_WALL_B,A_BACK,2.2]];
+    for(const [up,wall,action,wt] of ODOUR){
+      arm(n);this.b[n]=-9;
+      wi(n,S_CARRY,6);wi(n,up,6);wi(n,wall,-9);
+      wo(action,n,wt);n++;
+    }
+    // PUT IT DOWN WHERE THE SCENT IS THICKEST. Inside the chamber delivery is automatic, so this
+    // makes an ant cache its load at a busy junction, where a nestmate can pick it up and carry it
+    // the rest of the way. Relay hauling, built out of nothing but the trail itself.
+    arm(n);this.b[n]=-9;wi(n,S_CARRY,6);wi(n,SPH(0,K_RAW),7);wi(n,S_INROOM,-4);
+      wo(A_DROP,n,3.0);n++;
+    // FOLLOWING a recruitment trail is baseline instinct: an ant that cannot read the mark its
+    // nestmate left has no way to be recruited, and the whole point of scent evaporates. This is
+    // always seeded, and only the deliberate heavy marking below is optional.
+    const REC=[[SPH(1,K_F),S_WALL_F,A_FWD,3.6],[SPH(1,K_L),S_WALL_L,A_LEFT,3.1],
+               [SPH(1,K_R),S_WALL_R,A_RIGHT,3.1],[SPH(1,K_B),S_WALL_B,A_BACK,2.4]];
+    for(const [sc,wall,action,wt] of REC){
+      arm(n);this.b[n]=-9;
+      wi(n,sc,7);wi(n,S_BIAS,6);wi(n,S_CARRY,-6);wi(n,S_EN,3);wi(n,wall,-9);
+      wo(action,n,wt);n++;
+    }
+    if(SEED_RECRUIT){
+      // and a laden ant keeps pouring channel 2 behind it all the way home, so the burst laid at
+      // the source becomes a continuous line a nestmate can walk
+      arm(n);this.b[n]=-4;wi(n,S_CARRY,6);wo(A_MARK,n,3.4);
+        this.Wout[(NACT+1)*NH+n]=5.0*INSTINCT;        // and make it channel 2 that gets poured
+        this.Wout[(NACT+0)*NH+n]=-2.0*INSTINCT;n++;
+    }
+    // meeting the enemy: the trigger must be the enemy, never the mood
+    arm(n);this.b[n]=-7;wi(n,S_FOE_H,8);wi(n,S_HP,1.5);wi(n,S_GUT,1.5);wo(A_FIGHT,n,3.2);n++;
+    arm(n);this.b[n]=-4;wi(n,S_FOE_H,8);wi(n,S_HP,-8);wo(A_FLEE,n,4.2);n++;
+    this.reflexCount=n;
+    this.bout[A_FWD]+=0.8;
+  }
+  clone(){const c=new Brain();
+    for(const k of["Win","Wrec","b","A","tau","Wout","bout","chPeak","chGain","chAvers","chFade",
+                   "freq","phase","hTrace","inTrace"])c[k]=this[k].slice();
+    c.traceN=this.traceN;c.sync();return c;}
+  clearTraces(){this.hTrace.fill(0);this.inTrace.fill(0);this.traceN=0;}
+  /* A neuron's outgoing recurrent weights all share its sign. Applied after init and after every
+     mutation, so the constraint is structural rather than something evolution has to rediscover. */
+  dale(){
+    for(let j=0;j<NH;j++)
+      for(let p=recPtr[j],e=recPtr[j+1];p<e;p++){
+        const pre=recIdx[p],w=this.Wrec[p];
+        this.Wrec[p]=NTYPE[pre]===T_INH?-Math.abs(w):Math.abs(w);
+      }
+  }
+  sync(){
+    for(let i=0;i<NSLOT;i++)this.chP[i]=Math.exp(this.chPeak[i]);
+    for(let j=0;j<NH;j++)this.invTau[j]=Math.exp(this.tau[j]);
+    // ceiling raised from 12: three of four lineages pinned the old one exactly, so it was a clamp
+    // artefact and not an optimum. They want recruitment trails lasting thousands of ticks.
+    for(let c=0;c<NCH;c++)this.chF[c]=Math.max(0.15,Math.min(36,Math.exp(this.chFade[c])));
+  }
+  /* The learned valence of a channel: positive means walk toward it, negative means recoil.
+     Nine numbers per genome, so mutation reaches them often and each one matters a great deal. */
+  resp(v,slot,c){
+    if(v<=0)return 0;
+    const i=slot*NCH+c,p=this.chP[i],x=v/p;
+    return this.chGain[i]*x*Math.exp(1-x)-this.chAvers[i]*(v/(v+4*p));
+  }
+  /* MICRO-HEBBIAN MUTATION.
+     A synapse that was busy while this genome earned its place gets mutated MORE OFTEN but in
+     SMALLER steps: the machinery that works gets refined, not wrecked. A synapse that never fired
+     gets mutated rarely but BOLDLY, because there is nothing there to protect and a big jump is the
+     only way to find out whether it could matter. Credit assignment without a gradient.
+     Falls back to plain uniform mutation when no traces exist. */
+  mutate(r,rate,sig){
+    const n=this.traceN;
+    if(n<50){return this.mutateFlat(r,rate,sig);}
+    // normalise the traces to [0,1] against their own peak
+    const hN=new Float32Array(NH),iN=new Float32Array(NIN);
+    let hm=1e-6,im=1e-6;
+    for(let j=0;j<NH;j++){hN[j]=this.hTrace[j]/n;if(hN[j]>hm)hm=hN[j];}
+    for(let i=0;i<NIN;i++){iN[i]=this.inTrace[i]/n;if(iN[i]>im)im=iN[i];}
+    for(let j=0;j<NH;j++)hN[j]/=hm;
+    for(let i=0;i<NIN;i++)iN[i]/=im;
+    // busy -> often and gently. quiet -> rarely and wildly.
+    const RATE_LO=0.35,RATE_HI=2.6,SIG_LO=0.35,SIG_HI=1.8;
+    const shape=(a)=>[rate*(RATE_LO+(RATE_HI-RATE_LO)*a),sig*(SIG_HI-(SIG_HI-SIG_LO)*a)];
+    for(let j=0;j<NH;j++){
+      const aj=hN[j],o=j*NIN;
+      for(let i=0;i<NIN;i++){
+        const [rt,sg]=shape(Math.sqrt(aj*iN[i]));
+        if(r()<rt)this.Win[o+i]+=gauss(r)*sg;
+      }
+      for(let p=recPtr[j],e=recPtr[j+1];p<e;p++){
+        const [rt,sg]=shape(Math.sqrt(aj*hN[recIdx[p]]));
+        if(r()<rt)this.Wrec[p]+=gauss(r)*sg;
+      }
+      const [rt,sg]=shape(aj);
+      if(r()<rt)this.b[j]+=gauss(r)*sg;
+      if(r()<rt)this.A[j]+=gauss(r)*sg;
+      if(r()<rt*0.5)this.tau[j]=Math.max(-2,Math.min(2,this.tau[j]+gauss(r)*sg));
+      for(let oo=0;oo<NOUT;oo++)if(r()<rt)this.Wout[oo*NH+j]+=gauss(r)*sg;
+      if(NTYPE[j]===T_TONIC){                 // pacemakers evolve their own tempo
+        if(r()<rate*3)this.freq[j]=Math.max(0.0015,Math.min(0.12,this.freq[j]+gauss(r)*sig*0.05));
+        if(r()<rate*3)this.phase[j]=(this.phase[j]+gauss(r)*sig)%1;
+      }
+    }
+    for(let i=0;i<NOUT;i++)if(r()<rate)this.bout[i]+=gauss(r)*sig;
+    this.mutScent(r,rate,sig);
+    this.dale();this.sync();
+    return this;
+  }
+  mutateFlat(r,rate,sig){
+    const hit=a=>{for(let i=0;i<a.length;i++)if(r()<rate)a[i]+=gauss(r)*sig;};
+    hit(this.Win);hit(this.Wrec);hit(this.b);hit(this.A);hit(this.Wout);hit(this.bout);
+    for(let j=0;j<NH;j++)if(NTYPE[j]===T_TONIC){
+      if(r()<rate*3)this.freq[j]=Math.max(0.0015,Math.min(0.12,this.freq[j]+gauss(r)*sig*0.05));
+      if(r()<rate*3)this.phase[j]=(this.phase[j]+gauss(r)*sig)%1;
+    }
+    this.mutScent(r,rate,sig);
+    this.dale();this.sync();
+    return this;
+  }
+  mutScent(r,rate,sig){
+    // only a handful of numbers decide what the scents mean, so they get a much higher hit rate
+    for(let i=0;i<NSLOT;i++){
+      if(r()<rate*3)this.chPeak[i]=Math.max(-1.2,Math.min(3,this.chPeak[i]+gauss(r)*sig*2));
+      if(r()<rate*3)this.chGain[i]=Math.max(-2,Math.min(3,this.chGain[i]+gauss(r)*sig*2));
+      if(r()<rate*3)this.chAvers[i]=Math.max(-1,Math.min(3,this.chAvers[i]+gauss(r)*sig*2));
+    }
+    for(let c=0;c<NCH;c++)
+      if(r()<rate*3)this.chFade[c]=Math.max(-1.9,Math.min(3.6,this.chFade[c]+gauss(r)*sig*2));
+  }
+  /* act[] carries last tick's activations in and this tick's out, so we run one activation pass
+     instead of two. That is exactly what a discrete-time recurrent net does anyway. */
+  step(h,x,out,act,tick){
+    const {Win,Wrec,b,A,invTau,Wout,bout}=this;
+    for(let j=0;j<NH;j++){
+      if(NTYPE[j]===T_TONIC){                 // pacemaker: deaf to the world, just keeps time
+        h[j]=1.6*Math.sin(2*Math.PI*(tick*this.freq[j]+this.phase[j]));
+        act[j]=ftanh(h[j]);
+        continue;
+      }
+      let s=b[j];const o=j*NIN;
+      // most senses are exactly zero on any given tick (empty cells, absent rivals), and skipping
+      // them is the difference between smooth and sluggish
+      for(let i=0;i<NIN;i++){const xv=x[i];if(xv!==0)s+=Win[o+i]*xv;}
+      for(let p=recPtr[j],e=recPtr[j+1];p<e;p++)s+=Wrec[p]*act[recIdx[p]];
+      const g=0.5+0.5*ftanh(0.5*s);            // sigmoid, via the same cheap tanh
+      h[j]=(h[j]+DT*g*A[j])/(1+DT*(invTau[j]+g));
+    }
+    for(let j=0;j<NH;j++)act[j]=ftanh(h[j]);
+    // micro-Hebbian bookkeeping: who was busy while this genome was being judged
+    const ht=this.hTrace,it=this.inTrace;
+    for(let j=0;j<NH;j++){const a=act[j];ht[j]+=a<0?-a:a;}
+    for(let i=0;i<NIN;i++){const v=x[i];it[i]+=v<0?-v:v;}
+    this.traceN++;
+    for(let o=0;o<NOUT;o++){
+      let s=bout[o];const q=o*NH;
+      for(let j=0;j<NH;j++)s+=Wout[q+j]*act[j];
+      out[o]=s;
+    }
+  }
+}
+
+/* ============================================================ world */
+function idx(x,y){return y*W+x;}
+const sat=v=>v/(1+v);
+// Pade approximant for tanh. The net calls this hundreds of times per ant per tick, and Math.tanh
+// is slow enough that swapping it out is the difference between watching evolution and waiting for it.
+function ftanh(x){
+  if(x>3)return 0.9950547536867305;
+  if(x<-3)return -0.9950547536867305;
+  const x2=x*x;
+  return x*(27+x2)/(27+9*x2);
+}
+const sgn=v=>v>0?1:(v<0?-1:0);
+
+class World{
+  constructor(brains,seed,bloomSize,bloomEvery,spread,foodTotal,evHalf){
+    this.brains=brains;
+    this.r=mulberry32(seed);
+    this.bloomSize=bloomSize;this.bloomEvery=bloomEvery;this.spread=spread;
+    this.foodTotal=foodTotal;this.evHalf=evHalf||150;this.floorShare=FLOOR_SHARE;
+    this.wall=new Uint8Array(N_CELL).fill(1);
+    this.room=new Uint8Array(N_CELL);
+    this.food=new Float64Array(N_CELL);   // conserved quantity: needs double precision
+    this.ph=Array.from({length:NSP},()=>Array.from({length:NCH},()=>new Float32Array(N_CELL)));
+    this.po=Array.from({length:NSP},()=>new Float32Array(N_CELL));
+    this.hd=Array.from({length:NSP},()=>new Int32Array(N_CELL));   // steps to own chamber
+    this.nest=Array.from({length:NSP},()=>new Float32Array(N_CELL));
+    this.tick=0;this.bloomFlash=0;
+    this.ants=[];
+    this.larder=new Array(NSP).fill(16);
+    this.delivered=new Array(NSP).fill(0);this.kills=new Array(NSP).fill(0);
+    this.hauled=new Array(NSP).fill(0);this.born=new Array(NSP).fill(0);
+    this.x=new Float32Array(NIN);this.out=new Float32Array(NOUT);this.actbuf=new Float32Array(NH);
+    this.chAmt=new Float32Array(NCH);
+    this.buckets=Array.from({length:NSP},()=>[]);   // reused every tick, never reallocated
+    // lightweight forensics, so a biopsy can say what the colonies were actually doing
+    this.actHist=Array.from({length:NSP},()=>new Float64Array(NACT));
+    this.starved=new Array(NSP).fill(0);this.slain=new Array(NSP).fill(0);
+    this.finds=new Array(NSP).fill(0);this.ledFinds=new Array(NSP).fill(0);
+    // total (pickup distance x units) actually carried home. Distance is credited ONLY on delivery,
+    // so it cannot be farmed by touring the maze with a crumb and never coming back.
+    this.haulDist=new Array(NSP).fill(0);
+    this.ageSum=new Array(NSP).fill(0);this.ageN=new Array(NSP).fill(0);
+    this.maxDist=new Array(NSP).fill(0);
+    this.occ=new Map();
+    this.carve();this.rooms();
+    this.reservoir=foodTotal-this.larder.reduce((a,b)=>a+b,0);
+    // founding workers are built out of the world's stock, not conjured
+    for(let s=0;s<NSP;s++)for(let i=0;i<FOUNDERS;i++)this.hatch(s,0.6,false);
+    this.born=new Array(NSP).fill(0);      // founders are not brood
+    this.bloom();this.bloom();
+  }
+  carve(){
+    const r=this.r,st=[[1,1]];this.wall[idx(1,1)]=0;
+    while(st.length){
+      const [cx,cy]=st[st.length-1],opts=[];
+      for(let d=0;d<4;d++){const nx=cx+DX[d]*2,ny=cy+DY[d]*2;
+        if(nx>0&&ny>0&&nx<W-1&&ny<H-1&&this.wall[idx(nx,ny)])opts.push(d);}
+      if(!opts.length){st.pop();continue;}
+      const d=opts[(r()*opts.length)|0];
+      this.wall[idx(cx+DX[d],cy+DY[d])]=0;
+      this.wall[idx(cx+DX[d]*2,cy+DY[d]*2)]=0;
+      st.push([cx+DX[d]*2,cy+DY[d]*2]);
+    }
+    for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){
+      if(this.wall[idx(x,y)])continue;
+      let open=0;for(let d=0;d<4;d++)if(!this.wall[idx(x+DX[d],y+DY[d])])open++;
+      if(open===1&&r()<0.35){
+        const cand=[];
+        for(let d=0;d<4;d++){const wx=x+DX[d],wy=y+DY[d];
+          if(this.wall[idx(wx,wy)]&&wx>0&&wy>0&&wx<W-1&&wy<H-1)cand.push(idx(wx,wy));}
+        if(cand.length)this.wall[cand[(r()*cand.length)|0]]=0;
+      }
+    }
+  }
+  rooms(){
+    const box=(cx,cy,tag)=>{const R=4;
+      for(let y=cy-R;y<=cy+R;y++)for(let x=cx-R;x<=cx+R;x++){
+        if(x<1||y<1||x>=W-1||y>=H-1)continue;
+        this.wall[idx(x,y)]=0;this.room[idx(x,y)]=tag;}};
+    const cx=W>>1,cy=H>>1,sp=this.spread;
+    const rx=Math.round(cx-(cx-17)*sp),ry=Math.round(cy-(cy-17)*sp);
+    // four chambers, one per quadrant, so the middle is equidistant contested ground
+    this.home=[[rx,ry],[W-1-rx,ry],[rx,H-1-ry],[W-1-rx,H-1-ry]];
+    for(let s=0;s<NSP;s++)box(this.home[s][0],this.home[s][1],s+1);
+    for(let s=0;s<NSP;s++)this.scent(s);
+  }
+  scent(s){
+    // seed from the single centre cell, not the whole room: seeding the whole chamber makes the
+    // field flat inside it, and an ant with no gradient to descend never finds its way out
+    const d=this.hd[s].fill(FAR),q=new Int32Array(N_CELL);let qh=0,qt=0;
+    const c0=idx(this.home[s][0],this.home[s][1]);
+    d[c0]=0;q[qt++]=c0;
+    while(qh<qt){const c=q[qh++],cx=c%W,cy=(c/W)|0;
+      for(let k=0;k<4;k++){const nx=cx+DX[k],ny=cy+DY[k];
+        if(nx<0||ny<0||nx>=W||ny>=H)continue;
+        const n=idx(nx,ny);
+        if(this.wall[n]||d[n]!==FAR)continue;
+        d[n]=d[c]+1;q[qt++]=n;}}
+    const f=this.nest[s];
+    for(let i=0;i<N_CELL;i++)f[i]=d[i]===FAR?0:1/(1+d[i]/16);
+  }
+  /* Food arrives as a few rich, distant patches drawn from the reservoir. Concentrated sources are
+     what make a trail worth laying -- scattered crumbs make stigmergy pointless, because every ant
+     can find its own dinner without help. If the reservoir is empty nothing blooms, so two hoarding
+     colonies can starve the world and each other. */
+  bloom(){
+    // The standing crop is a share of the whole pot, not a multiple of one bloom. Tying it to bloom
+    // size left 90% of the world's food sitting in the reservoir where no ant could ever find it.
+    const floorCap=this.foodTotal*this.floorShare;
+    if(this.foodOnFloor()>=floorCap)return;
+    let units=Math.min(this.bloomSize,Math.floor(this.reservoir),floorCap-this.foodOnFloor());
+    if(units<=0)return;
+    const seeds=4+((this.r()*4)|0),per=Math.ceil(units/seeds);
+    for(let k=0;k<seeds&&units>0;k++){
+      let sc=-1;
+      for(let t=0;t<600;t++){
+        const c=(this.r()*N_CELL)|0;
+        if(this.wall[c]||this.room[c])continue;
+        let near=FAR,bad=false;
+        for(let sp=0;sp<NSP;sp++){const d=this.hd[sp][c];
+          if(d===FAR){bad=true;break;}
+          if(d<near)near=d;}
+        if(bad||near<MIN_SOURCE_DIST)continue;
+        const dx=(c%W)-W/2,dy=((c/W)|0)-H/2;
+        const mid=Math.exp(-(dx*dx/(2*26*26)+dy*dy/(2*18*18)));
+        if(this.r()<0.25+0.75*mid){sc=c;break;}
+      }
+      if(sc<0)continue;
+      const cx=sc%W,cy=(sc/W)|0;
+      let placed=0;
+      for(let t=0;t<per*40&&placed<per&&units>0;t++){
+        const x=cx+((this.r()*7)|0)-3,y=cy+((this.r()*7)|0)-3;
+        if(x<1||y<1||x>=W-1||y>=H-1)continue;
+        const c=idx(x,y);
+        if(this.wall[c]||this.room[c]||this.food[c]>=8)continue;
+        this.food[c]+=1;this.reservoir-=1;units--;placed++;
+      }
+    }
+    this.bloomFlash=45;
+  }
+  // Burning energy is how food leaves a body and re-enters the world, so every joule spent is
+  // credited back to the reservoir and can bloom again somewhere else.
+  burn(a,e){a.en-=e;this.reservoir+=e/CAL;}
+  // what an ant is made of: its body, the fuel in its tank, the food in its crop
+  antMaterial(gut){return BODY+EN0/CAL+gut;}
+  hatchCost(s){return this.antMaterial(0.6)+0.05*this.alive(s);}   // material plus nursing overhead
+  hatch(s,gut,fromLarder=true){
+    if(this.alive(s)>=POP_CAP)return null;
+    const material=this.antMaterial(gut);
+    if(fromLarder){
+      const cost=this.hatchCost(s);
+      if(this.larder[s]<cost)return null;
+      this.larder[s]-=cost;
+      this.reservoir+=cost-material;        // the overhead was eaten by the nurses
+    } else {
+      if(this.reservoir<material)return null;
+      this.reservoir-=material;
+    }
+    const [hx,hy]=this.home[s];
+    const a={sp:s,x:hx+((this.r()*7)|0)-3,y:hy+((this.r()*7)|0)-3,dir:(this.r()*4)|0,
+      hp:HP0,en:EN0,gut:gut,carry:0,hdist:0,alive:true,age:0,brought:0,
+      mem:new Float32Array(M),h:new Float32Array(NH),acts:new Float32Array(NH),act:A_FWD};
+    if(this.wall[idx(a.x,a.y)]){a.x=hx;a.y=hy;}
+    this.ants.push(a);this.born[s]++;
+    return a;
+  }
+  power(a){return a.hp*(1+0.7*a.gut);}   // a full crop is armour and muscle
+  /* ---------------- senses ---------------- */
+  sense(a){
+    const x=this.x,me=a.sp,c=idx(a.x,a.y);
+    const L=(a.dir+3)&3,R=(a.dir+1)&3;
+    const at=d=>{const nx=a.x+DX[d],ny=a.y+DY[d];
+      return (nx<0||ny<0||nx>=W||ny>=H)?-1:idx(nx,ny);};
+    const fw=at(a.dir),lf=at(L),rt=at(R),bk=at((a.dir+2)&3);
+    const wallv=i=>(i<0||this.wall[i])?1:0;
+    const graw=(arr,i)=>i<0?0:sat(arr[i]);
+    // read our own scent, and every rival's, through this colony's own evolved receptors
+    const B=this.brains[me];
+    for(let ch=0;ch<NCH;ch++){
+      const mine=this.ph[me][ch];
+      const rd=(f,i,slot)=>i<0?0:B.resp(f[i],slot,ch);
+      x[SPH(ch,K_H)]=rd(mine,c,0);   x[SPH(ch,K_F)]=rd(mine,fw,0);
+      x[SPH(ch,K_L)]=rd(mine,lf,0);  x[SPH(ch,K_R)]=rd(mine,rt,0);
+      x[SPH(ch,K_B)]=rd(mine,bk,0);
+      x[SPH(ch,K_RAW)]=graw(mine,c);          // raw strength, so it can tell it is over-marking
+      if(ch===0){                             // how heavily trodden each way out is
+        x[S_TRAF_F]=graw(mine,fw);x[S_TRAF_L]=graw(mine,lf);
+        x[S_TRAF_R]=graw(mine,rt);x[S_TRAF_B]=graw(mine,bk);
+        // and which way it thickens: a scent gradient pointing back up the traffic
+        const h0=mine[c];
+        const up=i=>(i<0||this.wall[i])?0:sgn(mine[i]-h0);
+        x[S_OWN_F]=up(fw);x[S_OWN_L]=up(lf);x[S_OWN_R]=up(rt);x[S_OWN_B]=up(bk);
+      }
+      for(let k=1;k<NSP;k++){
+        const theirs=this.ph[(me+k)%NSP][ch];
+        x[SPH(ch,KFH(k))]=rd(theirs,c,k);
+        x[SPH(ch,KFF(k))]=rd(theirs,fw,k);
+      }
+    }
+    // poison stays monotone: it is simply bad
+    x[S_PO_H]=graw(this.po[me],c);x[S_PO_F]=graw(this.po[me],fw);
+    // rival poison is aggregated: the worst of it in this cell and the one ahead
+    let ph2=0,pf2=0;
+    for(let k=1;k<NSP;k++){const f=this.po[(me+k)%NSP];
+      if(f[c]>ph2)ph2=f[c];
+      if(fw>=0&&f[fw]>pf2)pf2=f[fw];}
+    x[S_EPO_H]=sat(ph2);x[S_EPO_F]=sat(pf2);
+    x[S_FOOD_H]=Math.min(1,this.food[c]);x[S_FOOD_F]=fw<0?0:Math.min(1,this.food[fw]);
+    x[S_CARRY]=a.carry>0?1:0;x[S_LOAD]=a.carry/CARRY_CAP;x[S_EN]=a.en/ENMAX;x[S_HP]=a.hp/HPMAX;x[S_GUT]=a.gut;
+    // homeward gradient: +1 means that step reduces the distance to your own room
+    // a blocked or unreachable neighbour carries NO gradient information. reporting it as -1
+    // ("that step leads away from home") makes outbound ants turn into every wall beside them.
+    const grad=(f,i)=>(i<0||this.wall[i]||f[i]===FAR)?0:sgn(f[c]-f[i]);
+    const dh=this.hd[me];
+    x[S_HOME]=this.nest[me][c];
+    x[S_DHF]=grad(dh,fw);
+    x[S_DHL]=grad(dh,lf);
+    x[S_DHR]=grad(dh,rt);
+    x[S_DHB]=grad(dh,bk);
+    // whichever rival chamber is nearest, and whether the step ahead approaches it
+    let nb=0,nbsp=me;
+    for(let k=1;k<NSP;k++){const o=(me+k)%NSP;if(this.nest[o][c]>nb){nb=this.nest[o][c];nbsp=o;}}
+    x[S_FOE_HOME]=nb;
+    x[S_DFF]=nbsp===me?0:grad(this.hd[nbsp],fw);
+    x[S_INROOM]=this.room[c]===me+1?1:0;
+    let ally=0,foe=0,foeHere=0;
+    const scan=i=>{if(i<0)return;const grp=this.occ.get(i);if(!grp)return;
+      for(const o of grp){if(!o.alive||o===a)continue;o.sp===a.sp?ally++:foe++;}};
+    scan(c);scan(fw);scan(lf);scan(rt);
+    const here=this.occ.get(c);
+    if(here)for(const o of here)if(o.alive&&o.sp!==a.sp)foeHere++;
+    x[S_ALLY]=Math.min(1,ally/2);x[S_FOE]=Math.min(1,foe/2);x[S_FOE_H]=Math.min(1,foeHere);
+    const t=this.tick*0.11;x[S_SIN]=Math.sin(t);x[S_COS]=Math.cos(t);x[S_BIAS]=1;
+    for(let i=0;i<M;i++)x[S_MEM+i]=a.mem[i];
+    return x;
+  }
+  /* ---------------- one tick ---------------- */
+  step(){
+    this.tick++;
+    if(this.bloomFlash>0)this.bloomFlash--;
+    this.reoccupy();
+    const out=this.out,actbuf=this.actbuf,chAmt=this.chAmt;
+
+    for(const a of this.ants){
+      if(!a.alive)continue;
+      a.age++;
+      {const d=this.hd[a.sp][idx(a.x,a.y)];if(d<FAR&&d>this.maxDist[a.sp])this.maxDist[a.sp]=d;}
+      const c0=idx(a.x,a.y);
+      let hurt=this.po[a.sp][c0]*0.12;                 // your own brew stings a little
+      for(let k=1;k<NSP;k++)hurt+=this.po[(a.sp+k)%NSP][c0]*0.55;
+      if(hurt>0)a.hp-=hurt;
+      // arriving home: one unit hauled in is one unit stored. no bonus, no multiplier.
+      if(a.carry&&this.room[c0]===a.sp+1){
+        this.larder[a.sp]+=a.carry;this.delivered[a.sp]+=a.carry;a.brought+=a.carry;
+        this.haulDist[a.sp]+=a.hdist;a.hdist=0;a.carry=0;
+      }
+      // Eating at home moves units out of the larder -- but brood has first claim on it. Workers
+      // may only draw freely from the surplus ABOVE the next hatch; below that they get an
+      // emergency ration and nothing more, so a run of good foraging can actually buy ants.
+      if(this.room[c0]===a.sp+1&&this.larder[a.sp]>0.2){
+        const spare=this.larder[a.sp]-(this.hatchCost(a.sp)+LARDER_RESERVE);
+        const hungry=(a.en<0.7*ENMAX||a.gut<0.6);
+        let ration=0;
+        if(spare>0&&hungry)ration=0.18;                      // help yourself to the surplus
+        else if(a.en<0.3*ENMAX)ration=0.05;                  // starving: emergency sip only
+        if(ration>0){
+          const eat=Math.min(ration,this.larder[a.sp],(ENMAX-a.en)/CAL);
+          if(eat>0){this.larder[a.sp]-=eat;a.en+=eat*CAL;}
+          if(spare>0){
+            const top=Math.min(0.2,this.larder[a.sp],GUTMAX-a.gut);
+            if(top>0){this.larder[a.sp]-=top;a.gut+=top;}
+          }
+        }
+      }
+      // out in the maze the crop is the reserve tank
+      if(a.en<0.25*ENMAX&&a.gut>0.02){
+        const u=Math.min(a.gut,0.1,(ENMAX-a.en)/CAL);
+        if(u>0){a.gut-=u;a.en+=u*CAL;}
+      }
+
+      const x=this.sense(a);
+      this.brains[a.sp].step(a.h,x,out,a.acts,this.tick);
+      for(let i=0;i<M;i++){
+        const w=Math.tanh(out[NACT+NCH+1+i]);
+        const gt=1/(1+Math.exp(-out[NACT+NCH+1+M+i]));
+        a.mem[i]=(1-gt)*a.mem[i]*0.995+gt*w;
+      }
+      let mx=out[0];for(let k=1;k<NACT;k++)if(out[k]>mx)mx=out[k];
+      let sum=0;for(let k=0;k<NACT;k++){actbuf[k]=Math.exp((out[k]-mx)*1.6);sum+=actbuf[k];}
+      let pick=this.r()*sum,best=NACT-1;
+      for(let k=0;k<NACT;k++){pick-=actbuf[k];if(pick<=0){best=k;break;}}
+      a.act=best;
+      this.actHist[a.sp][best]++;
+      // one amount per channel, all chosen by the net: marking lays whatever mix it asks for
+      let markTotal=0;
+      for(let ch=0;ch<NCH;ch++){chAmt[ch]=2.2/(1+Math.exp(-out[NACT+ch]));markTotal+=chAmt[ch];}
+      const poAmt=0.3+1.3/(1+Math.exp(-out[NACT+NCH]));
+      this.burn(a,0.04);
+      const stepTo=(nd,turnCost)=>{
+        a.dir=nd;
+        const nx=a.x+DX[nd],ny=a.y+DY[nd];
+        if(nx>=0&&ny>=0&&nx<W&&ny<H&&!this.wall[idx(nx,ny)]){
+          a.x=nx;a.y=ny;
+          this.burn(a,0.11+turnCost+0.08*a.carry);
+          if(this.room[idx(nx,ny)]!==a.sp+1)this.ph[a.sp][0][idx(nx,ny)]+=FOOTPRINT;  // channel 0
+        } else this.burn(a,0.14+turnCost);   // walked into the wall, paid for the effort anyway
+      };
+      switch(best){
+        case A_FWD:  stepTo(a.dir,0);break;
+        case A_LEFT: stepTo((a.dir+3)&3,0.10);break;
+        case A_RIGHT:stepTo((a.dir+1)&3,0.10);break;
+        case A_BACK: stepTo((a.dir+2)&3,0.20);break;
+        case A_DROP:{
+          const c=idx(a.x,a.y);
+          if(a.carry>0&&!this.room[c]){
+            a.hdist*=(a.carry-1)/a.carry;                       // the cached unit takes its share away
+            this.food[c]+=1;a.carry-=1;
+          }
+          this.burn(a,0.15);break;}
+        case A_TAKE:{
+          const c=idx(a.x,a.y);
+          // Pick-up only. This used to fall through to "otherwise put a unit down", which meant any
+          // ant selecting TAKE while laden jettisoned its cargo -- and TAKE gets selected about 12%
+          // of the time, so the colonies were dropping 300 loads for every 6 they delivered.
+          if(this.food[c]>=1&&a.carry<CARRY_CAP&&!this.room[c]){
+            const led=this.ph[a.sp][1][c]>1.0;                   // did a trail bring us here?
+            this.food[c]-=1;a.carry+=1;this.hauled[a.sp]++;      // load up while you are here
+            const d0=this.hd[a.sp][c];
+            if(d0<FAR)a.hdist+=d0;                               // remember how far out this came from
+            this.finds[a.sp]++;if(led)this.ledFinds[a.sp]++;
+            // shout about it: richer patch, louder mark
+            const rich=0.4+0.6*Math.min(1,this.food[c]/4);
+            this.ph[a.sp][1][c]+=PICKUP_MARK*rich*INSTINCT;
+          }
+          this.burn(a,0.2);break;}
+        case A_MARK:{
+          const mc=idx(a.x,a.y);
+          for(let ch=0;ch<NCH;ch++)this.ph[a.sp][ch][mc]+=chAmt[ch];
+          this.burn(a,0.25+markTotal*0.14);break;}
+        case A_POIS:this.po[a.sp][idx(a.x,a.y)]+=poAmt;this.burn(a,1.4+poAmt*0.6);break;
+        case A_SCRUB:{const c=idx(a.x,a.y);
+          // scrubbing scours every rival's marks here, not just one opponent's
+          for(let k=1;k<NSP;k++){const e=(a.sp+k)%NSP;
+            for(let ch=0;ch<NCH;ch++)this.ph[e][ch][c]*=0.25;
+            this.po[e][c]*=0.35;}
+          this.burn(a,0.55);break;}
+        case A_FIGHT:this.burn(a,0.3);break;
+        case A_FLEE:{
+          const opts=[];
+          for(let d=0;d<4;d++){const nx=a.x+DX[d],ny=a.y+DY[d];
+            if(nx>=0&&ny>=0&&nx<W&&ny<H&&!this.wall[idx(nx,ny)])opts.push(d);}
+          if(opts.length)stepTo(opts[(this.r()*opts.length)|0],0.15);
+          this.burn(a,0.3);break;}
+      }
+      if(a.gut<0)a.gut=0;
+      if(a.en<=0||a.hp<=0)this.kill(a,null);
+    }
+
+    this.reoccupy();
+    for(const [c,grp] of this.occ){
+      if(grp.length<2)continue;
+      const by=this.buckets;
+      for(let sp=0;sp<NSP;sp++)by[sp].length=0;
+      for(const a of grp) if(a.alive) by[a.sp].push(a);
+      // every pair of colonies present in the cell fights; a three-way brawl is possible
+      for(let i=0;i<NSP;i++)for(let j=i+1;j<NSP;j++){
+        const n=Math.min(by[i].length,by[j].length);
+        for(let k=0;k<n;k++) if(by[i][k].alive&&by[j][k].alive) this.duel(by[i][k],by[j][k]);
+      }
+      // nestmates share instead
+      for(let sp=0;sp<NSP;sp++){
+        const side=by[sp];
+        for(let k=0;k+1<side.length;k+=2)
+          if(side[k].alive&&side[k+1].alive) this.trophallaxis(side[k],side[k+1]);
+      }
+    }
+    // one fade rate per colony per channel: master half-life scaled by that channel's genome
+    const pev=0.997;
+    // floor food rots back into the world's stock, so nothing is ever stranded permanently
+    {const f=this.food;let back=0;
+     for(let i=0;i<N_CELL;i++){const v=f[i];if(v>0){const d=v*FOOD_DECAY;f[i]=v-d;back+=d;}}
+     this.reservoir+=back;}
+    // field-major, not cell-major: striding across sixteen arrays per cell thrashes the cache
+    for(let sp=0;sp<NSP;sp++){
+      const B=this.brains[sp];
+      for(let ch=0;ch<NCH;ch++){
+        const ev=Math.pow(0.5,1/(this.evHalf*B.chF[ch]));
+        const f=this.ph[sp][ch];
+        for(let i=0;i<N_CELL;i++)f[i]*=ev;
+      }
+      const q=this.po[sp];
+      for(let i=0;i<N_CELL;i++)q[i]*=pev;
+    }
+    for(let s=0;s<NSP;s++){
+      // stores spoil, and the matter goes back to the world rather than vanishing. so a colony
+      // that hoards is quietly feeding the blooms that its enemy will also forage.
+      const spoil=this.larder[s]*0.0003;
+      this.larder[s]-=spoil;this.reservoir+=spoil;
+      let guard=0;
+      while(this.larder[s]>=this.hatchCost(s)+LARDER_RESERVE&&guard++<24){
+        if(!this.hatch(s,0.6))break;
+      }
+      // a colony never quite blinks out, but the queen still has to find the material somewhere
+      if(this.tick%250===0&&this.alive(s)<4)this.hatch(s,0.6,false);
+    }
+    if(this.tick%this.bloomEvery===0)this.bloom();
+    if(this.tick%97===0)this.ants=this.ants.filter(a=>a.alive||a===this.sel);
+  }
+  reoccupy(){
+    this.occ.clear();
+    for(const a of this.ants){
+      if(!a.alive)continue;
+      const c=idx(a.x,a.y);
+      let g=this.occ.get(c);if(!g){g=[];this.occ.set(c,g);}
+      g.push(a);
+    }
+  }
+  duel(a,b){
+    // fighting power is hit points scaled by crop, so the better-fed colony wins the middle
+    const pa=this.power(a),pb=this.power(b),tot=Math.max(1,pa+pb),D=15;
+    const ma=a.act===A_FIGHT?1.35:(a.act===A_FLEE?0.5:1);
+    const mb=b.act===A_FIGHT?1.35:(b.act===A_FLEE?0.5:1);
+    b.hp-=D*(pa/tot)*ma*(b.act===A_FLEE?0.5:1);
+    a.hp-=D*(pb/tot)*mb*(a.act===A_FLEE?0.5:1);
+    this.burn(a,0.4);this.burn(b,0.4);
+    const ga=Math.min(0.004,a.gut),gb=Math.min(0.004,b.gut);
+    a.gut-=ga;b.gut-=gb;this.reservoir+=ga+gb;
+    if(a.gut<0)a.gut=0;if(b.gut<0)b.gut=0;
+    if(a.hp<=0&&b.hp<=0){this.kill(a,null);this.kill(b,null);}
+    else if(a.hp<=0)this.kill(a,b);
+    else if(b.hp<=0)this.kill(b,a);
+  }
+  trophallaxis(a,b){
+    // strictly conservative: sharing rescues the weaker ant, it does not create food
+    const e=(a.en+b.en)/2;
+    a.en=e;b.en=e;
+    const g=(a.gut+b.gut)/2;                         // crop-to-crop resupply in the field
+    a.gut=g;b.gut=g;
+    if(g>0.12){                                      // and mending each other is paid for in crop
+      a.hp=Math.min(HPMAX,a.hp+2.5);b.hp=Math.min(HPMAX,b.hp+2.5);
+      const ha=Math.min(0.025,a.gut),hb=Math.min(0.025,b.gut);
+      a.gut-=ha;b.gut-=hb;this.reservoir+=ha+hb;
+    }
+    const da=this.hd[a.sp][idx(a.x,a.y)],db=this.hd[b.sp][idx(b.x,b.y)];
+    // a relayed load keeps its history, otherwise handing off would forfeit the distance credit
+    // and the reward would quietly punish exactly the cooperation it is meant to encourage
+    if(a.carry&&!b.carry&&db<da){const sh=a.hdist/a.carry;a.hdist-=sh;b.hdist+=sh;a.carry--;b.carry=1;}
+    else if(b.carry&&!a.carry&&da<db){const sh=b.hdist/b.carry;b.hdist-=sh;a.hdist+=sh;b.carry--;a.carry=1;}
+  }
+  kill(a,by){
+    if(!a.alive)return;
+    a.alive=false;
+    const c=idx(a.x,a.y);
+    // the carcass IS food: body, crop and cargo land on the floor for somebody to carry off.
+    // the victor gets no free meal; it has to pick the corpse up like any other source.
+    const mass=BODY+a.gut+a.carry;
+    const rm=this.room[c];
+    // Corpses indoors used to be recycled straight into the larder. Over 1900 generations selection
+    // found that: an ant that never walks burns almost nothing, dies at home, and its body funds the
+    // next one -- a near-lossless loop that pays fitness without ever foraging. Ants carry their dead
+    // OUT to a midden, so the material returns to the world and dying costs the colony something.
+    if(rm)this.reservoir+=mass;
+    else this.food[c]+=mass;                            // outdoors the carcass is a food source
+    this.reservoir+=Math.max(0,a.en)/CAL;               // whatever fuel was left disperses as heat
+    a.gut=0;a.carry=0;a.en=0;
+    this.ageSum[a.sp]+=a.age;this.ageN[a.sp]++;
+    if(by){this.kills[by.sp]++;this.slain[a.sp]++;by.hp=Math.min(HPMAX,by.hp+6);}
+    else this.starved[a.sp]++;
+  }
+  alive(s){let n=0;for(const a of this.ants)if(a.alive&&a.sp===s)n++;return n;}
+  /* The colony's best forager alive right now: most food hauled home, oldest as tie-break.
+     Used so the brain scope always has something to show rather than sitting blank. */
+  leader(s){
+    let best=null;
+    for(const a of this.ants){
+      if(!a.alive||a.sp!==s)continue;
+      if(!best||a.brought>best.brought||(a.brought===best.brought&&a.age>best.age))best=a;
+    }
+    return best;
+  }
+  fitRate(s){return this.tick?this.fitness(s)*1000/this.tick:0;}
+  halfLife(sp,ch){return this.evHalf*this.brains[sp].chF[ch];}
+  stat(s){let n=0,hp=0,car=0,gut=0;
+    for(const a of this.ants)if(a.alive&&a.sp===s){n++;hp+=a.hp;car+=a.carry;gut+=a.gut;}
+    return {n,hp:n?hp/n:0,gut:n?gut/n:0,car};}
+  foodOnFloor(){let t=0;for(let i=0;i<N_CELL;i++)t+=this.food[i];return t;}
+  // where every unit of food currently sits. this must always sum to foodTotal.
+  ledger(){
+    let carried=0,crops=0,tanks=0,bodies=0;
+    for(const a of this.ants) if(a.alive){carried+=a.carry;crops+=a.gut;tanks+=a.en/CAL;bodies+=BODY;}
+    const floor=this.foodOnFloor(),larder=this.larder.reduce((a,b)=>a+b,0);
+    return {reservoir:this.reservoir,floor,carried,crops,tanks,bodies,larder,
+      total:this.reservoir+floor+carried+crops+tanks+bodies+larder};
+  }
+  /* Fitness must measure BEHAVIOUR. The previous version was 71% brood count, and brood comes
+     mostly from the founding larder and the queen's reserve -- things that happen whatever the brain
+     does -- so most of the signal selection saw was a constant. Delivered food is the colony's real
+     income, and counting brood on top of it double-counts the same units. */
+  /* Mark the end of the founding transient. Everything counted for fitness afterwards is flow the
+     colony actually generated, not the starting larder being eaten. */
+  markBaseline(){this.base={del:this.delivered.slice(),hau:this.hauled.slice(),
+                            kil:this.kills.slice(),dist:this.haulDist.slice()};}
+  /* Weighted toward the economy. A big population term made fitness mostly a measure of surviving
+     the founding boom, which the starting larder pays for however badly the colony forages. */
+  /* Fitness is INCOME, never inventory. The larder term had to go: stores are not earned, they could
+     be farmed from a colony's own dead, and 1900 generations of selection duly found that and stopped
+     foraging altogether. The population term went the same way -- population is a consequence of
+     income, so counting it too pays twice for the same food, and pays it to colonies that merely sat
+     still. What is left is food actually carried in from the world, part credit for finding it, and
+     combat. */
+  fitness(s){
+    const b=this.base;
+    const del=b?this.delivered[s]-b.del[s]:this.delivered[s];
+    const hau=b?this.hauled[s]-b.hau[s]:this.hauled[s];
+    const kil=b?this.kills[s]-b.kil[s]:this.kills[s];
+    // A slight premium on food fetched from FAR AWAY, credited only when it arrives home. Paid per
+    // unit x step, weighted so a haul from 100 steps out is worth about 25% more than one from the
+    // doorstep -- enough to favour ranging, not enough to outrank simply delivering. Unlike rewarding
+    // carrying distance, this cannot be accumulated without completing the trip.
+    const dist=b?this.haulDist[s]-b.dist[s]:this.haulDist[s];
+    return 20*del+3*hau+2*kil+0.2*this.alive(s)+HAUL_PREMIUM*dist;
+  }
+}
+
+/* ============================================================ view */
+const view=document.getElementById("view"),vx=view.getContext("2d");
+const SC=8;view.width=W*SC;view.height=H*SC;
+const field=document.createElement("canvas");field.width=W;field.height=H;
+const fx=field.getContext("2d");
+const img=fx.createImageData(W,H);
+const show={pher:true,pois:true,nest:false,chan:0};
+
+
+function paint(w){
+  const d=img.data;
+  for(let i=0;i<N_CELL;i++){
+    let r,g,b;
+    if(w.wall[i]){r=26;g=29;b=38;}
+    else{
+      const rm=w.room[i];
+      if(rm){const c0=COL[rm-1];r=11+c0[0]*0.13;g=12+c0[1]*0.13;b=17+c0[2]*0.13;}
+      else{r=11;g=12;b=17;}
+      if(show.pher){
+        // whichever colony has marked this cell most strongly wins the pixel, drawn in its own hue
+        // and read through its OWN receptors -- so a cell can look inviting to its owner and the
+        // same cell forbidding to whoever laid it, depending on how each colony evolved.
+        const ch=show.chan;
+        let owner=-1,best=0;
+        for(let sp=0;sp<NSP;sp++){const v=w.ph[sp][ch][i];if(v>best){best=v;owner=sp;}}
+        if(owner>=0){
+          const val=w.brains[owner].resp(best,0,ch),m=Math.min(1.3,Math.abs(val));
+          if(val>0){const c0=COL[owner];r+=c0[0]*0.78*m;g+=c0[1]*0.78*m;b+=c0[2]*0.78*m;}
+          else {r+=150*m;g+=146*m;b+=136*m;}          // bone haze: repellent to its own colony
+        }
+      }
+      if(show.pois){
+        // poison reads as a sickly bloom regardless of whose it is; the ants sense ownership
+        let tox=0;
+        for(let sp=0;sp<NSP;sp++)tox+=w.po[sp][i];
+        const t=sat(tox);
+        r+=150*t;g+=190*t;b-=40*t;
+      }
+      if(show.nest)for(let sp=0;sp<NSP;sp++){
+        const c0=COL[sp],n=w.nest[sp][i]*0.30;
+        r+=c0[0]*n;g+=c0[1]*n;b+=c0[2]*n;
+      }
+    }
+    const o=i*4;
+    d[o]=r>255?255:r<0?0:r;d[o+1]=g>255?255:g<0?0:g;d[o+2]=b>255?255:b<0?0:b;d[o+3]=255;
+  }
+  fx.putImageData(img,0,0);
+  vx.imageSmoothingEnabled=false;
+  vx.drawImage(field,0,0,view.width,view.height);
+
+  vx.fillStyle="#43e08a";
+  for(let i=0;i<N_CELL;i++){
+    const f=w.food[i];if(f<0.5)continue;
+    const x=(i%W)*SC,y=((i/W)|0)*SC,s=Math.min(5,1.4+f*0.8);
+    vx.globalAlpha=Math.min(1,0.4+f*0.2);
+    vx.fillRect(x+SC/2-s/2,y+SC/2-s/2,s,s);
+  }
+  vx.globalAlpha=1;
+
+  for(const a of w.ants){
+    if(!a.alive)continue;
+    const cx=a.x*SC+SC/2,cy=a.y*SC+SC/2,d2=a.dir;
+    const lum=0.45+0.55*a.gut;                       // a fat ant is a bright ant
+    const base=COL[a.sp];
+    vx.fillStyle="rgb("+((base[0]*lum)|0)+","+((base[1]*lum)|0)+","+((base[2]*lum)|0)+")";
+    const hx=DX[d2],hy=DY[d2],px=-hy,py=hx,L=3.6,Wd=2.3;
+    vx.beginPath();
+    vx.moveTo(cx+hx*L,cy+hy*L);
+    vx.lineTo(cx-hx*2+px*Wd,cy-hy*2+py*Wd);
+    vx.lineTo(cx-hx*2-px*Wd,cy-hy*2-py*Wd);
+    vx.closePath();vx.fill();
+    if(a.carry){vx.fillStyle="#eafff0";vx.fillRect(cx-1,cy-1,2,2);}
+    if(a===w.sel){vx.strokeStyle="#ffc21f";vx.lineWidth=1.4;vx.strokeRect(a.x*SC-2,a.y*SC-2,SC+4,SC+4);}
+  }
+}
+
+/* brain scope */
+const curves=document.getElementById("curves"),cvx=curves.getContext("2d");
+const CH_COL=["#ffc21f","#43e08a","#8f5cff"];
+let curveSlot=0;      // 0 = our own scent, 1..3 = what each neighbour's scent means to us
+function paintCurves(sp){
+  const w=curves.width,h=curves.height,mid=Math.round(h*0.55);
+  cvx.clearRect(0,0,w,h);
+  cvx.strokeStyle="#242a38";cvx.lineWidth=1;
+  cvx.beginPath();cvx.moveTo(0,mid);cvx.lineTo(w,mid);cvx.stroke();
+  if(sp===null){
+    cvx.fillStyle="#7d8496";cvx.font="10px ui-monospace,monospace";
+    cvx.fillText("select an ant",6,mid-6);return;
+  }
+  const B=world.brains[sp],VMAX=14,SC_Y=h*0.38;
+  for(let ch=0;ch<NCH;ch++){
+    cvx.strokeStyle=CH_COL[ch];cvx.lineWidth=1.5;cvx.beginPath();
+    for(let px=0;px<w;px++){
+      const v=px/w*VMAX,y=mid-Math.max(-1.6,Math.min(1.6,B.resp(v,curveSlot,ch)))*SC_Y;
+      px?cvx.lineTo(px,y):cvx.moveTo(px,y);
+    }
+    cvx.stroke();
+    cvx.fillStyle=CH_COL[ch];cvx.font="9px ui-monospace,monospace";
+    cvx.fillText("ch"+(ch+1),4+ch*28,10);
+  }
+  const label=curveSlot===0?"own scent":("scent of "+CNAME[(sp+curveSlot)%NSP]);
+  cvx.fillStyle="#7d8496";cvx.font="9px ui-monospace,monospace";
+  cvx.fillText(label,w-cvx.measureText(label).width-4,10);
+}
+const scope=document.getElementById("scope"),sx=scope.getContext("2d");
+const SCOL=16,SROW=NH/SCOL,CELL=17;
+scope.width=SCOL*CELL;scope.height=SROW*CELL;
+const regs=document.getElementById("regs");
+["REG 0","REG 1","REG 2","REG 3","CROP"].forEach(n=>{
+  const el=document.createElement("div");el.className="reg";
+  el.innerHTML='<div class="n">'+n+'</div><div class="bar"><i></i></div>';
+  regs.appendChild(el);
+});
+const regBars=[...regs.querySelectorAll(".bar i")];
+let focusCol=0;
+function paintScope(a){
+  sx.clearRect(0,0,scope.width,scope.height);
+  if(!a||!a.alive){
+    for(let j=0;j<NH;j++){
+      sx.fillStyle=NTYPE[j]===T_TONIC?"#2a2415":(NTYPE[j]===T_INH?"#141d2a":"#231416");
+      sx.fillRect((j%SCOL)*CELL,((j/SCOL)|0)*CELL,CELL-1,CELL-1);
+    }
+    document.getElementById("scopeAct").textContent=CNAME[focusCol]+" has nobody alive to read";
+    regBars.forEach(b=>{b.style.left="50%";b.style.width="0";});
+    return;
+  }
+  for(let j=0;j<NH;j++){
+    const v=Math.tanh(a.h[j]),m=Math.min(1,Math.abs(v));
+    // hue says what KIND of cell it is, brightness says how hard it is firing
+    const col=NTYPE[j]===T_TONIC?[255,194,31]:(NTYPE[j]===T_INH?[95,176,255]:[255,77,70]);
+    const lift=NTYPE[j]===T_TONIC?0.25:0.10;
+    const k=lift+(1-lift)*m;
+    sx.fillStyle="rgb("+((col[0]*k)|0)+","+((col[1]*k)|0)+","+((col[2]*k)|0)+")";
+    sx.fillRect((j%SCOL)*CELL,((j/SCOL)|0)*CELL,CELL-1,CELL-1);
+  }
+  document.getElementById("scopeAct").textContent=
+    CNAME[a.sp]+(a===world.sel?" (picked)":" leader, "+a.brought+" hauled")+" · "+ACTNAME[a.act]+
+    "  ·  hp "+a.hp.toFixed(0)+"  en "+a.en.toFixed(0)+
+    "  crop "+a.gut.toFixed(2)+(a.carry?"  · laden":"");
+  for(let i=0;i<M;i++){
+    const v=Math.max(-1,Math.min(1,a.mem[i])),b=regBars[i],wpc=Math.abs(v)*50;
+    b.style.left=(v>=0?50:50-wpc)+"%";b.style.width=wpc+"%";
+    b.style.background=v>=0?"#ffc21f":"#8f5cff";
+  }
+  const cb=regBars[4];cb.style.left="0";cb.style.width=(a.gut*100)+"%";cb.style.background="#43e08a";
+}
+
+/* ============================================================ evolution engine
+   Everything below runs continuously. The arena you watch is a showcase: it is always driven by the
+   CURRENT champions and gets rebuilt each generation. The real work happens headlessly in time-sliced
+   episodes, three per generation -- champion, challenger, and a random-drift control that is never
+   selected and exists purely to prove selection is doing something a coin could not. */
+const $=id=>document.getElementById(id);
+/* Episode length is a real trade-off, so it is yours to set.
+   Because champion and challenger run the IDENTICAL maze, the comparison carries no measurement
+   noise -- the only difference between them is the mutation. So a longer episode does not sharpen
+   the comparison; it changes WHAT gets measured. It matters because a colony's recruitment trails
+   have half-lives of 900-1800 ticks, and a 600-tick scored window cannot see a long-lived trail
+   pay off at all. The founding wave also takes ~1500 ticks to settle to the sustainable population,
+   so a short episode judges a colony at twice the size it can actually feed.
+   Trials-per-generation is the other dial: averaging over several mazes is what stops selection
+   fitting the quirks of one maze.
+   Measured at EQUAL COMPUTE, longer is not a trade -- it is simply better. Twelve 900-tick
+   generations moved champions +12% but moved the random-drift control +14% as well, for a 19% lead:
+   over a short scored window a coin can stumble into looking competent. Six 1800-tick generations
+   moved champions +20% while drift COLLAPSED 55%, for a 183% lead. A long window measures sustained
+   foraging, which random mutation cannot fake. Hence the 1800 default. */
+let EPISODE=1800;
+let BURN_FRAC=0.45;                // this fraction of each episode is burn-in, never scored
+const ARCHIVE_MAX=16;
+const NOVELTY=0.28;                // behavioural distance needed to earn an archive slot
+const STAG_LIMIT=12;               // generations without real progress before reseeding
+const STAG_DELTA=0.02;             // "real progress" means better than this fraction
+
+function worldCfg(brains,seed){
+  return new World(brains,seed,+$("fd").value,+$("bt").value,
+    +$("sp").value/100,+$("ft").value,+$("ev").value);
+}
+function freshBrain(){const b=new Brain((Math.random()*1e9)|0);if(seedInstincts)b.seedInstincts();return b;}
+function meanFit(f){return f.reduce((a,b)=>a+b,0)/f.length;}
+
+const EV={
+  gen:0,run:true,budget:14,
+  champ:null,trial:null,drift:null,
+  fitChamp:null,fitTrial:null,fitDrift:null,
+  phase:"champ",work:null,left:0,seed:0,trials:2,trialIdx:0,acc:null,seeds:null,current:null,
+  hist:[],archive:[],bestEver:0,stagnant:0,accepted:0,reseeds:0
+};
+
+function startLineage(){
+  world=null;
+  EV.champ=Array.from({length:NSP},()=>freshBrain());
+  EV.drift=EV.champ.map(b=>b.clone());
+  EV.gen=0;EV.hist=[];EV.archive=[];EV.bestEver=0;EV.stagnant=0;
+  EV.accepted=0;EV.reseeds=0;
+  beginGeneration();
+  showcase();
+}
+function beginGeneration(){
+  EV.seeds=Array.from({length:EV.trials},()=>(Math.random()*1e9)|0);
+  for(const b of EV.champ)b.clearTraces();          // judge these traces, then mutate by them
+  EV.phase="champ";EV.trialIdx=0;EV.acc=new Array(NSP).fill(0);EV.current=EV.champ;
+  startEpisode();
+}
+function startEpisode(){
+  const clones=EV.current.map(b=>b.clone());
+  if(EV.phase==="champ")for(const c of clones)c.clearTraces();   // so traces sum cleanly per trial
+  EV.work=worldCfg(clones,EV.seeds[EV.trialIdx]);
+  EV.left=EPISODE;
+}
+function descriptorOf(w,s){
+  const finds=Math.max(1,w.finds[s]);
+  return [Math.min(1,w.delivered[s]/25),
+          w.ledFinds[s]/finds,
+          Math.min(1,w.kills[s]/25),
+          Math.min(1,w.maxDist[s]/150)];
+}
+function archivePush(brain,fit,desc){
+  let nearest=-1,nd=1e9;
+  for(let i=0;i<EV.archive.length;i++){
+    const e=EV.archive[i];let d=0;
+    for(let k=0;k<desc.length;k++){const t=desc[k]-e.desc[k];d+=t*t;}
+    d=Math.sqrt(d);
+    if(d<nd){nd=d;nearest=i;}
+  }
+  if(nd>NOVELTY||EV.archive.length===0){
+    EV.archive.push({brain:brain.clone(),fit,desc,gen:EV.gen});
+    if(EV.archive.length>ARCHIVE_MAX){                 // drop the least fit of the crowd
+      let worst=0;for(let i=1;i<EV.archive.length;i++)if(EV.archive[i].fit<EV.archive[worst].fit)worst=i;
+      EV.archive.splice(worst,1);
+    }
+  } else if(fit>EV.archive[nearest].fit){
+    EV.archive[nearest]={brain:brain.clone(),fit,desc,gen:EV.gen};
+  }
+}
+function reseed(){
+  if(!EV.archive.length)return;
+  const r=mulberry32((Math.random()*1e9)|0);
+  for(let s=0;s<NSP;s++){
+    const pick=EV.archive[(Math.random()*EV.archive.length)|0];
+    EV.champ[s]=pick.brain.clone().mutate(r,mutRate*1.6,0.22);
+  }
+  EV.reseeds++;EV.stagnant=0;
+}
+function finishPhase(){
+  const w=EV.work;
+  for(let s=0;s<NSP;s++)EV.acc[s]+=w.fitness(s);
+  if(EV.phase==="champ"){
+    // The episode ran on CLONES, so the activity traces live there. Accumulate them back or the
+    // micro-Hebbian machinery silently never engages and mutation falls back to flat.
+    for(let s=0;s<NSP;s++){
+      const src=w.brains[s],dst=EV.champ[s];
+      for(let i=0;i<NH;i++)dst.hTrace[i]+=src.hTrace[i];
+      for(let i=0;i<NIN;i++)dst.inTrace[i]+=src.inTrace[i];
+      dst.traceN+=src.traceN;
+    }
+  }
+  EV.trialIdx++;
+  if(EV.trialIdx<EV.trials){startEpisode();return;}      // same phase, next maze
+  const fit=EV.acc.map(v=>v/EV.trials);                  // averaged across mazes
+  EV.trialIdx=0;EV.acc=new Array(NSP).fill(0);
+  if(EV.phase==="champ"){
+    EV.fitChamp=fit;
+    const r=mulberry32((Math.random()*1e9)|0);
+    EV.trial=EV.champ.map(b=>b.clone().mutate(r,mutRate,0.14));
+    EV.phase="trial";EV.current=EV.trial;startEpisode();
+  } else if(EV.phase==="trial"){
+    EV.fitTrial=fit;
+    const r=mulberry32((Math.random()*1e9)|0);
+    const dm=EV.drift.map(b=>b.clone().mutate(r,mutRate,0.14));
+    for(let s=0;s<NSP;s++) if(r()<0.5)EV.drift[s]=dm[s];   // accepted blind: no selection at all
+    EV.phase="drift";EV.current=EV.drift;startEpisode();
+  } else {
+    EV.fitDrift=fit;
+    resolveGeneration(w);
+  }
+}
+function resolveGeneration(driftWorld){
+  for(let s=0;s<NSP;s++){
+    if(EV.fitTrial[s]>EV.fitChamp[s]){EV.champ[s]=EV.trial[s];EV.accepted++;}
+  }
+  const best=Math.max(...EV.fitChamp,...EV.fitTrial);
+  const champMean=meanFit(EV.fitChamp.map((f,s)=>Math.max(f,EV.fitTrial[s])));
+  const driftMean=meanFit(EV.fitDrift);
+  EV.hist.push({champ:champMean,drift:driftMean});
+  if(EV.hist.length>400)EV.hist.shift();
+  // archive the interesting ones, not merely the best ones
+  for(let s=0;s<NSP;s++){
+    const f=Math.max(EV.fitChamp[s],EV.fitTrial[s]);
+    archivePush(EV.champ[s],f,descriptorOf(EV.work,s));
+  }
+  // "progress" means beating the record by a real margin; otherwise the lineage is stuck
+  if(best>EV.bestEver*(1+STAG_DELTA)){EV.bestEver=Math.max(EV.bestEver,best);EV.stagnant=0;}
+  else {EV.stagnant++;EV.bestEver=Math.max(EV.bestEver,best);}
+  if(EV.stagnant>=STAG_LIMIT)reseed();
+  EV.gen++;
+  beginGeneration();
+  showcase();
+}
+function evolveSlice(){
+  if(!EV.run||!EV.work)return;
+  // a TIME budget, not a tick count: one tick costs whatever it costs, and the UI must stay alive
+  const deadline=performance.now()+EV.budget;
+  let guard=0;
+  while(EV.left>0&&guard++<400&&performance.now()<deadline){
+    EV.work.step();EV.left--;
+    if(EV.left===EPISODE-Math.round(EPISODE*BURN_FRAC))EV.work.markBaseline();
+  }
+  if(EV.left<=0)finishPhase();
+}
+
+/* ---------------- the showcase arena ----------------
+   It is NOT rebuilt each generation. Restarting it every time meant its statistics only ever
+   described the first few hundred ticks of a colony's life -- exactly the founding boom -- so
+   nothing you read there reflected a working economy. Instead the arena runs on and on, and each
+   new generation simply swaps the champion brains into the colonies already living there. */
+let world,running=true,speed=2,mutRate=0.08;
+function showcase(){
+  if(!world){world=worldCfg(EV.champ.map(b=>b.clone()),(Math.random()*1e9)|0);return;}
+  for(let s=0;s<NSP;s++)world.brains[s]=EV.champ[s].clone();
+}
+function rebuildShowcase(){
+  world=worldCfg(EV.champ.map(b=>b.clone()),(Math.random()*1e9)|0);
+}
+
+/* ---------------- the graph: champions against a coin ---------------- */
+const graph=$("graph"),gx=graph.getContext("2d");
+function drawGraph(){
+  const w=graph.width,h=graph.height;
+  gx.clearRect(0,0,w,h);
+  gx.strokeStyle="#1a1f2b";gx.lineWidth=1;
+  for(let k=1;k<4;k++){const y=h*k/4;gx.beginPath();gx.moveTo(0,y);gx.lineTo(w,y);gx.stroke();}
+  if(EV.hist.length<2){
+    gx.fillStyle="#7d8496";gx.font="10px ui-monospace,monospace";
+    gx.fillText("gathering generations...",8,h/2);return;
+  }
+  let mx=1;for(const p of EV.hist){if(p.champ>mx)mx=p.champ;if(p.drift>mx)mx=p.drift;}
+  const n=EV.hist.length,X=i=>n<2?0:i/(n-1)*(w-2)+1,Y=v=>h-3-(v/mx)*(h-8);
+  // drift first, underneath
+  gx.strokeStyle="#7d8496";gx.lineWidth=1;gx.beginPath();
+  EV.hist.forEach((p,i)=>i?gx.lineTo(X(i),Y(p.drift)):gx.moveTo(X(i),Y(p.drift)));
+  gx.stroke();
+  const grd=gx.createLinearGradient(0,0,0,h);
+  grd.addColorStop(0,"rgba(67,224,138,0.30)");grd.addColorStop(1,"rgba(67,224,138,0)");
+  gx.beginPath();gx.moveTo(X(0),h);
+  EV.hist.forEach((p,i)=>gx.lineTo(X(i),Y(p.champ)));
+  gx.lineTo(X(n-1),h);gx.closePath();gx.fillStyle=grd;gx.fill();
+  gx.strokeStyle="#43e08a";gx.lineWidth=1.6;gx.beginPath();
+  EV.hist.forEach((p,i)=>i?gx.lineTo(X(i),Y(p.champ)):gx.moveTo(X(i),Y(p.champ)));
+  gx.stroke();
+  const last=EV.hist[n-1];
+  gx.fillStyle="#43e08a";gx.font="10px ui-monospace,monospace";
+  gx.fillText(last.champ.toFixed(0),w-38,Math.max(11,Y(last.champ)-4));
+  gx.fillStyle="#7d8496";
+  gx.fillText(last.drift.toFixed(0),w-38,Math.min(h-3,Y(last.drift)+11));
+  const lead=last.drift>0?(100*(last.champ-last.drift)/last.drift):0;
+  gx.fillStyle=lead>=0?"#43e08a":"#ff4d46";
+  gx.fillText((lead>=0?"+":"")+lead.toFixed(0)+"% vs drift",8,12);
+}
+
+/* ---------------- main loop ---------------- */
+function loop(){
+  // background evolution gets several slices per frame; the showcase gets its own ticks
+  evolveSlice();
+  if(running&&world)for(let i=0;i<speed;i++)world.step();
+  if(world){
+    const subject=(world.sel&&world.sel.alive)?world.sel:world.leader(focusCol);
+    paint(world);paintScope(subject);paintCurves(subject?subject.sp:focusCol);readout();
+  }
+  drawGraph();
+  requestAnimationFrame(loop);
+}
+function readout(){
+  const set=(id,v)=>$(id).textContent=v;
+  const head=["","ants","brood","food","larder","kills","fit/1k"];
+  let html=head.map(h=>'<span class="hd">'+h+'</span>').join("");
+  for(let sp=0;sp<NSP;sp++){
+    const st=world.stat(sp),c=COL[sp];
+    const cell=v=>'<span style="text-align:right;font-variant-numeric:tabular-nums">'+v+'</span>';
+    html+='<span style="color:rgb('+c[0]+','+c[1]+','+c[2]+')">'+CNAME[sp]+'</span>'
+      +cell(st.n)+cell(world.born[sp])+cell(world.delivered[sp])
+      +cell(world.larder[sp].toFixed(0))+cell(world.kills[sp])+cell(world.fitRate(sp).toFixed(1));
+  }
+  $("colonyTable").innerHTML=html;
+  set("clock","tick "+world.tick);
+  $("bloom").classList.toggle("on",world.bloomFlash>0);
+  set("evGen",EV.gen);
+  set("evBest",EV.bestEver.toFixed(0));
+  set("evArc",EV.archive.length+"/"+ARCHIVE_MAX);
+  set("evStag",EV.stagnant+"/"+STAG_LIMIT);
+  const names={champ:"champion",trial:"challenger",drift:"drift control"};
+  set("evPhase","gen "+EV.gen+" \u00b7 evaluating "+names[EV.phase]
+    +" \u00b7 trial "+(EV.trialIdx+1)+"/"+EV.trials
+    +" \u00b7 "+(EPISODE-EV.left)+"/"+EPISODE+" ticks"
+    +((EPISODE-EV.left)<Math.round(EPISODE*BURN_FRAC)?" (burn-in)":" (scoring)")
+    +" \u00b7 kept "+EV.accepted+" mutations, "+EV.reseeds+" reseeds");
+  const L=world.ledger();
+  $("ledger").innerHTML=
+    [["in the reservoir (unspawned)",L.reservoir],["out in the maze",L.floor],
+     ["being carried",L.carried],["in all four larders",L.larder],
+     ["in ant crops",L.crops],["in ant fuel tanks",L.tanks],["locked up as ant bodies",L.bodies]]
+      .map(([k,v])=>'<span class="lk">'+k+'</span><span class="lv">'+v.toFixed(1)+'</span>').join("")
+    +'<span class="lk lt">total</span><span class="lv lt">'+L.total.toFixed(1)+'</span>';
+}
+
+/* ---------------- biopsy ---------------- */
+function biopsy(){
+  const L=world.ledger(),out=[];
+  const pct=v=>(100*v).toFixed(0)+"%";
+  out.push("STIGMERGY LAB BIOPSY");
+  out.push("showcase tick "+world.tick+"  |  generation "+EV.gen
+    +"  |  mutations kept "+EV.accepted+"  |  reseeds "+EV.reseeds);
+  if(EV.hist.length){
+    const l=EV.hist[EV.hist.length-1];
+    out.push("champions "+l.champ.toFixed(1)+" vs random drift "+l.drift.toFixed(1)
+      +"  ("+(l.drift>0?((l.champ-l.drift)/l.drift*100).toFixed(0):"n/a")+"% lead)"
+      +"  | archive "+EV.archive.length+"/"+ARCHIVE_MAX+"  | stagnant "+EV.stagnant);
+  }
+  out.push("net: "+NH+" neurons ("+NEXC+" exc, "+NINH+" inh, "+TONIC_N+" tonic), "
+    +REC_NNZ+" recurrent, "+NIN+" senses, "+NOUT+" outputs");
+  out.push("distance premium "+HAUL_PREMIUM.toFixed(2)+", mazes per trial "+EV.trials
+    +", episode "+EPISODE);
+  out.push("instinct "+(100*INSTINCT).toFixed(0)+"%, recruitment "+(SEED_RECRUIT?"on":"off")
+    +", carry capacity "+CARRY_CAP+", mutation "+mutRate.toFixed(2));
+  out.push("settings: food "+world.foodTotal.toFixed(0)+", bloom "+$("fd").value+" every "+$("bt").value
+    +", nest spacing "+$("sp").value+", scent half-life "+$("ev").value);
+  out.push("");
+  out.push("LEDGER (must total "+world.foodTotal.toFixed(0)+")");
+  out.push("  reservoir "+L.reservoir.toFixed(0)+"  floor "+L.floor.toFixed(0)
+    +"  carried "+L.carried.toFixed(0)+"  larders "+L.larder.toFixed(0)
+    +"  crops "+L.crops.toFixed(0)+"  tanks "+L.tanks.toFixed(0)
+    +"  bodies "+L.bodies.toFixed(0)+"  = "+L.total.toFixed(1));
+  out.push("");
+  out.push("SHOWCASE COLONIES (champions of generation "+EV.gen+")");
+  for(let sp=0;sp<NSP;sp++){
+    const st=world.stat(sp);
+    const meanAge=world.ageN[sp]?(world.ageSum[sp]/world.ageN[sp]).toFixed(0):"-";
+    out.push("  "+CNAME[sp].padEnd(7)+"ants "+String(st.n).padStart(3)
+      +"  brood "+String(world.born[sp]).padStart(5)
+      +"  delivered "+String(world.delivered[sp]).padStart(5)
+      +"  picked up "+String(world.hauled[sp]).padStart(5)
+      +"  kills "+String(world.kills[sp]).padStart(4)
+      +"  fit/1k "+world.fitRate(sp).toFixed(1));
+    const dl=world.delivered[sp];
+    out.push("          haul distance credited "+world.haulDist[sp].toFixed(0)
+      +(dl?"  ("+(world.haulDist[sp]/dl).toFixed(0)+" steps per unit delivered)":""));
+    const f=world.finds[sp],lf=world.ledFinds[sp];
+    out.push("          finds "+f+", "+(f?Math.round(100*lf/f):0)+"% led by a trail"
+      +"  |  died starved/slain "+world.starved[sp]+"/"+world.slain[sp]
+      +"  |  lifespan "+meanAge+"  |  furthest "+world.maxDist[sp]);
+    const h=world.actHist[sp],tot=h.reduce((a,b)=>a+b,0)||1;
+    out.push("          actions: "+ACTNAME.map((nm,i)=>nm.replace(/ /g,"")+" "+pct(h[i]/tot))
+      .filter((_,i)=>h[i]/tot>=0.02).join("  "));
+  }
+  out.push("");
+  out.push("LEARNED SCENT MEANING (valence at 1.5 / 8; slot +k = colony k to the right)");
+  for(let sp=0;sp<NSP;sp++){
+    const B=world.brains[sp];
+    out.push("  "+CNAME[sp]+"   half-lives: "+[0,1,2].map(c=>
+      "ch"+(c+1)+" "+Math.round(world.halfLife(sp,c))+"t").join("  "));
+    for(let slot=0;slot<NSP;slot++)
+      out.push("    "+(slot===0?"own   ":("rival+"+slot))+"  "+[0,1,2].map(ch=>
+        "ch"+(ch+1)+" "+B.resp(1.5,slot,ch).toFixed(2)+"/"+B.resp(8,slot,ch).toFixed(2)).join("  "));
+  }
+  out.push("");
+  out.push("PACEMAKERS (tonic cells, period in ticks)");
+  for(let sp=0;sp<NSP;sp++){
+    const B=world.brains[sp],ps=[];
+    for(let j=0;j<NH;j++)if(NTYPE[j]===T_TONIC)ps.push(Math.round(1/B.freq[j]));
+    out.push("  "+CNAME[sp].padEnd(7)+ps.join(", "));
+  }
+  out.push("");
+  out.push("ARCHIVE (diverse champions kept for reseeding)");
+  for(const e of EV.archive)
+    out.push("  gen "+String(e.gen).padStart(4)+"  fit "+e.fit.toFixed(0).padStart(5)
+      +"  behaviour [deliver "+e.desc[0].toFixed(2)+" trail-led "+e.desc[1].toFixed(2)
+      +" kills "+e.desc[2].toFixed(2)+" range "+e.desc[3].toFixed(2)+"]");
+  const text=out.join("\n");
+  try{navigator.clipboard.writeText(text);}catch(e){}
+  const blob=new Blob([text],{type:"text/plain"});
+  const url=URL.createObjectURL(blob),el=document.createElement("a");
+  el.href=url;el.download="stigmergy-biopsy-gen"+EV.gen+".txt";el.click();
+  setTimeout(()=>URL.revokeObjectURL(url),4000);
+  const b=$("biopsy"),old=b.textContent;
+  b.textContent="copied";setTimeout(()=>b.textContent=old,1400);
+}
+
+/* ---------------- wiring ---------------- */
+$("play").onclick=e=>{running=!running;e.target.textContent=running?"Pause arena":"Play arena";};
+$("step1").onclick=()=>world&&world.step();
+$("reset").onclick=()=>rebuildShowcase();
+$("fresh").onclick=()=>startLineage();
+$("evRun").onclick=e=>{EV.run=!EV.run;e.target.classList.toggle("on",EV.run);
+  e.target.textContent=EV.run?"Evolving":"Paused";};
+$("evReseed").onclick=()=>reseed();
+$("evRestart").onclick=()=>startLineage();
+$("evBudget").oninput=e=>{EV.budget=+e.target.value;$("evBudgetv").textContent=e.target.value+" ms";};
+$("evEp").oninput=e=>{EPISODE=+e.target.value;$("evEpv").textContent=e.target.value;};
+$("evTr").oninput=e=>{EV.trials=+e.target.value;$("evTrv").textContent=e.target.value;};
+$("evHp").oninput=e=>{HAUL_PREMIUM=+e.target.value/100;$("evHpv").textContent=HAUL_PREMIUM.toFixed(2);};
+$("biopsy").onclick=biopsy;
+$("spd").oninput=e=>{speed=+e.target.value;$("spdv").textContent=speed;};
+$("fd").oninput=e=>{$("fdv").textContent=e.target.value;world.bloomSize=+e.target.value;};
+$("bt").oninput=e=>{$("btv").textContent=e.target.value;world.bloomEvery=+e.target.value;};
+$("mu").oninput=e=>{mutRate=+e.target.value/100;$("muv").textContent=mutRate.toFixed(2);};
+$("sp").oninput=e=>{$("spv").textContent=e.target.value;};
+$("ev").oninput=e=>{$("evv").textContent=e.target.value;world.evHalf=+e.target.value;};
+$("fs").oninput=e=>{FLOOR_SHARE=+e.target.value/100;$("fsv").textContent=e.target.value+"%";
+  world.floorShare=FLOOR_SHARE;};
+$("ins").oninput=e=>{INSTINCT=+e.target.value/100;$("insv").textContent=e.target.value+"%";};
+$("cc").oninput=e=>{CARRY_CAP=+e.target.value;$("ccv").textContent=e.target.value;};
+$("ft").oninput=e=>{
+  const target=+e.target.value;
+  let delta=target-world.foodTotal;
+  if(delta<0)delta=-Math.min(-delta,world.reservoir);
+  world.reservoir+=delta;world.foodTotal+=delta;
+  $("ftv").textContent=world.foodTotal.toFixed(0);
+};
+const tog=(id,fn)=>{$(id).onclick=e=>{
+  const on=!e.target.classList.contains("on");
+  e.target.classList.toggle("on",on);fn(on);};};
+tog("tPher",v=>show.pher=v);tog("tPois",v=>show.pois=v);
+tog("tNest",v=>show.nest=v);tog("tSeed",v=>seedInstincts=v);tog("tRec",v=>SEED_RECRUIT=v);
+for(let k=0;k<NSP;k++)$("fc"+k).onclick=()=>{
+  focusCol=k;world.sel=null;
+  for(let j=0;j<NSP;j++)$("fc"+j).classList.toggle("on",j===k);
+};
+for(let k=0;k<NSP;k++)$("cs"+k).onclick=()=>{
+  curveSlot=k;
+  for(let j=0;j<NSP;j++)$("cs"+j).classList.toggle("on",j===k);
+};
+for(let c=0;c<NCH;c++)$("ch"+c).onclick=()=>{
+  show.chan=c;
+  for(let k=0;k<NCH;k++)$("ch"+k).classList.toggle("on",k===c);
+};
+view.onclick=e=>{
+  const r=view.getBoundingClientRect();
+  const gxx=Math.floor((e.clientX-r.left)/r.width*W),gyy=Math.floor((e.clientY-r.top)/r.height*H);
+  let best=null,bd=1e9;
+  for(const a of world.ants){
+    if(!a.alive)continue;
+    const d=(a.x-gxx)*(a.x-gxx)+(a.y-gyy)*(a.y-gyy);
+    if(d<bd){bd=d;best=a;}
+  }
+  world.sel=bd<=25?best:null;
+};
+startLineage();
+requestAnimationFrame(loop);
+
+</script>
+</body>
+</html>
