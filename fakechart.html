@@ -1,0 +1,833 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Suspension Bridges EMR</title>
+<style>
+:root{
+  --steel:#1f2933;--steel-2:#2b3742;--steel-3:#3a4855;
+  --rust:#c2703d;--rust-l:#e08b52;
+  --paper:#f7f8f9;--panel:#fff;--line:#d5dbe0;--line-2:#e6eaed;
+  --ink:#1a2027;--ink-2:#5a6672;--ink-3:#8794a0;
+  --ok:#1c7c4a;--ok-bg:#e6f4ec;
+  --warn:#b45309;--warn-bg:#fef4e6;
+  --crit:#b42318;--crit-bg:#fdeceb;
+  --info:#1f5f9e;--info-bg:#e8f1fa;
+  --r:4px;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Segoe UI",system-ui,-apple-system,Roboto,sans-serif;background:var(--steel);color:var(--ink);font-size:13px;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+
+/* ---------- app chrome ---------- */
+.appbar{background:var(--steel);color:#e8ecef;display:flex;align-items:center;gap:14px;padding:0 12px;height:44px;flex-shrink:0;border-bottom:1px solid #000}
+.brand{display:flex;align-items:center;gap:9px}
+.brand-mark{width:26px;height:26px;background:linear-gradient(150deg,var(--rust),var(--rust-l));border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:15px}
+.brand-name{font-size:14px;font-weight:700;letter-spacing:.2px;line-height:1.1}
+.brand-tag{font-size:9.5px;color:#8794a0;letter-spacing:.3px;font-style:italic}
+.appbar-menu{display:flex;gap:2px;margin-left:10px}
+.appbar-menu button{background:none;border:none;color:#b6c0c9;font-family:inherit;font-size:12px;padding:5px 9px;border-radius:3px;cursor:pointer}
+.appbar-menu button:hover{background:rgba(255,255,255,.09);color:#fff}
+.appbar-right{margin-left:auto;display:flex;align-items:center;gap:9px}
+.chip{font-size:9.5px;font-weight:800;letter-spacing:.5px;padding:3px 7px;border-radius:3px;text-transform:uppercase;white-space:nowrap}
+.chip-synth{background:var(--rust);color:#fff}
+.chip-env{background:#3a4855;color:#b6c0c9;border:1px solid #4c5c6b}
+.user{display:flex;align-items:center;gap:7px;font-size:12px;color:#dde2e6}
+.avatar{width:25px;height:25px;border-radius:50%;background:#4c5c6b;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;color:#fff}
+.icon-btn{background:none;border:1px solid #4c5c6b;color:#b6c0c9;width:27px;height:27px;border-radius:3px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center}
+.icon-btn:hover{background:rgba(255,255,255,.09);color:#fff}
+
+/* ---------- patient banner ---------- */
+.pbanner{background:var(--steel-2);color:#fff;padding:7px 12px;display:flex;align-items:center;gap:0;flex-shrink:0;border-bottom:3px solid var(--rust);flex-wrap:wrap}
+.pphoto{width:42px;height:42px;border-radius:3px;background:var(--steel-3);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:#b6c0c9;margin-right:11px;flex-shrink:0}
+.pident{margin-right:20px}
+.pname{font-size:15.5px;font-weight:700;line-height:1.2}
+.pdemo{font-size:11.5px;color:#b6c0c9;margin-top:1px}
+.pfields{display:flex;gap:0;flex-wrap:wrap;flex:1}
+.pf{padding:0 13px;border-left:1px solid #4c5c6b;min-width:96px}
+.pf-l{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:#8794a0;font-weight:700}
+.pf-v{font-size:12px;margin-top:2px;font-weight:600}
+.pf-v.alert{color:#ffb4ab}
+.pf-v.mono{font-family:var(--mono);font-size:11.5px}
+
+/* ---------- layout ---------- */
+.shell{flex:1;display:flex;min-height:0;background:var(--paper)}
+.sidenav{width:158px;background:var(--steel-2);flex-shrink:0;overflow-y:auto;padding:5px 0}
+.nav-group{font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:#6b7885;font-weight:800;padding:9px 12px 4px}
+.nav-item{display:flex;align-items:center;gap:8px;padding:6px 12px;color:#c3ccd4;cursor:pointer;font-size:12.5px;border-left:3px solid transparent}
+.nav-item:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav-item.on{background:var(--paper);color:var(--ink);border-left-color:var(--rust);font-weight:700}
+.nav-ico{width:15px;text-align:center;font-size:12px}
+.nav-count{margin-left:auto;font-size:9.5px;background:#4c5c6b;color:#dde2e6;padding:1px 5px;border-radius:8px;font-weight:700}
+.nav-item.on .nav-count{background:var(--line);color:var(--ink-2)}
+
+.work{flex:1;display:flex;flex-direction:column;min-width:0}
+.tabstrip{background:var(--line-2);border-bottom:1px solid var(--line);display:flex;align-items:stretch;gap:1px;padding:0 8px;flex-shrink:0;overflow-x:auto}
+.tab{padding:7px 14px;font-size:12px;color:var(--ink-2);cursor:pointer;border:1px solid transparent;border-bottom:none;white-space:nowrap}
+.tab.on{background:var(--panel);color:var(--ink);font-weight:700;border-color:var(--line);border-radius:var(--r) var(--r) 0 0;margin-bottom:-1px}
+.tab:hover:not(.on){color:var(--ink)}
+
+.pane{flex:1;overflow-y:auto;padding:12px}
+.panerow{display:grid;grid-template-columns:1fr 268px;gap:12px;align-items:start}
+@media(max-width:1080px){.panerow{grid-template-columns:1fr}}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);margin-bottom:12px}
+.card:last-child{margin-bottom:0}
+.card-h{padding:7px 11px;border-bottom:1px solid var(--line);background:#fafbfc;display:flex;align-items:center;gap:9px;border-radius:var(--r) var(--r) 0 0}
+.card-t{font-size:12px;font-weight:700;letter-spacing:.2px}
+.card-sub{font-size:11px;color:var(--ink-3)}
+.card-h .right{margin-left:auto;display:flex;gap:6px;align-items:center}
+.card-b{padding:11px}
+.card-b.tight{padding:0}
+
+/* ---------- note ---------- */
+.notemeta{display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:8px 16px;padding:10px 12px;background:#fafbfc;border-bottom:1px solid var(--line-2);font-size:11.5px}
+.nm-l{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-3);font-weight:700}
+.nm-v{margin-top:1px;font-weight:600;color:var(--ink)}
+.sig{display:inline-flex;align-items:center;gap:4px;background:var(--ok-bg);color:var(--ok);padding:1px 6px;border-radius:3px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px}
+.notebody{padding:16px 20px;font-family:var(--mono);font-size:12.5px;line-height:1.65;white-space:pre-wrap;color:#141a20;background:var(--panel);border-radius:0 0 var(--r) var(--r);user-select:text}
+.notebody::selection{background:#ffe08a}
+
+/* ---------- tables ---------- */
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-3);font-weight:800;padding:6px 10px;background:#fafbfc;border-bottom:1px solid var(--line);position:sticky;top:0}
+td{padding:6px 10px;border-bottom:1px solid var(--line-2);vertical-align:top}
+tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#fafbfc}
+.code{font-family:var(--mono);font-size:11px;color:var(--ink-2)}
+.flag{font-family:var(--mono);font-weight:800;font-size:10.5px;padding:1px 4px;border-radius:2px}
+.flag.H{background:var(--crit-bg);color:var(--crit)}
+.flag.L{background:var(--info-bg);color:var(--info)}
+.flag.N{background:var(--ok-bg);color:var(--ok)}
+.pill{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:9px;text-transform:uppercase;letter-spacing:.3px}
+.pill-a{background:var(--ok-bg);color:var(--ok)}
+.pill-n{background:var(--warn-bg);color:var(--warn)}
+
+/* ---------- vitals ---------- */
+.vgrid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line-2)}
+.vcell{background:var(--panel);padding:8px 10px}
+.v-l{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-3);font-weight:700}
+.v-v{font-size:15px;font-weight:700;margin-top:2px;font-family:var(--mono)}
+.v-v small{font-size:10px;font-weight:600;color:var(--ink-3);font-family:inherit}
+
+/* ---------- buttons ---------- */
+.btn{font-family:inherit;font-size:12px;font-weight:600;padding:6px 12px;border-radius:3px;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink);display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:#f0f3f5}
+.btn-primary{background:var(--rust);border-color:var(--rust);color:#fff}
+.btn-primary:hover{background:var(--rust-l);border-color:var(--rust-l)}
+.btn-sm{font-size:11px;padding:4px 9px}
+
+/* ---------- footer ---------- */
+.statusbar{background:var(--steel-2);color:#8794a0;font-size:11px;padding:4px 12px;display:flex;gap:16px;align-items:center;flex-shrink:0;border-top:1px solid #000}
+.statusbar .sb-r{margin-left:auto;display:flex;gap:16px}
+
+/* ---------- drawer ---------- */
+.scrim{position:fixed;inset:0;background:rgba(15,20,25,.55);z-index:90;display:none}
+.scrim.open{display:block}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(560px,94vw);background:var(--panel);z-index:91;transform:translateX(100%);transition:transform .2s ease;display:flex;flex-direction:column;box-shadow:-8px 0 32px rgba(0,0,0,.3)}
+.drawer.open{transform:translateX(0)}
+.drawer-h{padding:12px 15px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;background:var(--steel-2);color:#fff}
+.drawer-t{font-size:13.5px;font-weight:700}
+.drawer-b{flex:1;overflow-y:auto;padding:15px}
+.drawer-f{padding:11px 15px;border-top:1px solid var(--line);display:flex;gap:8px;background:#fafbfc}
+label.fl{display:block;font-size:9.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink-3);font-weight:800;margin-bottom:5px}
+textarea.json{width:100%;min-height:270px;font-family:var(--mono);font-size:11.5px;line-height:1.5;padding:10px;border:1px solid var(--line);border-radius:3px;resize:vertical;color:var(--ink)}
+textarea.json:focus{outline:none;border-color:var(--rust);box-shadow:0 0 0 3px rgba(194,112,61,.13)}
+select.fs{width:100%;font-family:inherit;font-size:12.5px;padding:7px 9px;border:1px solid var(--line);border-radius:3px;background:var(--panel);color:var(--ink)}
+select.fs:focus{outline:none;border-color:var(--rust)}
+.hint{font-size:11.5px;color:var(--ink-2);line-height:1.5;margin-top:7px}
+.hint code{font-family:var(--mono);font-size:11px;background:#f0f3f5;padding:1px 4px;border-radius:2px}
+.err{background:var(--crit-bg);color:var(--crit);border:1px solid #f5c2c0;border-radius:3px;padding:8px 10px;font-size:11.5px;margin-top:9px;display:none;font-family:var(--mono);line-height:1.5}
+.err.show{display:block}
+
+.toast{position:fixed;bottom:44px;left:50%;transform:translate(-50%,60px);background:var(--steel);color:#fff;padding:9px 17px;border-radius:3px;font-size:12.5px;font-weight:600;z-index:120;opacity:0;transition:.2s;pointer-events:none;box-shadow:0 6px 24px rgba(0,0,0,.35)}
+.toast.show{transform:translate(-50%,0);opacity:1}
+.empty{padding:28px;text-align:center;color:var(--ink-3);font-size:12.5px}
+</style>
+</head>
+<body>
+
+<!-- ============ APP BAR ============ -->
+<div class="appbar">
+  <div class="brand">
+    <div class="brand-mark">🌉</div>
+    <div>
+      <div class="brand-name">Suspension Bridges</div>
+      <div class="brand-tag">Suspend Disbelief If You Can</div>
+    </div>
+  </div>
+  <div class="appbar-menu">
+    <button>Patient</button>
+    <button>Chart</button>
+    <button>Orders</button>
+    <button>Reports</button>
+    <button>Tools</button>
+  </div>
+  <div class="appbar-right">
+    <span class="chip chip-synth">Synthetic data</span>
+    <span class="chip chip-env">Train</span>
+    <button class="icon-btn" id="btn-drawer" title="Load case (JSON)">⚙</button>
+    <div class="user">
+      <div class="avatar" id="user-init">DD</div>
+      <span id="user-name">Dr. Demo</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PATIENT BANNER ============ -->
+<div class="pbanner">
+  <div class="pphoto" id="p-init">—</div>
+  <div class="pident">
+    <div class="pname" id="p-name">—</div>
+    <div class="pdemo" id="p-demo">—</div>
+  </div>
+  <div class="pfields">
+    <div class="pf"><div class="pf-l">MRN</div><div class="pf-v mono" id="p-mrn">—</div></div>
+    <div class="pf"><div class="pf-l">DOB</div><div class="pf-v mono" id="p-dob">—</div></div>
+    <div class="pf"><div class="pf-l">Encounter</div><div class="pf-v mono" id="p-csn">—</div></div>
+    <div class="pf"><div class="pf-l">Allergies</div><div class="pf-v alert" id="p-allergy">—</div></div>
+    <div class="pf"><div class="pf-l">Code status</div><div class="pf-v" id="p-code">—</div></div>
+    <div class="pf"><div class="pf-l">PCP</div><div class="pf-v" id="p-pcp">—</div></div>
+    <div class="pf"><div class="pf-l">Coverage</div><div class="pf-v" id="p-ins">—</div></div>
+  </div>
+</div>
+
+<!-- ============ SHELL ============ -->
+<div class="shell">
+  <div class="sidenav">
+    <div class="nav-group">Activities</div>
+    <div class="nav-item on" data-view="note"><span class="nav-ico">📄</span> Notes <span class="nav-count" id="c-note">1</span></div>
+    <div class="nav-item" data-view="snapshot"><span class="nav-ico">📋</span> Snapshot</div>
+    <div class="nav-item" data-view="problems"><span class="nav-ico">🩺</span> Problems <span class="nav-count" id="c-prob">0</span></div>
+    <div class="nav-item" data-view="meds"><span class="nav-ico">💊</span> Meds <span class="nav-count" id="c-med">0</span></div>
+    <div class="nav-item" data-view="results"><span class="nav-ico">🧪</span> Results <span class="nav-count" id="c-res">0</span></div>
+    <div class="nav-item" data-view="encounters"><span class="nav-ico">🏥</span> Encounters</div>
+    <div class="nav-group">Other</div>
+    <div class="nav-item" data-view="note"><span class="nav-ico">📈</span> Flowsheets</div>
+    <div class="nav-item" data-view="note"><span class="nav-ico">📷</span> Imaging</div>
+    <div class="nav-item" data-view="note"><span class="nav-ico">✉️</span> In Basket</div>
+  </div>
+
+  <div class="work">
+    <div class="tabstrip" id="tabstrip"></div>
+    <div class="pane" id="pane"></div>
+  </div>
+</div>
+
+<div class="statusbar">
+  <span id="sb-case">—</span>
+  <span>Suspension Bridges EMR v3.1.4</span>
+  <div class="sb-r">
+    <span>TRAIN environment</span>
+    <span id="sb-clock">—</span>
+  </div>
+</div>
+
+<!-- ============ DRAWER ============ -->
+<div class="scrim" id="scrim"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-h">
+    <div class="drawer-t">Load demo case</div>
+    <button class="icon-btn" id="btn-close" style="margin-left:auto">✕</button>
+  </div>
+  <div class="drawer-b">
+    <label class="fl">Built-in cases</label>
+    <select class="fs" id="case-select"></select>
+    <div class="hint">Pick a case and click <strong>Load selected</strong>. Or paste your own JSON below.</div>
+
+    <div style="margin-top:18px">
+      <label class="fl">Case JSON</label>
+      <textarea class="json" id="json-in" spellcheck="false"></textarea>
+      <div class="err" id="json-err"></div>
+      <div class="hint">
+        Every key is optional — anything you leave out keeps its current value. Minimum useful shape:
+        <code>{"patient":{...},"note":{"text":"..."}}</code>. Click <strong>Copy current as JSON</strong> to get a full template to edit.
+      </div>
+    </div>
+  </div>
+  <div class="drawer-f">
+    <button class="btn btn-primary" id="btn-load">Load selected</button>
+    <button class="btn" id="btn-apply">Apply JSON</button>
+    <button class="btn" id="btn-export">Copy current as JSON</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+const $=id=>document.getElementById(id);
+const esc=t=>String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+/* =====================================================================
+   BUILT-IN DEMO CASES — all synthetic. No real patients.
+   ===================================================================== */
+const CASES={};
+
+CASES.chf_postdischarge={
+  meta:{caseName:'Post-hospital follow-up — HF exacerbation'},
+  user:{name:'Dr. Demo',initials:'DD'},
+  patient:{name:'Trussell, Marguerite R',age:74,sex:'Female',dob:'1951-11-02',
+    mrn:'SB-4471902',csn:'ENC-88213004',allergies:'Lisinopril (cough), Sulfa (rash)',
+    codeStatus:'Full code',pcp:'Demo, D. MD',insurance:'Medicare Advantage — Bridgeview'},
+  encounter:{type:'Office Visit — Hospital Follow-up',date:'2026-08-07 09:20',
+    department:'Internal Medicine — Southside',provider:'Demo, D. MD',
+    admitDate:'2026-07-28',dischargeDate:'2026-08-02',
+    dischargeFrom:'Riverbend General Hospital — Inpatient',dischargeTo:'Home',status:'Open'},
+  vitals:{bp:'128/74',hr:'78',rr:'18',temp:'98.2 °F',spo2:'95%',ht:'5\u2032 4\u2033',wt:'241 lb',bmi:'41.4'},
+  problems:[
+    {name:'Heart failure with reduced ejection fraction',icd:'I50.22',onset:'2021'},
+    {name:'Type 2 diabetes mellitus',icd:'E11.9',onset:'2009'},
+    {name:'Chronic kidney disease',icd:'N18.9',onset:'2019'},
+    {name:'Obesity',icd:'E66.9',onset:'2014'},
+    {name:'Essential hypertension',icd:'I10',onset:'2004'},
+    {name:'Atrial fibrillation',icd:'I48.91',onset:'2023'}
+  ],
+  meds:[
+    {name:'Torsemide 20 mg tablet',sig:'Take 1 tablet by mouth daily',status:'Active',started:'2026-08-02'},
+    {name:'Spironolactone 12.5 mg tablet',sig:'Take 1 tablet by mouth daily',status:'Active',started:'2026-08-02'},
+    {name:'Carvedilol 12.5 mg tablet',sig:'Take 1 tablet by mouth twice daily',status:'Active',started:'2024-03-11'},
+    {name:'Sacubitril-valsartan 49-51 mg tablet',sig:'Take 1 tablet by mouth twice daily',status:'Active',started:'2025-01-08'},
+    {name:'Dapagliflozin 10 mg tablet',sig:'Take 1 tablet by mouth daily',status:'Active',started:'2026-08-02'},
+    {name:'Insulin glargine 100 unit/mL',sig:'Inject 32 units subcutaneously nightly',status:'Active',started:'2022-06-15'},
+    {name:'Apixaban 5 mg tablet',sig:'Take 1 tablet by mouth twice daily',status:'Active',started:'2023-09-02'},
+    {name:'Furosemide 40 mg tablet',sig:'Take 1 tablet by mouth daily',status:'Discontinued',started:'2024-03-11'}
+  ],
+  results:[
+    {name:'BNP',value:'742',unit:'pg/mL',ref:'< 100',flag:'H',date:'2026-08-02'},
+    {name:'Creatinine',value:'1.62',unit:'mg/dL',ref:'0.60–1.10',flag:'H',date:'2026-08-02'},
+    {name:'eGFR',value:'34',unit:'mL/min/1.73m²',ref:'> 60',flag:'L',date:'2026-08-02'},
+    {name:'Potassium',value:'4.4',unit:'mmol/L',ref:'3.5–5.1',flag:'N',date:'2026-08-02'},
+    {name:'Hemoglobin A1c',value:'8.9',unit:'%',ref:'4.0–5.6',flag:'H',date:'2026-07-29'},
+    {name:'Hemoglobin',value:'10.8',unit:'g/dL',ref:'12.0–15.5',flag:'L',date:'2026-08-02'},
+    {name:'Albumin',value:'3.1',unit:'g/dL',ref:'3.5–5.0',flag:'L',date:'2026-07-29'},
+    {name:'TSH',value:'2.1',unit:'mIU/L',ref:'0.45–4.50',flag:'N',date:'2026-07-29'}
+  ],
+  note:{title:'Progress Note — Hospital Follow-up',author:'Demo, D. MD',service:'Internal Medicine',
+    dateTime:'2026-08-07 09:41',status:'Signed',text:
+`POST-HOSPITAL FOLLOW-UP VISIT
+
+CHIEF COMPLAINT
+Follow-up after hospitalization for heart failure exacerbation.
+
+HISTORY OF PRESENT ILLNESS
+74-year-old woman with heart failure with reduced ejection fraction (EF 32% on
+echo during admission), type 2 diabetes on basal insulin, chronic kidney disease,
+obesity, permanent atrial fibrillation and hypertension, seen today 5 days after
+discharge from Riverbend General Hospital.
+
+She was admitted 7/28 with progressive dyspnea, orthopnea and a 14 lb weight gain
+over three weeks, treated with IV diuresis over a four-day stay, and discharged
+home 8/2 after net negative 11 lb. Discharge medication changes included furosemide
+switched to torsemide 20 mg daily, spironolactone 12.5 mg daily newly started, and
+dapagliflozin 10 mg daily newly started.
+
+Our office nurse reached the patient by telephone on 8/3, the first business day
+after discharge, and reviewed her discharge instructions, weight log and new
+prescriptions; that contact is documented in the telephone encounter of the same
+date. She reports she has been weighing herself each morning, is down another 3 lb
+since discharge, and denies orthopnea, PND, chest pain or palpitations. She has
+mild fatigue and describes some lightheadedness on standing in the mornings. She
+has not filled the dapagliflozin because of a $60 copay, and has been skipping her
+evening insulin roughly twice a week because she is "worried about lows."
+
+She lives alone in a second-floor walk-up, is independent for ADLs, and reports she
+has been unable to get to the pharmacy since her daughter changed shifts. No falls.
+
+MEDICATION RECONCILIATION
+Discharge medication list reconciled against the prior outpatient list and against
+the bottles the patient brought today. Furosemide confirmed discontinued and
+removed. Torsemide and spironolactone confirmed active and being taken as written.
+Dapagliflozin confirmed prescribed but not filled. Insulin glargine 32 units nightly
+confirmed active with the adherence gap noted above. Apixaban, carvedilol and
+sacubitril-valsartan continued unchanged. Reconciliation completed today.
+
+PHYSICAL EXAM
+Vitals: BP 128/74, HR 78 irregular, RR 18, T 98.2 F, SpO2 95% on room air.
+Weight 241 lb, down 3 lb from discharge weight.
+General: Well appearing, no distress.
+Cardiovascular: Irregularly irregular, no S3, JVP approximately 7 cm, no murmur.
+Respiratory: Clear bilaterally, no crackles or wheeze.
+Extremities: Trace ankle edema bilaterally, improved from discharge exam.
+Neuro: Alert and fully oriented, no focal deficit.
+
+DATA REVIEWED
+Discharge summary and hospital course from Riverbend General reviewed today.
+Inpatient echocardiogram report reviewed: EF 32%, moderate MR, mild LVH.
+Discharge labs reviewed: creatinine 1.62, eGFR 34, potassium 4.4, BNP 742,
+hemoglobin 10.8, albumin 3.1. Outpatient A1c from 7/29 reviewed at 8.9%.
+Weight log reviewed with the patient. Telephone encounter of 8/3 reviewed.
+
+ASSESSMENT AND PLAN
+
+1. Acute on chronic heart failure with reduced ejection fraction, recently
+   decompensated, currently compensated and improving. Euvolemic to minimally
+   volume overloaded on exam with continued weight decline. Continue torsemide
+   20 mg daily. Continue carvedilol and sacubitril-valsartan at current doses.
+   Continue spironolactone 12.5 mg daily. Repeat BMP in one week given the
+   combination of a new mineralocorticoid antagonist and reduced renal function.
+   Daily weights reinforced, with instructions to call for a 3 lb overnight or
+   5 lb weekly gain. Cardiology follow-up already arranged for two weeks.
+
+2. Type 2 diabetes mellitus with an A1c of 8.9% and inconsistent basal insulin
+   administration. Discussed hypoglycemia fears at length. Reducing insulin
+   glargine to 28 units nightly to improve adherence and reduce her fear of
+   overnight lows, with instructions on when to check. Dapagliflozin is both
+   cardioprotective and renoprotective here and I want her on it — social work
+   referral placed today for copay assistance. Will recheck A1c in three months.
+
+3. Chronic kidney disease with eGFR 34 and creatinine 1.62, in the setting of
+   diuresis and a new MRA. Avoid NSAIDs, reviewed with the patient. BMP in one
+   week as above. Nephrology referral placed today.
+
+4. Permanent atrial fibrillation, rate controlled today. Continue apixaban with
+   no change; CHA2DS2-VASc remains high. Reviewed bleeding precautions.
+
+5. Obesity with a BMI of 41.4. Discussed the interaction between weight and heart
+   failure symptoms. She is interested in a structured program; referral placed to
+   medical weight management.
+
+6. Normocytic anemia, hemoglobin 10.8, likely multifactorial in the setting of
+   CKD and recent hospitalization. Iron studies and reticulocyte count ordered
+   today.
+
+7. Orthostatic lightheadedness. Likely related to diuretic and vasodilator
+   therapy in the setting of recent volume removal. Orthostatic vitals ordered
+   today, counseling provided on slow position changes. No dose change at present
+   given she remains slightly volume overloaded.
+
+8. Transition of care. Discharge summary reviewed, medications reconciled,
+   two-business-day telephone contact completed and documented, follow-up
+   appointments verified. Patient verbalized understanding of her weight log,
+   red-flag symptoms and when to call the office.
+
+ORDERS PLACED TODAY
+BMP in one week. Iron studies and reticulocyte count. Orthostatic vital signs.
+Nephrology referral. Social work referral for medication copay assistance.
+Medical weight management referral.
+
+FOLLOW-UP
+Return to this office in two weeks. Cardiology in two weeks as arranged.
+
+Demo, D. MD
+Internal Medicine`}
+};
+
+CASES.chronic_established={
+  meta:{caseName:'Established patient — multiple chronic conditions'},
+  user:{name:'Dr. Demo',initials:'DD'},
+  patient:{name:'Quigley, Harold B',age:68,sex:'Male',dob:'1958-03-19',
+    mrn:'SB-3320855',csn:'ENC-88219471',allergies:'No known allergies',
+    codeStatus:'Full code',pcp:'Demo, D. MD',insurance:'Medicare Advantage — Bridgeview'},
+  encounter:{type:'Office Visit — Established Patient',date:'2026-08-07 10:40',
+    department:'Internal Medicine — Southside',provider:'Demo, D. MD',status:'Open'},
+  vitals:{bp:'152/88',hr:'82',rr:'16',temp:'98.6 °F',spo2:'96%',ht:'5\u2032 10\u2033',wt:'229 lb',bmi:'32.9'},
+  problems:[
+    {name:'Type 2 diabetes mellitus with neuropathy',icd:'E11.40',onset:'2011'},
+    {name:'COPD',icd:'J44.9',onset:'2017'},
+    {name:'Essential hypertension',icd:'I10',onset:'2006'},
+    {name:'Hyperlipidemia',icd:'E78.5',onset:'2008'},
+    {name:'Major depressive disorder, recurrent',icd:'F33.1',onset:'2020'}
+  ],
+  meds:[
+    {name:'Metformin 1000 mg tablet',sig:'Take 1 tablet by mouth twice daily',status:'Active',started:'2011-05-02'},
+    {name:'Empagliflozin 10 mg tablet',sig:'Take 1 tablet by mouth daily',status:'Active',started:'2024-02-19'},
+    {name:'Amlodipine 10 mg tablet',sig:'Take 1 tablet by mouth daily',status:'Active',started:'2019-08-30'},
+    {name:'Atorvastatin 40 mg tablet',sig:'Take 1 tablet by mouth nightly',status:'Active',started:'2015-01-14'},
+    {name:'Tiotropium 18 mcg inhalation capsule',sig:'Inhale 1 capsule daily',status:'Active',started:'2017-11-06'},
+    {name:'Sertraline 100 mg tablet',sig:'Take 1 tablet by mouth daily',status:'Active',started:'2020-04-22'},
+    {name:'Gabapentin 300 mg capsule',sig:'Take 1 capsule by mouth three times daily',status:'Active',started:'2021-07-19'}
+  ],
+  results:[
+    {name:'Hemoglobin A1c',value:'8.2',unit:'%',ref:'4.0–5.6',flag:'H',date:'2026-08-05'},
+    {name:'Creatinine',value:'1.18',unit:'mg/dL',ref:'0.70–1.30',flag:'N',date:'2026-08-05'},
+    {name:'eGFR',value:'62',unit:'mL/min/1.73m²',ref:'> 60',flag:'N',date:'2026-08-05'},
+    {name:'LDL cholesterol',value:'118',unit:'mg/dL',ref:'< 100',flag:'H',date:'2026-08-05'},
+    {name:'PHQ-9 score',value:'14',unit:'points',ref:'0–4',flag:'H',date:'2026-08-07'}
+  ],
+  note:{title:'Progress Note — Office Visit',author:'Demo, D. MD',service:'Internal Medicine',
+    dateTime:'2026-08-07 11:02',status:'Signed',text:
+`OFFICE VISIT — ESTABLISHED PATIENT
+
+CHIEF COMPLAINT
+Diabetes and blood pressure follow-up. Also reports worsening mood and shortness
+of breath with exertion.
+
+HISTORY OF PRESENT ILLNESS
+68-year-old man with type 2 diabetes with peripheral neuropathy, COPD,
+hypertension, hyperlipidemia and recurrent major depression, here for a scheduled
+three-month follow-up.
+
+Home glucose readings have been running in the 180s to 220s fasting. He admits he
+stopped checking regularly about two months ago. A1c drawn two days ago returned
+at 8.2%, up from 7.4% in April. He continues metformin and empagliflozin without
+missed doses.
+
+Blood pressure at home has been in the 150s systolic. He is taking amlodipine
+daily. He reports no headaches, chest pain or visual change.
+
+He describes increasing dyspnea walking up the hill to his bus stop, now stopping
+once partway where he did not need to three months ago. No fever, no change in
+sputum, no orthopnea. He continues tiotropium and denies rescue inhaler use
+because he "ran out a while ago."
+
+Mood has worsened over the past six weeks. PHQ-9 today is 14. He describes low
+energy, poor sleep, loss of interest in his woodworking and feeling like a burden
+to his son. He denies any thoughts of harming himself and denies any plan. He is
+taking sertraline 100 mg daily and feels it "stopped working."
+
+Burning in both feet at night continues, partially controlled on gabapentin 300 mg
+three times daily.
+
+PHYSICAL EXAM
+Vitals: BP 152/88, repeat 148/86, HR 82, RR 16, T 98.6 F, SpO2 96% on room air.
+BMI 32.9.
+General: No acute distress.
+Cardiovascular: Regular rate and rhythm, no murmur, no edema.
+Respiratory: Diminished breath sounds bilaterally with a prolonged expiratory
+phase, no wheeze today.
+Feet: Skin intact bilaterally, no ulceration. Monofilament sensation reduced over
+both forefeet. Pedal pulses 2+ bilaterally.
+Psych: Flat affect, cooperative, linear thought, no evidence of psychosis.
+
+DATA REVIEWED
+Laboratory results from 8/5 reviewed today: A1c 8.2%, creatinine 1.18, eGFR 62,
+LDL 118. PHQ-9 administered and scored in the office today. Prior spirometry from
+2024 reviewed.
+
+ASSESSMENT AND PLAN
+
+1. Type 2 diabetes mellitus with peripheral neuropathy, uncontrolled with an A1c
+   of 8.2% rising from 7.4%. Continue metformin 1000 mg twice daily and
+   empagliflozin 10 mg daily. Adding a weekly GLP-1 receptor agonist, starting at
+   the lowest dose, with injection technique taught in the office today and
+   titration instructions given. Glucose log restarted, twice daily. Recheck A1c
+   in three months. Annual eye exam ordered — overdue.
+
+2. Peripheral neuropathy, partially controlled. Increasing gabapentin to 600 mg at
+   bedtime with 300 mg in the morning and at midday. Foot care reviewed.
+
+3. COPD with a clear decline in exertional tolerance and no rescue inhaler
+   available. Albuterol refilled today. Adding a LAMA-LABA combination in place of
+   tiotropium monotherapy. Spirometry ordered. Pulmonary rehabilitation referral
+   placed. He remains a former smoker with a 30 pack-year history — lung cancer
+   screening CT ordered, also overdue.
+
+4. Essential hypertension, uncontrolled at 148–152 systolic on a single agent.
+   Adding chlorthalidone 12.5 mg daily. BMP in two weeks to check potassium and
+   renal function. Home blood pressure log requested.
+
+5. Major depressive disorder, recurrent, moderate, worsening with a PHQ-9 of 14 on
+   an adequate sertraline trial. Safety assessed today: he denies suicidal ideation
+   and has no plan or intent, and has supportive contact with his son. Increasing
+   sertraline to 150 mg daily. Behavioral health referral placed today. Return in
+   four weeks specifically to reassess mood, sooner if symptoms escalate. Crisis
+   line number provided and he verbalized understanding of when to use it.
+
+6. Hyperlipidemia with LDL 118 above goal given his diabetes. Increasing
+   atorvastatin to 80 mg nightly. Lipid panel in three months.
+
+7. Obesity, BMI 32.9. Weight discussed in the context of the new GLP-1 and his
+   exertional tolerance.
+
+ORDERS PLACED TODAY
+GLP-1 receptor agonist. Albuterol refill. LAMA-LABA inhaler. Chlorthalidone.
+BMP in two weeks. Spirometry. Low-dose screening chest CT. Diabetic eye exam.
+Behavioral health referral. Pulmonary rehabilitation referral.
+
+FOLLOW-UP
+Return in four weeks for mood and blood pressure. Three months for diabetes.
+
+Demo, D. MD
+Internal Medicine`}
+};
+
+CASES.thin_note={
+  meta:{caseName:'Thin note — tests the documentation gate'},
+  user:{name:'Dr. Demo',initials:'DD'},
+  patient:{name:'Bramblewood, Cecil A',age:59,sex:'Male',dob:'1967-01-25',
+    mrn:'SB-5108334',csn:'ENC-88220118',allergies:'Penicillin (hives)',
+    codeStatus:'Full code',pcp:'Demo, D. MD',insurance:'Commercial — Keystone Select'},
+  encounter:{type:'Office Visit — Established Patient',date:'2026-08-07 13:15',
+    department:'Internal Medicine — Southside',provider:'Demo, D. MD',status:'Open'},
+  vitals:{bp:'134/80',hr:'74',rr:'16',temp:'98.4 °F',spo2:'98%',ht:'5\u2032 9\u2033',wt:'186 lb',bmi:'27.5'},
+  problems:[
+    {name:'Essential hypertension',icd:'I10',onset:'2018'},
+    {name:'Seasonal allergic rhinitis',icd:'J30.2',onset:'2010'}
+  ],
+  meds:[
+    {name:'Lisinopril 20 mg tablet',sig:'Take 1 tablet by mouth daily',status:'Active',started:'2018-06-04'},
+    {name:'Cetirizine 10 mg tablet',sig:'Take 1 tablet by mouth daily as needed',status:'Active',started:'2015-04-11'}
+  ],
+  results:[
+    {name:'Basic metabolic panel',value:'Within normal limits',unit:'',ref:'—',flag:'N',date:'2026-05-14'}
+  ],
+  note:{title:'Progress Note — Office Visit',author:'Demo, D. MD',service:'Internal Medicine',
+    dateTime:'2026-08-07 13:22',status:'Signed',text:
+`OFFICE VISIT
+
+Here for BP recheck. Feels fine. No complaints.
+
+BP 134/80. Heart and lungs normal.
+
+A/P: HTN — stable, continue lisinopril. RTC 6 months.
+
+Demo, D. MD`}
+};
+
+/* =====================================================================
+   STATE + RENDER
+   ===================================================================== */
+let C=JSON.parse(JSON.stringify(CASES.chf_postdischarge));
+let view='note';
+
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');
+  clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),2200);}
+
+function initials(name){
+  if(!name) return '—';
+  const p=String(name).replace(/,/g,' ').trim().split(/\s+/).filter(Boolean);
+  if(!p.length) return '—';
+  return ((p[1]?p[1][0]:'')+(p[0]?p[0][0]:'')).toUpperCase()||p[0][0].toUpperCase();
+}
+
+function renderBanner(){
+  const p=C.patient||{},e=C.encounter||{},u=C.user||{};
+  $('p-init').textContent=initials(p.name);
+  $('p-name').textContent=p.name||'—';
+  $('p-demo').textContent=[p.age!=null?p.age+' y.o.':null,p.sex,e.type].filter(Boolean).join('  •  ')||'—';
+  $('p-mrn').textContent=p.mrn||'—';
+  $('p-dob').textContent=p.dob||'—';
+  $('p-csn').textContent=p.csn||'—';
+  $('p-allergy').textContent=p.allergies||'—';
+  $('p-code').textContent=p.codeStatus||'—';
+  $('p-pcp').textContent=p.pcp||'—';
+  $('p-ins').textContent=p.insurance||'—';
+  $('user-name').textContent=u.name||'Dr. Demo';
+  $('user-init').textContent=u.initials||initials(u.name)||'DD';
+  $('c-prob').textContent=(C.problems||[]).length;
+  $('c-med').textContent=(C.meds||[]).filter(m=>m.status!=='Discontinued').length;
+  $('c-res').textContent=(C.results||[]).length;
+  $('sb-case').textContent=(C.meta&&C.meta.caseName)?'Case: '+C.meta.caseName:'—';
+}
+
+const TABS={
+  note:['Note','Addenda','Routing','Audit'],
+  snapshot:['Snapshot','Care Team','Coverage'],
+  problems:['Problem List','Medical History','Surgical History'],
+  meds:['Active','Discontinued','Adherence'],
+  results:['Recent','Trends','Microbiology'],
+  encounters:['Encounters','Hospital Stays','Referrals']
+};
+function renderTabs(){
+  $('tabstrip').innerHTML=(TABS[view]||['Overview'])
+    .map((t,i)=>'<div class="tab'+(i===0?' on':'')+'">'+esc(t)+'</div>').join('');
+  $('tabstrip').querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+    $('tabstrip').querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+    t.classList.add('on');
+  }));
+}
+
+function vitalsCard(){
+  const v=C.vitals||{};
+  const cells=[['BP',v.bp],['Pulse',v.hr],['Resp',v.rr],['Temp',v.temp],
+               ['SpO2',v.spo2],['BMI',v.bmi],['Height',v.ht],['Weight',v.wt]];
+  return '<div class="card"><div class="card-h"><span class="card-t">Vitals</span>'+
+    '<span class="card-sub">this encounter</span></div><div class="card-b tight"><div class="vgrid">'+
+    cells.map(c=>'<div class="vcell"><div class="v-l">'+esc(c[0])+'</div><div class="v-v">'+
+      esc(c[1]||'—')+'</div></div>').join('')+'</div></div></div>';
+}
+
+function encounterCard(){
+  const e=C.encounter||{};
+  const rows=[['Type',e.type],['Date',e.date],['Department',e.department],['Provider',e.provider],
+    ['Admitted',e.admitDate],['Discharged',e.dischargeDate],
+    ['Discharged from',e.dischargeFrom],['Discharged to',e.dischargeTo]].filter(r=>r[1]);
+  return '<div class="card"><div class="card-h"><span class="card-t">Encounter</span>'+
+    (e.status?'<span class="right"><span class="pill pill-n">'+esc(e.status)+'</span></span>':'')+
+    '</div><div class="card-b tight"><table><tbody>'+
+    rows.map(r=>'<tr><td style="color:var(--ink-3);width:44%">'+esc(r[0])+'</td><td style="font-weight:600">'+
+      esc(r[1])+'</td></tr>').join('')+'</tbody></table></div></div>';
+}
+
+function render(){
+  renderBanner();renderTabs();
+  const pane=$('pane');
+  if(view==='note'){
+    const n=C.note||{};
+    pane.innerHTML='<div class="panerow"><div>'+
+      '<div class="card"><div class="card-h">'+
+      '<span class="card-t">'+esc(n.title||'Progress Note')+'</span>'+
+      '<span class="right">'+
+      '<button class="btn btn-primary btn-sm" id="btn-copy">⧉ Copy note text</button>'+
+      '<button class="btn btn-sm" id="btn-select">Select all</button>'+
+      '</span></div>'+
+      '<div class="notemeta">'+
+        '<div><div class="nm-l">Author</div><div class="nm-v">'+esc(n.author||'—')+'</div></div>'+
+        '<div><div class="nm-l">Service</div><div class="nm-v">'+esc(n.service||'—')+'</div></div>'+
+        '<div><div class="nm-l">Filed</div><div class="nm-v">'+esc(n.dateTime||'—')+'</div></div>'+
+        '<div><div class="nm-l">Status</div><div class="nm-v"><span class="sig">✓ '+esc(n.status||'Signed')+'</span></div></div>'+
+      '</div>'+
+      '<div class="notebody" id="notebody">'+esc(n.text||'')+'</div></div>'+
+      '</div><div>'+vitalsCard()+encounterCard()+'</div></div>';
+    $('btn-copy').addEventListener('click',copyNote);
+    $('btn-select').addEventListener('click',()=>{
+      const r=document.createRange();r.selectNodeContents($('notebody'));
+      const s=window.getSelection();s.removeAllRanges();s.addRange(r);
+      toast('Note text selected');
+    });
+  }
+  else if(view==='snapshot'){
+    const p=C.patient||{};
+    pane.innerHTML='<div class="panerow"><div>'+
+      '<div class="card"><div class="card-h"><span class="card-t">Patient snapshot</span></div>'+
+      '<div class="card-b tight"><table><tbody>'+
+      [['Name',p.name],['Age',p.age!=null?p.age+' years':''],['Sex',p.sex],['DOB',p.dob],
+       ['MRN',p.mrn],['Allergies',p.allergies],['Code status',p.codeStatus],
+       ['PCP',p.pcp],['Coverage',p.insurance],['Language',p.language||'English']]
+       .filter(r=>r[1]).map(r=>'<tr><td style="color:var(--ink-3);width:34%">'+esc(r[0])+
+         '</td><td style="font-weight:600">'+esc(r[1])+'</td></tr>').join('')+
+      '</tbody></table></div></div>'+
+      '<div class="card"><div class="card-h"><span class="card-t">Active problems</span>'+
+      '<span class="card-sub">'+(C.problems||[]).length+' items</span></div><div class="card-b tight">'+
+      problemTable()+'</div></div>'+
+      '</div><div>'+vitalsCard()+encounterCard()+'</div></div>';
+  }
+  else if(view==='problems'){
+    pane.innerHTML='<div class="card"><div class="card-h"><span class="card-t">Problem list</span>'+
+      '<span class="card-sub">'+(C.problems||[]).length+' active</span></div>'+
+      '<div class="card-b tight">'+problemTable()+'</div></div>';
+  }
+  else if(view==='meds'){
+    const m=C.meds||[];
+    pane.innerHTML='<div class="card"><div class="card-h"><span class="card-t">Medications</span>'+
+      '<span class="card-sub">'+m.filter(x=>x.status!=='Discontinued').length+' active</span></div>'+
+      '<div class="card-b tight">'+(m.length?
+      '<table><thead><tr><th>Medication</th><th>Sig</th><th>Status</th><th>Started</th></tr></thead><tbody>'+
+      m.map(x=>'<tr><td style="font-weight:600">'+esc(x.name)+'</td><td style="color:var(--ink-2)">'+
+        esc(x.sig)+'</td><td><span class="pill '+(x.status==='Discontinued'?'pill-n':'pill-a')+'">'+
+        esc(x.status)+'</span></td><td class="code">'+esc(x.started)+'</td></tr>').join('')+
+      '</tbody></table>':'<div class="empty">No medications on file.</div>')+'</div></div>';
+  }
+  else if(view==='results'){
+    const r=C.results||[];
+    pane.innerHTML='<div class="card"><div class="card-h"><span class="card-t">Recent results</span>'+
+      '<span class="card-sub">'+r.length+' resulted</span></div><div class="card-b tight">'+(r.length?
+      '<table><thead><tr><th>Test</th><th>Value</th><th>Reference</th><th>Flag</th><th>Collected</th></tr></thead><tbody>'+
+      r.map(x=>'<tr><td style="font-weight:600">'+esc(x.name)+'</td>'+
+        '<td class="code" style="font-weight:800;color:var(--ink)">'+esc(x.value)+' '+esc(x.unit||'')+'</td>'+
+        '<td class="code">'+esc(x.ref||'—')+'</td>'+
+        '<td><span class="flag '+(['H','L','N'].includes(x.flag)?x.flag:'N')+'">'+esc(x.flag||'N')+'</span></td>'+
+        '<td class="code">'+esc(x.date||'—')+'</td></tr>').join('')+
+      '</tbody></table>':'<div class="empty">No results on file.</div>')+'</div></div>';
+  }
+  else if(view==='encounters'){
+    const e=C.encounter||{};
+    const rows=[];
+    if(e.date) rows.push([e.date,e.type||'Office Visit',e.department||'—',e.status||'Open']);
+    if(e.admitDate) rows.push([e.admitDate+' → '+(e.dischargeDate||'—'),
+      'Inpatient stay',e.dischargeFrom||'—','Discharged to '+(e.dischargeTo||'—')]);
+    pane.innerHTML='<div class="card"><div class="card-h"><span class="card-t">Encounters</span></div>'+
+      '<div class="card-b tight">'+(rows.length?
+      '<table><thead><tr><th>Date</th><th>Type</th><th>Location</th><th>Status</th></tr></thead><tbody>'+
+      rows.map(x=>'<tr><td class="code">'+esc(x[0])+'</td><td style="font-weight:600">'+esc(x[1])+
+        '</td><td style="color:var(--ink-2)">'+esc(x[2])+'</td><td>'+esc(x[3])+'</td></tr>').join('')+
+      '</tbody></table>':'<div class="empty">No encounters on file.</div>')+'</div></div>';
+  }
+}
+
+function problemTable(){
+  const p=C.problems||[];
+  if(!p.length) return '<div class="empty">No problems on file.</div>';
+  return '<table><thead><tr><th>Problem</th><th>ICD-10</th><th>Noted</th></tr></thead><tbody>'+
+    p.map(x=>'<tr><td style="font-weight:600">'+esc(x.name)+'</td><td class="code">'+esc(x.icd||'—')+
+      '</td><td class="code">'+esc(x.onset||'—')+'</td></tr>').join('')+'</tbody></table>';
+}
+
+function copyNote(){
+  const t=(C.note&&C.note.text)||'';
+  if(!t){toast('No note text to copy');return;}
+  navigator.clipboard.writeText(t).then(()=>toast('⧉ Note text copied to clipboard'))
+    .catch(()=>{
+      const r=document.createRange();r.selectNodeContents($('notebody'));
+      const s=window.getSelection();s.removeAllRanges();s.addRange(r);
+      toast('Copy blocked — text selected, press Ctrl+C');
+    });
+}
+
+/* ---------- nav ---------- */
+document.querySelectorAll('.nav-item').forEach(n=>n.addEventListener('click',()=>{
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('on'));
+  n.classList.add('on');
+  view=n.dataset.view||'note';
+  render();
+  $('pane').scrollTop=0;
+}));
+
+/* ---------- drawer ---------- */
+function openDrawer(){
+  $('scrim').classList.add('open');$('drawer').classList.add('open');
+  if(!$('json-in').value.trim()) $('json-in').value=JSON.stringify(C,null,2);
+}
+function closeDrawer(){$('scrim').classList.remove('open');$('drawer').classList.remove('open');}
+$('btn-drawer').addEventListener('click',openDrawer);
+$('btn-close').addEventListener('click',closeDrawer);
+$('scrim').addEventListener('click',closeDrawer);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeDrawer();});
+
+$('case-select').innerHTML=Object.keys(CASES)
+  .map(k=>'<option value="'+k+'">'+esc(CASES[k].meta.caseName)+'</option>').join('');
+
+$('btn-load').addEventListener('click',()=>{
+  const k=$('case-select').value;
+  C=JSON.parse(JSON.stringify(CASES[k]));
+  $('json-in').value=JSON.stringify(C,null,2);
+  $('json-err').classList.remove('show');
+  render();closeDrawer();
+  toast('Loaded: '+CASES[k].meta.caseName);
+});
+
+$('btn-apply').addEventListener('click',()=>{
+  const raw=$('json-in').value.trim();
+  const err=$('json-err');
+  if(!raw){err.textContent='Nothing to apply — the JSON box is empty.';err.classList.add('show');return;}
+  let obj;
+  try{obj=JSON.parse(raw);}
+  catch(ex){err.textContent='JSON parse error: '+ex.message;err.classList.add('show');return;}
+  if(typeof obj!=='object'||obj===null||Array.isArray(obj)){
+    err.textContent='Expected a JSON object at the top level.';err.classList.add('show');return;}
+  // shallow merge so partial cases work
+  ['meta','user','patient','encounter','vitals','note'].forEach(k=>{
+    if(obj[k]&&typeof obj[k]==='object') C[k]=Object.assign({},C[k]||{},obj[k]);
+  });
+  ['problems','meds','results'].forEach(k=>{
+    if(Array.isArray(obj[k])) C[k]=obj[k];
+  });
+  err.classList.remove('show');
+  render();closeDrawer();
+  toast('Case JSON applied');
+});
+
+$('btn-export').addEventListener('click',()=>{
+  const t=JSON.stringify(C,null,2);
+  $('json-in').value=t;
+  navigator.clipboard.writeText(t).then(()=>toast('Current case copied as JSON'))
+    .catch(()=>toast('Copy blocked — JSON is in the box, select and copy'));
+});
+
+/* ---------- clock ---------- */
+function tick(){
+  const d=new Date();
+  $('sb-clock').textContent=d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})+
+    '  '+d.toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});
+}
+tick();setInterval(tick,30000);
+
+render();
+})();
+</script>
+</body>
+</html>
