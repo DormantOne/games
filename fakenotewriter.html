@@ -1,0 +1,521 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Synthetic Patient Factory — LLM Payload Builder</title>
+<style>
+:root{
+  --bg:#f4f3f8;--panel:#fff;--ink:#1f2937;--muted:#6b7280;--line:#d8dbe4;
+  --accent:#5a007a;--accent2:#7c3aed;--soft:#f5eff8;--good:#166534;--goodbg:#ecfdf5;
+  --warn:#92400e;--warnbg:#fff7ed;--shadow:0 8px 26px rgba(20,20,35,.09);--r:16px;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:linear-gradient(135deg,#f8f7fb,#eef2f7);color:var(--ink)}
+.wrap{max-width:1220px;margin:0 auto;padding:18px}
+.header,.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.header{padding:16px 18px;position:sticky;top:8px;z-index:10}
+.htop{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.title{font-weight:900;font-size:1.18rem;letter-spacing:.035em;text-transform:uppercase;color:var(--accent)}
+.subtitle{font-size:.88rem;color:var(--muted);line-height:1.45;margin-top:5px}
+.badge{display:inline-flex;align-items:center;gap:7px;border:1px solid #c4b5fd;background:#f5f3ff;color:#5b21b6;border-radius:999px;padding:6px 10px;font-size:.75rem;font-weight:800}
+.dot{width:8px;height:8px;background:#22c55e;border-radius:50%}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.08fr);gap:16px;margin-top:16px}
+@media(max-width:960px){.layout{grid-template-columns:1fr}.header{position:static}.preview{position:static!important}}
+.panel{padding:14px}
+.phead{display:flex;align-items:center;gap:8px;font-weight:900;margin-bottom:8px}
+.step{width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:var(--accent);color:#fff;font-size:.8rem}
+fieldset{border:1px solid var(--line);border-radius:12px;padding:11px;margin:11px 0;background:#fafafe}
+legend{padding:0 6px;font-size:.74rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:850}
+label.hint,.hint{display:block;color:var(--muted);font-size:.78rem;line-height:1.35;margin-top:3px}
+select,input,textarea{width:100%;margin-top:6px;border:1.5px solid var(--line);border-radius:9px;padding:9px 10px;font:inherit;background:#fff;color:var(--ink)}
+select:focus,input:focus,textarea:focus{outline:none;border-color:var(--accent2);box-shadow:0 0 0 3px rgba(124,58,237,.11)}
+textarea{min-height:95px;resize:vertical;line-height:1.45}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+@media(max-width:720px){.row2,.row3{grid-template-columns:1fr}}
+.checks{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media(max-width:720px){.checks{grid-template-columns:1fr}}
+.opt{display:flex;gap:9px;align-items:flex-start;border:1px solid var(--line);background:#fff;border-radius:10px;padding:9px;font-size:.82rem;line-height:1.35}
+.opt input{width:auto;margin:2px 0 0 0}
+.opt b{display:block}
+.small{font-size:.72rem;color:var(--muted);margin-top:2px}
+.modelbar{display:flex;gap:7px;flex-wrap:wrap;margin-top:7px}
+.mbtn{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 11px;font-weight:800;cursor:pointer}
+.mbtn:hover{border-color:var(--accent2)}
+.mbtn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.btn{border:0;border-radius:10px;padding:10px 13px;font-weight:850;cursor:pointer}
+.primary{background:var(--accent);color:#fff;flex:1;min-width:170px}
+.primary:hover{background:#43005c}
+.secondary{background:#e5e7eb;color:#111827}
+.secondary:hover{background:#d1d5db}
+.ghost{background:#fff;border:1px solid #c4b5fd;color:#5b21b6}
+.ghost:hover{background:#f5f3ff}
+.preview{position:sticky;top:104px;align-self:start}
+.out{background:#111827;color:#e5e7eb;border-radius:12px;padding:12px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:68vh;overflow:auto;min-height:390px;font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.notice{border-radius:10px;padding:9px 11px;font-size:.78rem;line-height:1.4;margin-top:9px}
+.safe{background:var(--goodbg);border:1px solid #bbf7d0;color:var(--good)}
+.warn{background:var(--warnbg);border:1px solid #fed7aa;color:var(--warn)}
+.meta{font-size:.74rem;color:var(--muted);margin-top:7px}
+.codehint{margin-top:7px;padding:8px 9px;border-radius:8px;background:var(--soft);color:#581c87;font-size:.76rem;line-height:1.4}
+.hidden{display:none!important}
+.toast{position:fixed;right:18px;bottom:18px;background:#111827;color:white;border-radius:10px;padding:10px 14px;font-weight:800;box-shadow:0 12px 30px rgba(0,0,0,.25);z-index:9999;opacity:0;transform:translateY(8px);pointer-events:none;transition:.18s}
+.toast.show{opacity:1;transform:translateY(0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="header">
+    <div class="htop">
+      <div>
+        <div class="title">Synthetic Patient Factory</div>
+        <div class="subtitle">
+          Build a prompt for Copilot, ChatGPT, Claude, Grok, or Perplexity to create <b>fully fictional clinical notes</b>
+          plus a separate patient bibliography / billing answer key.
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="btn ghost" id="talkBtn" type="button">🔊 Full walkthrough</button>
+        <div class="badge"><span class="dot"></span> Synthetic data only</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="notice safe" style="margin-top:12px">
+    <b>New here?</b> Click <b>🔊 Talk it through</b>. The page will explain what each section does and how to create a set of fake patients for testing the billing tool.
+  </div>
+
+  <div class="layout">
+    <section class="panel">
+      <div class="phead"><span class="step">1</span> Patient set</div>
+
+      <fieldset>
+        <legend>Guidance</legend>
+        <label class="opt">
+          <input id="talkGuidance" type="checkbox" checked>
+          <span>
+            <b>🔊 Talk me through it</b>
+            <span class="small">Pre-checked. Gives spoken guidance while you use the page. You can turn it off anytime.</span>
+          </span>
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Core request</legend>
+        <div class="row3">
+          <div>
+            <label class="hint">How many fake patients?</label>
+            <input id="count" type="number" min="1" max="50" value="10">
+          </div>
+          <div>
+            <label class="hint">Note type</label>
+            <select id="noteType">
+              <option value="mixed">Mixed internal-medicine notes</option>
+              <option value="office_est">Office — established patient</option>
+              <option value="office_new">Office — new patient</option>
+              <option value="awv">Medicare Annual Wellness Visit</option>
+              <option value="ippe">Welcome to Medicare / IPPE</option>
+              <option value="tcm">Post-hospital TCM follow-up</option>
+              <option value="hospital_initial">Initial hospital care</option>
+              <option value="hospital_subseq">Subsequent hospital care</option>
+              <option value="discharge">Hospital discharge day</option>
+              <option value="tele">Outpatient telemedicine</option>
+            </select>
+          </div>
+          <div>
+            <label class="hint">Clinical flavor</label>
+            <select id="flavor">
+              <option value="primary care" selected>Primary care / internal medicine</option>
+              <option value="hospital medicine">Hospital medicine</option>
+              <option value="geriatrics">Geriatrics</option>
+              <option value="mixed adult medicine">Mixed adult medicine</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row2" style="margin-top:8px">
+          <div>
+            <label class="hint">Rough billing target</label>
+            <select id="target">
+              <option value="random" selected>Random reasonable mix</option>
+              <option value="straightforward">Mostly straightforward / lowest family level</option>
+              <option value="low">Mostly low complexity</option>
+              <option value="moderate">Mostly moderate complexity</option>
+              <option value="high">Mostly high complexity</option>
+              <option value="specific">Specific code I enter</option>
+            </select>
+          </div>
+          <div id="specificWrap" class="hidden">
+            <label class="hint">Specific target code</label>
+            <input id="specificCode" maxlength="12" placeholder="e.g., 99214, 99495, G0439">
+          </div>
+        </div>
+        <div id="familyHint" class="codehint"></div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Note realism</legend>
+        <div class="row2">
+          <div>
+            <label class="hint">Writing style</label>
+            <select id="realism">
+              <option value="realistic" selected>Realistic clinical notes</option>
+              <option value="concise">Concise teaching examples</option>
+              <option value="messy">Real-world / mildly messy</option>
+            </select>
+          </div>
+          <div>
+            <label class="hint">Optional reproducibility seed</label>
+            <input id="seed" maxlength="40" placeholder="leave blank for fresh randomness">
+          </div>
+        </div>
+        <label class="hint" style="margin-top:8px">Clinical mix / extra instructions (optional)</label>
+        <textarea id="theme" maxlength="700" placeholder="e.g., Include diabetes, HTN, CKD, URI, back pain, medication changes, a few normal follow-ups, and a few tougher cases."></textarea>
+      </fieldset>
+
+      <fieldset>
+        <legend>Optional challenge cases — keep it simple</legend>
+        <div class="checks">
+          <label class="opt"><input id="prolonged" type="checkbox"><span><b>Prolonged services</b><span class="small">Include a small number of time-based cases near or beyond the prolonged-service threshold.</span></span></label>
+          <label class="opt"><input id="welcome" type="checkbox"><span><b>Welcome to Medicare</b><span class="small">Include some IPPE / G0402 examples even in a mixed set.</span></span></label>
+          <label class="opt"><input id="telemod" type="checkbox"><span><b>Telehealth modifiers</b><span class="small">Include audio/video vs audio-only examples with the modifier in the answer key.</span></span></label>
+          <label class="opt"><input id="resident" type="checkbox"><span><b>Resident / GC</b><span class="small">Include a few teaching-physician cases where GC should be considered.</span></span></label>
+          <label class="opt"><input id="meat" type="checkbox" checked><span><b>MEAT check</b><span class="small">Do not force extra documentation; simply say in the answer key whether each active problem shows Manage / Evaluate / Assess / Treat.</span></span></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Choose where to generate</legend>
+        <div class="modelbar" id="modelbar">
+          <button class="mbtn active" data-model="copilot" type="button">Copilot</button>
+          <button class="mbtn" data-model="chatgpt" type="button">ChatGPT</button>
+          <button class="mbtn" data-model="claude" type="button">Claude</button>
+          <button class="mbtn" data-model="grok" type="button">Grok</button>
+          <button class="mbtn" data-model="perplexity" type="button">Perplexity</button>
+        </div>
+      </fieldset>
+
+      <div class="btnrow">
+        <button class="btn primary" id="seeBtn" type="button">👁 See Prompt</button>
+        <button class="btn ghost" id="copyBtn" type="button">📋 Copy Prompt</button>
+        <button class="btn secondary" id="clearBtn" type="button">Clear</button>
+      </div>
+    </section>
+
+    <section class="panel preview">
+      <div class="phead"><span class="step">2</span> Payload preview</div>
+      <div class="btnrow" style="margin-top:0;margin-bottom:8px">
+        <button class="btn primary" id="openBtn" type="button">Build, Copy & Open Copilot</button>
+      </div>
+      <div class="out" id="output">You haven't generated a payload yet.
+
+Choose the patient set on the left, then click “See Prompt” or “Build, Copy & Open”.</div>
+      <div class="meta" id="length">Prompt length will appear here.</div>
+      <div class="notice safe"><b>Blind-test design:</b> the prompt tells the model to put the synthetic notes first and the billing answer key afterward, so the target code does not leak into the note itself.</div>
+      <div class="notice warn"><b>Safety:</b> use invented patients only. Do not paste real names, DOBs, MRNs, or clinical notes into this synthetic-data generator.</div>
+    </section>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+const MODEL_URLS = {
+  copilot: "https://www.microsoft365.com/copilot",
+  chatgpt: "https://chatgpt.com/",
+  claude: "https://claude.ai/",
+  grok: "https://grok.com/",
+  perplexity: "https://www.perplexity.ai/"
+};
+const MODEL_NAMES = {
+  copilot:"Copilot", chatgpt:"ChatGPT", claude:"Claude", grok:"Grok", perplexity:"Perplexity"
+};
+const NOTE_LABELS = {
+  mixed:"Mixed internal-medicine notes",
+  office_est:"Office — established patient",
+  office_new:"Office — new patient",
+  awv:"Medicare Annual Wellness Visit",
+  ippe:"Welcome to Medicare / Initial Preventive Physical Exam (IPPE)",
+  tcm:"Post-hospital Transitional Care Management follow-up",
+  hospital_initial:"Initial hospital care",
+  hospital_subseq:"Subsequent hospital care",
+  discharge:"Hospital discharge day management",
+  tele:"Outpatient telemedicine"
+};
+const FAMILY_HINTS = {
+  mixed:"Mixed set: let the model choose internally coherent code families; use the separate answer key as ground truth.",
+  office_est:"Typical office family: 99212–99215.",
+  office_new:"Typical new-patient office family: 99202–99205.",
+  awv:"Medicare AWV: G0438 (initial) / G0439 (subsequent); a separately identifiable problem E/M may be a separate challenge case.",
+  ippe:"Welcome to Medicare / IPPE: G0402. Keep this distinct from an Annual Wellness Visit.",
+  tcm:"TCM family: 99495 / 99496. The synthetic case should include the timing and documentation facts needed to judge the code.",
+  hospital_initial:"Initial hospital care family: 99221–99223.",
+  hospital_subseq:"Subsequent hospital care family: 99231–99233.",
+  discharge:"Discharge day management: 99238 / 99239, with documented discharge-day time when relevant.",
+  tele:"Use the applicable office E/M family, and make the modality explicit so a telehealth modifier can be judged."
+};
+
+let selectedModel = "copilot";
+const $ = id => document.getElementById(id);
+
+function toast(msg){
+  const t=$("toast");
+  t.textContent=msg;
+  t.classList.add("show");
+  clearTimeout(t._timer);
+  t._timer=setTimeout(()=>t.classList.remove("show"),2200);
+}
+
+let speaking=false;
+
+function stopSpeaking(){
+  try{ window.speechSynthesis.cancel(); }catch(e){}
+  speaking=false;
+  const b=$("talkBtn");
+  if(b) b.textContent="🔊 Full walkthrough";
+}
+
+function talkThrough(){
+  if(speaking){
+    stopSpeaking();
+    toast("Stopped walkthrough.");
+    return;
+  }
+
+  if(!("speechSynthesis" in window)){
+    toast("Speech is not supported in this browser.");
+    return;
+  }
+
+  const script = [
+    "Welcome to the Synthetic Patient Factory. This page creates prompts for an AI to generate completely fictional patients and clinical notes, so you can test a billing assistant without using real patient information.",
+    "Step one. Choose how many fake patients you want. Ten is a good starting point. Then choose the kind of note you want, such as an established office visit, a new patient visit, Annual Wellness Visit, Welcome to Medicare, transitional care, hospital care, discharge, or telemedicine.",
+    "Next, choose the rough billing target. Random reasonable mix is best for general testing. You can also ask for mostly low, moderate, or high complexity cases, or enter a specific billing code if you are testing one code family.",
+    "Under note realism, choose how realistic you want the notes to feel. You can also type a clinical mix, for example diabetes, hypertension, kidney disease, respiratory infections, back pain, medication changes, or any other synthetic case mix you want.",
+    "The optional challenge switches let you add a few special cases without making the tool complicated. Prolonged services creates time based examples. Welcome to Medicare adds IPPE examples. Telehealth modifiers creates audio video or audio only cases. Resident and G C creates teaching physician examples. The MEAT check simply reports whether the note shows Manage, Evaluate, Assess, or Treat. It does not force extra documentation.",
+    "Now choose which AI you want to use. You can select Copilot, ChatGPT, Claude, Grok, or Perplexity.",
+    "Click See Prompt if you want to inspect the instructions first. Click Copy Prompt if you only want the prompt on your clipboard. Or click Build, Copy, and Open to copy the prompt and open the AI you selected.",
+    "The AI is instructed to produce two separate sections. Part A contains the synthetic clinical notes. The billing answer is deliberately hidden from those notes so you can use them as a blind test. Part B is a separate patient bibliography and billing answer key with the fake name, fake date of birth, intended billing code, complexity level, modifiers or add ons, rationale, and MEAT result when requested.",
+    "That means you can take Part A, run those fake notes through your billing tool, and then compare its answers with Part B. This gives you a simple synthetic test set for checking how well the billing tool performs.",
+    "One important rule. Everything generated here should stay fictional. Do not paste real patient names, dates of birth, medical record numbers, or real clinical notes into this page.",
+    "You are ready. Pick the number of patients and note type, then build your first synthetic test set."
+  ];
+
+  speaking=true;
+  const btn=$("talkBtn");
+  btn.textContent="⏹ Stop talking";
+
+  let i=0;
+  const speakNext=()=>{
+    if(!speaking || i>=script.length){
+      stopSpeaking();
+      if(i>=script.length) toast("Walkthrough complete.");
+      return;
+    }
+    const u=new SpeechSynthesisUtterance(script[i++]);
+    u.rate=1.02;
+    u.pitch=1;
+    u.onend=speakNext;
+    u.onerror=()=>{
+      stopSpeaking();
+      toast("Walkthrough stopped.");
+    };
+    window.speechSynthesis.speak(u);
+  };
+  speakNext();
+}
+
+function guidanceOn(){
+  const el=$("talkGuidance");
+  return !!(el && el.checked);
+}
+
+function sayHint(text){
+  if(!guidanceOn() || speaking || !("speechSynthesis" in window)) return;
+  try{
+    window.speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);
+    u.rate=1.04;
+    u.pitch=1;
+    window.speechSynthesis.speak(u);
+  }catch(e){}
+}
+
+function updateUI(){
+  const type=$("noteType").value;
+  $("familyHint").textContent=FAMILY_HINTS[type] || "";
+  $("specificWrap").classList.toggle("hidden",$("target").value!=="specific");
+  $("openBtn").textContent="Build, Copy & Open "+MODEL_NAMES[selectedModel];
+}
+
+function modelButtons(){
+  document.querySelectorAll(".mbtn").forEach(b=>{
+    b.addEventListener("click",()=>{
+      document.querySelectorAll(".mbtn").forEach(x=>x.classList.remove("active"));
+      b.classList.add("active");
+      selectedModel=b.dataset.model;
+      updateUI();
+    });
+  });
+}
+
+function checked(id){ return $(id).checked; }
+
+function targetText(){
+  const t=$("target").value;
+  if(t==="specific"){
+    const c=$("specificCode").value.trim();
+    return c ? `Aim for the specific billing code ${c} in the cases unless that conflicts with the selected note type.`
+             : `A specific code was requested but none was entered; choose a reasonable code within the selected note family.`;
+  }
+  const map={
+    random:"Use a realistic random mix of supportable billing levels within the selected note family.",
+    straightforward:"Bias the set toward straightforward / lowest-family-level encounters, with a little variation.",
+    low:"Bias the set toward low-complexity encounters, with a little variation.",
+    moderate:"Bias the set toward moderate-complexity encounters, with a little variation.",
+    high:"Bias the set toward high-complexity encounters, with a little variation."
+  };
+  return map[t];
+}
+
+function buildPrompt(){
+  let n=parseInt($("count").value,10);
+  if(!Number.isFinite(n)) n=10;
+  n=Math.max(1,Math.min(50,n));
+  $("count").value=String(n);
+
+  const noteType=$("noteType").value;
+  const noteLabel=NOTE_LABELS[noteType];
+  const flavor=$("flavor").value;
+  const realism=$("realism").value;
+  const seed=$("seed").value.trim();
+  const theme=$("theme").value.trim();
+
+  const special=[];
+  if(checked("prolonged")) special.push("Include a small number of prolonged-service/time-threshold cases. Build the note so the base service and total time can actually be judged. Put any prolonged-service add-on only in the answer key, never in the note heading.");
+  if(checked("welcome")) special.push("Include some Welcome-to-Medicare / IPPE examples using G0402, even if the main set is mixed.");
+  if(checked("telemod")) special.push("Include some telemedicine cases. State clearly in the note whether the encounter was synchronous audio+video or audio-only; put the suggested telehealth modifier (93 or 95 as appropriate to the constructed scenario) in the answer key.");
+  if(checked("resident")) special.push("Include a few resident/teaching-physician cases. Make the documentation realistic enough to decide whether teaching-physician billing with modifier GC is supportable; put GC only in the answer key.");
+  if(checked("meat")) special.push("For active problems, perform a MEAT check in the answer key only: identify whether the note shows Manage, Evaluate, Assess, and/or Treat. Do not artificially insert all four elements; simply report what is actually present.");
+
+  let p="";
+  p += "TASK: GENERATE A SYNTHETIC CLINICAL BILLING TEST SET\\n\\n";
+  p += `Generate exactly ${n} completely fictional adult patient encounters. These are synthetic training/test data, not real patients.\\n`;
+  p += `Primary note type: ${noteLabel}. Clinical flavor: ${flavor}. Note style: ${realism}.\\n`;
+  p += targetText()+"\\n";
+  if(seed) p += `Reproducibility seed: ${seed}. Use it as a consistency cue so a rerun is as similar as practical.\\n`;
+  if(theme) p += `Clinical mix / extra instructions: ${theme}\\n`;
+
+  p += "\\nNON-NEGOTIABLE SYNTHETIC-DATA RULES\\n";
+  p += "1. Invent every name, date of birth, diagnosis combination, medication detail, lab value, and clinical event. Do not retrieve or imitate a real patient, celebrity, or known case.\\n";
+  p += "2. Give every patient a plausible fictional full name and DOB. Keep age and DOB internally consistent.\\n";
+  p += "3. Do not browse for patient information. This is generation, not record retrieval.\\n";
+  p += "4. Do not reveal the intended billing code inside the clinical note itself. The notes must be usable for a blind billing test.\\n";
+  p += "5. Construct the clinical work and documentation first; then assign the intended code in the separate answer key. Do not 'upcode' a thin note just because a target level was requested.\\n";
+
+  p += "\\nBILLING-CONSTRUCTION PRINCIPLES\\n";
+  p += "• For E/M examples, make Problems, Data, and Risk internally coherent and use the 2-of-3 MDM concept when the case is MDM-based.\\n";
+  p += "• If a case is meant to be time-based, include an explicit total-time statement in the note and make the activities plausible for that encounter.\\n";
+  p += "• Keep Annual Wellness Visit, Welcome-to-Medicare/IPPE, TCM, office E/M, hospital E/M, and discharge-day services distinct.\\n";
+  p += "• If a same-day preventive/wellness plus problem-oriented E/M example is created, make the problem work separately identifiable rather than merely routine refills/status checks.\\n";
+  p += "• When a modifier/add-on is part of the test, document the factual trigger in the note but keep the modifier/add-on itself in the answer key.\\n";
+
+  if(special.length){
+    p += "\\nOPTIONAL CHALLENGE MIX\\n";
+    special.forEach(x=>p+="• "+x+"\\n");
+  }
+
+  p += "\\nOUTPUT — PART A: SYNTHETIC NOTES\\n";
+  p += "Output all notes first. Use this exact repeating structure:\\n\\n";
+  p += "### SYNTHETIC PATIENT 001\\n";
+  p += "Name: [fictional full name]\\n";
+  p += "DOB: [MM/DD/YYYY]\\n";
+  p += "Note type: [plain-language encounter type]\\n";
+  p += "CLINICAL NOTE:\\n";
+  p += "[realistic note text with HPI/interval history as appropriate, focused exam when appropriate, data reviewed/ordered when appropriate, and assessment/plan. Do not state the target CPT/HCPCS code or billing level.]\\n\\n";
+  p += "Repeat through the requested patient count. Vary age, problems, medications, data burden, risk, and documentation density. Avoid trivial template cloning.\\n";
+
+  p += "\\nOUTPUT — PART B: PATIENT BIBLIOGRAPHY / BILLING ANSWER KEY\\n";
+  p += "After ALL notes, create a separate markdown table with one row per patient and these columns:\\n";
+  p += "Patient # | Fake name | Fake DOB | Note type | Intended billing code | Level/complexity | MDM vs time | Modifier/add-on if any | One-line support | MEAT check if requested\\n";
+  p += "The answer key is the ground truth for testing. Keep it separate from Part A.\\n";
+  p += "If a rule is payer-specific or would require current-year verification in real billing, label that fact in the answer key instead of pretending the synthetic example settles payer policy.\\n";
+
+  p += "\\nFINAL QUALITY CHECK\\n";
+  p += `• Exactly ${n} notes and exactly ${n} answer-key rows.\\n`;
+  p += "• Every name and DOB is fictional.\\n";
+  p += "• No target code appears inside a note.\\n";
+  p += "• Each answer-key code is supported by the constructed note, not merely asserted.\\n";
+  p += "• The set contains meaningful variation and is suitable for testing a billing-assistance tool.\\n";
+
+  $("output").textContent=p;
+  $("length").textContent=`Prompt length: ${p.length.toLocaleString()} characters.`;
+  return p;
+}
+
+async function copyText(text){
+  if(navigator.clipboard && window.isSecureContext){
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const ta=document.createElement("textarea");
+  ta.value=text;ta.style.position="fixed";ta.style.opacity="0";
+  document.body.appendChild(ta);ta.select();
+  document.execCommand("copy");ta.remove();
+}
+
+async function copyPrompt(){
+  const p=buildPrompt();
+  try{await copyText(p);toast("Prompt copied.");}
+  catch(e){toast("Clipboard blocked — select and copy from preview.");}
+}
+
+async function openModel(){
+  const p=buildPrompt();
+  try{
+    await copyText(p);
+    toast("Prompt copied. Opening "+MODEL_NAMES[selectedModel]+"…");
+    sayHint("The prompt is copied. I am opening "+MODEL_NAMES[selectedModel]+". Click in the chat box and paste the prompt.");
+  }catch(e){
+    toast("Opening "+MODEL_NAMES[selectedModel]+". Copy the preview manually.");
+    sayHint("I am opening "+MODEL_NAMES[selectedModel]+". If the clipboard was blocked, copy the prompt from the preview.");
+  }
+  setTimeout(()=>window.open(MODEL_URLS[selectedModel],"_blank","noopener"),350);
+}
+
+function clearAll(){
+  $("count").value="10";
+  $("noteType").value="mixed";
+  $("flavor").value="primary care";
+  $("target").value="random";
+  $("specificCode").value="";
+  $("realism").value="realistic";
+  $("seed").value="";
+  $("theme").value="";
+  ["prolonged","welcome","telemod","resident"].forEach(id=>$(id).checked=false);
+  $("meat").checked=true;
+  $("talkGuidance").checked=true;
+  $("output").textContent="You haven't generated a payload yet.\\n\\nChoose the patient set on the left, then click “See Prompt” or “Build, Copy & Open”.";
+  $("length").textContent="Prompt length will appear here.";
+  updateUI();
+}
+
+$("noteType").addEventListener("change",()=>{updateUI();sayHint("Note type selected. Next choose the rough billing target.");});
+$("target").addEventListener("change",()=>{updateUI();sayHint("Billing target selected. You can now adjust realism or add optional challenge cases.");});
+$("seeBtn").addEventListener("click",()=>{buildPrompt();toast("Payload generated.");sayHint("Your synthetic patient prompt is ready on the right. Review it, then copy it or open the AI you selected.");});
+$("copyBtn").addEventListener("click",()=>{copyPrompt();sayHint("The prompt has been copied. Paste it into the AI you want to use.");});
+$("openBtn").addEventListener("click",openModel);
+$("clearBtn").addEventListener("click",clearAll);
+$("talkBtn").addEventListener("click",talkThrough);
+modelButtons();
+updateUI();
+window.addEventListener("beforeunload", stopSpeaking);
+
+})();
+</script>
+</body>
+</html>
