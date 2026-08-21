@@ -1,0 +1,172 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Anniversary Bouquet</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    overflow:hidden;
+    background:
+      radial-gradient(circle at 25% 18%,rgba(255,255,255,.10) 0 1px,transparent 1.4px) 0 0/180px 180px,
+      radial-gradient(circle at 72% 28%,rgba(255,255,255,.07) 0 1px,transparent 1.3px) 0 0/240px 240px,
+      radial-gradient(circle at 50% 37%,#1c2341 0,#0d1328 47%,#070a14 100%);
+    color:#fff8ef;
+    font-family:Georgia,"Times New Roman",serif;
+  }
+  .stage{height:100%;display:grid;place-items:center;padding:18px}
+  .card{position:relative;width:min(94vw,760px);height:min(94vh,840px)}
+  h1{position:absolute;z-index:5;top:12px;left:0;right:0;text-align:center;margin:0;font-weight:400;font-size:clamp(22px,4vw,38px)}
+  .sub{position:absolute;z-index:5;top:58px;left:0;right:0;text-align:center;font-size:clamp(12px,2vw,16px);letter-spacing:.14em;text-transform:uppercase;opacity:.72}
+  svg{width:100%;height:100%;display:block;overflow:visible;filter:drop-shadow(0 22px 38px rgba(0,0,0,.4))}
+  .stem{fill:none;stroke:#4f8c63;stroke-width:7;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:520;stroke-dashoffset:520;animation:draw 1.35s ease forwards}
+  .leaf{fill:#619b70;opacity:0;transform-box:fill-box;transform-origin:center;transform:scale(.25);animation:leaf .55s ease forwards}
+  .flower{opacity:0;transform-box:fill-box;transform-origin:50% 100%;transform:scale(.08) rotate(-8deg);animation:bloom .9s cubic-bezier(.18,.8,.2,1.1) forwards}
+  .calyx{fill:#4b845d}
+  .paper{fill:#e8d8c4;stroke:#d6bea3;stroke-width:2}
+  .paper-side{fill:#f3e6d8;opacity:.82}
+  .ribbon{fill:#a65a74}
+  .spark{fill:#fff7dc;opacity:.15;animation:twinkle 3s ease-in-out infinite}
+  .msg{position:absolute;bottom:18px;left:0;right:0;text-align:center;font-size:clamp(16px,2.4vw,21px)}
+  button{position:absolute;right:14px;bottom:14px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);color:#fff8ef;border-radius:999px;padding:8px 13px;cursor:pointer}
+  @keyframes draw{to{stroke-dashoffset:0}}
+  @keyframes leaf{to{opacity:1;transform:scale(1)}}
+  @keyframes bloom{0%{opacity:0;transform:scale(.08) rotate(-8deg)}72%{opacity:1;transform:scale(1.06) rotate(2deg)}100%{opacity:1;transform:scale(1) rotate(0)}}
+  @keyframes twinkle{50%{opacity:.8}}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="card">
+    <h1>For Our Anniversary</h1>
+    <div class="sub">a bouquet opening together</div>
+    <svg viewBox="0 0 760 840" role="img" aria-label="An opening bouquet with flowers visibly attached to their stems">
+      <g>
+        <circle class="spark" cx="118" cy="170" r="1.4" style="animation-delay:.2s"/><circle class="spark" cx="638" cy="220" r="1.2" style="animation-delay:1.2s"/>
+        <circle class="spark" cx="620" cy="420" r="1.3" style="animation-delay:2s"/><circle class="spark" cx="126" cy="398" r="1.1" style="animation-delay:.9s"/>
+      </g>
+
+      <!-- stems: every endpoint ends at the bottom of a calyx -->
+      <path class="stem" d="M380 635 C375 560 372 485 374 405 C376 330 379 260 380 201" style="animation-delay:.02s"/>
+      <path class="stem" d="M380 635 C354 559 336 501 323 440 C311 382 307 319 311 265" style="animation-delay:.08s"/>
+      <path class="stem" d="M380 635 C407 558 425 497 437 438 C448 381 452 321 449 262" style="animation-delay:.14s"/>
+      <path class="stem" d="M380 635 C337 579 302 529 273 480 C244 432 226 375 225 322" style="animation-delay:.20s"/>
+      <path class="stem" d="M380 635 C425 581 462 530 491 482 C520 434 538 382 539 330" style="animation-delay:.26s"/>
+      <path class="stem" d="M380 635 C325 602 284 570 249 532 C221 502 205 468 203 434" style="animation-delay:.32s"/>
+      <path class="stem" d="M380 635 C437 601 480 569 515 532 C543 502 559 469 561 436" style="animation-delay:.38s"/>
+
+      <!-- leaves actually sprout from stems -->
+      <ellipse class="leaf" cx="345" cy="474" rx="12" ry="31" transform="rotate(-38 345 474)" style="animation-delay:.85s"/>
+      <ellipse class="leaf" cx="416" cy="470" rx="12" ry="31" transform="rotate(38 416 470)" style="animation-delay:.92s"/>
+      <ellipse class="leaf" cx="286" cy="457" rx="12" ry="29" transform="rotate(-58 286 457)" style="animation-delay:.99s"/>
+      <ellipse class="leaf" cx="476" cy="456" rx="12" ry="29" transform="rotate(58 476 456)" style="animation-delay:1.06s"/>
+
+      <!-- FLOWERS: calyx tip is exactly on the matching stem endpoint; petals grow upward from it -->
+      <g class="flower" style="animation-delay:1.18s">
+        <g transform="translate(380 201)">
+          <path class="calyx" d="M0 0 L-17 -20 L-7 -17 L0 -33 L7 -17 L17 -20 Z"/>
+          <g transform="translate(0 -48)">
+            <ellipse fill="#f7d6ee" cy="-28" rx="18" ry="34"/><ellipse fill="#f3c0e1" cy="28" rx="18" ry="34"/>
+            <ellipse fill="#f9ddea" cx="28" rx="18" ry="34" transform="rotate(90 28 0)"/><ellipse fill="#efb4d7" cx="-28" rx="18" ry="34" transform="rotate(90 -28 0)"/>
+            <ellipse fill="#f5cae8" cy="-25" rx="16" ry="31" transform="rotate(45)"/><ellipse fill="#f1b9de" cy="-25" rx="16" ry="31" transform="rotate(135)"/>
+            <circle r="15" fill="#f0ce68"/>
+          </g>
+        </g>
+      </g>
+
+      <g class="flower" style="animation-delay:1.32s">
+        <g transform="translate(311 265)">
+          <path class="calyx" d="M0 0 L-15 -18 L-6 -16 L0 -29 L6 -16 L15 -18 Z"/>
+          <g transform="translate(0 -43)">
+            <ellipse fill="#f4a2b7" cy="-25" rx="15" ry="31"/><ellipse fill="#ffc5cf" cy="25" rx="15" ry="31"/>
+            <ellipse fill="#f8aec0" cx="25" rx="15" ry="31" transform="rotate(90 25 0)"/><ellipse fill="#f697b0" cx="-25" rx="15" ry="31" transform="rotate(90 -25 0)"/>
+            <circle r="13" fill="#f1cf67"/>
+          </g>
+        </g>
+      </g>
+
+      <g class="flower" style="animation-delay:1.46s">
+        <g transform="translate(449 262)">
+          <path class="calyx" d="M0 0 L-15 -18 L-6 -16 L0 -29 L6 -16 L15 -18 Z"/>
+          <g transform="translate(0 -43)">
+            <ellipse fill="#c9b8ff" cy="-25" rx="15" ry="31"/><ellipse fill="#e4dcff" cy="25" rx="15" ry="31"/>
+            <ellipse fill="#d3c5ff" cx="25" rx="15" ry="31" transform="rotate(90 25 0)"/><ellipse fill="#bda8ff" cx="-25" rx="15" ry="31" transform="rotate(90 -25 0)"/>
+            <circle r="13" fill="#f1cf67"/>
+          </g>
+        </g>
+      </g>
+
+      <g class="flower" style="animation-delay:1.60s">
+        <g transform="translate(225 322)">
+          <path class="calyx" d="M0 0 L-14 -17 L-5 -15 L0 -27 L5 -15 L14 -17 Z"/>
+          <g transform="translate(0 -40)">
+            <ellipse fill="#ffad88" cy="-23" rx="14" ry="29"/><ellipse fill="#ffd0b4" cy="23" rx="14" ry="29"/>
+            <ellipse fill="#ffb794" cx="23" rx="14" ry="29" transform="rotate(90 23 0)"/><ellipse fill="#ff9f7b" cx="-23" rx="14" ry="29" transform="rotate(90 -23 0)"/>
+            <circle r="12" fill="#efc861"/>
+          </g>
+        </g>
+      </g>
+
+      <g class="flower" style="animation-delay:1.74s">
+        <g transform="translate(539 330)">
+          <path class="calyx" d="M0 0 L-14 -17 L-5 -15 L0 -27 L5 -15 L14 -17 Z"/>
+          <g transform="translate(0 -40)">
+            <ellipse fill="#9fd8ca" cy="-23" rx="14" ry="29"/><ellipse fill="#d5f2ea" cy="23" rx="14" ry="29"/>
+            <ellipse fill="#b6e4da" cx="23" rx="14" ry="29" transform="rotate(90 23 0)"/><ellipse fill="#8fcebf" cx="-23" rx="14" ry="29" transform="rotate(90 -23 0)"/>
+            <circle r="12" fill="#efcd68"/>
+          </g>
+        </g>
+      </g>
+
+      <g class="flower" style="animation-delay:1.88s">
+        <g transform="translate(203 434)">
+          <path class="calyx" d="M0 0 L-12 -15 L-5 -13 L0 -24 L5 -13 L12 -15 Z"/>
+          <g transform="translate(0 -35)">
+            <ellipse fill="#f7c7df" cy="-20" rx="12" ry="25"/><ellipse fill="#ffe1ee" cy="20" rx="12" ry="25"/>
+            <ellipse fill="#edb4d2" cx="20" rx="12" ry="25" transform="rotate(90 20 0)"/><ellipse fill="#f4bed9" cx="-20" rx="12" ry="25" transform="rotate(90 -20 0)"/>
+            <circle r="10" fill="#efcd68"/>
+          </g>
+        </g>
+      </g>
+
+      <g class="flower" style="animation-delay:2.02s">
+        <g transform="translate(561 436)">
+          <path class="calyx" d="M0 0 L-12 -15 L-5 -13 L0 -24 L5 -13 L12 -15 Z"/>
+          <g transform="translate(0 -35)">
+            <ellipse fill="#fff0a7" cy="-20" rx="12" ry="25"/><ellipse fill="#fff6c3" cy="20" rx="12" ry="25"/>
+            <ellipse fill="#ffe68e" cx="20" rx="12" ry="25" transform="rotate(90 20 0)"/><ellipse fill="#ffefae" cx="-20" rx="12" ry="25" transform="rotate(90 -20 0)"/>
+            <circle r="10" fill="#e7bc49"/>
+          </g>
+        </g>
+      </g>
+
+      <!-- wrapper comes in front of the converged stems -->
+      <path class="paper" d="M270 600 L380 565 L490 600 L438 750 L380 792 L322 750 Z"/>
+      <path class="paper-side" d="M270 600 L380 565 L322 750 Z"/>
+      <path class="paper-side" d="M490 600 L380 565 L438 750 Z" opacity=".65"/>
+
+      <!-- shared knot -->
+      <g transform="translate(380 632)">
+        <ellipse class="ribbon" cx="-31" cy="0" rx="32" ry="18" transform="rotate(-13 -31 0)"/>
+        <ellipse class="ribbon" cx="31" cy="0" rx="32" ry="18" transform="rotate(13 31 0)"/>
+        <rect class="ribbon" x="-18" y="-13" width="36" height="26" rx="8"/>
+        <path d="M-8 12 C-18 43 -21 66 -14 90" stroke="#a65a74" stroke-width="13" stroke-linecap="round" fill="none"/>
+        <path d="M8 12 C18 43 21 66 14 90" stroke="#a65a74" stroke-width="13" stroke-linecap="round" fill="none"/>
+      </g>
+    </svg>
+    <div class="msg">Happy anniversary, my love.</div>
+    <button id="replay">Replay</button>
+  </div>
+</div>
+<script>
+  document.getElementById('replay').onclick=()=>{
+    document.querySelectorAll('.stem,.leaf,.flower').forEach(el=>{
+      el.style.animation='none'; void el.getBoundingClientRect(); el.style.animation='';
+    });
+  };
+</script>
+</body>
+</html>
