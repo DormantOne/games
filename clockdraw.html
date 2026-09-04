@@ -1,0 +1,408 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>New Clock Draw — AI-assisted Mental Status (AIMS)</title>
+<style>
+:root{
+  --ink:#172033; --muted:#6d7480; --paper:#fbfaf7; --white:#fff; --line:#e6e1d8;
+  --navy:#16284a; --blue:#325fbe; --blue-soft:#eef3ff; --green:#177d62;
+  --amber:#ad6f1f; --red:#aa4141; --shadow:0 24px 70px rgba(22,40,74,.12); --r:26px;
+}
+*{box-sizing:border-box} html{scroll-behavior:smooth}
+body{margin:0;min-height:100vh;color:var(--ink);background:radial-gradient(circle at 8% 0%,rgba(50,95,190,.08),transparent 28rem),linear-gradient(180deg,#f7f6f2 0%,#fcfbf8 55%,#f3f5f8 100%);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,textarea,select{font:inherit}button{cursor:pointer}.wrap{max-width:1180px;margin:0 auto;padding:28px 22px 58px}
+.hero{background:rgba(255,255,255,.9);border:1px solid rgba(23,32,51,.08);border-radius:34px;box-shadow:var(--shadow);overflow:hidden}
+.compactHero{display:none;align-items:center;justify-content:space-between;gap:14px;padding:13px 18px;background:linear-gradient(90deg,#fff,#f6f8fd);border-bottom:0}
+.compactHeroTitle{display:flex;align-items:baseline;gap:9px;min-width:0}.compactHeroTitle b{font-family:Georgia,"Times New Roman",serif;font-size:1.22rem;font-weight:600;color:#16213b;white-space:nowrap}.compactHeroTitle span{font-size:.74rem;color:var(--muted);font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.showIntroBtn{border:1px solid #d9e0ef;background:#fff;color:var(--blue);border-radius:999px;padding:8px 11px;font-weight:900;white-space:nowrap}
+.hero.collapsed .heroTop,.hero.collapsed .heroFooter{display:none}.hero.collapsed .compactHero{display:flex}.hero.collapsed{border-radius:18px;box-shadow:0 12px 30px rgba(22,40,74,.08);position:sticky;top:8px;z-index:20}
+.heroTop{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(420px,.95fr);gap:26px;padding:38px 40px 34px;align-items:center}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;padding:7px 11px;border:1px solid #dbe3f7;border-radius:999px;color:var(--blue);background:#f7f9ff;font-size:.76rem;font-weight:900;text-transform:uppercase;letter-spacing:.12em}.eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--blue)}
+h1{margin:18px 0 12px;font-family:Georgia,"Times New Roman",serif;font-weight:500;font-size:clamp(3rem,7vw,6.4rem);line-height:.86;letter-spacing:-.055em;color:#13213c}.acronym{font-family:Inter,ui-sans-serif,system-ui,sans-serif;font-size:.22em;letter-spacing:.02em;font-weight:800;color:var(--blue);vertical-align:middle;margin-left:8px}
+.lede{font-size:1.12rem;line-height:1.62;color:#465165;max-width:620px;margin:0}.testCard{margin-top:24px;border-left:4px solid var(--blue);padding:14px 18px;background:linear-gradient(90deg,var(--blue-soft),rgba(238,243,255,.25));border-radius:0 16px 16px 0}.testCard b{display:block;margin-bottom:4px;color:var(--navy)}.testCard span{color:#465165;line-height:1.5}
+.carouselShell{position:relative;min-height:430px;display:flex;align-items:center;justify-content:center}.carouselCard{width:min(100%,460px);background:#fff;border:1px solid var(--line);border-radius:28px;padding:18px;box-shadow:0 20px 45px rgba(26,39,67,.10)}
+.clockStage{display:grid;place-items:center;min-height:290px;border-radius:20px;background:linear-gradient(rgba(255,255,255,.75),rgba(255,255,255,.75)),repeating-linear-gradient(0deg,#e9e5dc 0 1px,transparent 1px 28px),repeating-linear-gradient(90deg,#e9e5dc 0 1px,transparent 1px 28px);border:1px solid #eee9df}.clockStage svg{width:275px;height:275px;filter:drop-shadow(0 8px 8px rgba(10,20,40,.06))}
+.sampleMeta{padding:16px 6px 5px}.sampleLine{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.sampleBadge{font-size:.73rem;font-weight:950;text-transform:uppercase;letter-spacing:.11em;border-radius:999px;padding:6px 9px}.sampleBadge.good{background:#eaf6f1;color:var(--green)}.sampleBadge.okay{background:#fff4df;color:var(--amber)}.sampleBadge.poor{background:#fdeaea;color:var(--red)}.sampleTitle{font-weight:900;font-size:1.05rem}.sampleDesc{margin:8px 0 0;color:var(--muted);font-size:.9rem;line-height:1.5}.mmse{margin-top:9px;padding-top:9px;border-top:1px solid #eee8df;font-size:.8rem;color:#727986;line-height:1.45}.carouselControls{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px}.dotBtn{width:9px;height:9px;border-radius:50%;border:0;background:#cfd5e2;padding:0}.dotBtn.active{width:26px;border-radius:999px;background:var(--blue)}.arrowBtn{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;border-radius:50%;border:1px solid #dfe3ea;background:#fff;color:var(--navy);font-size:1.25rem;box-shadow:0 8px 18px rgba(20,35,60,.08)}.arrowBtn:hover{background:var(--blue-soft)}#prevClock{left:-10px}#nextClock{right:-10px}
+.heroFooter{border-top:1px solid #ece8e1;display:grid;grid-template-columns:repeat(3,1fr);background:#f9f9f7}.heroFooter>div{padding:16px 22px;border-right:1px solid #ece8e1}.heroFooter>div:last-child{border-right:0}.heroFooter b{display:block;color:var(--navy);font-size:.82rem;margin-bottom:3px}.heroFooter span{color:var(--muted);font-size:.78rem;line-height:1.35}
+.workspace{margin-top:24px;display:grid;grid-template-columns:190px minmax(0,1fr);background:#fff;border:1px solid rgba(23,32,51,.08);border-radius:28px;box-shadow:0 22px 60px rgba(22,40,74,.09);overflow:hidden;min-height:500px}.tabs{background:#15213c;padding:22px 14px;color:#fff}.tabsHeader{font-size:.7rem;text-transform:uppercase;letter-spacing:.15em;color:#aeb9d2;font-weight:900;padding:0 11px 13px}.tabBtn{width:100%;border:0;background:transparent;color:#c9d2e4;text-align:left;border-radius:12px;padding:13px 12px;margin:3px 0;font-weight:850;display:flex;align-items:center;gap:10px}.tabBtn .num{width:25px;height:25px;display:grid;place-items:center;border-radius:50%;background:rgba(255,255,255,.08);font-size:.72rem}.tabBtn.active{background:#fff;color:#16284a}.tabBtn.active .num{background:var(--blue);color:#fff}.tabBtn:not(.active):hover{background:rgba(255,255,255,.07)}.tabBtn.extra{margin-top:14px;border-top:1px solid rgba(255,255,255,.12);padding-top:17px;color:#f2d59b}.tabBtn.extra.active{color:#7a4a00;background:#fff7e5}.tabBtn.extra .num{background:rgba(242,213,155,.16)}.tabNote{font-size:.72rem;line-height:1.45;color:#9eabc6;padding:15px 11px 0}
+.panel{padding:28px 32px 30px;min-width:0}.panelHead{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:18px}.kicker{font-size:.74rem;color:var(--blue);text-transform:uppercase;letter-spacing:.13em;font-weight:950;margin-bottom:7px}h2{margin:0;font-family:Georgia,"Times New Roman",serif;font-size:clamp(2rem,4vw,3.3rem);font-weight:500;letter-spacing:-.035em;color:#16213b}.panelIntro{margin:8px 0 0;color:var(--muted);line-height:1.55;max-width:700px}.headButtons{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.talk,.tutorialBtn{border:1px solid #dce3f3;background:#f8faff;color:var(--navy);border-radius:999px;padding:10px 14px;font-weight:900;white-space:nowrap}.talk:hover,.tutorialBtn:hover{background:var(--blue-soft)}
+.promptBox{border:1px solid #dfe2e8;border-radius:20px;background:#fbfbfa;padding:13px}.promptTools{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:2px 2px 10px}.promptLabel{font-weight:900;color:#27334c;font-size:.87rem}.suggestBtn{border:0;background:transparent;color:var(--blue);font-weight:900;padding:7px 8px;border-radius:9px}.suggestBtn:hover{background:var(--blue-soft)}
+textarea{width:100%;resize:vertical;border:1px solid #d8dce4;border-radius:15px;background:#fff;color:#1c273b;padding:14px 15px;line-height:1.5;outline:none;box-shadow:inset 0 1px 2px rgba(0,0,0,.02)}textarea:focus,select:focus{border-color:#7fa0e7;box-shadow:0 0 0 4px rgba(50,95,190,.09);outline:none}#prompt{height:132px;min-height:108px;max-height:220px;overflow:auto}.charCount{text-align:right;color:#9096a2;font-size:.75rem;margin-top:6px}
+.actionRow{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.btn{border:0;border-radius:13px;padding:11px 15px;font-weight:950;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px}.btn.primary{background:var(--blue);color:#fff;box-shadow:0 10px 20px rgba(50,95,190,.18)}.btn.primary:hover{background:#244b9d}.btn.secondary{background:#edf0f5;color:#26324a}.btn.secondary:hover{background:#e0e5ec}.btn.ghost{background:#fff;color:var(--blue);border:1px solid #ccd8f1}.btn.ghost:hover{background:var(--blue-soft)}.hidden{display:none!important}.saveStatus{margin-top:9px;font-size:.76rem;color:var(--muted);line-height:1.4}.saveStatus b{color:var(--green)}
+.aiLaunch{margin-top:16px;border-top:1px solid #eceef2;padding-top:15px}.aiLaunchTop{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:9px}.aiLaunchTop b{font-size:.86rem;color:#29354d}.aiLaunchTop span{font-size:.76rem;color:var(--muted)}.modelGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.modelBtn{border:1px solid #dfe3ea;background:#fff;border-radius:12px;padding:10px 9px;font-weight:900;color:#25324b;min-height:44px}.modelBtn:hover{border-color:#aebfe7;background:#f8faff}.modelBtn small{display:block;font-size:.64rem;color:#8a92a1;font-weight:700;margin-top:2px}
+.secondOpinion{margin-top:12px;display:grid;grid-template-columns:minmax(0,1fr) 200px auto;gap:8px;align-items:center;background:#f8f9fb;border:1px solid #e3e6ec;border-radius:14px;padding:10px 11px}.secondOpinion span{font-size:.78rem;line-height:1.4;color:#606977}.secondOpinion select{width:100%;border:1px solid #d5dbe6;border-radius:10px;background:#fff;padding:9px;color:#26324a}.secondOpinion .btn{white-space:nowrap}
+.flow{margin-top:18px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.flowStep{border:1px solid #e3e5e9;border-radius:16px;padding:12px;background:#fff}.flowStep .n{width:25px;height:25px;border-radius:50%;display:grid;place-items:center;background:#edf2fd;color:var(--blue);font-size:.72rem;font-weight:950;margin-bottom:8px}.flowStep b{display:block;font-size:.84rem;color:#28334b;margin-bottom:4px}.flowStep span{font-size:.75rem;color:var(--muted);line-height:1.4}.disclaimer{margin-top:16px;font-size:.76rem;line-height:1.5;color:#7e8490;background:#f8f8f6;border-radius:12px;padding:11px 13px}
+.lab{margin-top:24px;background:#fff;border:1px solid rgba(23,32,51,.08);border-radius:28px;box-shadow:0 22px 60px rgba(22,40,74,.09);overflow:hidden}.labHead{padding:24px 28px 18px;border-bottom:1px solid #eceef2;display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap}.labHead h3{font-family:Georgia,"Times New Roman",serif;font-size:2rem;font-weight:500;letter-spacing:-.025em;margin:0;color:#17213a}.labHead p{margin:6px 0 0;color:var(--muted);font-size:.87rem}.referenceTime{font-variant-numeric:tabular-nums;background:#f6f8fc;border:1px solid #e0e5ef;border-radius:999px;padding:8px 12px;font-size:.82rem;color:#4a5770}.labGrid{display:grid;grid-template-columns:1fr 1fr;gap:0;min-height:430px}.codePane,.previewPane{padding:20px 22px;min-width:0}.codePane{border-right:1px solid #eceef2}.paneLabel{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:9px;font-weight:900;color:#2a354c;font-size:.83rem}.paneLabel span{font-size:.72rem;color:var(--muted);font-weight:700}#codeInput{height:310px;min-height:230px;max-height:520px;overflow:auto;font:650 .82rem/1.48 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;background:#111827;color:#eef2ff;border-color:#111827}.codeActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.previewFrame{width:100%;height:360px;border:1px solid #dfe3ea;border-radius:16px;background:white}.previewNote{margin-top:9px;color:var(--muted);font-size:.75rem;line-height:1.45}
+.tutorialOverlay{position:fixed;inset:0;background:rgba(17,25,42,.48);display:grid;place-items:center;padding:20px;z-index:3000}.tutorialCard{width:min(680px,100%);background:#fff;border-radius:24px;box-shadow:0 30px 80px rgba(0,0,0,.28);padding:24px}.tutorialTop{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.tutorialTop h3{margin:0;font-family:Georgia,"Times New Roman",serif;font-size:2rem;font-weight:500}.closeX{border:0;background:#f0f2f6;border-radius:50%;width:38px;height:38px;font-size:1.15rem}.tutorialProgress{display:flex;gap:6px;margin:18px 0 14px}.tutorialProgress i{height:5px;flex:1;border-radius:999px;background:#e3e6ec}.tutorialProgress i.on{background:var(--blue)}.tutorialStepNum{font-size:.72rem;color:var(--blue);font-weight:950;text-transform:uppercase;letter-spacing:.12em}.tutorialText{font-size:1rem;line-height:1.6;color:#3d485c;min-height:112px}.tutorialActions{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:18px}.tutorialActions .group{display:flex;gap:8px;flex-wrap:wrap}.hidden{display:none!important}.toast{position:fixed;right:20px;bottom:20px;background:#172033;color:#fff;padding:12px 16px;border-radius:12px;box-shadow:0 14px 30px rgba(0,0,0,.25);font-weight:850;font-size:.86rem;z-index:4000}
+
+.threeSteps{display:grid;gap:12px}.taskStep{border:1px solid #e1e5ec;border-radius:18px;background:#fff;overflow:hidden}.taskStepHead{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid #edf0f4;background:#fafbfc}.stepNum{width:30px;height:30px;display:grid;place-items:center;border-radius:50%;background:var(--blue);color:#fff;font-weight:950;font-size:.82rem;flex:0 0 auto}.taskStepHead b{font-size:.95rem;color:#243149}.taskStepHead span{margin-left:auto;color:var(--muted);font-size:.72rem}.taskStepBody{padding:12px 14px}.taskStep .promptBox{border:0;background:transparent;padding:0}.taskStep #prompt{height:108px;min-height:96px;max-height:150px}.stepActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}.step2Top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.primaryModels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;flex:1;min-width:420px}.moreAIsBtn{border:1px solid #d6ddeb;background:#fff;color:#31405e;border-radius:12px;padding:10px 12px;font-weight:900;min-height:44px}.moreAIsBtn:hover{background:#f5f7fb}.moreAIsPanel{margin-top:8px;padding:10px;border:1px solid #e3e7ee;border-radius:14px;background:#fafbfc}.moreModelGrid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}.compactSecond{margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.compactSecond label{font-size:.75rem;color:var(--muted);font-weight:850}.compactSecond select{min-width:150px;border:1px solid #d5dbe6;border-radius:10px;background:#fff;padding:9px;color:#26324a}.taskStep .labGrid{min-height:0;border:1px solid #e4e8ef;border-radius:16px;overflow:hidden}.taskStep .codePane,.taskStep .previewPane{padding:12px}.taskStep #codeInput{height:215px;min-height:180px;max-height:340px}.taskStep .previewFrame{height:265px;border-radius:12px}.taskStep .referenceTime{margin-left:auto}.workBar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}.workBar .saveStatus{margin:0;flex:1}.tinyMeta{font-size:.72rem;color:var(--muted);line-height:1.35}.disclaimer.compact{margin-top:12px;padding:8px 10px;font-size:.69rem}.panelIntro{max-width:780px}.panelHead{margin-bottom:12px}.panelHead h2{font-size:clamp(1.7rem,3vw,2.5rem)}
+@media(max-width:980px){.heroTop{grid-template-columns:1fr;padding:30px 26px}.carouselShell{min-height:395px}.arrowBtn{display:none}.workspace{grid-template-columns:1fr}.tabs{display:flex;overflow:auto;padding:10px;gap:6px}.tabsHeader,.tabNote{display:none}.tabBtn{width:auto;min-width:max-content;margin:0}.tabBtn .num{display:none}.panel{padding:25px 22px}.heroFooter{grid-template-columns:1fr}.heroFooter>div{border-right:0;border-bottom:1px solid #ece8e1}.heroFooter>div:last-child{border-bottom:0}.modelGrid{grid-template-columns:repeat(2,1fr)}.secondOpinion{grid-template-columns:1fr 1fr}.secondOpinion span{grid-column:1/-1}.labGrid{grid-template-columns:1fr}.codePane{border-right:0;border-bottom:1px solid #eceef2}}
+@media(max-width:640px){.wrap{padding:14px 12px 40px}.hero{border-radius:24px}.heroTop{padding:24px 18px}.clockStage svg{width:235px;height:235px}.carouselCard{padding:13px}.panelHead{display:block}.headButtons{justify-content:flex-start;margin-top:13px}.flow{grid-template-columns:1fr}.actionRow .btn{width:100%}.modelGrid{grid-template-columns:1fr 1fr}.secondOpinion{grid-template-columns:1fr}.secondOpinion span{grid-column:auto}.labHead{padding:20px}.codePane,.previewPane{padding:16px}.previewFrame{height:320px}h1{font-size:clamp(2.9rem,16vw,5.2rem)}}
+
+@media(max-width:980px){.primaryModels{min-width:0;grid-template-columns:repeat(3,1fr)}.moreModelGrid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:640px){.step2Top{align-items:stretch}.primaryModels{grid-template-columns:1fr 1fr 1fr;width:100%;order:1}.step2Top>#copyBtn{width:100%;order:0}.step2Top>.moreAIsBtn{width:100%;order:2}.moreModelGrid{grid-template-columns:1fr 1fr}.compactSecond{align-items:stretch}.compactSecond label{width:100%}.compactSecond select,.compactSecond .btn{flex:1}.taskStepHead span{display:none}.taskStep .referenceTime{font-size:.72rem;padding:6px 8px}.workBar .saveStatus{width:100%;flex-basis:100%}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section class="hero" id="hero">
+    <div class="compactHero" id="compactHero">
+      <div class="compactHeroTitle"><b>New Clock Draw · AIMS</b><span>AI-assisted Mental Status</span></div>
+      <button class="showIntroBtn" id="showIntroBtn" type="button">Show intro</button>
+    </div>
+    <div class="heroTop">
+      <div>
+        <div class="eyebrow"><span class="dot"></span> Prototype for professional education</div>
+        <h1>New Clock Draw <span class="acronym">AIMS</span></h1>
+        <p class="lede">A quick way to assess mental status had been for a medical student to ask a patient to draw a clock. We provided the pen and paper. <strong>Expectations change.</strong> The New Clock Draw challenge helps assess <strong>augmented mental status</strong> — computer and AI access are provided.</p>
+        <div class="testCard"><b>The classic exercise</b><span>“Draw the face of a clock. Put in all the numbers. Set the hands to ten past eleven.”</span></div>
+      </div>
+      <div class="carouselShell" aria-label="Synthetic clock draw examples">
+        <button class="arrowBtn" id="prevClock" aria-label="Previous clock">‹</button>
+        <div class="carouselCard">
+          <div class="clockStage" id="clockStage"></div>
+          <div class="sampleMeta">
+            <div class="sampleLine"><span class="sampleBadge good" id="sampleBadge">Good</span><span class="sampleTitle" id="sampleTitle">Organized clock draw</span></div>
+            <p class="sampleDesc" id="sampleDesc"></p>
+            <div class="mmse" id="sampleMMSE"></div>
+          </div>
+          <div class="carouselControls" id="carouselDots"></div>
+        </div>
+        <button class="arrowBtn" id="nextClock" aria-label="Next clock">›</button>
+      </div>
+    </div>
+    <div class="heroFooter">
+      <div><b>Then</b><span>Pen and paper provided.</span></div>
+      <div><b>Now</b><span>Computer and AI access provided.</span></div>
+      <div><b>The challenge</b><span>What can the person accomplish, verify, understand, and direct with augmentation?</span></div>
+    </div>
+  </section>
+
+  <section class="workspace" id="workspace">
+    <nav class="tabs" aria-label="AIMS challenge levels">
+      <div class="tabsHeader">Challenge</div>
+      <button class="tabBtn active" data-level="working" title="Verification: can you define, build, and test what a working clock means?"><span class="num">1</span>Working clock</button>
+      <button class="tabBtn" data-level="advanced" title="Systems specification: can you extend a working artifact without losing correctness?"><span class="num">2</span>Advanced clock</button>
+      <button class="tabBtn" data-level="mechanical" title="Mechanistic reasoning: can you expose and explain how the parts produce the result?"><span class="num">3</span>Mechanical clock</button>
+      <button class="tabBtn" data-level="reflect" title="Epistemic integration: can you examine the whole trail of prompts, artifacts, tests, and uncertainties?"><span class="num">4</span>Reflect</button>
+      <button class="tabBtn extra" data-level="agent" title="Extra credit — autonomous execution: can you patiently build a real persistent agent with provenance across an iterative setup?"><span class="num">★</span>Extra credit · Agent</button>
+      <div class="tabNote">Each stage builds on the last. Save your work as you go; Reflect can package the whole trail.</div>
+    </nav>
+
+    <main class="panel">
+      <div class="panelHead">
+        <div>
+          <div class="kicker" id="levelKicker"></div>
+          <h2 id="levelTitle"></h2>
+          <p class="panelIntro" id="levelIntro"></p>
+        </div>
+        <div class="headButtons">
+          <button class="tutorialBtn" id="tutorialBtn" type="button">▸ Tutorial</button>
+          <button class="talk" id="talkBtn" type="button">🔊 Talk</button>
+        </div>
+      </div>
+
+      <div class="threeSteps" aria-label="Three-step AI clock challenge">
+        <section class="taskStep" aria-labelledby="step1title">
+          <div class="taskStepHead"><div class="stepNum">1</div><b id="step1title">Make the prompt</b><span>write yours or use a suggestion</span></div>
+          <div class="taskStepBody">
+            <div class="promptBox">
+              <div class="promptTools"><div class="promptLabel">Prompt</div><button class="suggestBtn" id="suggestBtn" type="button">＋ Suggested</button></div>
+              <textarea id="prompt" spellcheck="true" placeholder="Tell the AI what to build…"></textarea>
+              <div class="charCount" id="charCount">0 characters</div>
+              <div class="tinyMeta">Suggested prompts are standalone and can start a fresh AI chat.</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="taskStep" aria-labelledby="step2title">
+          <div class="taskStepHead"><div class="stepNum">2</div><b id="step2title">Copy & open an AI</b><span>then paste the prompt</span></div>
+          <div class="taskStepBody">
+            <div class="step2Top">
+              <button class="btn secondary" id="copyBtn" type="button">⧉ Copy prompt</button>
+              <div class="primaryModels" id="modelGrid"></div>
+              <button class="moreAIsBtn" id="moreAIsBtn" type="button" aria-expanded="false">More AIs ▾</button>
+            </div>
+            <div class="moreAIsPanel hidden" id="moreAIsPanel">
+              <div class="moreModelGrid" id="moreModelGrid"></div>
+            </div>
+            <div class="compactSecond">
+              <label for="secondModel">Second opinion</label>
+              <select id="secondModel" aria-label="Choose AI for second opinion"></select>
+              <button class="btn ghost" id="secondOpinionBtn" type="button">Audit this work</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="taskStep" aria-labelledby="step3title" id="lab">
+          <div class="taskStepHead"><div class="stepNum">3</div><b id="step3title">Paste the HTML back & run it</b><div class="referenceTime" id="referenceTime">--:--:--</div></div>
+          <div class="taskStepBody">
+            <div class="labGrid">
+              <div class="codePane">
+                <div class="paneLabel">Paste HTML here <span>blank to start</span></div>
+                <textarea id="codeInput" spellcheck="false" placeholder="Paste the AI's complete HTML here…"></textarea>
+                <div class="codeActions">
+                  <button class="btn primary" id="runBtn" type="button">▶ Run HTML</button>
+                  <button class="btn ghost" id="clearCodeBtn" type="button">Clear</button>
+                </div>
+              </div>
+              <div class="previewPane">
+                <div class="paneLabel">What actually runs <span>blank until Run</span></div>
+                <iframe class="previewFrame" id="previewFrame" title="HTML clock preview" sandbox="allow-scripts allow-forms"></iframe>
+              </div>
+            </div>
+            <div class="workBar">
+              <button class="btn secondary" id="saveStageBtn" type="button">✓ Save stage</button>
+              <button class="btn primary hidden" id="copyReflectBtn" type="button">⧉ Save all + copy Reflect</button>
+              <button class="btn ghost" id="clearBtn" type="button">Clear prompt</button>
+              <div class="saveStatus" id="saveStatus">Nothing saved yet.</div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="disclaimer compact"><strong>Prototype:</strong> synthetic examples; not a validated diagnostic instrument. MMSE ranges are rough teaching analogies. “AIMS” here means <em>AI-assisted Mental Status</em>.</div>
+    </main>
+  </section>
+</div>
+
+<div class="tutorialOverlay hidden" id="tutorialOverlay" role="dialog" aria-modal="true" aria-labelledby="tutorialTitle">
+  <div class="tutorialCard">
+    <div class="tutorialTop"><div><div class="tutorialStepNum" id="tutorialStepNum"></div><h3 id="tutorialTitle">How to use the New Clock Draw</h3></div><button class="closeX" id="tutorialClose" type="button" aria-label="Close tutorial">×</button></div>
+    <div class="tutorialProgress" id="tutorialProgress"></div>
+    <div class="tutorialText" id="tutorialText"></div>
+    <div class="tutorialActions">
+      <div class="group"><button class="btn ghost" id="tutorialSpeak" type="button">🔊 Read this step</button></div>
+      <div class="group"><button class="btn secondary" id="tutorialBack" type="button">← Back</button><button class="btn primary" id="tutorialNext" type="button">Next →</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const AI_MODELS = [
+    {id:"copilot", name:"Copilot", note:"Microsoft", url:"https://www.microsoft365.com/copilot"},
+    {id:"chatgpt", name:"ChatGPT", note:"OpenAI", url:"https://chatgpt.com/"},
+    {id:"claude", name:"Claude", note:"Anthropic", url:"https://claude.ai/"},
+    {id:"gemini", name:"Gemini", note:"Google", url:"https://gemini.google.com/"},
+    {id:"perplexity", name:"Perplexity", note:"Perplexity", url:"https://www.perplexity.ai/"},
+    {id:"deepseek", name:"DeepSeek", note:"DeepSeek", url:"https://chat.deepseek.com/"},
+    {id:"kimi", name:"Kimi", note:"Moonshot AI", url:"https://www.kimi.com/"},
+    {id:"glm", name:"GLM / Z.ai", note:"Z.ai", url:"https://chat.z.ai/"}
+  ];
+
+  const samples = [
+    {status:"Good",cls:"good",title:"Organized clock draw",desc:"Complete contour, ordered numbers, appropriate spacing, and hands representing the requested time.",mmse:"Very rough teaching analogue: about 27–30/30. This is not a validated conversion; a well-organized clock is simply more consistent with relatively preserved global cognition.",svg:`<svg viewBox="0 0 300 300" role="img" aria-label="Synthetic good clock draw"><path d="M150 22 C222 22 278 78 278 150 C278 223 220 278 149 278 C78 278 22 221 22 150 C22 78 79 23 150 22" fill="none" stroke="#263149" stroke-width="5" stroke-linecap="round"/><g font-family="Georgia,serif" font-size="22" fill="#263149" text-anchor="middle" dominant-baseline="middle"><text x="150" y="46">12</text><text x="201" y="58">1</text><text x="239" y="94">2</text><text x="254" y="150">3</text><text x="239" y="204">4</text><text x="202" y="241">5</text><text x="150" y="255">6</text><text x="98" y="241">7</text><text x="61" y="204">8</text><text x="46" y="150">9</text><text x="61" y="95">10</text><text x="98" y="58">11</text></g><circle cx="150" cy="150" r="5" fill="#263149"/><path d="M150 150 L107 95" stroke="#263149" stroke-width="8" stroke-linecap="round"/><path d="M150 150 L199 128" stroke="#263149" stroke-width="5" stroke-linecap="round"/></svg>`},
+    {status:"Okay",cls:"okay",title:"Recognizable, but inefficient",desc:"The clock is recognizable, yet spacing is uneven, some numbers drift, and the two hands are less clearly differentiated.",mmse:"Very rough teaching analogue: about 22–26/30. There is substantial overlap: an imperfect clock can occur with higher MMSE scores and vice versa.",svg:`<svg viewBox="0 0 300 300" role="img" aria-label="Synthetic borderline clock draw"><path d="M151 27 C216 19 273 80 271 151 C269 218 216 274 143 270 C74 267 27 220 30 145 C33 77 84 33 151 27" fill="none" stroke="#263149" stroke-width="5" stroke-linecap="round"/><g font-family="Georgia,serif" font-size="22" fill="#263149" text-anchor="middle" dominant-baseline="middle"><text x="151" y="48">12</text><text x="204" y="62">1</text><text x="235" y="100">2</text><text x="249" y="152">3</text><text x="230" y="211">4</text><text x="195" y="237">5</text><text x="142" y="248">6</text><text x="92" y="234">7</text><text x="59" y="195">8</text><text x="51" y="147">9</text><text x="67" y="107">10</text><text x="103" y="73">11</text></g><circle cx="151" cy="151" r="5" fill="#263149"/><path d="M151 151 L111 103" stroke="#263149" stroke-width="6" stroke-linecap="round"/><path d="M151 151 L194 124" stroke="#263149" stroke-width="6" stroke-linecap="round"/></svg>`},
+    {status:"Poor",cls:"poor",title:"Disorganized clock draw",desc:"Synthetic example with number crowding, omissions, repeated labels, and hands that do not clearly represent the requested time.",mmse:"Very rough teaching analogue: about 0–21/30, with the strongest concern toward the lower end. This is intentionally broad and nonvalidated; a markedly abnormal clock should trigger proper assessment rather than be converted into a diagnosis.",svg:`<svg viewBox="0 0 300 300" role="img" aria-label="Synthetic poor clock draw"><path d="M159 27 C226 34 267 82 263 154 C259 220 204 264 137 270 C70 276 33 217 37 142 C40 83 88 22 159 27" fill="none" stroke="#263149" stroke-width="5" stroke-linecap="round"/><g font-family="Georgia,serif" font-size="23" fill="#263149" text-anchor="middle" dominant-baseline="middle"><text x="116" y="59">12</text><text x="143" y="68">1</text><text x="168" y="77">2</text><text x="191" y="91">3</text><text x="206" y="111">4</text><text x="216" y="132">5</text><text x="218" y="154">6</text><text x="219" y="178">7</text><text x="218" y="201">8</text><text x="211" y="221">9</text><text x="197" y="239">10</text><text x="171" y="247">10</text></g><circle cx="146" cy="154" r="5" fill="#263149"/><path d="M146 154 L182 116" stroke="#263149" stroke-width="8" stroke-linecap="round"/><path d="M146 154 L176 119" stroke="#263149" stroke-width="5" stroke-linecap="round"/></svg>`}
+  ];
+
+  const levels = {
+    working:{kicker:"Level 1 · Working clock",title:"Build a clock that really keeps time.",intro:"Start with function, not decoration. The first artifact should run, update, and be testable against a real reference time.",suggested:`STANDALONE TASK — assume you have no prior conversation, files, or code from me.
+
+Build a working analog clock in a single self-contained HTML file. The artifact itself must include everything it needs to run locally in a normal browser.
+
+REQUIREMENTS
+- Use the computer/browser's current local time.
+- Show hour, minute, and second hands.
+- Move the hour and minute hands continuously rather than only jumping at whole units.
+- Include a small digital time readout.
+- Make the clock visually clear and easy to inspect.
+- Include a short on-page verification note explaining how I can compare it with the computer clock or a wall clock.
+- No external libraries or build tools.
+
+Before returning the answer, check the time-angle logic and make sure the file is runnable by itself. Return the COMPLETE HTML file, not fragments or pseudocode.`,talk:"Begin with a genuinely working clock. The question is no longer whether an AI can draw a circle with hands. You have to specify behavior, obtain runnable code, run it below, and compare it with a real reference time."},
+    advanced:{kicker:"Level 2 · Advanced working clock",title:"Extend the clock without losing correctness.",intro:"Now add time-related systems—alarm, timezone, sea-level/elevation effects, and explicit sanity checks—while keeping the core clock working.",suggested:`STANDALONE TASK — assume this is a completely fresh AI chat. You do NOT have access to an earlier clock, prior code, or previous instructions. Build the entire artifact from scratch in ONE self-contained HTML file.
+
+GOAL
+Create an advanced working clock that first gets the ordinary clock correct and then layers additional time-related systems on top without breaking the core behavior.
+
+CORE CLOCK — REQUIRED EVEN IF NOTHING PREVIOUS EXISTS
+- Live analog clock driven by the computer/browser's current local time.
+- Hour, minute, and second hands with correct continuous angle calculations.
+- Small digital local-time readout.
+- Clear visual design that makes the hands and labels easy to inspect.
+
+ADVANCED FEATURES
+1. ALARM
+- User-selectable alarm time.
+- Visible countdown.
+- Browser-generated sound when it fires.
+- Stop and snooze controls.
+- Make clear any browser restrictions that require a user interaction before audio can play.
+
+2. TIME ZONES
+- Show local time plus at least four named zones.
+- Use browser-supported IANA timezone handling where possible.
+- Clearly explain that these are different local displays of the same underlying instant.
+- Show the detected local IANA timezone when available.
+
+3. SEA LEVEL / ELEVATION
+- Let the user enter elevation h in meters.
+- Compare approximate gravitational clock-rate difference versus sea level using Δf/f ≈ g·h/c², with g = 9.80665 m/s² and c = 299792458 m/s.
+- Convert the fractional difference into an accumulated approximate difference in nanoseconds per day.
+- Include at least one worked sanity check, for example h = 0 m should produce approximately 0 ns/day.
+- Label this educational and approximate, not precision geodesy.
+
+4. OPTIONAL EARTH-ROTATION CONTEXT
+- If you include latitude-dependent rotational speed or special-relativistic effects, label them separately from the elevation term so they are not conflated.
+
+5. VERIFICATION / SELF-AUDIT
+- Put the browser's current local digital time near the analog display so the hands can be checked directly.
+- Include at least two visible sanity checks for the numerical calculations.
+- Include a short 'How to verify this' note for the user.
+
+6. IMPLEMENTATION
+- Elegant and legible.
+- No external libraries.
+- No server required.
+- All HTML, CSS, and JavaScript in one runnable file.
+
+Do not assume any prior artifact exists. Recreate the basic clock correctly inside this same file, then add the advanced capabilities. Before answering, check the clock-angle logic, alarm logic, timezone assumptions, and units in the elevation calculation. Return the COMPLETE runnable HTML file, not fragments, a workflow, or pseudocode.`,talk:"The second level tests whether you can add complexity without destroying the thing that already worked. Alarm, time zones, elevation versus sea level, and sanity checks all have different failure modes. Run the result and inspect each one rather than treating visual polish as proof."},
+    mechanical:{kicker:"Level 3 · Working mechanical clock",title:"Make the mechanism visible—and make it work.",intro:"Move from software behavior to mechanism. The simulation should expose the gear train, escapement, oscillator, ratios, and hands as one coherent system.",suggested:`STANDALONE TASK — assume you have no prior clock code or earlier conversation. Build this mechanical-clock simulation from scratch as a single self-contained HTML file.
+
+GOAL
+Create a WORKING educational mechanical clock simulation whose visible motion corresponds to an understandable causal mechanism rather than decorative gears.
+
+REQUIREMENTS
+- Visibly animate a power source, gear train, escapement, pendulum or balance oscillator, minute hand, and hour hand.
+- The mechanism must run, pause, resume, and reset.
+- Show actual or educationally simplified tooth counts / gear ratios that produce the hand-speed relationship.
+- Highlight which gear or component is currently transmitting motion.
+- Animate the escapement so the user can see why energy is released incrementally.
+- Show how the oscillator regulates release rather than simply drawing gears that spin independently.
+- Include slow-motion mode.
+- Include an inspect mode with labels/tooltips or explanatory callouts.
+- Explain the causal chain on the page: stored energy → gear train → escapement → oscillator regulation → hand motion.
+- Explicitly identify simplifications made for the browser simulation.
+- If the displayed hands are synchronized to computer time, clearly distinguish that synchronization from the simulated mechanical transmission.
+- No external libraries or server.
+
+SELF-CHECK BEFORE RETURNING
+Verify that the gear ratios and hand-speed relationship are internally consistent, that pause/resume/reset actually work, and that the explanatory text matches the animation. Return the COMPLETE runnable HTML file, not fragments or pseudocode.`,talk:"This is the mechanistic level. A collection of rotating circles is not enough. The AI should expose a causal chain: energy, gearing, escapement, oscillator, and hand movement. Pause it, slow it down, and see whether the explanation matches what the simulation actually does."},
+    reflect:{kicker:"Level 4 · Reflect",title:"Reflect on the whole trail—not just the last answer.",intro:"Save the work from the earlier stages, then ask an AI to inspect your prompts, artifacts, verification choices, failures, fixes, and what changed in your own understanding.",suggested:`STANDALONE REFLECTION TASK — assume this is a fresh AI chat with no memory of the exercise.
+
+CONTEXT
+I have been doing an exercise called New Clock Draw / AI-assisted Mental Status. The point is not merely to generate clocks. It is to examine how a person uses AI across progressively deeper tasks: specify a working clock, extend it into an advanced clock, build or understand a mechanical clock, test the artifacts against reality, and then reflect on what cognitive work remained with the human versus what was delegated to AI.
+
+THE THREE MAIN BUILD STAGES
+1. WORKING CLOCK — a self-contained HTML analog/digital clock using real browser local time, checked against an external reference.
+2. ADVANCED WORKING CLOCK — a fresh self-contained implementation that includes the working core clock plus alarm behavior, multiple time zones, elevation-versus-sea-level clock-rate calculations, and sanity checks.
+3. WORKING MECHANICAL CLOCK — a self-contained educational simulation showing the causal chain from stored energy through gearing, escapement and oscillator regulation to the hands.
+
+EVIDENCE
+Below this instruction I may paste a saved work trail containing prompts, HTML artifacts, timestamps, test observations, second-opinion comments, or missing stages. Treat only the evidence actually provided as completed work. If no work trail follows, do NOT invent one; ask me to paste the prompts/artifacts or describe what I actually tested.
+
+YOUR JOB
+Analyze the work as evidence, not as a generic essay about AI. For every stage that is present:
+- What did I explicitly specify?
+- What did the AI add on its own?
+- What did I actually run, inspect, compare, or verify?
+- What did I merely assume because the output looked plausible?
+- What failed, changed, or required a correction?
+- What new concept did the artifact make visible or understandable?
+
+Then analyze the progression across stages:
+- How did the task move from representation to executable behavior to systems reasoning to mechanism?
+- Which cognitive skills remained human: goal formation, specification, skepticism, comparison with reality, causal reasoning, error detection, choosing when to ask for a second opinion, and deciding what counts as evidence?
+- Which skills were genuinely amplified by AI rather than merely outsourced?
+- Where could AI fluency create a false appearance of understanding?
+- Where would an independent second opinion be most valuable, and why?
+
+DEEPER TIME QUESTION
+Finally distinguish, in separate sections:
+1. representing time;
+2. measuring time;
+3. mechanically regulating a clock;
+4. calculating relativistic differences in clock rates;
+5. explaining what time itself is.
+
+Keep engineering facts, physics models, and philosophical interpretations clearly separated. Mark uncertainty. Do not diagnose cognition or assign a clinical score from this exercise.
+
+OUTPUT
+End with:
+- 5 concise observations about how AI changed the cognitive task;
+- 3 things I demonstrated by verification rather than appearance;
+- 3 places where more evidence or a second opinion would improve confidence;
+- one short paragraph answering: 'What did the human still have to do?'`,talk:"Reflection should have evidence. Save the stages you actually worked on, then copy the cumulative reflection packet. The AI will see your prompts and HTML rather than relying on your memory of what happened. Ask what you specified, what you tested, what you merely assumed, and how your understanding changed."},
+    agent:{kicker:"Extra credit · Real agent",title:"Build a real time-triggered agent—patiently, iteratively, with provenance.",intro:"This is intentionally beyond the main exercise. A real agent may require several sessions, permissions, connectors, a scheduler, credentials, or even a small server/runtime. The AI may direct you to obtain those resources one step at a time. Progress is iterative; provenance must never be lost.",suggested:`STANDALONE EXTRA-CREDIT TASK — assume this is a fresh AI chat with no memory of any previous clock exercise or agent discussion. Everything needed to understand the objective is stated here.\n\nEXTRA CREDIT: Build and, where the platform permits it, CREATE AND CONFIGURE a real persistent agent named "Clock Courier". Do not merely design a workflow, architecture diagram, or pseudocode. The objective is a deployed or directly deployable agent that can act at specified times and send email through a real authorized tool.\n\nEXPECT AN ITERATIVE BUILD\nThis may require patience and multiple turns, tool calls, approvals, tests, and user-performed setup. You may discover that we need resources that are not available yet—for example a persistent server/runtime, hosted function, scheduler, database or durable store, secrets manager, authenticated email connector/API, service account, domain configuration, or platform-specific agent/task capability. If so, tell me the smallest next resource I need, why it is needed, exactly how to set it up safely, what evidence/result I should bring back, and then continue from that evidence. Do not pretend the resource exists. Do not abandon the build merely because one prerequisite is missing.\n\nPROVENANCE CONTINUITY\nCreate one persistent BUILD_ID at the first step and preserve it through every turn, session, model handoff, approval, configuration change, deployment, and test. Maintain a BUILD PROVENANCE LEDGER after every material step with: build_id; step_id; parent_step_id; timestamp; user instruction/approval; current objective; tool/platform/resource used; redacted parameters; tool result/status; created/modified artifact IDs; prior version; new version; permissions granted; configuration change; evidence returned; unresolved issue; and next action.\n\nIf we must leave the current AI or session to configure a server, email connector, scheduler, cloud resource, or another prerequisite, produce a portable HANDOFF MANIFEST before we leave. It must contain the BUILD_ID, current spec/version, deployed state, artifact/resource IDs, permissions, schedule, timezone, last verified step, pending step, exact evidence needed next, and the provenance ledger. When I return, reconcile the new evidence with that manifest before continuing. Never silently restart or reconstruct the project from memory.\n\nAGENT REQUIREMENTS\n- Persistent, inspectable, editable, pausable schedule.\n- IANA timezone and explicit daylight-saving behavior; show next run.\n- Separate PLANNING from EXECUTION.\n- Real time source plus real authorized email connector/tool; never simulate a send.\n- Require the email tool's success response and retain returned request/message ID when available before claiming SENT. Otherwise use UNCONFIRMED.\n- Dry-run/test mode plus a user-invoked real test.\n- Idempotency protection against duplicate sends after retries/restarts.\n- Bounded retries, visible retry count/backoff, durable failure state, and actionable error handling.\n- Least-privilege permissions and no exposed credentials/secrets.\n\nRUN AUDIT\nFor every attempted run record: run_id; schedule_id; scheduled_at; observed_time; timezone; plan/decision; execution_started_at; recipient; subject; idempotency key; tool called; tool result/status; returned request/message ID; retry count; error; and final state SENT, FAILED, SKIPPED, or UNCONFIRMED.\n\nPROOF OF COMPLETION\nShow what was actually created: agent identity/version, enabled state, schedule, timezone, next run, runtime/server if used, scheduler, durable store if used, connected email tool, permissions, provenance manifest, latest ledger step, and latest run audit. Perform a dry run. With required approval, perform one real test send and show the email tool's success evidence.\n\nIf your current environment cannot directly create the persistent agent, continue as a guided iterative build: help me provision the missing resources and produce directly deployable artifacts/configuration. Be explicit at every step about what exists, what does not yet exist, and what evidence proves the current state. Never claim deployment or email success without tool/platform evidence.`,talk:"Extra credit means building a real actor, not describing one. Expect the process to take patience. The AI may need to send you out to create a server, enable an email connector, authorize a scheduler, or return with an ID or screenshot. That is fine. The test is whether the build keeps one identity and a provenance chain across all those steps, and whether the final agent can prove what it actually did."}
+  };
+
+  const tutorialSteps = [
+    "Step 1: Write a prompt or press Suggested. Keep it focused on the current challenge.",
+    "Step 2: Press Copy prompt, then open one of the three AI choices. Paste the prompt into that AI and ask it to return complete HTML.",
+    "Step 3: Copy the AI's complete HTML, paste it back into the visible HTML box, and press Run HTML. Judge what actually runs—not what the AI says it built."
+  ];
+
+  const $ = id => document.getElementById(id);
+  const prompt = $("prompt"), codeInput=$("codeInput"), previewFrame=$("previewFrame");
+  let sampleIndex=0,currentLevel="working",carouselTimer,tutorialIndex=0,heroHasCollapsed=false;
+  const savedWork = {};
+
+  function collapseHero(){
+    if(heroHasCollapsed) return;
+    heroHasCollapsed=true;
+    $("hero").classList.add("collapsed");
+    clearInterval(carouselTimer);
+  }
+  function expandHero(){
+    heroHasCollapsed=false;
+    $("hero").classList.remove("collapsed");
+    restartCarousel();
+    $("hero").scrollIntoView({behavior:"smooth",block:"start"});
+  }
+
+  function toast(msg,ms=2300){const t=document.createElement("div");t.className="toast";t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),ms)}
+  function speak(text){try{if(!("speechSynthesis" in window)){toast("Speech is not available in this browser.");return}window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.rate=1.03;u.pitch=1;window.speechSynthesis.speak(u)}catch(e){}}
+  function copyText(text){if(navigator.clipboard&&navigator.clipboard.writeText)return navigator.clipboard.writeText(text);return new Promise((resolve,reject)=>{try{const ta=document.createElement("textarea");ta.value=text;ta.style.position="fixed";ta.style.left="-9999px";document.body.appendChild(ta);ta.focus();ta.select();document.execCommand("copy");ta.remove();resolve()}catch(e){reject(e)}})}
+  function updateCount(){$("charCount").textContent=`${prompt.value.length.toLocaleString()} characters`}
+  function renderDots(){const dots=$("carouselDots");dots.innerHTML="";samples.forEach((_,i)=>{const b=document.createElement("button");b.className="dotBtn"+(i===sampleIndex?" active":"");b.setAttribute("aria-label",`Show clock example ${i+1}`);b.addEventListener("click",()=>{sampleIndex=i;renderSample();restartCarousel()});dots.appendChild(b)})}
+  function renderSample(){const s=samples[sampleIndex];$("clockStage").innerHTML=s.svg;$("sampleBadge").className=`sampleBadge ${s.cls}`;$("sampleBadge").textContent=s.status;$("sampleTitle").textContent=s.title;$("sampleDesc").textContent=s.desc;$("sampleMMSE").innerHTML=`<b>MMSE equivalent:</b> ${s.mmse}`;renderDots()}
+  function moveSample(delta){sampleIndex=(sampleIndex+delta+samples.length)%samples.length;renderSample();restartCarousel()}
+  function restartCarousel(){clearInterval(carouselTimer);carouselTimer=setInterval(()=>{sampleIndex=(sampleIndex+1)%samples.length;renderSample()},5200)}
+  function captureStage(key=currentLevel){if(!key)return;const ptxt=prompt.value.trim(),ctxt=codeInput.value.trim();if(ptxt||ctxt){savedWork[key]={prompt:ptxt,code:ctxt,savedAt:new Date().toISOString()};updateSaveStatus()}}
+  function updateSaveStatus(){const keys=Object.keys(savedWork);const names=keys.map(k=>levels[k]?.title||k);$("saveStatus").innerHTML=keys.length?`<b>Saved:</b> ${names.join(" · ")}`:"Nothing saved yet. Your saved stages stay in this page while you work."}
+  function setLevel(key,fromUser=false){if(fromUser){captureStage(currentLevel);collapseHero()}currentLevel=key;const d=levels[key];document.querySelectorAll(".tabBtn").forEach(b=>b.classList.toggle("active",b.dataset.level===key));$("levelKicker").textContent=d.kicker;$("levelTitle").textContent=d.title;$("levelIntro").textContent=d.intro;const prior=savedWork[key];prompt.value=prior?.prompt||"";codeInput.value=prior?.code||"";previewFrame.srcdoc="";$("copyReflectBtn").classList.toggle("hidden",key!=="reflect");updateCount();updateSaveStatus()}
+  function insertSuggested(){collapseHero();const text=levels[currentLevel].suggested;if(prompt.value.trim()&&prompt.value.trim()!==text)prompt.value+=`\n\n${text}`;else prompt.value=text;prompt.focus();updateCount();toast("Suggested prompt inserted. Edit it freely.")}
+  async function requirePromptCopy(textOverride){const text=(textOverride??prompt.value).trim();if(!text){toast("Write a prompt first, or insert the suggestion.");prompt.focus();return false}try{await copyText(text);return true}catch(e){toast("Clipboard blocked. Select and copy manually.",3600);return false}}
+  async function openModel(model,payload=null,label="Prompt"){collapseHero();const text=payload??prompt.value.trim();const ok=await requirePromptCopy(text);if(!ok)return;toast(`${label} copied. Opening ${model.name}…`,2200);speak(`${label} copied. Opening ${model.name}. Click in the chat box and paste with Control V or Command V. Then inspect the answer rather than accepting it automatically.`);setTimeout(()=>window.open(model.url,"_blank","noopener"),850)}
+  function renderModels(){const grid=$("modelGrid"),more=$("moreModelGrid"),sel=$("secondModel");grid.innerHTML="";more.innerHTML="";sel.innerHTML="";AI_MODELS.forEach((m,i)=>{const b=document.createElement("button");b.className="modelBtn";b.type="button";b.innerHTML=`${m.name}<small>${m.note}</small>`;b.addEventListener("click",()=>openModel(m));(i<3?grid:more).appendChild(b);const o=document.createElement("option");o.value=m.id;o.textContent=m.name;if(i===2)o.selected=true;sel.appendChild(o)})}
+  function stripFence(text){let t=text.trim();if(t.startsWith("```")){t=t.replace(/^```(?:html)?\s*/i,"").replace(/\s*```$/i,"")}return t}
+  function runHTML(){collapseHero();const code=stripFence(codeInput.value);if(!code){toast("Paste HTML first, then press Run HTML.");codeInput.focus();return}previewFrame.srcdoc=code;toast("HTML running in the preview.")}
+  function buildSecondOpinion(){captureStage(currentLevel);const original=prompt.value.trim()||"(No original prompt was entered.)";const code=codeInput.value.trim();const savedSummary=Object.entries(savedWork).map(([k,w])=>`${levels[k]?.title||k}: saved ${w.savedAt}; prompt ${w.prompt.length} chars; HTML ${w.code.length} chars`).join("\n")||"(none)";return `Act as an independent second-opinion reviewer. Do not simply redo the task. Audit the first AI's work against the user's stated intent.\n\nSAVED WORK CONTEXT\n${savedSummary}\n\nORIGINAL USER PROMPT\n${original}\n\n${code?`FIRST AI OUTPUT / HTML UNDER TEST\n${code}\n\n`:""}REVIEW TASK\n1. State what the artifact is supposed to do.\n2. Identify concrete correctness problems, omissions, hidden assumptions, or misleading claims.\n3. For a clock, check number layout, hand semantics, time calculation, update behavior, timezone/local-time handling, and whether visual plausibility could hide a logic error.\n4. If this is the Agent challenge, verify that a real persistent agent was actually created/configured rather than merely described; inspect the BUILD_ID, iterative provenance ledger, artifact/version continuity across steps, scheduler state, email-tool evidence, idempotency, retries, and audit records.\n5. Distinguish verified facts from inference.\n6. Give the smallest fixes needed.\n7. End with a verdict: PASS, PASS WITH FIXES, or FAIL, and explain why.`}
+  function buildReflectPacket(){
+    captureStage(currentLevel);
+    const order=["working","advanced","mechanical"];
+    const sections=order.map(k=>{
+      const w=savedWork[k];
+      if(!w)return `\n=== ${levels[k].title.toUpperCase()} ===\nNOT SAVED / NOT COMPLETED`;
+      return `\n=== ${levels[k].title.toUpperCase()} ===\nSaved: ${w.savedAt}\n\nPROMPT\n${w.prompt||"(none saved)"}\n\nHTML / ARTIFACT UNDER TEST\n${w.code||"(none saved)"}`;
+    }).join("\n");
+    return `${levels.reflect.suggested}\n\nCLOCK DRAW WORK TRAIL${sections}\n\nREFLECTION INSTRUCTIONS\n- Use the saved evidence above; do not assume a stage was completed when it says not saved.\n- For each stage, separate user specification, AI contribution, observed verification, unresolved assumptions, and any apparent failure/fix.\n- Compare how the cognitive demand changed across the stages.\n- Identify where a second opinion would be most valuable.\n- End with 5 concise observations about how AI assistance changed the task rather than merely making it easier.`;
+  }
+  async function saveAllAndCopyReflect(){
+    captureStage(currentLevel);
+    const packet=buildReflectPacket();
+    prompt.value=packet;updateCount();
+    try{await copyText(packet);toast("All saved stages packaged into the Reflect prompt and copied.",3200)}catch(e){toast("Reflect packet built. Clipboard blocked; copy it manually.",3600)}
+  }
+  async function secondOpinion(){const id=$("secondModel").value;const m=AI_MODELS.find(x=>x.id===id)||AI_MODELS[0];await openModel(m,buildSecondOpinion(),"Second-opinion packet")}
+  function updateReference(){const d=new Date();$("referenceTime").textContent=`Reference time — ${d.toLocaleTimeString()} · ${Intl.DateTimeFormat().resolvedOptions().timeZone||"local timezone"}`}
+  function showTutorial(){tutorialIndex=0;$("tutorialOverlay").classList.remove("hidden");renderTutorial()}
+  function hideTutorial(){$("tutorialOverlay").classList.add("hidden");try{window.speechSynthesis.cancel()}catch(e){}}
+  function renderTutorial(){const n=tutorialSteps.length;$("tutorialStepNum").textContent=`Step ${tutorialIndex+1} of ${n}`;$("tutorialText").textContent=tutorialSteps[tutorialIndex];$("tutorialBack").disabled=tutorialIndex===0;$("tutorialNext").textContent=tutorialIndex===n-1?"Done":"Next →";const p=$("tutorialProgress");p.innerHTML="";for(let i=0;i<n;i++){const bar=document.createElement("i");if(i<=tutorialIndex)bar.className="on";p.appendChild(bar)}}
+
+  $("prevClock").addEventListener("click",()=>moveSample(-1));$("nextClock").addEventListener("click",()=>moveSample(1));document.querySelectorAll(".tabBtn").forEach(b=>b.addEventListener("click",()=>setLevel(b.dataset.level,true)));$("suggestBtn").addEventListener("click",insertSuggested);$("copyBtn").addEventListener("click",async()=>{collapseHero();if(await requirePromptCopy())toast("Prompt copied.")});$("saveStageBtn").addEventListener("click",()=>{captureStage();toast("This stage was saved for Reflect.")});$("copyReflectBtn").addEventListener("click",saveAllAndCopyReflect);$("clearBtn").addEventListener("click",()=>{prompt.value="";updateCount();prompt.focus()});$("talkBtn").addEventListener("click",()=>{collapseHero();speak(levels[currentLevel].talk)});prompt.addEventListener("input",()=>{updateCount();if(prompt.value.trim())collapseHero()});codeInput.addEventListener("input",()=>{if(codeInput.value.trim())collapseHero()});$("secondOpinionBtn").addEventListener("click",secondOpinion);$("showIntroBtn").addEventListener("click",expandHero);
+  $("runBtn").addEventListener("click",runHTML);$("clearCodeBtn").addEventListener("click",()=>{codeInput.value="";previewFrame.srcdoc=""});$("moreAIsBtn").addEventListener("click",()=>{const p=$("moreAIsPanel");const open=p.classList.toggle("hidden")===false;$("moreAIsBtn").setAttribute("aria-expanded",String(open));$("moreAIsBtn").textContent=open?"Fewer AIs ▴":"More AIs ▾"});
+  $("tutorialBtn").addEventListener("click",showTutorial);$("tutorialClose").addEventListener("click",hideTutorial);$("tutorialSpeak").addEventListener("click",()=>speak(tutorialSteps[tutorialIndex]));$("tutorialBack").addEventListener("click",()=>{if(tutorialIndex>0){tutorialIndex--;renderTutorial()}});$("tutorialNext").addEventListener("click",()=>{if(tutorialIndex<tutorialSteps.length-1){tutorialIndex++;renderTutorial()}else hideTutorial()});$("tutorialOverlay").addEventListener("click",e=>{if(e.target===$("tutorialOverlay"))hideTutorial()});document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("tutorialOverlay").classList.contains("hidden"))hideTutorial()});
+
+  renderModels();renderSample();restartCarousel();setLevel("working");updateReference();setInterval(updateReference,1000);previewFrame.srcdoc="";
+})();
+</script>
+</body>
+</html>
