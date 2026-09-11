@@ -1,0 +1,1442 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reflex arc lab — stretch reflexes, spinal circuitry, and synaptic mechanism</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F1F3F2; --card:#FBFCFB; --sunk:#E7EBE9;
+  --ink:#151A1D; --ink2:#414A50; --ink3:#77828A;
+  --rule:#D2D9D6; --rule2:#B2BCB8;
+  --eosin:#B8425E; --eosin-w:#FBEAEE;
+  --nissl:#5F4A9B; --nissl-w:#EDEAF8;
+  --glycine:#0F6E62; --glycine-w:#E1F2EF;
+  --myelin:#9A6F14; --myelin-w:#F8EFD9;
+  --alarm:#A02C24;
+  --ok:#3B6D11;
+  --shell:#C9D0CD;
+  --shell2:#AEB8B4;
+  --hiviz:#D9A21B;
+  --radius:5px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#131719; --card:#1A1F22; --sunk:#0F1315;
+    --ink:#EDF0EF; --ink2:#B3BCC0; --ink3:#7E8A90;
+    --rule:#2C3438; --rule2:#3E4850;
+    --eosin:#EE8AA1; --eosin-w:#3A1E27;
+    --nissl:#AFA0EA; --nissl-w:#241E3C;
+    --glycine:#5DC9B4; --glycine-w:#0D2B28;
+    --myelin:#E0B551; --myelin-w:#2E2410;
+    --alarm:#F0908A; --ok:#9CC45E;
+    --shell:#2E3639; --shell2:#46514F;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  font-size:14px; line-height:1.55;
+}
+.wrap{max-width:1380px;margin:0 auto;padding:24px 20px 64px}
+
+/* ── masthead ─────────────────────────────────── */
+.mast{border-bottom:1px solid var(--ink);padding-bottom:14px;margin-bottom:22px}
+.mast h1{
+  font-family:Newsreader,Georgia,serif; font-weight:400; font-size:clamp(28px,4.4vw,46px);
+  line-height:1.02; letter-spacing:-.015em; margin:0 0 6px;
+}
+.mast h1 em{font-style:italic}
+.mast p{margin:0;color:var(--ink2);max-width:74ch;font-size:14.5px}
+.mast .row{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end;justify-content:space-between}
+.plate{
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink3);
+  border:1px solid var(--rule);border-radius:var(--radius);padding:5px 9px;white-space:nowrap;
+}
+
+/* ── layout ───────────────────────────────────── */
+.grid{display:grid;grid-template-columns:minmax(0,400px) minmax(0,1fr);gap:22px;align-items:start}
+@media (max-width:1040px){.grid{grid-template-columns:minmax(0,1fr)}}
+.col{display:flex;flex-direction:column;gap:18px;min-width:0}
+
+section.panel{background:var(--card);border:1px solid var(--rule);border-radius:8px;overflow:hidden}
+.phead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  padding:11px 14px;border-bottom:1px solid var(--rule);background:var(--sunk)}
+.phead h2{margin:0;font-family:Newsreader,Georgia,serif;font-weight:500;font-size:17px;letter-spacing:-.01em}
+.phead span{font-size:12px;color:var(--ink3)}
+.pbody{padding:14px}
+.pbody.tight{padding:8px}
+
+/* ── controls ─────────────────────────────────── */
+label.fl{display:block;font-size:11.5px;color:var(--ink3);margin-bottom:4px}
+select,button,input[type=range]{font-family:inherit;font-size:13px;color:var(--ink)}
+select{
+  width:100%;padding:8px 10px;background:var(--card);border:1px solid var(--rule2);
+  border-radius:var(--radius);appearance:none;
+  background-image:linear-gradient(45deg,transparent 50%,var(--ink3) 50%),linear-gradient(135deg,var(--ink3) 50%,transparent 50%);
+  background-position:calc(100% - 17px) 52%,calc(100% - 12px) 52%;
+  background-size:5px 5px,5px 5px;background-repeat:no-repeat;
+}
+select:focus-visible,button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--nissl);outline-offset:2px}
+button{
+  background:var(--card);border:1px solid var(--rule2);border-radius:var(--radius);
+  padding:7px 11px;cursor:pointer;line-height:1.2;
+}
+button:hover{background:var(--sunk);border-color:var(--ink3)}
+button:active{transform:translateY(.5px)}
+button.solid{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+button.solid:hover{background:var(--ink2);border-color:var(--ink2)}
+button[aria-pressed=true]{background:var(--nissl-w);border-color:var(--nissl);color:var(--nissl)}
+button:disabled{opacity:.4;cursor:not-allowed}
+.btnrow{display:flex;flex-wrap:wrap;gap:7px}
+input[type=range]{width:100%;height:16px;appearance:none;background:none;cursor:pointer;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:3px;background:var(--rule2);border-radius:2px}
+input[type=range]::-webkit-slider-thumb{appearance:none;width:14px;height:14px;margin-top:-5.5px;border-radius:50%;background:var(--ink);border:2px solid var(--card)}
+input[type=range]::-moz-range-track{height:3px;background:var(--rule2);border-radius:2px}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border:2px solid var(--card);border-radius:50%;background:var(--ink)}
+
+/* ── figure ───────────────────────────────────── */
+.stage{position:relative;background:var(--sunk);border-radius:6px}
+.stage svg{display:block;width:100%;height:auto}
+.hot{cursor:crosshair}
+.hot circle.tgt{fill:transparent;stroke:var(--ink3);stroke-width:1;stroke-dasharray:2.5 2.5}
+.hot:hover circle.tgt,.hot:focus-visible circle.tgt{stroke:var(--eosin);stroke-width:1.6;stroke-dasharray:none}
+.hot circle.dot{fill:var(--ink3)}
+.hot:hover circle.dot{fill:var(--eosin)}
+.hot.on circle.tgt{stroke:var(--eosin);stroke-width:2;stroke-dasharray:none}
+.hot.on circle.dot{fill:var(--eosin)}
+.seg{fill:var(--shell);stroke:var(--ink2);stroke-width:1.1}
+.seg2{fill:var(--shell2);stroke:var(--ink2);stroke-width:1.1}
+.joint{fill:var(--card);stroke:var(--ink);stroke-width:1.5}
+.jointc{fill:var(--ink2)}
+.msc{fill:var(--eosin);opacity:0;transition:opacity .08s linear}
+.msc.fire{opacity:.5}
+.tbl{fill:var(--rule2);stroke:var(--ink3);stroke-width:1}
+
+/* ── grade readout ────────────────────────────── */
+.grade{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
+.gnum{font-family:Newsreader,Georgia,serif;font-size:58px;line-height:.82;font-weight:400;letter-spacing:-.03em}
+.gmeta{flex:1;min-width:150px}
+.gmeta strong{display:block;font-weight:500;font-size:15px}
+.gmeta span{color:var(--ink3);font-size:12.5px}
+.scalebar{display:flex;gap:3px;margin-top:9px}
+.scalebar i{flex:1;height:7px;border-radius:2px;background:var(--rule2);font-style:normal}
+.scalebar i.f{background:var(--eosin)}
+.scalebar i.f.lo{background:var(--nissl)}
+dl.facts{margin:12px 0 0;display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:12.5px}
+dl.facts dt{color:var(--ink3)}
+dl.facts dd{margin:0;font-family:"IBM Plex Mono",monospace;font-size:12px}
+.signs{display:flex;flex-wrap:wrap;gap:5px;margin-top:12px}
+.sign{font-size:11.5px;padding:3px 8px;border-radius:20px;border:1px solid var(--rule2);color:var(--ink2)}
+.sign.pos{background:var(--eosin-w);border-color:var(--eosin);color:var(--eosin)}
+.sign.neg{background:var(--glycine-w);border-color:var(--glycine);color:var(--glycine)}
+.sign.mod{background:var(--myelin-w);border-color:var(--myelin);color:var(--myelin)}
+
+.note{font-size:13px;color:var(--ink2);margin:12px 0 0;padding-left:11px;border-left:2px solid var(--rule2)}
+.note b{font-weight:500;color:var(--ink)}
+
+/* ── circuit ──────────────────────────────────── */
+.circuitwrap{position:relative;background:var(--sunk)}
+#circuit{display:block;width:100%;height:auto}
+.cnode{cursor:pointer}
+.cnode .body{transition:stroke-width .1s}
+.cnode:hover .body,.cnode:focus-visible .body{stroke-width:2.6}
+.cnode.lit .body{stroke-width:3}
+.cl{font-size:10.5px;fill:var(--ink3);font-family:Inter,sans-serif}
+.clb{font-size:11px;fill:var(--ink);font-family:Inter,sans-serif;font-weight:500}
+.cls{font-size:9.5px;fill:var(--ink3);font-family:"IBM Plex Mono",monospace}
+.tract{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.impulse{opacity:0}
+.faded{opacity:.18}
+
+/* ── transport bar ────────────────────────────── */
+.transport{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border-top:1px solid var(--rule);background:var(--sunk)}
+.clock{font-family:"IBM Plex Mono",monospace;font-size:19px;min-width:86px;letter-spacing:-.02em}
+.clock small{font-size:11px;color:var(--ink3)}
+.scrub{flex:1;min-width:180px}
+.spd{display:flex;gap:0;border:1px solid var(--rule2);border-radius:var(--radius);overflow:hidden}
+.spd button{border:0;border-radius:0;padding:5px 8px;font-size:11.5px;font-family:"IBM Plex Mono",monospace}
+.spd button+button{border-left:1px solid var(--rule2)}
+.spd button[aria-pressed=true]{background:var(--ink);color:var(--paper)}
+
+/* ── event log ────────────────────────────────── */
+ol.events{list-style:none;margin:0;padding:0;font-size:12.5px}
+ol.events li{display:grid;grid-template-columns:62px 1fr;gap:10px;padding:5px 0;border-bottom:1px dotted var(--rule);opacity:.32;transition:opacity .12s}
+ol.events li:last-child{border-bottom:0}
+ol.events li.done{opacity:1}
+ol.events li b{font-family:"IBM Plex Mono",monospace;font-weight:500;font-size:12px;text-align:right;color:var(--ink3)}
+ol.events li.done b{color:var(--ink)}
+ol.events li em{font-style:normal;color:var(--ink3);display:block;font-size:11.5px}
+
+/* ── inhibition meters ────────────────────────── */
+.meters{display:grid;gap:10px}
+.meter{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;
+  border:0;padding:0;background:none;text-align:left;width:100%;cursor:pointer;border-radius:4px}
+.meter:hover{background:transparent}
+.meter .mlab{font-size:12.5px}
+.meter .mlab em{font-style:normal;color:var(--ink3);font-size:11px;display:block;font-family:"IBM Plex Mono",monospace}
+.meter .mval{font-family:"IBM Plex Mono",monospace;font-size:12px;text-align:right}
+.track{grid-column:1/3;height:6px;background:var(--rule2);border-radius:3px;position:relative;overflow:hidden}
+.track i{position:absolute;inset:0 auto 0 0;border-radius:3px;background:var(--glycine);transition:width .25s ease}
+.track i.hi{background:var(--eosin)}
+.track .ref{position:absolute;top:-2px;bottom:-2px;width:1px;background:var(--ink);opacity:.5}
+.sliders{display:grid;gap:11px;margin-top:14px;padding-top:13px;border-top:1px solid var(--rule)}
+.sl{display:grid;grid-template-columns:1fr 46px;gap:2px 8px;align-items:center}
+.sl label{font-size:12px;grid-column:1}
+.sl output{font-family:"IBM Plex Mono",monospace;font-size:12px;text-align:right}
+.sl input{grid-column:1/3}
+
+/* ── molecular ────────────────────────────────── */
+.molgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,260px);gap:16px}
+@media (max-width:760px){.molgrid{grid-template-columns:minmax(0,1fr)}}
+#molsvg{display:block;width:100%;height:auto;background:var(--sunk);border-radius:6px}
+.molhead{font-family:Newsreader,Georgia,serif;font-size:19px;font-weight:500;margin:0 0 2px;letter-spacing:-.01em}
+.molsub{font-size:12px;color:var(--ink3);margin:0 0 10px;font-family:"IBM Plex Mono",monospace}
+.chem{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:12.5px;margin:0}
+.chem dt{color:var(--ink3)}
+.chem dd{margin:0}
+.molbody p{font-size:13px;margin:12px 0 0;color:var(--ink2)}
+.lesion{margin-top:12px;padding:9px 11px;border-radius:var(--radius);background:var(--eosin-w);border:1px solid var(--eosin);font-size:12.5px;color:var(--ink)}
+.lesion b{color:var(--eosin);font-weight:500}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.chip{font-size:11.5px;padding:4px 9px;border-radius:20px;border:1px solid var(--rule2);background:var(--card);cursor:pointer;color:var(--ink2)}
+.chip:hover{border-color:var(--ink3)}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:11.5px;color:var(--ink3);padding:9px 14px;border-top:1px solid var(--rule)}
+.legend i{display:inline-block;width:16px;height:2px;vertical-align:3px;margin-right:5px;border-radius:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+footer{margin-top:26px;padding-top:14px;border-top:1px solid var(--rule);font-size:12.5px;color:var(--ink3);max-width:88ch}
+footer b{color:var(--ink2);font-weight:500}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.001s!important;transition-duration:.001s!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="mast">
+  <div class="row">
+    <div>
+      <h1>Reflex arc lab</h1>
+      <p>Tap a tendon on the seated model and watch the same event three ways: the limb moves, the impulse crosses the cord in slow motion, and the synapse that decides the outcome opens up. Change the disease state to see where the arc breaks.</p>
+    </div>
+    <div class="plate" id="plate">no stimulus yet</div>
+  </div>
+</header>
+<div class="grid">
+
+<!-- ══════════ LEFT COLUMN ══════════ -->
+<div class="col">
+
+<section class="panel">
+  <div class="phead">
+    <h2>The patient</h2>
+    <span>Seated, legs dangling free</span>
+  </div>
+  <div class="pbody">
+    <label class="fl" for="dz">Clinical state</label>
+    <select id="dz" aria-describedby="dzhint"></select>
+    <p id="dzhint" class="note" style="margin-top:10px"></p>
+  </div>
+  <div class="stage">
+    <svg id="patient" viewBox="8 118 356 392" role="img" aria-labelledby="ptitle pdesc">
+      <title id="ptitle">Articulated seated model with nine reflex testing sites</title>
+      <desc id="pdesc">A jointed mannequin sits on an examination table. Dashed circular targets mark the jaw, biceps and triceps tendons, radial styloid, middle finger, abdominal wall, patellar tendon, Achilles tendon and sole. Selecting one delivers a tendon tap and animates the joint response.</desc>
+
+      <!-- table -->
+      <rect class="tbl" x="14" y="336" width="226" height="11" rx="3"/>
+      <rect class="tbl" x="34" y="347" width="9" height="150"/>
+      <rect class="tbl" x="214" y="347" width="9" height="150"/>
+      <line x1="8" y1="498" x2="310" y2="498" stroke="var(--rule2)" stroke-width="1.2"/>
+
+      <!-- torso -->
+      <rect class="seg" x="146" y="198" width="44" height="138" rx="20"/>
+      <ellipse id="m-abdo" class="msc" cx="168" cy="302" rx="17" ry="20"/>
+      <rect class="seg2" x="160" y="180" width="16" height="24" rx="8"/>
+
+      <!-- head, then mandible on top so the chin reads -->
+      <ellipse class="seg" cx="162" cy="154" rx="27" ry="29"/>
+      <circle cx="177" cy="148" r="4" fill="var(--ink2)"/>
+      <circle cx="177" cy="148" r="1.6" fill="var(--card)"/>
+      <g id="g-jaw">
+        <rect class="seg" x="152" y="178" width="44" height="14" rx="7"/>
+        <ellipse id="m-mass" class="msc" cx="170" cy="185" rx="12" ry="6"/>
+      </g>
+      <circle class="joint" cx="154" cy="178" r="4.5"/>
+
+      <!-- arm, carried in front of the trunk -->
+      <rect class="seg2" x="169" y="214" width="22" height="56" rx="11"/>
+      <rect x="169" y="229" width="22" height="7" fill="var(--hiviz)" opacity=".85"/>
+      <ellipse id="m-tri" class="msc" cx="172" cy="248" rx="7" ry="15"/>
+      <circle class="joint" cx="180" cy="214" r="6.5"/><circle class="jointc" cx="180" cy="214" r="2"/>
+      <g id="g-forearm">
+        <rect class="seg2" x="180" y="258" width="62" height="20" rx="10"/>
+        <rect class="seg" x="240" y="259" width="26" height="18" rx="8"/>
+        <rect class="seg2" x="264" y="263" width="20" height="10" rx="5"/>
+        <ellipse id="m-bra" class="msc" cx="218" cy="256" rx="18" ry="7"/>
+        <g id="g-thumb"><rect class="seg2" x="254" y="277" width="9" height="17" rx="4.5"/></g>
+        <ellipse id="m-bic" class="msc" cx="194" cy="253" rx="11" ry="8"/>
+      </g>
+      <circle class="joint" cx="180" cy="268" r="7"/><circle class="jointc" cx="180" cy="268" r="2.2"/>
+
+      <!-- leg, knee overhanging the table edge -->
+      <rect class="seg" x="166" y="314" width="88" height="31" rx="15"/>
+      <ellipse id="m-quad" class="msc" cx="207" cy="323" rx="28" ry="11"/>
+      <circle class="joint" cx="168" cy="330" r="8"/><circle class="jointc" cx="168" cy="330" r="2.4"/>
+      <g id="g-lowerleg">
+        <rect class="seg2" x="243" y="331" width="23" height="98" rx="11"/>
+        <ellipse id="m-gas" class="msc" cx="249" cy="362" rx="8" ry="19"/>
+        <g id="g-foot">
+          <path class="seg" d="M244,423 L292,431 Q298,432 298,438 L297,445 Q296,449 290,449 L246,444 Q241,443 241,436 Z"/>
+          <g id="g-toe"><rect class="seg2" x="288" y="431" width="15" height="13" rx="4"/></g>
+        </g>
+        <circle class="joint" cx="254" cy="429" r="6.5"/><circle class="jointc" cx="254" cy="429" r="2"/>
+      </g>
+      <circle class="joint" cx="254" cy="331" r="8"/><circle class="jointc" cx="254" cy="331" r="2.4"/>
+
+      <!-- reflex hammer -->
+      <g id="hammer" opacity="0">
+        <g id="hammerspin">
+          <rect x="6" y="-2.5" width="42" height="5" rx="2.5" fill="var(--ink2)"/>
+          <path d="M-2,-11 L8,-11 L8,11 L-2,11 Q-11,7 -11,0 Q-11,-7 -2,-11 Z" fill="var(--eosin)"/>
+        </g>
+      </g>
+
+      <!-- hotspots injected by script -->
+      <g id="hotspots"></g>
+    </svg>
+  </div>
+  <div class="legend">
+    <span>Dashed rings are tap sites. Click, or tab and press enter.</span>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="phead"><h2>Response</h2><span id="rname">—</span></div>
+  <div class="pbody">
+    <div class="grade">
+      <div class="gnum" id="gnum">—</div>
+      <div class="gmeta">
+        <strong id="glab">Tap a tendon to begin</strong>
+        <span id="gsub">NINDS 0–4+ scale</span>
+        <div class="scalebar" id="gbar"><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+    </div>
+    <dl class="facts">
+      <dt>Segment</dt><dd id="f-seg">—</dd>
+      <dt>Nerve</dt><dd id="f-nerve">—</dd>
+      <dt>Muscle</dt><dd id="f-muscle">—</dd>
+      <dt>Latency</dt><dd id="f-lat">—</dd>
+      <dt>Arc</dt><dd id="f-arc">—</dd>
+    </dl>
+    <div class="signs" id="signs"></div>
+    <p class="note" id="rnote">The model recomputes reflex gain from the parameters below every time you tap, so the grade you see is derived, not looked up.</p>
+  </div>
+</section>
+
+</div>
+
+<!-- ══════════ RIGHT COLUMN ══════════ -->
+<div class="col">
+
+<section class="panel">
+  <div class="phead">
+    <h2>Inside the cord</h2>
+    <span>Slowed 20- to 200-fold</span>
+  </div>
+  <div class="circuitwrap">
+  <svg id="circuit" viewBox="0 0 680 396" role="img" aria-labelledby="ctitle cdesc">
+    <title id="ctitle">Spinal reflex circuit with descending control</title>
+    <desc id="cdesc">A transverse spinal cord section. A Ia afferent from a muscle spindle enters the dorsal root, passes the dorsal root ganglion and synapses directly on an alpha motoneuron, which sends its axon out the ventral root to the motor endplate. Branches drive a Ia inhibitory interneuron onto the antagonist motoneuron, a Ib interneuron from the Golgi tendon organ, a GABAergic interneuron that presynaptically inhibits the afferent terminal, and a Renshaw cell driven by motor axon collaterals. Descending corticospinal and reticulospinal fibres terminate on all of these.</desc>
+
+    <!-- neuraxis -->
+    <rect x="22" y="26" width="40" height="34" rx="7" fill="var(--sunk)" stroke="var(--rule2)"/>
+    <rect x="22" y="64" width="40" height="76" rx="3" fill="var(--card)" stroke="var(--rule2)"/>
+    <rect x="22" y="144" width="40" height="118" rx="3" fill="var(--card)" stroke="var(--rule2)"/>
+    <rect x="22" y="266" width="40" height="58" rx="3" fill="var(--card)" stroke="var(--rule2)"/>
+    <rect x="22" y="328" width="40" height="40" rx="3" fill="var(--card)" stroke="var(--rule2)"/>
+    <text class="cls" x="42" y="48" text-anchor="middle">P</text>
+    <text class="cls" x="42" y="80" text-anchor="middle">C</text>
+    <text class="cls" x="42" y="160" text-anchor="middle">T</text>
+    <text class="cls" x="42" y="282" text-anchor="middle">L</text>
+    <text class="cls" x="42" y="344" text-anchor="middle">S</text>
+    <g id="levmark" opacity="0">
+      <rect x="22" y="-2" width="40" height="4" fill="var(--eosin)" opacity=".85"/>
+      <path d="M13,0 L21,-4 L21,4 Z" fill="var(--eosin)"/>
+      <text id="levtxt" class="cls" x="68" y="4" fill="var(--eosin)"></text>
+    </g>
+
+    <!-- headers -->
+    <rect x="112" y="24" width="196" height="38" rx="6" fill="var(--myelin-w)" stroke="var(--myelin)" stroke-width=".8"/>
+    <text class="clb" x="210" y="41" text-anchor="middle">Descending control</text>
+    <text class="cls" x="210" y="54" text-anchor="middle">corticospinal + reticulospinal</text>
+    <rect x="430" y="24" width="228" height="38" rx="6" fill="var(--nissl-w)" stroke="var(--nissl)" stroke-width=".8"/>
+    <text class="clb" id="lvl1" x="444" y="41">no level selected</text>
+    <text class="cls" id="lvl2" x="444" y="54">tap a tendon</text>
+
+    <!-- cord -->
+    <ellipse cx="250" cy="230" rx="120" ry="110" fill="var(--card)" stroke="var(--rule2)" stroke-width="1.2"/>
+    <g stroke="var(--rule2)" opacity=".62" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M214,232 L286,232" stroke-width="28"/>
+      <path d="M232,224 L220,190" stroke-width="18"/>
+      <path d="M268,224 L280,190" stroke-width="18"/>
+      <path d="M234,238 L206,282" stroke-width="32"/>
+      <path d="M266,238 L294,282" stroke-width="32"/>
+    </g>
+    <circle cx="250" cy="232" r="3.5" fill="var(--card)" stroke="var(--rule2)" stroke-width=".8"/>
+
+    <!-- tracts -->
+    <path id="p_desc" class="tract" d="M204,62 C250,80 306,106 334,146 C340,160 341,190 340,208" stroke="var(--myelin)" stroke-width="1.6" stroke-dasharray="5 3"/>
+    <path id="p_desc_pad" class="tract" d="M334,206 C332,190 330,178 332,172" stroke="var(--myelin)" stroke-width="1.2" stroke-dasharray="3 2.5"/>
+    <path id="p_desc_iain" class="tract" d="M332,218 C316,206 296,188 282,178" stroke="var(--myelin)" stroke-width="1.2" stroke-dasharray="3 2.5"/>
+    <path id="p_desc_mn" class="tract" d="M340,222 C338,240 328,250 316,254" stroke="var(--myelin)" stroke-width="1.2" stroke-dasharray="3 2.5"/>
+    <circle cx="340" cy="214" r="3.4" fill="var(--myelin)"/>
+
+    <path id="p_nerve_aff" class="tract" d="M563,292 C536,290 512,280 494,252 C472,218 448,174 424,150" stroke="var(--eosin)" stroke-width="1.8"/>
+    <path id="p_nerve_ib" class="tract" d="M642,296 C640,276 628,262 600,254 C560,244 520,248 498,254 C476,228 448,178 426,154" stroke="var(--eosin)" stroke-width="1.1" opacity=".7"/>
+    <path id="p_droot" class="tract" d="M410,136 C392,144 366,160 344,178 C334,186 322,198 314,206" stroke="var(--eosin)" stroke-width="1.8"/>
+    <path id="p_ia_mn" class="tract" d="M314,206 C310,222 302,238 298,244" stroke="var(--eosin)" stroke-width="1.6"/>
+    <path id="p_ia_iain" class="tract" d="M314,206 C302,188 284,176 280,175" stroke="var(--eosin)" stroke-width="1.1"/>
+    <path id="p_ia_ibin" class="tract" d="M314,206 C304,208 294,212 288,212" stroke="var(--eosin)" stroke-width="1.1" opacity=".7"/>
+    <path id="p_pad_ia" class="tract" d="M324,176 C318,196 310,216 306,226" stroke="var(--glycine)" stroke-width="1.4"/>
+    <path id="p_iain_anta" class="tract" d="M270,182 C262,210 252,244 258,273" stroke="var(--glycine)" stroke-width="1.4"/>
+    <path id="p_ib_mn" class="tract" d="M282,221 C286,230 289,238 291,244" stroke="var(--glycine)" stroke-width="1.4"/>
+    <path id="p_mn_collat" class="tract" d="M306,276 C300,288 294,293 291,295" stroke="var(--nissl)" stroke-width="1.1"/>
+    <path id="p_renshaw_mn" class="tract" d="M284,295 C286,289 290,284 294,281" stroke="var(--glycine)" stroke-width="1.4"/>
+    <path id="p_mn_axon" class="tract" d="M313,272 C324,280 333,288 340,292" stroke="var(--nissl)" stroke-width="1.8"/>
+    <path id="p_nerve_eff" class="tract" d="M340,292 C380,296 420,304 458,310 C486,314 518,320 546,322" stroke="var(--nissl)" stroke-width="1.8"/>
+    <circle cx="298" cy="245" r="4" fill="var(--eosin)"/>
+    <circle cx="304" cy="230" r="3" fill="var(--glycine)"/>
+
+    <!-- periphery -->
+    <line x1="486" y1="304" x2="512" y2="304" stroke="var(--rule2)" stroke-width="7" stroke-linecap="round"/>
+    <line x1="622" y1="304" x2="632" y2="304" stroke="var(--rule2)" stroke-width="7" stroke-linecap="round"/>
+    <line x1="653" y1="304" x2="666" y2="304" stroke="var(--rule2)" stroke-width="7" stroke-linecap="round"/>
+    <path id="belly" d="M512,304 C528,278 548,272 567,272 C588,272 608,280 622,304 C608,328 588,336 567,336 C548,336 528,330 512,304 Z" fill="var(--nissl-w)" stroke="var(--nissl)" stroke-width="1"/>
+    <path d="M472,298 L482,304 L472,310 Z" fill="var(--ink3)"/>
+    <g id="n-spindle" class="cnode" tabindex="0" role="button" aria-label="Muscle spindle">
+      <ellipse class="body" cx="563" cy="292" rx="23" ry="6.5" fill="var(--card)" stroke="var(--eosin)" stroke-width="1.2" transform="rotate(-6 563 292)"/>
+      <path d="M545,293 q4,-5 8,0 q4,5 8,0 q4,-5 8,0 q4,5 6,0" fill="none" stroke="var(--eosin)" stroke-width="1"/>
+    </g>
+    <g id="n-gto" class="cnode" tabindex="0" role="button" aria-label="Golgi tendon organ">
+      <ellipse class="body" cx="642" cy="304" rx="11" ry="8" fill="var(--card)" stroke="var(--eosin)" stroke-width="1.2"/>
+      <path d="M636,300 h12 M636,304 h12 M636,308 h12" stroke="var(--eosin)" stroke-width=".8"/>
+    </g>
+    <g id="n-nmj" class="cnode" tabindex="0" role="button" aria-label="Neuromuscular junction">
+      <circle class="body" cx="546" cy="322" r="7" fill="var(--nissl-w)" stroke="var(--nissl)" stroke-width="1.4"/>
+      <path d="M542,326 l-3,4 M546,329 v4 M550,326 l3,4" stroke="var(--nissl)" stroke-width="1.1"/>
+    </g>
+
+    <!-- cord nodes -->
+    <g id="n-drg" class="cnode" tabindex="0" role="button" aria-label="Dorsal root ganglion neuron">
+      <ellipse class="body" cx="414" cy="140" rx="17" ry="13" fill="var(--eosin-w)" stroke="var(--eosin)" stroke-width="1.4"/>
+      <circle cx="414" cy="140" r="4" fill="var(--eosin)"/>
+    </g>
+    <g id="n-mn" class="cnode" tabindex="0" role="button" aria-label="Alpha motoneuron">
+      <circle class="body" cx="298" cy="262" r="18" fill="var(--nissl-w)" stroke="var(--nissl)" stroke-width="1.8"/>
+      <text class="clb" x="298" y="266" text-anchor="middle" fill="var(--nissl)">&#945;</text>
+    </g>
+    <g id="n-anta" class="cnode" tabindex="0" role="button" aria-label="Antagonist alpha motoneuron">
+      <circle class="body" cx="256" cy="286" r="13" fill="var(--card)" stroke="var(--nissl)" stroke-width="1.4"/>
+      <text class="cls" x="256" y="290" text-anchor="middle" fill="var(--nissl)">&#945;</text>
+    </g>
+    <g id="n-iain" class="cnode" tabindex="0" role="button" aria-label="Ia inhibitory interneuron">
+      <circle class="body" cx="272" cy="172" r="10" fill="var(--glycine-w)" stroke="var(--glycine)" stroke-width="1.5"/>
+      <text class="cls" x="272" y="176" text-anchor="middle" fill="var(--glycine)">Ia</text>
+    </g>
+    <g id="n-ibin" class="cnode" tabindex="0" role="button" aria-label="Ib inhibitory interneuron">
+      <circle class="body" cx="278" cy="212" r="10" fill="var(--glycine-w)" stroke="var(--glycine)" stroke-width="1.5"/>
+      <text class="cls" x="278" y="216" text-anchor="middle" fill="var(--glycine)">Ib</text>
+    </g>
+    <g id="n-pad" class="cnode" tabindex="0" role="button" aria-label="GABAergic presynaptic inhibition">
+      <circle class="body" cx="326" cy="166" r="10" fill="var(--glycine-w)" stroke="var(--glycine)" stroke-width="1.5"/>
+      <text class="cls" x="326" y="170" text-anchor="middle" fill="var(--glycine)">G</text>
+    </g>
+    <g id="n-renshaw" class="cnode" tabindex="0" role="button" aria-label="Renshaw cell">
+      <circle class="body" cx="288" cy="304" r="10" fill="var(--glycine-w)" stroke="var(--glycine)" stroke-width="1.5"/>
+      <text class="cls" x="288" y="308" text-anchor="middle" fill="var(--glycine)">R</text>
+    </g>
+    <g id="n-desc" class="cnode" tabindex="0" role="button" aria-label="Descending control">
+      <rect class="body" x="112" y="24" width="196" height="38" rx="6" fill="none" stroke="var(--myelin)" stroke-width="0"/>
+    </g>
+
+    <!-- labels -->
+    <text class="cl" x="428" y="120" text-anchor="middle">dorsal root ganglion</text>
+    <text class="cls" x="390" y="182" text-anchor="middle">dorsal root</text>
+    <text class="cl" x="313" y="152" text-anchor="end">GABA &#183; PAD</text>
+    <text class="cls" x="313" y="140" text-anchor="end">presynaptic</text>
+    <text class="cl" x="256" y="168" text-anchor="end">Ia inhibitory</text>
+    <text class="cls" x="256" y="180" text-anchor="end">reciprocal</text>
+    <text class="cl" x="248" y="208" text-anchor="end">Ib inhibitory</text>
+    <text class="cls" x="248" y="220" text-anchor="end">autogenic</text>
+    <text class="cl" x="238" y="290" text-anchor="end">antagonist &#945;-MN</text>
+    <text class="cl" x="270" y="322" text-anchor="end">Renshaw</text>
+    <text class="cls" x="270" y="334" text-anchor="end">recurrent</text>
+    <text class="clb" x="372" y="268">&#945;-motoneuron</text>
+    <text class="cls" x="372" y="280">agonist pool</text>
+    <text class="cl" x="356" y="206">descending tracts</text>
+    <text class="cls" x="356" y="218">in cross-section</text>
+    <text class="cls" x="392" y="320" text-anchor="middle">ventral root</text>
+    <text class="cls" x="563" y="258" text-anchor="middle">Ia spindle</text>
+    <text class="cls" x="546" y="350" text-anchor="middle">endplate</text>
+    <text class="cls" x="642" y="282" text-anchor="middle">Ib &#183; GTO</text>
+    <text class="cls" x="490" y="286" text-anchor="middle">tendon tap</text>
+
+    <!-- impulses -->
+    <g id="dots"></g>
+  </svg>
+  </div>
+  <div class="transport">
+    <div class="clock"><span id="tnow">0.0</span><small> ms</small></div>
+    <button id="play" class="solid" aria-label="Replay the tap">Replay</button>
+    <input class="scrub" id="scrub" type="range" min="0" max="1000" step="1" value="1000" aria-label="Scrub through the reflex in milliseconds">
+    <div class="spd" role="group" aria-label="Playback speed">
+      <button data-spd="20" aria-pressed="true">1/20</button>
+      <button data-spd="60" aria-pressed="false">1/60</button>
+      <button data-spd="200" aria-pressed="false">1/200</button>
+    </div>
+  </div>
+  <div class="legend">
+    <span><i style="background:var(--eosin)"></i>afferent · Ia and Ib</span>
+    <span><i style="background:var(--nissl)"></i>motor · &#945; axon</span>
+    <span><i style="background:var(--glycine)"></i>inhibitory · glycine, GABA</span>
+    <span><i style="background:var(--myelin)"></i>descending</span>
+    <span>Click any cell for its chemistry.</span>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="phead"><h2>Timing</h2><span>Measured conduction, not decoration</span></div>
+  <div class="pbody" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,230px);gap:18px">
+    <ol class="events" id="events"></ol>
+    <div>
+      <svg id="trace" viewBox="0 0 230 160" role="img" aria-label="Electromyogram and force trace for the current response"></svg>
+      <p class="note" style="margin-top:6px;font-size:12px">Top: surface EMG. Bottom: joint torque. Both drawn from the same gain model as the grade.</p>
+    </div>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="phead"><h2>Inhibition — the part that decides the grade</h2><span>Drag to lesion by hand</span></div>
+  <div class="pbody">
+    <div class="meters" id="meters"></div>
+    <div class="sliders" id="sliders"></div>
+    <div class="btnrow" style="margin-top:12px">
+      <button id="reset">Restore the disease preset</button>
+      <button id="facil" hidden>Hold a maximal contraction for 15&#8201;s</button>
+    </div>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="phead"><h2>Molecular view</h2><span id="molwhere">—</span></div>
+  <div class="pbody">
+    <div class="chips" id="chips"></div>
+    <div class="molgrid">
+      <svg id="molsvg" viewBox="0 0 380 230" role="img" aria-labelledby="mtitle"><title id="mtitle">Molecular diagram of the selected site</title></svg>
+      <div class="molbody">
+        <h3 class="molhead" id="mh">—</h3>
+        <p class="molsub" id="ms">—</p>
+        <dl class="chem" id="mc"></dl>
+        <p id="mp"></p>
+        <div class="lesion" id="ml" hidden></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div>
+</div>
+
+<footer>
+  <p><b>What is accurate here, and what is a model.</b> The anatomy, segmental levels, peripheral nerves, conduction velocities, latencies, transmitters, receptors, channels and clinical patterns are drawn from standard neurology and neurophysiology. Cell positions inside the cord outline are schematic rather than a laminar map. The reflex <em>gain</em> is a deliberately simple lumped model: afferent integrity, synaptic efficacy, motoneuron pool size, five inhibitory terms and an intrinsic-excitability term feed one equation whose output is mapped onto the 0&#8211;4+ scale. It reproduces the textbook patterns and responds sensibly when you lesion a pathway, but it is not a biophysical simulation of a motoneuron pool, and grades in real patients vary widely between normal people.</p>
+  <p style="margin-top:8px">For teaching and revision. Not a diagnostic tool.</p>
+</footer>
+</div>
+<script>
+"use strict";
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const SVGNS="http://www.w3.org/2000/svg";
+const el=(n,a={})=>{const e=document.createElementNS(SVGNS,n);for(const k in a)e.setAttribute(k,a[k]);return e;};
+const r1=(v,d=1)=>Number(v).toFixed(d);
+
+/* ══════════════ reflex definitions ══════════════ */
+const REFLEXES={
+ jaw:{name:"Jaw jerk",hot:[194,192],seg:"CN V",lev:43,nerve:"Trigeminal V3, afferent and motor",
+   muscle:"Masseter and temporalis",aff:.14,eff:.09,acv:55,mcv:50,cd:.7,arc:"Monosynaptic. Afferent cell bodies sit in the mesencephalic trigeminal nucleus, not in a ganglion.",
+   joint:"jaw",sign:-1,amp:8,emd:8,rise:42,relax:120,flash:"m-mass",af:1,qual:"jaw"},
+ triceps:{name:"Triceps",hot:[164,260],seg:"C7",lev:126,nerve:"Radial",muscle:"Triceps brachii",
+   aff:.40,eff:.40,acv:78,mcv:62,cd:.7,arc:"Monosynaptic Ia, mainly C7 with C6 and C8 contribution",
+   joint:"forearm",sign:1,amp:15,emd:12,rise:52,relax:170,flash:"m-tri",af:.78},
+ biceps:{name:"Biceps",hot:[194,262],seg:"C5",lev:107,nerve:"Musculocutaneous",muscle:"Biceps brachii",
+   aff:.35,eff:.35,acv:78,mcv:62,cd:.7,arc:"Monosynaptic Ia, mainly C5 with C6 contribution",
+   joint:"forearm",sign:-1,amp:20,emd:12,rise:50,relax:165,flash:"m-bic",af:.80},
+ brachio:{name:"Brachioradialis",hot:[233,254],seg:"C6",lev:117,nerve:"Radial",muscle:"Brachioradialis",
+   aff:.38,eff:.38,acv:78,mcv:62,cd:.7,arc:"Monosynaptic Ia, C5 and C6",
+   joint:"forearm",sign:-1,amp:11,emd:12,rise:50,relax:165,flash:"m-bra",af:.75},
+ hoffmann:{name:"Hoffmann sign",hot:[276,268],seg:"C8",lev:136,nerve:"Median",muscle:"Flexor pollicis longus",
+   aff:.72,eff:.72,acv:65,mcv:58,cd:.7,arc:"Flicking the distal phalanx stretches the finger flexors. The thumb twitch is the same Ia reflex, normally suppressed by descending control.",
+   joint:"thumb",sign:1,amp:42,emd:14,rise:55,relax:150,flash:null,af:1,qual:"hoffmann"},
+ abdominal:{name:"Abdominal reflex",hot:[186,302],seg:"T10",lev:237,nerve:"Segmental intercostal and subcostal",
+   muscle:"Rectus abdominis and obliques",aff:.30,eff:.25,acv:20,mcv:50,cd:18,
+   arc:"Superficial and polysynaptic. Depends on the corticospinal tract, so it disappears rather than exaggerates in an upper motor neuron lesion.",
+   joint:null,sign:1,amp:0,emd:16,rise:70,relax:200,flash:"m-abdo",af:1,qual:"abdominal"},
+ patellar:{name:"Patellar",hot:[266,344],seg:"L4",lev:307,nerve:"Femoral",muscle:"Quadriceps femoris",
+   aff:.62,eff:.62,acv:80,mcv:65,cd:.7,arc:"Monosynaptic Ia, L2 to L4, predominantly L4",
+   joint:"lowerleg",sign:-1,amp:22,emd:12,rise:60,relax:185,flash:"m-quad",af:1},
+ achilles:{name:"Achilles",hot:[240,421],seg:"S1",lev:332,nerve:"Tibial",muscle:"Gastrocnemius and soleus",
+   aff:1.05,eff:.95,acv:80,mcv:62,cd:.7,arc:"Monosynaptic Ia, S1 and S2. The longest arc tested routinely, so the first to fail in a length-dependent neuropathy.",
+   joint:"foot",sign:1,amp:14,emd:14,rise:70,relax:200,flash:"m-gas",af:.95},
+ plantar:{name:"Plantar response",hot:[272,452],seg:"L5\u2013S2",lev:324,nerve:"Tibial afferent, tibial and peroneal efferent",
+   muscle:"Flexor hallucis brevis, or extensor hallucis longus if extensor",
+   aff:1.0,eff:.95,acv:25,mcv:55,cd:12,
+   arc:"Superficial nociceptive flexion reflex. In adults the corticospinal tract converts the primitive extensor response into toe flexion; lose the tract and the extensor response returns.",
+   joint:"toe",sign:1,amp:22,emd:20,rise:120,relax:260,flash:"m-gas",af:1,qual:"plantar"}
+};
+const ORDER=["jaw","biceps","brachio","triceps","hoffmann","abdominal","patellar","achilles","plantar"];
+const PIVOT={jaw:[154,178],forearm:[180,268],thumb:[258,277],lowerleg:[254,331],foot:[254,429],toe:[290,440]};
+const GRADES=["0","1+","2+","3+","4+"];
+const GLAB=["Absent","Hypoactive","Normal","Brisk","Hyperactive with clonus"];
+
+/* ══════════════ clinical states ══════════════ */
+const BASE={spindle:1,cv:1,syn:1,mnPool:1,nmj:1,muscle:1,presyn:100,recip:100,renshaw:100,ib:100,desc:100,pic:100,relax:1};
+const DZ=[
+ {id:"normal",name:"Healthy adult",sub:"no neurological disease",cortico:0,jaw:"trace",
+  note:"Reflexes are symmetrical and grade 2+. Note that 3+ without other signs is a normal variant in about a fifth of healthy people, and absent ankle jerks are common over 70.",
+  p:{},per:{},flags:[]},
+ {id:"umn",name:"Chronic upper motor neuron lesion",sub:"internal capsule infarct, six months on",cortico:1,jaw:"trace",
+  note:"Loss of corticoreticular drive to the inhibitory dorsal reticulospinal tract is what produces spasticity, while the facilitatory medial reticulospinal and vestibulospinal systems keep working unopposed. The jaw jerk stays normal because the trigeminal motor nucleus has bilateral cortical input.",
+  p:{presyn:35,recip:45,renshaw:70,ib:55,desc:15,pic:185},
+  per:{biceps:{desc:22,pic:160},brachio:{desc:22,pic:160},triceps:{desc:22,pic:160}},
+  flags:[["Spasticity, clasp-knife",1],["Reflex spread to crossed adductors",1],["Superficial abdominal reflex lost",1]],hi:["desc","pad","iain"]},
+ {id:"cerv",name:"Cervical compressive myelopathy",sub:"C5\u2013C6 spondylotic cord compression",cortico:1,jaw:"trace",
+  note:"The classic mixed picture: lower motor neuron signs at the compressed level, upper motor neuron signs below it. A normal jaw jerk with brisk limb reflexes places the lesion below the foramen magnum \u2014 that single comparison is why the jaw jerk is worth testing.",
+  p:{presyn:30,recip:40,renshaw:65,ib:50,desc:12,pic:190},
+  per:{biceps:{mnPool:.30,desc:70,pic:110},brachio:{mnPool:.35,desc:70,pic:115,inv:1},triceps:{desc:35,pic:150}},
+  flags:[["Inverted radial reflex",1],["Finger escape sign",1],["Sensory level at C6",2]],hi:["desc","soma"]},
+ {id:"shock",name:"Acute spinal cord injury",sub:"complete T4 lesion, first 48 hours",cortico:1,jaw:"trace",
+  note:"Spinal shock. The motoneurons below the lesion are intact but profoundly hypoexcitable after abrupt withdrawal of descending monoamine drive, so everything is areflexic. Reflexes return over days to weeks and then become hyperactive.",
+  p:{pic:6,desc:5},
+  per:{biceps:{pic:100,desc:100},brachio:{pic:100,desc:100},triceps:{pic:100,desc:100},
+       jaw:{pic:100,desc:100},hoffmann:{pic:100,desc:100}},
+  flags:[["Flaccid paraplegia",1],["Bulbocavernosus returns first",2],["Delayed plantar response",2]],hi:["soma","desc"]},
+ {id:"radic",name:"S1 radiculopathy",sub:"right L5\u2013S1 disc protrusion",cortico:0,jaw:"trace",
+  note:"One root, one reflex. A lost ankle jerk with a normal knee jerk is a segmental lesion, not a neuropathy \u2014 the pattern is the diagnosis.",
+  p:{},per:{achilles:{spindle:.05,mnPool:.25}},
+  flags:[["Pain in S1 dermatome",2],["Weak plantar flexion",1]],hi:["drg","axon"]},
+ {id:"dpn",name:"Diabetic large-fibre polyneuropathy",sub:"length-dependent, ten years of diabetes",cortico:0,jaw:"trace",
+  note:"Length-dependent dying-back of the longest and largest myelinated axons. Ia afferents from the calf are the longest in the body, so the ankle jerk goes years before the knee jerk, and conduction in what survives is slowed.",
+  p:{},per:{achilles:{spindle:.06,cv:.72},patellar:{spindle:.42,cv:.88},biceps:{spindle:.70},brachio:{spindle:.66},triceps:{spindle:.68}},
+  flags:[["Stocking sensory loss",2],["Impaired vibration and proprioception",2]],hi:["axon","spindle"]},
+ {id:"gbs",name:"Guillain\u2013Barr\u00e9 syndrome",sub:"acute inflammatory demyelinating polyradiculoneuropathy",cortico:0,jaw:"absent",
+  note:"Demyelination concentrated at the roots produces conduction block and temporal dispersion. Global areflexia appears within days and is often the earliest objective sign, before weakness is obvious.",
+  p:{spindle:.05,cv:.32},per:{},
+  flags:[["Ascending weakness",1],["Global areflexia",1],["Autonomic instability",1]],hi:["axon","drg"]},
+ {id:"ahc",name:"Anterior horn cell disease",sub:"SMA type III, or prior poliomyelitis",cortico:0,jaw:"trace",
+  note:"The efferent limb fails. Afferents, cord circuitry and descending control are intact, but there are too few surviving motoneurons to generate a response.",
+  p:{mnPool:.45},
+  per:{patellar:{mnPool:.05},achilles:{mnPool:.06},biceps:{mnPool:.35},brachio:{mnPool:.40},triceps:{mnPool:.38}},
+  flags:[["Fasciculations",1],["Wasting without sensory loss",1]],hi:["soma","nmj"]},
+ {id:"als",name:"Amyotrophic lateral sclerosis",sub:"combined upper and lower motor neuron degeneration",cortico:1,bulbar:1,jaw:"brisk",
+  note:"A brisk reflex in a wasted, fasciculating limb is the signature of ALS: upper and lower motor neuron loss in the same myotome. A brisk jaw jerk adds bilateral corticobulbar involvement above the cord.",
+  p:{presyn:50,recip:60,renshaw:95,ib:95,desc:25,pic:190,mnPool:.78},per:{},
+  flags:[["Fasciculations and wasting",1],["Brisk reflexes in a wasted limb",1],["Split hand",1]],hi:["soma","desc"]},
+ {id:"cbll",name:"Cerebellar hemispheric lesion",sub:"ipsilateral, subacute",cortico:0,jaw:"trace",pend:1,
+  note:"Cerebellar output normally biases motoneuron excitability upward. Losing it gives hypotonia and pendular reflexes \u2014 the amplitude is normal, but the limb swings several times because damping is lost.",
+  p:{pic:72},per:{},
+  flags:[["Hypotonia",2],["Pendular reflexes",2],["Dysmetria and intention tremor",2]],hi:["soma"]},
+ {id:"hypo",name:"Severe hypothyroidism",sub:"myxoedema",cortico:0,jaw:"trace",
+  note:"The Woltman sign. Contraction is near normal but relaxation is markedly prolonged, because reduced SERCA expression and a shift in myosin isoforms slow calcium reuptake into the sarcoplasmic reticulum. The defect is in the muscle, not the arc.",
+  p:{pic:80,muscle:.85,relax:5.5},per:{achilles:{relax:7.5}},
+  flags:[["Hung-up ankle jerk",1],["Delayed relaxation phase",1]],hi:["muscle"]},
+ {id:"tet",name:"Tetanus",sub:"tetanospasmin blocking spinal inhibition",cortico:0,bulbar:1,jaw:"spasm",
+  note:"Tetanospasmin cleaves VAMP2 selectively in inhibitory interneurons, so glycine and GABA release fails while excitation is untouched. Descending pathways are intact but can no longer act, because they work through the interneurons that have been silenced. There is no Babinski sign \u2014 the corticospinal tract is normal.",
+  p:{presyn:25,recip:8,renshaw:5,ib:15,desc:30,pic:150},per:{},
+  flags:[["Trismus and risus sardonicus",1],["Generalised spasms on stimulation",1],["No Babinski sign",0]],hi:["iain","renshaw","pad"]},
+ {id:"lems",name:"Lambert\u2013Eaton myasthenic syndrome",sub:"antibodies to presynaptic P/Q calcium channels",cortico:0,jaw:"absent",facil:1,
+  note:"Presynaptic failure. Too little calcium enters the motor terminal, quantal content collapses and reflexes are depressed \u2014 then facilitate after sustained voluntary contraction as calcium accumulates. Hyporeflexia that improves with exercise is close to pathognomonic.",
+  p:{nmj:.20},per:{},
+  flags:[["Post-exercise facilitation",1],["Proximal weakness, dry mouth",2]],hi:["nmj"]},
+ {id:"mg",name:"Myasthenia gravis",sub:"antibodies to postsynaptic acetylcholine receptors",cortico:0,jaw:"trace",
+  note:"Reflexes are preserved, and that is the teaching point. The lesion is postsynaptic and the endplate retains enough safety factor for the brief synchronous volley of a tendon tap, even when sustained voluntary effort fatigues badly.",
+  p:{nmj:.88},per:{},
+  flags:[["Fatigable ptosis and diplopia",2],["Reflexes preserved",0]],hi:["nmj"]}
+];
+
+/* ══════════════ molecular sites ══════════════ */
+const MOL={
+ spindle:{t:"Muscle spindle",s:"intrafusal fibres \u2022 PIEZO2 \u2022 \u03b3-fusimotor",d:"spindle",
+  chem:[["Sensor","Primary (Ia) annulospiral ending on nuclear bag and chain fibres"],
+        ["Transduction","PIEZO2 stretch-gated cation channel"],
+        ["Encoding","Generator potential \u2192 Na\u1d651.6 at the heminode \u2192 action potential train"],
+        ["Set by","\u03b3-dynamic and \u03b3-static motoneurons, acetylcholine on nicotinic receptors of intrafusal fibres"]],
+  p:"The spindle lies in parallel with the working muscle fibres, so it reports length and rate of change of length. Tapping the tendon stretches it by a few hundred micrometres for a few milliseconds \u2014 enough for the Ia population to fire one tight synchronous volley. Fusimotor drive sets the gain before the stimulus ever arrives, which is why a tense patient has brisker reflexes and why reinforcement manoeuvres work.",
+  les:{dpn:"Distal Ia endings degenerate first, so the ankle spindle stops reporting.",gbs:"Demyelination blocks the volley before it leaves the limb.",radic:"The ending is intact; the axon is compressed at the root."}},
+ axon:{t:"Ia afferent axon",s:"A\u03b1 \u2022 12\u201320 \u00b5m \u2022 70\u2013120 m/s",d:"axon",
+  chem:[["Fibre class","Group Ia, the largest and fastest myelinated afferent"],
+        ["Conduction","Saltatory, Na\u1d651.6 clustered at nodes of Ranvier, K\u1d677.2/7.3 juxtaparanodally"],
+        ["Myelin","Schwann cells, internodes around 1 mm, compaction by PMP22, MPZ and MBP"],
+        ["Consequence","Velocity scales with diameter; the largest fibres are also the most metabolically exposed"]],
+  p:"Speed here is structural, not chemical. Strip the myelin and current leaks across the internode instead of jumping to the next node, so conduction slows, disperses in time and eventually blocks. Because the reflex depends on a synchronous volley, temporal dispersion alone abolishes a tendon reflex even when every axon still conducts.",
+  les:{gbs:"Complement and macrophage attack on myelin at the roots: conduction block and dispersion, hence early areflexia.",dpn:"Length-dependent axonal loss with secondary demyelination; conduction slows and amplitude falls.",radic:"Focal root compression with demyelination and axonal loss at one level only."}},
+ drg:{t:"Dorsal root ganglion neuron",s:"pseudounipolar \u2022 no synapse \u2022 outside the blood\u2013brain barrier",d:"axon",
+  chem:[["Shape","Pseudounipolar: one stem axon divides at a T-junction into peripheral and central branches"],
+        ["Relay","None. The signal does not synapse before entering the cord"],
+        ["Vulnerability","Fenestrated capillaries, so no blood\u2013brain barrier"]],
+  p:"The cell body sits off to the side of the conducting path, which is why the ganglion can be destroyed without interrupting a single synapse \u2014 the axon simply dies back from both ends. Being outside the blood\u2013brain barrier makes it a target for antibodies and toxins that never reach the cord: paraneoplastic anti-Hu ganglionopathy, Sj\u00f6gren syndrome, cisplatin and high-dose pyridoxine all produce a sensory neuronopathy with areflexia and preserved strength.",
+  les:{radic:"The lesion is usually just proximal to the ganglion, at the root.",gbs:"The roots either side of the ganglion are the site of maximal demyelination."}},
+ syn:{t:"Ia \u2192 \u03b1-motoneuron synapse",s:"glutamate \u2022 monosynaptic \u2022 central delay 0.5\u20130.9 ms",d:"syn",
+  pre:"Ia afferent bouton",post:"\u03b1-motoneuron dendrite",nt:"Glutamate",col:"eosin",
+  rec:[["AMPA","Na\u207a in"],["NMDA","Ca\u00b2\u207a in"]],eff:"depolarise",
+  chem:[["Transmitter","Glutamate, loaded into vesicles by VGLUT1"],
+        ["Release trigger","Ca\u00b2\u207a through Ca\u1d652.1 (P/Q) onto synaptotagmin-1, SNARE fusion by syntaxin-1, SNAP-25 and VAMP2"],
+        ["Receptors","AMPA for the fast EPSP, NMDA contributing once the membrane is depolarised"],
+        ["Delay","0.5\u20130.9 ms \u2014 the measurement that proved the connection is monosynaptic"]],
+  p:"A single Ia bouton produces an EPSP of roughly 100 microvolts. One afferent cannot fire a motoneuron; several hundred arriving within a millisecond can. This is why the reflex is a test of synchrony as much as of strength, and why anything that disperses the volley in time abolishes it.",
+  les:{shock:"Transmission is normal; the postsynaptic motoneuron is too hypoexcitable to respond."}},
+ pad:{t:"Presynaptic inhibition",s:"axo-axonic GABA \u2022 primary afferent depolarisation",d:"syn",
+  pre:"GABAergic last-order interneuron",post:"Ia afferent terminal",nt:"GABA",col:"glycine",
+  rec:[["GABA\u1d00","Cl\u207b out"],["GABA\u1d2c","K\u207a / Ca\u00b2\u207a"]],eff:"shunt",
+  chem:[["Arrangement","Axo-axonic contact on the Ia terminal itself, not on the motoneuron"],
+        ["Transmitter","GABA onto GABA\u1d00; GABA\u1d2c presynaptically as well"],
+        ["Odd twist","Afferent terminals hold chloride high via NKCC1, so GABA\u1d00 opening depolarises them"],
+        ["Mechanism","Primary afferent depolarisation shunts the terminal and inactivates Na\u1d65 channels, so less transmitter is released"]],
+  p:"This is the gain control on the input, set before the signal arrives, and it is the single most important term in human reflex modulation. Cortical and reticulospinal pathways adjust it continuously during movement. Presynaptic inhibition is reduced after spinal cord injury and in stroke, which is a large part of why those reflexes are exaggerated \u2014 and why baclofen, a GABA\u1d2c agonist acting at exactly this terminal, is the standard drug for spasticity.",
+  les:{umn:"Reduced: loss of the descending drive that sets it.",tet:"Silenced with all other inhibitory terminals by VAMP2 cleavage.",cerv:"Reduced below the compressed level."}},
+ iain:{t:"Ia inhibitory interneuron",s:"glycine \u2022 reciprocal \u2022 disynaptic delay \u2248 1.2 ms",d:"syn",
+  pre:"Ia inhibitory interneuron",post:"Antagonist \u03b1-motoneuron",nt:"Glycine",col:"glycine",
+  rec:[["GlyR \u03b11\u03b2","Cl\u207b in"]],eff:"hyperpolarise",
+  chem:[["Transmitter","Glycine, often co-released with GABA from the same vesicle"],
+        ["Receptor","Glycine receptor \u03b11\u03b2, anchored by gephyrin, a chloride channel"],
+        ["Effect","Cl\u207b influx hyperpolarises and shunts the antagonist motoneuron"],
+        ["Also receives","Corticospinal and reticulospinal input, so voluntary commands relax the antagonist automatically"]],
+  p:"Stretching a muscle inhibits its opposite number through the same afferent volley, one interneuron later. That is why a knee jerk is a clean kick rather than a co-contraction. Strychnine blocks the receptor and tetanospasmin destroys the release machinery; both convert every ordinary stimulus into a whole-limb spasm.",
+  les:{tet:"VAMP2 cleaved \u2014 the vesicle cannot fuse, so glycine is never released.",umn:"Reciprocal inhibition is reduced and can even reverse to facilitation in spastic limbs."}},
+ renshaw:{t:"Renshaw cell",s:"driven by ACh \u2022 releases glycine and GABA",d:"syn",
+  pre:"\u03b1-motoneuron axon collateral",post:"Renshaw cell",nt:"Acetylcholine",col:"nissl",
+  rec:[["nAChR \u03b17","Na\u207a / Ca\u00b2\u207a"],["heteromeric nAChR","Na\u207a in"]],eff:"depolarise",
+  chem:[["Input","Recurrent collaterals of \u03b1-motoneuron axons, before they leave the cord"],
+        ["Transmitter in","Acetylcholine on nicotinic receptors \u2014 the one place ACh excites a spinal interneuron"],
+        ["Transmitter out","Glycine and GABA onto the same and synergist motoneurons, and onto other Renshaw cells"],
+        ["Function","Gain control and smoothing of motor output, not simple negative feedback"]],
+  p:"Discovered by recording from the ventral root while stimulating it: the antidromic volley produced a long inhibition of the motoneurons it came from. Renshaw cells also inhibit each other and the Ia inhibitory interneurons, so the circuit can disinhibit as well as inhibit. Like every glycinergic cell in the cord it is a target of strychnine and tetanus toxin.",
+  les:{tet:"Output blocked, so recurrent inhibition is lost and volleys reverberate.",umn:"Recurrent inhibition is partly reduced, though less consistently than presynaptic inhibition."}},
+ ib:{t:"Golgi tendon organ and the Ib pathway",s:"in series \u2022 senses force \u2022 glycinergic relay",d:"syn",
+  pre:"Ib inhibitory interneuron",post:"Homonymous \u03b1-motoneuron",nt:"Glycine",col:"glycine",
+  rec:[["GlyR","Cl\u207b in"]],eff:"hyperpolarise",
+  chem:[["Receptor organ","Golgi tendon organ, in series with the muscle at the tendon junction"],
+        ["Variable sensed","Force, not length \u2014 the complement to the spindle"],
+        ["Afferent","Group Ib, A\u03b2, 60\u201390 m/s"],
+        ["Relay","Ib inhibitory interneuron, glycinergic, onto the muscle's own motoneurons"]],
+  p:"Autogenic inhibition arrives around forty milliseconds after the tap, once tension has actually developed, and helps terminate the twitch. The Ib interneuron is heavily convergent: cutaneous, joint and descending inputs all land on it, and during locomotion the sign of the pathway can reverse so that force feedback becomes excitatory and helps support body weight.",
+  les:{tet:"Glycinergic relay blocked along with the rest.",umn:"Reduced, contributing to the failure to terminate a reflex cleanly."}},
+ soma:{t:"\u03b1-motoneuron",s:"persistent inward currents \u2022 5-HT and noradrenaline \u2022 size principle",d:"soma",
+  chem:[["Scale","The largest neuron in the cord, integrating tens of thousands of synapses"],
+        ["Intrinsic currents","Persistent Na\u207a (Na\u1d651.6) and L-type Ca\u00b2\u207a (Ca\u1d651.3) produce self-sustained firing"],
+        ["Modulators","Serotonin from the raph\u00e9 and noradrenaline from the locus coeruleus amplify those currents severalfold"],
+        ["Recruitment","Small motoneurons first, by the size principle; the after-hyperpolarisation via SK channels sets firing rate"]],
+  p:"Excitability is not fixed. Persistent inward currents can multiply a synaptic input several times over, and they are switched on and off by descending monoamines. That single fact explains two findings that look unrelated: the flaccid areflexia of acute spinal shock, when monoamine drive is abruptly withdrawn, and the spasms of chronic cord injury months later, when serotonin receptors become constitutively active and the currents run unopposed. It is also why tizanidine and cyproheptadine help spasticity.",
+  les:{shock:"Monoamine drive withdrawn \u2014 currents off, motoneuron hypoexcitable, areflexia.",ahc:"The cells themselves are dying; too few remain to generate a response.",als:"Motoneuron degeneration plus loss of descending control in the same segment.",cbll:"Tonic facilitation from cerebellar output is reduced, giving hypotonia.",umn:"Currents run unopposed once descending inhibition is lost."}},
+ nmj:{t:"Neuromuscular junction",s:"acetylcholine \u2022 safety factor 3\u20135\u00d7",d:"nmj",
+  chem:[["Transmitter","Acetylcholine, loaded by VAChT, about 50\u2013100 quanta per impulse"],
+        ["Presynaptic","Ca\u1d652.1 (P/Q) at active zones aligned with the junctional folds"],
+        ["Postsynaptic","(\u03b1\u2081)\u2082\u03b2\u03b4\u03b5 nicotinic receptors at 10,000 per \u00b5m\u00b2 on the crests, clustered by agrin\u2013LRP4\u2013MuSK\u2013rapsyn"],
+        ["Termination","Acetylcholinesterase in the cleft, within about a millisecond"],
+        ["Amplification","Na\u1d651.4 in the troughs turns the endplate potential into a muscle action potential"]],
+  p:"Every impulse normally releases three to five times the acetylcholine needed, and that margin is what the two classic diseases eat into from opposite sides. Myasthenia removes receptors, so reflexes survive because the brief synchronous volley of a tendon tap still clears the threshold. Lambert\u2013Eaton removes the calcium channels that trigger release, so the first impulse fails and reflexes are depressed \u2014 but repeated activity accumulates calcium and the response facilitates.",
+  les:{mg:"Antibodies to the acetylcholine receptor or MuSK: receptors lost, folds simplified, complement damage. Postsynaptic.",lems:"Antibodies to presynaptic Ca\u1d652.1: quantal content collapses, with facilitation after sustained activity. Presynaptic.",ahc:"Denervation and collateral reinnervation leave unstable endplates."}},
+ muscle:{t:"Excitation\u2013contraction coupling",s:"Ca\u1d651.1 \u2022 RyR1 \u2022 SERCA sets relaxation",d:"muscle",
+  chem:[["Trigger","Muscle action potential runs into the T-tubule"],
+        ["Voltage sensor","Ca\u1d651.1, the dihydropyridine receptor, mechanically coupled to RyR1"],
+        ["Release","RyR1 opens and sarcoplasmic reticulum Ca\u00b2\u207a floods the cytosol"],
+        ["Contraction","Ca\u00b2\u207a binds troponin C, tropomyosin shifts, actin\u2013myosin cross-bridges cycle"],
+        ["Relaxation","SERCA1 pumps Ca\u00b2\u207a back into the store, consuming ATP"]],
+  p:"The rise of a tendon reflex is set by the nervous system; the fall is set here. Relaxation is active and costs ATP, so anything that reduces SERCA slows it. In hypothyroidism SERCA expression falls and myosin isoforms shift, and the ankle jerk visibly hangs up before letting go \u2014 the Woltman sign, one of the few reflex abnormalities that is purely muscular.",
+  les:{hypo:"Reduced SERCA and a myosin isoform shift slow calcium reuptake, so relaxation is markedly prolonged.",ahc:"Denervated fibres atrophy, so the same neural drive produces less force."}},
+ desc:{t:"Descending control",s:"corticospinal \u2022 reticulospinal \u2022 vestibulospinal",d:"desc",
+  chem:[["Corticospinal","Mono- and disynaptic contacts on \u03b1-motoneurons and on every interneuron shown here"],
+        ["Inhibitory","Dorsal reticulospinal tract from the medullary reticular formation, driven by corticoreticular fibres \u2014 the main brake on spinal reflexes"],
+        ["Facilitatory","Medial reticulospinal and vestibulospinal tracts, driving extensor tone"],
+        ["Monoaminergic","Raph\u00e9 and locus coeruleus fibres setting motoneuron intrinsic excitability"]],
+  p:"Spasticity is not caused by loss of the pyramidal tract alone. A lesion confined to the pyramid gives weakness, loss of fine finger movement and a Babinski sign, with little increase in tone. Hyperreflexia and spasticity need loss of the corticoreticular drive to the inhibitory dorsal reticulospinal tract while the facilitatory medial system survives \u2014 which is why a capsular stroke, where both run together, produces florid spasticity and a cortical strip lesion may not.",
+  les:{umn:"Corticoreticular and corticospinal fibres interrupted together in the capsule.",cerv:"Tracts compressed in the lateral funiculus below the level.",als:"Corticospinal and corticobulbar degeneration, hence the brisk jaw jerk.",shock:"Abrupt complete interruption: at first areflexia, later hyperreflexia.",tet:"Tracts are intact but powerless, because the interneurons they act through are silenced."}}
+};
+</script>
+<script>
+/* ══════════════ state and model ══════════════ */
+const KEYS6=["presyn","recip","renshaw","ib","desc","pic"];
+const METERS=[
+ ["presyn","Presynaptic inhibition","GABA on the Ia terminal","pad"],
+ ["recip","Reciprocal Ia inhibition","glycine to the antagonist","iain"],
+ ["renshaw","Recurrent inhibition","Renshaw cell","renshaw"],
+ ["ib","Autogenic Ib inhibition","Golgi tendon organ","ib"],
+ ["desc","Descending brake","dorsal reticulospinal","desc"],
+ ["pic","Motoneuron excitability","persistent inward currents","soma"]
+];
+const state={dz:"normal",rx:null,userAdj:{},facil:false,t:0,playing:false,spd:20,mol:"syn"};
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const dzObj=()=>DZ.find(d=>d.id===state.dz);
+
+function resolve(id){
+  const d=dzObj(), p={...BASE,...d.p,...(d.per[id]||{})};
+  for(const k of KEYS6){
+    if(state.userAdj[k]!==undefined){
+      const b=(d.p[k]!==undefined?d.p[k]:BASE[k]);
+      p[k]=clamp(p[k]+(state.userAdj[k]-b),0,260);
+    }
+  }
+  if(state.facil)p.nmj=Math.max(p.nmj,.85);
+  return p;
+}
+function gain(id){
+  const R=REFLEXES[id],P=resolve(id);
+  const load=.30*P.presyn/100+.18*P.recip/100+.14*P.renshaw/100+.10*P.ib/100+.28*P.desc/100;
+  const den=.35+.65*load;
+  const g=(P.spindle*P.syn*P.mnPool*(P.pic/100))/den;
+  return {out:g*P.nmj*P.muscle*R.af,P:P,load:load};
+}
+const gradeOf=o=>o<.075?0:o<.45?1:o<1.45?2:o<2.30?3:4;
+const sat=o=>1.9*o/(o+.9);
+
+function quals(){
+  const d=dzObj();
+  const Pp=resolve("plantar"),Pa=resolve("abdominal"),Pj=resolve("jaw"),Ph=resolve("hoffmann");
+  const dead=P=>P.spindle<.2||P.mnPool<.15||P.nmj<.3||P.pic<25;
+  const bab=P=>(d.cortico&&P.desc<50)||P.desc<25;
+  let jaw=d.jaw;
+  if(dead(Pj))jaw="absent";
+  else if(d.bulbar&&Pj.desc<45&&Pj.pic>140&&jaw!=="spasm")jaw="brisk";
+  return {
+    plantar:dead(Pp)?"absent":(bab(Pp)?"extensor":"flexor"),
+    hoff:!dead(Ph)&&Ph.desc<55&&Ph.pic>130&&(d.cortico||Ph.desc<25),
+    abd:!dead(Pa)&&!bab(Pa),
+    jaw:jaw,
+    maxG:Math.max(...["biceps","brachio","triceps","patellar","achilles"].map(k=>gradeOf(gain(k).out)))
+  };
+}
+
+/* ══════════════ timeline ══════════════ */
+function timeline(id){
+  const R=REFLEXES[id],G=gain(id),P=G.P,cv=Math.max(P.cv,.05);
+  const t={};
+  t.spindle=.8;
+  t.aff=(R.aff/(R.acv*cv))*1000;
+  t.cord=t.spindle+t.aff;
+  t.syn=t.cord+R.cd;
+  t.mn=t.syn+.3;
+  t.effT=(R.eff/(R.mcv*cv))*1000;
+  t.nmj=t.mn+t.effT;
+  t.map=t.nmj+.7;
+  t.on=t.map+R.emd;
+  t.peak=t.on+R.rise;
+  t.recip=t.cord+R.cd+1.25;
+  t.rec=t.mn+2.2;
+  t.auto=t.on+28;
+  const q=quals();
+  let amp=R.amp*sat(G.out),grade=gradeOf(G.out),sign=R.sign;
+  if(R.qual==="plantar"){grade=null;amp=q.plantar==="flexor"?20:q.plantar==="extensor"?34:0;sign=q.plantar==="extensor"?-1:1;}
+  if(R.qual==="hoffmann"){grade=null;amp=q.hoff?40:0;}
+  if(R.qual==="jaw"){grade=null;amp={absent:0,trace:5,brisk:13,spasm:18}[q.jaw];}
+  if(R.qual==="abdominal"){grade=null;amp=0;}
+  if(P.inv){amp=Math.max(amp,26);}
+  const relax=R.relax*P.relax;
+  const clonic=(grade===4)||(R.qual==="jaw"&&q.jaw==="spasm");
+  const sustain=clonic&&(dzObj().cortico||dzObj().id==="tet");
+  const pend=!!dzObj().pend&&amp>0;
+  t.end=t.peak+relax*(clonic?3.0:pend?3.4:1.7);
+  t.win=clamp(t.end,240,1200);
+  return {t:t,amp:amp,sign:sign,grade:grade,out:G.out,P:P,relax:relax,clonic:clonic,sustain:sustain,pend:pend,q:q,R:R};
+}
+function excursion(S,tt){
+  const t=S.t;
+  if(tt<t.on||S.amp===0)return 0;
+  let a;
+  if(tt<t.peak)a=S.amp*(1-Math.cos(Math.PI*(tt-t.on)/S.R.rise))/2;
+  else{
+    const u=(tt-t.peak)/S.relax;
+    a=S.amp*Math.exp(-3*u);
+    if(S.pend)a=S.amp*Math.exp(-(tt-t.peak)/(S.relax*2.3))*Math.cos(2*Math.PI*1.15*(tt-t.peak)/1000);
+    if(S.clonic){
+      const env=S.sustain?.62:.62*Math.exp(-(tt-t.peak)/700);
+      a=S.amp*.45*Math.exp(-u*(S.sustain?.35:1.1))
+        + S.amp*env*Math.sin(2*Math.PI*6.2*(tt-t.peak)/1000);
+    }
+  }
+  return a*S.sign;
+}
+
+/* ══════════════ build controls ══════════════ */
+const dzSel=$("#dz");
+DZ.forEach(d=>{const o=document.createElement("option");o.value=d.id;o.textContent=d.name;dzSel.appendChild(o);});
+dzSel.addEventListener("change",()=>{state.dz=dzSel.value;state.userAdj={};state.facil=false;$("#facil").setAttribute("aria-pressed","false");renderAll();if(state.rx)fire(state.rx);});
+
+const hs=$("#hotspots");
+ORDER.forEach(id=>{
+  const R=REFLEXES[id],[x,y]=R.hot;
+  const g=el("g",{class:"hot",tabindex:"0",role:"button","aria-label":R.name+" reflex","data-id":id,transform:`translate(${x} ${y})`});
+  g.appendChild(el("circle",{class:"tgt",r:11}));
+  g.appendChild(el("circle",{class:"dot",r:2.4}));
+  const ttl=el("title");ttl.textContent=R.name+" — "+R.seg;g.appendChild(ttl);
+  g.addEventListener("click",()=>fire(id));
+  g.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();fire(id);}});
+  hs.appendChild(g);
+});
+
+const metersEl=$("#meters"),slidersEl=$("#sliders");
+METERS.forEach(([k,lab,sub,mol])=>{
+  const b=document.createElement("button");
+  b.className="meter";b.type="button";b.dataset.k=k;
+  b.innerHTML=`<span class="mlab">${lab}<em>${sub}</em></span><span class="mval" id="mv-${k}">100%</span>
+    <span class="track"><i id="mt-${k}"></i><span class="ref" style="left:50%"></span></span>`;
+  b.addEventListener("click",()=>showMol(mol));
+  metersEl.appendChild(b);
+  const w=document.createElement("div");w.className="sl";
+  w.innerHTML=`<label for="sl-${k}">${lab}</label><output id="so-${k}">100%</output>
+    <input id="sl-${k}" type="range" min="0" max="${k==="pic"?250:200}" step="1" value="100">`;
+  slidersEl.appendChild(w);
+  const inp=w.querySelector("input");
+  inp.addEventListener("input",()=>{state.userAdj[k]=+inp.value;renderAll();if(state.rx)fire(state.rx,true);});
+});
+$("#reset").addEventListener("click",()=>{state.userAdj={};renderAll();if(state.rx)fire(state.rx);});
+$("#facil").addEventListener("click",e=>{
+  state.facil=!state.facil;e.currentTarget.setAttribute("aria-pressed",String(state.facil));
+  e.currentTarget.textContent=state.facil?"Facilitated — rested state":"Hold a maximal contraction for 15\u2009s";
+  renderAll();if(state.rx)fire(state.rx);
+});
+$$(".spd button").forEach(b=>b.addEventListener("click",()=>{
+  $$(".spd button").forEach(x=>x.setAttribute("aria-pressed","false"));
+  b.setAttribute("aria-pressed","true");state.spd=+b.dataset.spd;
+}));
+$("#play").addEventListener("click",()=>{if(state.rx)fire(state.rx);});
+$("#scrub").addEventListener("input",()=>{
+  if(!S)return;state.playing=false;state.t=(+$("#scrub").value/1000)*S.t.win;paint();
+});
+
+/* ══════════════ render panels ══════════════ */
+function renderAll(){
+  const d=dzObj();
+  $("#dzhint").innerHTML=`<b>${d.sub}.</b> ${d.note}`;
+  $("#facil").hidden=!d.facil;
+  METERS.forEach(([k])=>{
+    const P=resolve(state.rx||"patellar");
+    const v=Math.round(P[k]);
+    $("#mv-"+k).textContent=v+"%";
+    const bar=$("#mt-"+k);
+    bar.style.width=clamp(v/200*100,0,100)+"%";
+    bar.className=(k==="pic"?(v>110?"hi":""):(v<70?"hi":""));
+    const base=(d.p[k]!==undefined?d.p[k]:BASE[k]);
+    const shown=state.userAdj[k]!==undefined?state.userAdj[k]:base;
+    $("#sl-"+k).value=shown;$("#so-"+k).textContent=Math.round(shown)+"%";
+  });
+  markLesions();
+}
+function markLesions(){
+  $$(".lesring").forEach(n=>n.remove());
+  const SITE={spindle:[563,292,26],axon:[478,206,18],drg:[414,140,22],syn:[298,245,13],pad:[326,166,15],
+    iain:[272,172,15],renshaw:[288,304,15],ib:[278,212,15],soma:[298,262,24],nmj:[546,322,14],
+    muscle:[590,304,22],desc:[210,43,0]};
+  const d=dzObj();(d.hi||[]).forEach(h=>{
+    const s=SITE[h];if(!s)return;
+    const c=el(h==="desc"?"rect":"circle",h==="desc"
+      ?{x:110,y:22,width:200,height:42,rx:8,class:"lesring"}
+      :{cx:s[0],cy:s[1],r:s[2],class:"lesring"});
+    c.setAttribute("fill","none");c.setAttribute("stroke","var(--alarm)");
+    c.setAttribute("stroke-width","1.4");c.setAttribute("stroke-dasharray","4 3");
+    $("#circuit").appendChild(c);
+  });
+}
+</script>
+<script>
+/* ══════════════ animation ══════════════ */
+let S=null,raf=null,last=0,PRE=60;
+const P_=id=>document.getElementById(id);
+const SEG=[
+ {k:"aff",p:["p_nerve_aff","p_droot"],a:"spindle",b:"cord",c:"--eosin",r:5},
+ {k:"ia1",p:["p_ia_mn"],a:"cord",b:"syn",c:"--eosin",r:4.5},
+ {k:"ia2",p:["p_ia_iain"],a:"cord",b:"synx",c:"--eosin",r:3.5},
+ {k:"iao",p:["p_iain_anta"],a:"synx",b:"recip",c:"--glycine",r:4},
+ {k:"eff",p:["p_mn_axon","p_nerve_eff"],a:"mn",b:"nmj",c:"--nissl",r:5},
+ {k:"col",p:["p_mn_collat"],a:"mn",b:"mnx",c:"--nissl",r:3.5},
+ {k:"reno",p:["p_renshaw_mn"],a:"mnx",b:"rec",c:"--glycine",r:4},
+ {k:"ib1",p:["p_nerve_ib"],a:"gto",b:"ibin",c:"--eosin",r:3.5},
+ {k:"ib2",p:["p_ia_ibin"],a:"ibin",b:"ibx",c:"--eosin",r:3.5},
+ {k:"ibo",p:["p_ib_mn"],a:"ibx",b:"auto",c:"--glycine",r:4}
+];
+const TONIC=[{k:"pad",p:["p_pad_ia"],c:"--glycine",g:"presyn",per:110},
+ {k:"dsc",p:["p_desc"],c:"--myelin",g:"desc",per:220},
+ {k:"dsc2",p:["p_desc_mn"],c:"--myelin",g:"desc",per:220,off:.35},
+ {k:"dsc3",p:["p_desc_iain"],c:"--myelin",g:"desc",per:220,off:.6}];
+const dotsG=$("#dots"),hotsG=$("#hotspots");
+[...SEG,...TONIC].forEach(s=>{
+  const c=el("circle",{class:"impulse",id:"d-"+s.k,r:s.r||4,fill:`var(${s.c})`});
+  dotsG.appendChild(c);
+});
+const LCACHE={};
+const plen=p=>LCACHE[p.id]!==undefined?LCACHE[p.id]:(LCACHE[p.id]=p.getTotalLength());
+function seqPos(ids,f){
+  const ps=ids.map(P_),ls=ps.map(plen),tot=ls.reduce((a,b)=>a+b,0);
+  let d=clamp(f,0,1)*tot;
+  for(let i=0;i<ps.length;i++){if(d<=ls[i]||i===ps.length-1)return ps[i].getPointAtLength(Math.min(d,ls[i]));d-=ls[i];}
+}
+const NODEWIN={"n-spindle":["spindle",-1,9],"n-drg":["drg",-2,3],"n-mn":["syn",0,7],
+ "n-iain":["synx",-.6,3],"n-anta":["recip",0,9],"n-renshaw":["mnx",.4,4],
+ "n-ibin":["ibx",-2,4],"n-nmj":["nmj",0,4],"n-gto":["gto",0,11]};
+
+function fire(id,keepT){
+  state.rx=id;S=timeline(id);
+  const t=S.t;
+  t.synx=t.syn+.55;t.mnx=t.mn+1.2;t.gto=t.on+2;t.ibin=t.on+20;t.ibx=t.auto-1.4;
+  t.drg=t.spindle+t.aff*.78;
+  $$(".hot").forEach(h=>h.classList.toggle("on",h.dataset.id===id));
+  resetJoints();readout();events();buildTrace();
+  const lm=$("#levmark");lm.setAttribute("transform",`translate(0 ${S.R.lev})`);lm.setAttribute("opacity","1");
+  $("#levtxt").textContent=S.R.seg;
+  if(!keepT){state.t=-PRE;state.playing=true;last=performance.now();
+    if(raf)cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);}
+  else paint();
+}
+function resetJoints(){["jaw","forearm","thumb","lowerleg","foot","toe"].forEach(j=>{
+  const g=P_("g-"+j);if(g)g.removeAttribute("transform");});}
+function loop(now){
+  const dt=Math.min(now-last,60);last=now;
+  if(state.playing){
+    state.t+=dt/state.spd;
+    if(state.t>=S.t.win){state.t=S.t.win;state.playing=false;}
+  }
+  paint();
+  if(state.playing)raf=requestAnimationFrame(loop);
+}
+function paint(){
+  if(!S)return;
+  const tt=state.t,t=S.t;
+  $("#tnow").textContent=r1(Math.max(0,tt),1);
+  $("#scrub").value=Math.round(clamp(tt/t.win,0,1)*1000);
+  // hammer
+  const H=$("#hammer"),[hx,hy]=S.R.hot;
+  if(tt<30){
+    H.setAttribute("opacity","1");
+    H.setAttribute("transform",`translate(${hx-3} ${hy-5}) scale(.72)`);
+    const f=clamp((tt+PRE)/PRE,0,1),ang=55*(1-f*f);
+    $("#hammerspin").setAttribute("transform",`rotate(${r1(ang,1)} 48 0)`);
+  }else H.setAttribute("opacity",String(clamp(1-(tt-30)/45,0,1)));
+  // joint
+  const a=excursion(S,tt);
+  const j=S.P.inv?"thumb":S.R.joint;
+  if(j){const[cx,cy]=PIVOT[j];P_("g-"+j).setAttribute("transform",`rotate(${r1(a,2)} ${cx} ${cy})`);}
+  hotsG.style.opacity=String(1-.78*clamp(Math.abs(a)/6,0,1));
+  // muscle flash
+  $$(".msc").forEach(m=>m.classList.remove("fire"));
+  if(S.R.flash&&tt>=t.map&&tt<t.peak+40&&S.amp!==0)P_(S.R.flash).classList.add("fire");
+  if(S.R.flash&&S.clonic&&tt>t.peak){
+    const ph=((tt-t.peak)%161);if(ph<26)P_(S.R.flash).classList.add("fire");}
+  if(S.R.qual==="abdominal"&&S.q.abd&&tt>=t.map&&tt<t.map+90)P_("m-abdo").classList.add("fire");
+  // dots
+  SEG.forEach(s=>{
+    const d=P_("d-"+s.k),t0=t[s.a],t1=t[s.b];
+    let show=tt>=t0&&tt<=t1+.1&&S.out>.0005;
+    if((s.k==="ib1"||s.k==="ib2"||s.k==="ibo")&&(S.amp===0||S.P.ib<12))show=false;
+    if((s.k==="ia2"||s.k==="iao")&&S.P.recip<12)show=false;
+    if((s.k==="col"||s.k==="reno")&&S.P.renshaw<12)show=false;
+    if(s.k==="eff"&&S.P.mnPool<.08)show=false;
+    d.style.opacity=show?"1":"0";
+    if(show){const p=seqPos(s.p,(tt-t0)/Math.max(t1-t0,.01));d.setAttribute("cx",p.x);d.setAttribute("cy",p.y);}
+  });
+  TONIC.forEach(s=>{
+    const d=P_("d-"+s.k),lvl=S.P[s.g];
+    if(lvl<12||tt<-PRE+10){d.style.opacity="0";return;}
+    d.style.opacity=String(clamp(lvl/140,.15,1));
+    const f=(((tt+PRE)/s.per)+(s.off||0))%1;
+    const p=seqPos(s.p,f);d.setAttribute("cx",p.x);d.setAttribute("cy",p.y);
+  });
+  // node glow
+  for(const id in NODEWIN){const[k,lo,hi]=NODEWIN[id];
+    P_(id).classList.toggle("lit",tt>=t[k]+lo&&tt<=t[k]+hi&&S.out>.0005);}
+  P_("n-pad").classList.toggle("lit",S.P.presyn>=12&&tt>0);
+  P_("n-desc").classList.toggle("lit",S.P.desc>=12&&tt>0);
+  // events + trace cursor
+  $$("#events li").forEach(li=>li.classList.toggle("done",tt>=+li.dataset.t));
+  const cur=P_("tracecur");
+  if(cur){const x=26+clamp(tt/t.win,0,1)*196;cur.setAttribute("x1",x);cur.setAttribute("x2",x);}
+  ["emgline","forceline"].forEach(id=>{const p=P_(id);if(!p)return;
+    const L=+p.dataset.len;p.style.strokeDashoffset=String(L*(1-clamp(tt/t.win,0,1)));});
+}
+
+/* ══════════════ readout ══════════════ */
+function readout(){
+  const R=S.R,q=S.q,d=dzObj();
+  $("#rname").textContent=R.name;
+  $("#f-seg").textContent=R.seg;$("#f-nerve").textContent=R.nerve;
+  $("#f-muscle").textContent=R.muscle;
+  $("#f-lat").textContent=S.out>.0005?r1(S.t.map,1)+" ms to muscle AP":r1(S.t.map,1)+" ms (no response)";
+  $("#f-arc").textContent=R.cd>5?"polysynaptic":"monosynaptic";
+  $("#lvl1").textContent=R.seg+" \u00b7 "+R.name;
+  $("#lvl2").textContent=R.nerve.split(",")[0]+" \u2192 "+R.muscle.split(",")[0].split(" and ")[0];
+  const bars=$$("#gbar i");
+  let num,lab,sub;
+  if(R.qual==="plantar"){
+    num=q.plantar==="extensor"?"\u2191":q.plantar==="absent"?"\u2013":"\u2193";
+    lab=q.plantar==="extensor"?"Extensor \u2014 Babinski sign":q.plantar==="absent"?"No response":"Flexor \u2014 normal";
+    sub=q.plantar==="extensor"?"great toe dorsiflexes, other toes fan":"great toe flexes";
+  }else if(R.qual==="hoffmann"){
+    num=q.hoff?"+":"\u2013";lab=q.hoff?"Present":"Absent";
+    sub=q.hoff?"thumb flexion on flicking the middle finger":"no thumb movement \u2014 normal";
+  }else if(R.qual==="abdominal"){
+    num=q.abd?"+":"\u2013";lab=q.abd?"Present":"Absent";
+    sub=q.abd?"umbilicus deviates toward the stimulus":"lost \u2014 expected with a corticospinal lesion";
+  }else if(R.qual==="jaw"){
+    num={absent:"\u2013",trace:"\u00b1",brisk:"3+",spasm:"4+"}[q.jaw];
+    lab={absent:"Absent",trace:"Trace \u2014 normal",brisk:"Brisk",spasm:"Masseter spasm"}[q.jaw];
+    sub=q.jaw==="brisk"?"implies bilateral corticobulbar involvement above the cord":"normal adults show little or none";
+  }else{
+    num=GRADES[S.grade];lab=GLAB[S.grade];
+    sub="model output "+r1(S.out,2)+" \u00d7 normal";
+  }
+  $("#gnum").textContent=num;$("#glab").textContent=lab;$("#gsub").textContent=sub;
+  bars.forEach((b,i)=>{b.className=(S.grade!==null&&i<=S.grade)?"f"+(S.grade<2?" lo":""):"";});
+  $("#plate").textContent=`${R.seg} \u00b7 ${R.name.toLowerCase()} \u00b7 ${num} \u00b7 ${r1(S.t.map,1)} ms`;
+  // signs
+  const sg=$("#signs");sg.innerHTML="";
+  const add=(txt,cl)=>{const s=document.createElement("span");s.className="sign "+cl;s.textContent=txt;sg.appendChild(s);};
+  if(q.maxG>=4)add("Clonus"+(S.sustain?", sustained":""),"pos");
+  if(q.plantar==="extensor")add("Babinski sign","pos");
+  if(q.hoff)add("Hoffmann sign","pos");
+  if(!q.abd)add("Abdominal reflex lost","pos");
+  if(q.jaw==="brisk"||q.jaw==="spasm")add("Brisk jaw jerk","pos");
+  if(S.pend)add("Pendular","mod");
+  if(S.P.relax>2)add("Delayed relaxation \u00d7"+r1(S.P.relax,1),"mod");
+  if(S.P.inv)add("Inverted radial reflex","pos");
+  if(state.facil)add("Post-exercise facilitation","neg");
+  (d.flags||[]).forEach(([tx,kind])=>add(tx,kind===1?"pos":kind===2?"mod":"neg"));
+  // narrative
+  const bits=[];
+  if(S.P.spindle<.5)bits.push(`afferent input reduced to ${Math.round(S.P.spindle*100)}% of normal`);
+  if(S.P.cv<.95)bits.push(`conduction slowed to ${Math.round(S.P.cv*100)}%, latency ${r1(S.t.map,1)} ms`);
+  if(S.P.mnPool<.9)bits.push(`motoneuron pool at ${Math.round(S.P.mnPool*100)}%`);
+  if(S.P.nmj<.9)bits.push(`endplate transmission at ${Math.round(S.P.nmj*100)}%`);
+  if(S.P.desc<70)bits.push(`descending brake at ${Math.round(S.P.desc)}%`);
+  if(S.P.pic>120)bits.push(`motoneuron excitability at ${Math.round(S.P.pic)}%`);
+  if(S.P.pic<60)bits.push(`motoneuron excitability at ${Math.round(S.P.pic)}%`);
+  $("#rnote").innerHTML=bits.length?`<b>Why:</b> ${bits.join("; ")}. ${R.arc}`:`<b>Intact arc.</b> ${R.arc}`;
+  renderAll();
+}
+
+/* ══════════════ event list ══════════════ */
+function events(){
+  const t=S.t,R=S.R,P=S.P,ok=S.out>.0005||R.qual;
+  const acv=Math.round(R.acv*P.cv),mcv=Math.round(R.mcv*P.cv);
+  const E=[
+   [t.spindle,"Spindle stretched","PIEZO2 channels open, generator potential builds"],
+   [t.cord,"Volley enters the cord",`Ia at ${acv} m/s over ${Math.round(R.aff*100)} cm of nerve`],
+   [t.syn,"Glutamate released",R.cd>5?`polysynaptic relay, ${r1(R.cd,0)} ms of interneurons`:`monosynaptic, central delay ${r1(R.cd,1)} ms`],
+   [t.mn,"Motoneuron pool fires",`AMPA EPSPs sum; pool viability ${Math.round(P.mnPool*100)}%`],
+   [t.synx,"Ia inhibitory interneuron fires",`glycine to the antagonist, at ${Math.round(P.recip)}% strength`],
+   [t.recip,"Antagonist inhibited","reciprocal IPSP, one interneuron later"],
+   [t.mnx,"Axon collateral drives the Renshaw cell","acetylcholine on nicotinic receptors"],
+   [t.rec,"Recurrent inhibition arrives",`glycine and GABA back onto the pool, at ${Math.round(P.renshaw)}%`],
+   [t.nmj,"Endplate reached",`\u03b1 axon at ${mcv} m/s over ${Math.round(R.eff*100)} cm`],
+   [t.map,"Muscle action potential",`ACh \u2192 nicotinic receptors \u2192 Na\u1d651.4; transmission at ${Math.round(P.nmj*100)}%`],
+   [t.on,"Movement begins",`electromechanical delay ${R.emd} ms`],
+   [t.peak,"Peak excursion",ok&&S.amp?`${r1(Math.abs(S.amp),0)}\u00b0 at the joint`:"no visible movement"],
+   [t.auto,"Autogenic inhibition","Ib from the tendon organ, once force has developed"],
+   [Math.min(t.peak+S.relax,t.win),"Relaxation underway",`SERCA pumps Ca\u00b2\u207a back, time constant \u00d7${r1(P.relax,1)}`]
+  ].sort((a,b)=>a[0]-b[0]);
+  $("#events").innerHTML=E.map(([tm,h,s])=>
+    `<li data-t="${tm}"><b>${r1(tm,1)}</b><span>${h}<em>${s}</em></span></li>`).join("");
+}
+
+/* ══════════════ EMG and torque trace ══════════════ */
+function buildTrace(){
+  const t=S.t,x0=26,x1=222,X=q=>x0+(q/t.win)*(x1-x0);
+  const A=clamp(sat(S.out)/1.5,0,1)*26;
+  const emg=q=>{let v=0;
+    const b=(t0,sc)=>{const u=q-t0;if(u<0||u>26)return 0;return sc*Math.exp(-u/9)*Math.sin(2*Math.PI*u/2.2);};
+    v+=b(t.map,1);
+    if(S.clonic)for(let k=1;k<12;k++)v+=b(t.peak+k*161,S.sustain?.85:.85*Math.exp(-k/4));
+    return v*A;};
+  const peakA=Math.max(Math.abs(S.amp),1);
+  let e="",f="";
+  for(let i=0;i<=260;i++){
+    const q=i/260*t.win;
+    e+=`${r1(X(q),1)},${r1(44-emg(q),1)} `;
+    f+=`${r1(X(q),1)},${r1(146-Math.abs(excursion(S,q))/peakA*52*clamp(sat(S.out)/1.5,.05,1.3),1)} `;
+  }
+  $("#trace").innerHTML=`<style>
+   .ax{stroke:var(--rule2);stroke-width:.8}.axl{font:400 9.5px "IBM Plex Mono",monospace;fill:var(--ink3)}
+   .tl{font:500 10px Inter,sans-serif;fill:var(--ink2)}</style>
+   <line class="ax" x1="26" y1="44" x2="222" y2="44"/>
+   <line class="ax" x1="26" y1="146" x2="222" y2="146"/>
+   <line class="ax" x1="26" y1="14" x2="26" y2="146"/>
+   <text class="tl" x="26" y="12">EMG</text>
+   <text class="tl" x="26" y="90">joint torque</text>
+   <line x1="${r1(X(t.map),1)}" y1="20" x2="${r1(X(t.map),1)}" y2="150" stroke="var(--eosin)" stroke-width=".8" stroke-dasharray="3 3"/>
+   <text class="axl" x="${r1(Math.min(X(t.map)+4,150),1)}" y="158">${r1(t.map,1)} ms</text>
+   <text class="axl" x="222" y="158" text-anchor="end">${r1(t.win,0)} ms</text>
+   <polyline id="emgline" points="${e}" fill="none" stroke="var(--eosin)" stroke-width="1.1"/>
+   <polyline id="forceline" points="${f}" fill="none" stroke="var(--nissl)" stroke-width="1.6"/>
+   <line id="tracecur" x1="26" y1="10" x2="26" y2="150" stroke="var(--ink)" stroke-width=".8" opacity=".45"/>`;
+  ["emgline","forceline"].forEach(id=>{const p=P_(id),L=p.getTotalLength();
+    p.dataset.len=L;p.style.strokeDasharray=L;p.style.strokeDashoffset=L;});
+}
+</script>
+<script>
+/* ══════════════ molecular panel ══════════════ */
+const CHIPS=[["spindle","Muscle spindle"],["axon","Ia axon"],["drg","Dorsal root ganglion"],
+ ["syn","Ia \u2192 \u03b1 synapse"],["pad","Presynaptic inhibition"],["iain","Ia inhibitory neuron"],
+ ["renshaw","Renshaw cell"],["ib","Tendon organ / Ib"],["soma","\u03b1-motoneuron"],
+ ["nmj","Neuromuscular junction"],["muscle","Contraction, relaxation"],["desc","Descending control"]];
+const chipsEl=$("#chips");
+CHIPS.forEach(([k,lab])=>{
+  const b=document.createElement("button");b.className="chip";b.type="button";
+  b.dataset.k=k;b.textContent=lab;b.setAttribute("aria-pressed","false");
+  b.addEventListener("click",()=>showMol(k));chipsEl.appendChild(b);
+});
+const MSTYLE=`<style>
+.ml{font:500 10.5px Inter,sans-serif;fill:var(--ink)}
+.mm{font:400 9px "IBM Plex Mono",monospace;fill:var(--ink3)}
+.mt{font:400 10px Inter,sans-serif;fill:var(--ink2)}
+.mw{font:500 9.5px Inter,sans-serif;fill:var(--alarm)}
+@keyframes nt{0%{opacity:0;transform:translate(0,0)}12%{opacity:1}68%{opacity:1;transform:translate(var(--dx),var(--dy))}100%{opacity:0;transform:translate(var(--dx),var(--dy))}}
+@keyframes ion{0%{opacity:0;transform:translate(0,0)}18%{opacity:.95}100%{opacity:0;transform:translate(var(--dx,0px),var(--dy,32px))}}
+@keyframes pulse{0%,100%{opacity:.22}50%{opacity:1}}
+@keyframes jump{0%{transform:translate(0,0);opacity:0}6%{opacity:1}30%{transform:translate(90px,0)}31%{opacity:1}60%{transform:translate(180px,0)}94%{opacity:1}100%{transform:translate(180px,0);opacity:0}}
+.nt{animation:nt 1.7s linear infinite}.ion{animation:ion 1.7s linear infinite}
+.pulse{animation:pulse 2s ease-in-out infinite}.jump{animation:jump 2.2s linear infinite}
+@media (prefers-reduced-motion:reduce){.nt,.ion,.pulse,.jump{animation:none;opacity:.8}}
+</style>`;
+const ves=(pts,c)=>pts.map(([x,y])=>`<circle cx="${x}" cy="${y}" r="6.5" fill="var(--${c})" fill-opacity=".28" stroke="var(--${c})" stroke-width="1"/>`).join("");
+const arrow=(x1,y1,x2,y2,c,w)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--${c})" stroke-width="${w||1.4}" marker-end="url(#ah-${c})"/>`;
+const badge=(x,y,s,c)=>`<circle cx="${x}" cy="${y}" r="7" fill="var(--${c}-w)" stroke="var(--${c})" stroke-width="1.2"/><text x="${x}" y="${y+3.5}" text-anchor="middle" class="ml" fill="var(--${c})">${s}</text>`;
+const DEFS=`<defs>${["eosin","nissl","glycine","myelin","alarm","ink2"].map(c=>
+ `<marker id="ah-${c}" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2,1L8,5L2,9" fill="none" stroke="var(--${c})" stroke-width="1.6" stroke-linecap="round"/></marker>`).join("")}</defs>`;
+const ab=(x,y)=>`<path d="M${x},${y+9} v-6 M${x},${y+3} l-5,-6 M${x},${y+3} l5,-6" stroke="var(--alarm)" stroke-width="1.6" fill="none" stroke-linecap="round"/>`;
+
+function synScene(m){
+  const c=m.col,n=m.rec.length,rw=52,gap=22,tot=n*rw+(n-1)*gap,sx=190-tot/2;
+  let recs="",ions="",nts="";
+  m.rec.forEach((r,i)=>{
+    const x=sx+i*(rw+gap),mid=x+rw/2;
+    recs+=`<rect x="${x}" y="104" width="${rw}" height="26" rx="7" fill="var(--card)" stroke="var(--${c})" stroke-width="1.5"/>
+      <text x="${mid}" y="121" text-anchor="middle" class="ml">${r[0]}</text>
+      <text x="${mid}" y="146" text-anchor="middle" class="mm">${r[1]}</text>`;
+    for(let k=0;k<3;k++)ions+=`<circle class="ion" cx="${mid}" cy="130" r="2.8" fill="var(--${c})" style="--dx:0px;--dy:${m.eff==="hyperpolarise"?"-26":"30"}px;animation-delay:${.45+k*.2+i*.1}s"/>`;
+    for(let k=0;k<2;k++){const vx=mid-16+k*30;
+      nts+=`<circle class="nt" cx="${vx}" cy="80" r="3.2" fill="var(--${c})" style="--dx:${(mid-vx).toFixed(0)}px;--dy:22px;animation-delay:${k*.35+i*.18}s"/>`;}
+  });
+  return MSTYLE+DEFS+`
+  <rect x="58" y="22" width="264" height="66" rx="24" fill="var(--${c}-w)" stroke="var(--${c})" stroke-width="1.5"/>
+  ${ves([[100,46],[132,64],[164,44],[196,62],[228,46],[262,62],[290,48]],c)}
+  <rect x="132" y="86" width="116" height="4" rx="2" fill="var(--${c})"/>
+  <rect x="120" y="80" width="10" height="12" rx="2" fill="var(--${c})"/>
+  <rect x="250" y="80" width="10" height="12" rx="2" fill="var(--${c})"/>
+  <text x="114" y="76" text-anchor="end" class="mm">Ca\u00b2\u207a</text>
+  <text x="266" y="76" class="mm">Ca\u00b2\u207a</text>
+  <text x="190" y="16" text-anchor="middle" class="ml">${m.pre}</text>
+  <text x="64" y="100" class="mm">cleft</text>
+  <rect x="58" y="118" width="264" height="72" rx="12" fill="var(--card)" stroke="var(--rule2)"/>
+  ${recs}${ions}${nts}
+  <text x="190" y="176" text-anchor="middle" class="ml">${m.post}</text>
+  <text x="190" y="208" text-anchor="middle" class="mt">${m.nt} \u2192 ${m.eff==="hyperpolarise"?"IPSP, Cl\u207b in, the cell is held below threshold"
+    :m.eff==="shunt"?"depolarises and shunts the terminal, releasing less transmitter":"fast EPSP, the cell moves toward threshold"}</text>`;
+}
+function spindleScene(){
+  let coil="";for(let i=0;i<5;i++)coil+=`<ellipse cx="${166+i*12}" cy="106" rx="4.5" ry="12" fill="none" stroke="var(--eosin)" stroke-width="1.3"/>`;
+  return MSTYLE+DEFS+`
+  <rect x="40" y="28" width="300" height="13" rx="6.5" fill="var(--nissl-w)" stroke="var(--nissl)"/>
+  <rect x="40" y="186" width="300" height="13" rx="6.5" fill="var(--nissl-w)" stroke="var(--nissl)"/>
+  <text x="190" y="22" text-anchor="middle" class="mm">extrafusal fibres \u2014 the spindle lies in parallel with them</text>
+  <ellipse cx="190" cy="114" rx="116" ry="40" fill="var(--card)" stroke="var(--eosin)" stroke-width="1.4"/>
+  <line x1="80" y1="106" x2="300" y2="106" stroke="var(--ink2)" stroke-width="3"/>
+  <ellipse cx="190" cy="106" rx="28" ry="8" fill="var(--sunk)" stroke="var(--ink2)"/>
+  <line x1="80" y1="132" x2="300" y2="132" stroke="var(--ink2)" stroke-width="2"/>
+  ${[168,182,196,210].map(x=>`<circle cx="${x}" cy="132" r="2.6" fill="var(--ink2)"/>`).join("")}
+  ${coil}
+  <rect x="170" y="94" width="8" height="8" rx="2" fill="var(--eosin)"/>
+  <rect x="204" y="94" width="8" height="8" rx="2" fill="var(--eosin)"/>
+  <text x="190" y="88" text-anchor="middle" class="mm">PIEZO2</text>
+  <path d="M212,102 C250,90 290,76 330,68" fill="none" stroke="var(--eosin)" stroke-width="2.4" marker-end="url(#ah-eosin)"/>
+  <text x="336" y="62" text-anchor="end" class="ml">Ia</text>
+  <path d="M214,132 C250,140 290,150 326,156" fill="none" stroke="var(--eosin)" stroke-width="1.2" marker-end="url(#ah-eosin)"/>
+  <text x="334" y="152" text-anchor="end" class="mm">II</text>
+  <path d="M36,58 C70,74 96,88 118,98" fill="none" stroke="var(--myelin)" stroke-width="1.8" marker-end="url(#ah-myelin)"/>
+  <text x="30" y="52" class="ml" fill="var(--myelin)">\u03b3</text>
+  <text x="30" y="66" class="mm">fusimotor</text>
+  <g class="pulse">${arrow(70,168,34,168,"ink2",1.6)}${arrow(310,168,346,168,"ink2",1.6)}</g>
+  <text x="190" y="170" text-anchor="middle" class="mm">stretch</text>
+  <text x="190" y="220" text-anchor="middle" class="mt">Nuclear bag and chain fibres inside the capsule; the annulospiral ending wraps the equator.</text>`;
+}
+function axonScene(key){
+  const dz=dzObj().id,dem=["gbs","dpn","radic"].includes(dz);
+  const mk=(x,broken)=>broken
+    ?`<rect x="${x}" y="105" width="76" height="26" rx="10" fill="none" stroke="var(--alarm)" stroke-width="1.2" stroke-dasharray="4 3"/>`
+    :`<rect x="${x}" y="105" width="76" height="26" rx="10" fill="var(--myelin-w)" stroke="var(--myelin)" stroke-width="1.2"/>`;
+  const leaks=dem?[0,1,2].map(i=>arrow(160+i*24,118,160+i*24,88,"alarm",1.2)).join(""):"";
+  const tj=key==="drg"?`
+    <line x1="190" y1="76" x2="190" y2="105" stroke="var(--ink2)" stroke-width="4"/>
+    <circle cx="190" cy="54" r="21" fill="var(--eosin-w)" stroke="var(--eosin)" stroke-width="1.6"/>
+    <circle cx="190" cy="54" r="6" fill="var(--eosin)"/>
+    <text x="190" y="24" text-anchor="middle" class="ml">cell body, no synapse</text>
+    <text x="248" y="88" class="mm">T-junction</text>
+    <text x="60" y="164" class="mm">peripheral branch</text>
+    <text x="340" y="164" text-anchor="end" class="mm">central branch \u2192 cord</text>`
+   :`<text x="190" y="30" text-anchor="middle" class="ml">Saltatory conduction</text>
+     <text x="190" y="46" text-anchor="middle" class="mm">70\u2013120 m/s in an intact 12\u201320 \u00b5m fibre</text>
+     <text x="190" y="164" text-anchor="middle" class="mm">internode \u2248 1 mm \u2022 Na\u1d651.6 clustered at each node</text>`;
+  return MSTYLE+DEFS+`
+  <line x1="26" y1="118" x2="354" y2="118" stroke="var(--ink2)" stroke-width="7" stroke-linecap="round"/>
+  ${mk(52,false)}${mk(142,dem)}${mk(232,false)}
+  ${[134,224,314].map(x=>`<rect x="${x-3}" y="108" width="6" height="20" rx="2" fill="var(--eosin)"/>`).join("")}
+  ${leaks}
+  <circle class="jump" cx="134" cy="118" r="6" fill="var(--eosin)"/>
+  ${tj}
+  ${dem?`<text x="190" y="192" text-anchor="middle" class="mw">demyelinated internode \u2014 current leaks, conduction slows, the volley disperses and can block</text>`:""}
+  <text x="134" y="98" text-anchor="middle" class="mm">node</text>`;
+}
+function somaScene(){
+  return MSTYLE+DEFS+`
+  <circle cx="140" cy="118" r="46" fill="var(--nissl-w)" stroke="var(--nissl)" stroke-width="1.8"/>
+  <path d="M106,88 C88,68 72,58 54,52 M108,150 C90,166 72,174 52,178 M136,72 C130,54 124,42 118,28" fill="none" stroke="var(--nissl)" stroke-width="3" stroke-linecap="round"/>
+  <line x1="186" y1="118" x2="348" y2="118" stroke="var(--nissl)" stroke-width="5" stroke-linecap="round"/>
+  <path d="M252,120 C252,154 254,172 256,182" fill="none" stroke="var(--nissl)" stroke-width="2"/>
+  <circle cx="257" cy="186" r="5" fill="var(--nissl)" fill-opacity=".4" stroke="var(--nissl)"/>
+  <ellipse cx="84" cy="62" rx="10" ry="7" fill="var(--eosin-w)" stroke="var(--eosin)" stroke-width="1.3"/>
+  <ellipse cx="112" cy="82" rx="9" ry="6.5" fill="var(--glycine-w)" stroke="var(--glycine)" stroke-width="1.3"/>
+  <ellipse cx="106" cy="156" rx="9" ry="6.5" fill="var(--glycine-w)" stroke="var(--glycine)" stroke-width="1.3"/>
+  <ellipse cx="122" cy="28" rx="10" ry="7" fill="var(--myelin-w)" stroke="var(--myelin)" stroke-width="1.3"/>
+  <rect x="176" y="132" width="11" height="9" rx="2" fill="var(--eosin)"/>
+  <rect x="166" y="150" width="11" height="9" rx="2" fill="var(--eosin)"/>
+  <g class="pulse">${arrow(196,146,178,138,"eosin",1.3)}${arrow(186,166,170,158,"eosin",1.3)}</g>
+  <text x="48" y="46" class="mm">Ia glutamate</text>
+  <text x="44" y="192" class="mm">glycine, GABA</text>
+  <text x="140" y="20" text-anchor="middle" class="mm">5-HT / NA</text>
+  <text x="204" y="142" class="mm">Na\u1d65 persistent</text>
+  <text x="196" y="172" class="mm">Ca\u1d651.3</text>
+  <text x="258" y="204" text-anchor="middle" class="mm">recurrent collateral</text>
+  <text x="344" y="108" text-anchor="end" class="mm">ventral root</text>
+  <text x="140" y="122" text-anchor="middle" class="ml" fill="var(--nissl)">\u03b1</text>
+  <text x="190" y="222" text-anchor="middle" class="mt">Persistent inward currents can multiply a synaptic input several times over, and monoamines switch them on.</text>`;
+}
+function nmjScene(){
+  const dz=dzObj().id;
+  let folds="M64,104 ";for(let i=0;i<4;i++){const x=64+i*63;folds+=`L${x+40},104 L${x+48},130 L${x+56},104 `;}
+  folds+="L316,104";
+  let ach="",abs="";
+  [110,186,262].forEach((x,i)=>{
+    for(let k=0;k<2;k++)ach+=`<circle class="nt" cx="${x+11}" cy="82" r="3" fill="var(--nissl)" style="--dx:${k?-14:14}px;--dy:20px;animation-delay:${i*.2+k*.4}s"/>`;
+  });
+  if(dz==="mg")abs=[92,155,218,281].map(x=>ab(x,90)).join("")+`<text x="190" y="200" text-anchor="middle" class="mw">anti-AChR antibodies \u2014 receptors lost, folds simplified. Postsynaptic.</text>`;
+  if(dz==="lems")abs=[104,180,256].map(x=>ab(x,58)).join("")+`<text x="190" y="200" text-anchor="middle" class="mw">anti-Ca\u1d652.1 antibodies \u2014 little calcium enters, quantal content collapses. Presynaptic.</text>`;
+  return MSTYLE+DEFS+`
+  <rect x="64" y="20" width="252" height="58" rx="20" fill="var(--nissl-w)" stroke="var(--nissl)" stroke-width="1.5"/>
+  ${ves([[100,40],[132,56],[164,38],[196,56],[228,40],[260,56],[288,40]],"nissl")}
+  ${[110,186,262].map(x=>`<rect x="${x}" y="76" width="22" height="4" rx="2" fill="var(--nissl)"/>
+    <rect x="${x-9}" y="70" width="8" height="11" rx="2" fill="var(--eosin)"/>
+    <rect x="${x+23}" y="70" width="8" height="11" rx="2" fill="var(--eosin)"/>`).join("")}
+  <text x="190" y="14" text-anchor="middle" class="mm">Ca\u1d652.1 at the active zones \u2022 ACh in vesicles</text>
+  <path d="${folds}" fill="none" stroke="var(--ink2)" stroke-width="2.4"/>
+  ${[70,133,196,259].map(x=>`<rect x="${x}" y="98" width="30" height="8" rx="3" fill="var(--glycine)" fill-opacity=".5" stroke="var(--glycine)" stroke-width="1"/>`).join("")}
+  ${[112,175,238,301].map(x=>`<rect x="${x-3}" y="120" width="7" height="8" rx="2" fill="var(--eosin)"/>`).join("")}
+  ${ach}${abs}
+  <text x="330" y="102" text-anchor="end" class="mm">nAChR on the crests</text>
+  <text x="330" y="134" text-anchor="end" class="mm">Na\u1d651.4 in the troughs</text>
+  <text x="66" y="92" class="mm">AChE</text>
+  <rect x="64" y="140" width="252" height="42" rx="10" fill="var(--card)" stroke="var(--rule2)"/>
+  <text x="190" y="166" text-anchor="middle" class="ml">muscle fibre</text>
+  ${abs?"":`<text x="190" y="204" text-anchor="middle" class="mt">Three to five times more acetylcholine is released than is needed \u2014 the safety factor.</text>`}`;
+}
+function muscleScene(){
+  const slow=resolve(state.rx||"patellar").relax>2;
+  let ca="";for(let i=0;i<5;i++)ca+=`<circle class="ion" cx="150" cy="${52+i*16}" r="3" fill="var(--eosin)" style="--dx:70px;--dy:${60-i*10}px;animation-delay:${i*.18}s"/>`;
+  return MSTYLE+DEFS+`
+  <rect x="96" y="16" width="26" height="122" rx="4" fill="var(--sunk)" stroke="var(--rule2)"/>
+  <text x="109" y="10" text-anchor="middle" class="mm">T-tubule</text>
+  <rect x="140" y="28" width="50" height="98" rx="8" fill="var(--nissl-w)" stroke="var(--nissl)" stroke-width="1.3"/>
+  <text x="165" y="76" text-anchor="middle" class="ml">SR</text>
+  <rect x="118" y="54" width="10" height="28" rx="2" fill="var(--nissl)"/>
+  <rect x="134" y="54" width="10" height="28" rx="2" fill="var(--eosin)"/>
+  <line x1="128" y1="62" x2="134" y2="62" stroke="var(--ink2)" stroke-width="1.6"/>
+  <line x1="128" y1="74" x2="134" y2="74" stroke="var(--ink2)" stroke-width="1.6"/>
+  <text x="90" y="50" text-anchor="end" class="mm">Ca\u1d651.1</text>
+  <text x="90" y="62" text-anchor="end" class="mm">voltage sensor</text>
+  <text x="90" y="90" text-anchor="end" class="mm">mechanical link</text>
+  <text x="200" y="44" class="mm">RyR1</text>
+  ${ca}
+  <circle cx="152" cy="118" r="7" fill="var(--glycine-w)" stroke="var(--glycine)" stroke-width="1.3"/>
+  ${arrow(160,130,150,120,"glycine",1.3)}
+  <text x="200" y="120" class="mm" ${slow?'fill="var(--alarm)"':""}>SERCA1${slow?" \u2014 reduced":""}</text>
+  <text x="200" y="132" class="mm">relaxation costs ATP</text>
+  <line x1="196" y1="164" x2="356" y2="164" stroke="var(--ink2)" stroke-width="2.6"/>
+  <line x1="196" y1="198" x2="356" y2="198" stroke="var(--ink2)" stroke-width="2.6"/>
+  ${[212,240,268,296,324].map(x=>`<circle cx="${x}" cy="164" r="3" fill="var(--eosin)" fill-opacity=".6"/>`).join("")}
+  <line x1="206" y1="181" x2="346" y2="181" stroke="var(--nissl)" stroke-width="6" stroke-linecap="round"/>
+  ${[222,256,290,324].map(x=>`<path d="M${x},178 l-9,-9 M${x},184 l-9,9" stroke="var(--nissl)" stroke-width="2" stroke-linecap="round"/>`).join("")}
+  <text x="276" y="152" text-anchor="middle" class="mm">Ca\u00b2\u207a \u2192 troponin C \u2192 tropomyosin shifts</text>
+  <text x="276" y="216" text-anchor="middle" class="mm">actin\u2013myosin cross-bridge cycling</text>`;
+}
+function descScene(){
+  return MSTYLE+DEFS+`
+  <rect x="20" y="16" width="118" height="32" rx="8" fill="var(--myelin-w)" stroke="var(--myelin)" stroke-width="1.2"/>
+  <text x="79" y="30" text-anchor="middle" class="ml">motor cortex</text>
+  <text x="79" y="42" text-anchor="middle" class="mm">+ corticoreticular</text>
+  <rect x="20" y="86" width="118" height="32" rx="8" fill="var(--myelin-w)" stroke="var(--myelin)" stroke-width="1.2"/>
+  <text x="79" y="100" text-anchor="middle" class="ml">medullary RF</text>
+  <text x="79" y="112" text-anchor="middle" class="mm">dorsal reticulospinal</text>
+  <rect x="20" y="150" width="118" height="32" rx="8" fill="var(--myelin-w)" stroke="var(--myelin)" stroke-width="1.2"/>
+  <text x="79" y="164" text-anchor="middle" class="ml">pontine RF, vestibular</text>
+  <text x="79" y="176" text-anchor="middle" class="mm">medial RST, VST</text>
+  ${arrow(79,48,79,84,"myelin",1.4)}
+  <rect x="214" y="62" width="146" height="112" rx="12" fill="var(--card)" stroke="var(--rule2)"/>
+  <text x="287" y="56" text-anchor="middle" class="mm">spinal segment</text>
+  <circle cx="252" cy="128" r="18" fill="var(--nissl-w)" stroke="var(--nissl)" stroke-width="1.6"/>
+  <text x="252" y="132" text-anchor="middle" class="ml" fill="var(--nissl)">\u03b1</text>
+  <circle cx="320" cy="92" r="11" fill="var(--glycine-w)" stroke="var(--glycine)" stroke-width="1.4"/>
+  <circle cx="320" cy="152" r="11" fill="var(--glycine-w)" stroke="var(--glycine)" stroke-width="1.4"/>
+  <text x="336" y="80" text-anchor="end" class="mm">interneurons</text>
+  <path d="M138,28 C180,32 210,50 236,66" fill="none" stroke="var(--myelin)" stroke-width="1.6" stroke-dasharray="5 3" marker-end="url(#ah-myelin)"/>
+  <path d="M138,100 C176,100 200,96 228,110" fill="none" stroke="var(--glycine)" stroke-width="1.8" marker-end="url(#ah-glycine)"/>
+  <path d="M138,166 C180,166 208,156 234,144" fill="none" stroke="var(--eosin)" stroke-width="1.8" marker-end="url(#ah-eosin)"/>
+  ${badge(186,96,"\u2212","glycine")}${badge(190,162,"+","eosin")}
+  <text x="190" y="222" text-anchor="middle" class="mt">Lose the cortical drive to the inhibitory medullary pathway and the facilitatory ones run unopposed.</text>`;
+}
+function showMol(k){
+  state.mol=k;const m=MOL[k];
+  $$(".chip").forEach(c=>c.setAttribute("aria-pressed",String(c.dataset.k===k)));
+  $("#molwhere").textContent=m.s;
+  $("#mh").textContent=m.t;$("#ms").textContent=m.s;
+  $("#mc").innerHTML=m.chem.map(([a,b])=>`<dt>${a}</dt><dd>${b}</dd>`).join("");
+  $("#mp").textContent=m.p;
+  const L=m.les&&m.les[state.dz];
+  $("#ml").hidden=!L;
+  if(L)$("#ml").innerHTML=`<b>${dzObj().name}.</b> ${L}`;
+  $("#molsvg").innerHTML=
+    m.d==="syn"?synScene(m):m.d==="spindle"?spindleScene():m.d==="axon"?axonScene(k):
+    m.d==="soma"?somaScene():m.d==="nmj"?nmjScene():m.d==="muscle"?muscleScene():descScene();
+}
+const NODEMOL={"n-spindle":"spindle","n-drg":"drg","n-mn":"soma","n-anta":"iain","n-iain":"iain",
+ "n-pad":"pad","n-ibin":"ib","n-renshaw":"renshaw","n-nmj":"nmj","n-gto":"ib","n-desc":"desc"};
+for(const id in NODEMOL){
+  const n=P_(id);if(!n)continue;
+  n.addEventListener("click",()=>showMol(NODEMOL[id]));
+  n.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();showMol(NODEMOL[id]);}});
+}
+/* extra hit targets on the circuit */
+[["n-syn",301,238,11,"syn","Ia to motoneuron synapse"],["n-axon",478,206,15,"axon","Ia afferent axon"],
+ ["n-mus2",568,304,26,"muscle","Muscle fibre"]].forEach(([id,x,y,r,mol,lab])=>{
+  const g=el("g",{class:"cnode",id:id,tabindex:"0",role:"button","aria-label":lab});
+  const c=el("circle",{class:"body",cx:x,cy:y,r:r,fill:"transparent",stroke:"transparent","stroke-width":"0"});
+  g.appendChild(c);const t=el("title");t.textContent=lab;g.appendChild(t);
+  g.addEventListener("click",()=>showMol(mol));
+  g.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();showMol(mol);}});
+  g.addEventListener("mouseenter",()=>c.setAttribute("stroke","var(--ink3)"));
+  g.addEventListener("mouseleave",()=>c.setAttribute("stroke","transparent"));
+  $("#circuit").appendChild(g);
+});
+
+/* ══════════════ go ══════════════ */
+renderAll();showMol("syn");fire("patellar");
+</script>
+</body>
+</html>
