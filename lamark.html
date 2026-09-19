@@ -1,0 +1,472 @@
+
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Motor + Sensory vs Evolution · Neuron Scaling v6</title><style>:root{color-scheme:dark;--bg:#080f1b;--panel:#172238;--edge:#344761;--txt:#eaf3ff;--sub:#adbed4;--lime:#baf58d;--cyan:#8acef4;--pink:#eda5ca;--gold:#eac780}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 67% -22%,#243e63,transparent 62%),var(--bg);font:14px/1.45 system-ui,Segoe UI,Arial,sans-serif;color:var(--txt)}main{max-width:1580px;margin:auto;padding:20px}h1{font-size:clamp(29px,3.8vw,51px);line-height:1;letter-spacing:-.05em;margin:7px 0 9px}h2{font-size:19px;margin:0 0 12px}h3{font-size:14px;margin:17px 0 5px}p{color:var(--sub);margin:7px 0 12px}header{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:18px}.eyebrow{font-size:11px;letter-spacing:.16em;color:var(--lime);font-weight:800;text-transform:uppercase}.headernote{max-width:490px}.pill{display:inline-block;border-radius:40px;border:1px solid #506e89;padding:4px 9px;font-size:11px;color:var(--cyan);margin:3px}.layout{display:grid;grid-template-columns:1.05fr 1fr;gap:16px}.panel{background:linear-gradient(145deg,#1b283e,#111c2f);border:1px solid var(--edge);border-radius:19px;padding:19px;min-width:0}.wide{grid-column:1/-1}.controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}label{font-size:12px;color:var(--sub);display:grid;gap:5px}input,select,button{font:inherit}input[type=number],select,input[type=file]{min-width:0;width:100%;border-radius:9px;padding:9px;color:var(--txt);background:#101929;border:1px solid #526882}input[type=range]{width:100%;accent-color:var(--lime)}button{border:1px solid #536d86;color:var(--txt);background:#24364e;border-radius:9px;padding:10px 12px;font-weight:750;cursor:pointer}button:hover:not(:disabled){border-color:var(--lime)}button:disabled{opacity:.42;cursor:not-allowed}.primary{background:var(--lime);border-color:var(--lime);color:#111c27}.warn{background:#483343}.buttons{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0}.notice{background:#102034;border-left:3px solid var(--lime);padding:11px 12px;border-radius:0 9px 9px 0;color:#d4e9ff}.progress{height:10px;background:#24364a;border-radius:20px;overflow:hidden;margin:14px 0 7px}.progress>div{width:0;height:100%;background:linear-gradient(90deg,#8ed5f7,#baf58d)}.mono,.runlog{font:12px/1.65 Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}.runlog{height:174px;overflow:auto;background:#101929;border:1px solid var(--edge);border-radius:11px;padding:10px;color:#cadbed}.data{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:13px 0}.metric{background:#101929;border:1px solid var(--edge);border-radius:12px;padding:10px;min-width:0}.metric span{font-size:11px;color:var(--sub);display:block}.metric strong{display:block;font-size:clamp(17px,2vw,24px);font-variant-numeric:tabular-nums}.canvas{display:block;width:100%;height:280px;border-radius:12px;border:1px solid #354962;background:#0b1422}.scene{height:390px}.network{height:340px}.trace{height:240px}.legend{display:flex;gap:11px;flex-wrap:wrap;margin:9px 0;color:var(--sub);font-size:11px}.legend i{font-style:normal}.muted{font-size:12px;color:var(--sub)}.tablewrap{overflow:auto;border:1px solid var(--edge);border-radius:12px;margin:8px 0}table{width:100%;border-collapse:collapse;font-size:12px;text-align:left}td,th{padding:10px 8px;border-bottom:1px solid #354760;white-space:nowrap}th{color:var(--cyan);font-weight:700}td small{font-size:10px}details{border:1px solid var(--edge);border-radius:10px;padding:10px;margin:9px 0}summary{font-weight:750;cursor:pointer}.split{display:grid;grid-template-columns:1fr 1fr;gap:12px}code{color:var(--lime)}.footer{font-size:12px;padding:20px 4px;color:var(--sub)}.statline{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.tight{margin:4px 0 8px}#status{color:var(--lime)}#liveAngles{color:var(--cyan)}.toggle{display:flex;align-items:center;gap:8px;background:#0e1929;padding:11px;border:1px solid var(--edge);border-radius:10px}.toggle input{accent-color:var(--lime)}@media(max-width:1040px){.layout{grid-template-columns:1fr}.wide{grid-column:auto}}@media(max-width:540px){main{padding:10px}.panel{padding:12px}.controls,.split{grid-template-columns:1fr}.data{grid-template-columns:repeat(2,1fr)}.scene{height:315px}}
+
+#sizeChart{height:295px}.hint{border:1px solid #3a526d;border-radius:12px;padding:12px;background:#0c1a2c}.big{font-size:18px;color:#baf58d}.heroLine{font-size:15px;max-width:680px}.wideInput{grid-column:1/-1}#demoSize{min-width:120px}.labelRow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.how{border:1px solid #5b8568;background:#112238;border-radius:12px;padding:12px 15px;margin:12px 0}.how summary{color:#baf58d;font-size:15px}.how summary .expandHint{color:#aac1d4;font-size:11px;font-weight:400;margin-left:6px}.how[open] summary .expandHint{display:none}.howBody{padding:5px 2px 0}.howBody p{margin:9px 0;color:#d6e4f3;line-height:1.55}</style></head><body><main>
+<header><div><div class="eyebrow">LIGHTS-OUT / EMBODIED CONTROL / CAPACITY SWEEP</div><h1>Motor + Sensory<br>versus Evolution</h1><p class="heroLine">Does body-guided sequence learning retain its advantage as a four-link pendulum's circular recurrent brain grows from 8 to 256 neurons?</p></div><div class="headernote"><span class="pill">4 physically coupled links</span><span class="pill">16 sensory channels</span><span class="pill">4 motors</span><span class="pill">8–256 recurrent neurons</span><p>No network, telemetry, cookies, storage, or external libraries. One standalone HTML file.</p></div></header>
+<div class="layout">
+<section class="panel"><h2>Experiment design</h2><div class="controls">
+<label class="wideInput">Neuron sizes to compare (8–256, comma separated)<input id="sizes" type="text" value="8,12,16,20,24" spellcheck="false" aria-label="Neuron sizes"></label>
+<label>Matched starting seeds<input id="seeds" type="number" min="1" max="40" value="3"></label>
+<label>Training transitions / arm / size / seed (thousands)<input id="budget" type="number" min="10" max="20000" value="60"></label>
+<label>Starting tilt <span id="tiltVal">65°</span><input id="tilt" type="range" min="15" max="78" value="65"></label>
+<label>Scheduled push strength <span id="difficultyVal">250%</span><input id="difficulty" type="range" min="25" max="500" step="25" value="250"></label>
+<label>Assistance<select id="assist"><option value="reflex">Reflex-assisted (controlled)</option><option value="pure">Unassisted · liquid only</option></select></label>
+<label>Reflex contribution <span id="reflexVal">56%</span><input id="reflex" type="range" min="0" max="90" value="56"></label>
+<label>Motor sequence length <span id="sequenceVal">4 steps (100 ms)</span><input id="sequence" type="range" min="2" max="8" value="4"></label>
+<label>Motor exploration <span id="exploreVal">100%</span><input id="explore" type="range" min="25" max="200" step="25" value="100"></label>
+<label class="wideInput">Evolution mutation density across neuron sizes<select id="evoScale"><option value="scaled">Scale mutation edits with neuron count (default)</option><option value="fixed">Fixed number of edits at all sizes (diagnostic)</option></select></label></div>
+<div class="buttons"><button id="quick">Quick test · 8,16,24 · 2 seeds</button><button id="protocol">Full protocol · 5 sizes · 30 seeds</button><button id="everySize">All 8–24 cells</button><button id="expanded">Expanded · up to 128 cells</button><button id="longRun">Longer run · 600k / arm</button></div>
+<div id="estimate" class="notice">Configuring experiment…</div>
+<details id="howItWorks" class="how"><summary>How it works · motor, sensory, and the comparison <span class="expandHint">click to expand</span></summary>
+<div class="howBody">
+<p><b>One physical task:</b> A four-link inverted pendulum starts tilted, responds to four scheduled pushes, and tries to become and stay upright. Four limited joint motors move its rods. Both methods receive the same 16 sensory channels: four absolute angles (sine), four angular velocities, and four angle measurements (base plus adjacent-joint differences) and four velocity measurements (base plus adjacent-joint differences).</p>
+<p><b>The brain:</b> 8–256 simultaneously updated liquid-timescale-inspired neurons in an interconnected circle. Neighboring cells and cross-ring links recur in both directions around the network, not a chain of isolated feedforward layers. Each neuron can read sensory inputs, while four readouts drive the motors.</p>
+<p><b>Motor + sensory:</b> From one identical simulated physical state, the learner tries paired positive and negative, coordinated four-motor torque <em>sequences</em> over several steps. Each trial rolls the whole body forward and scores its result. It records the changing sensory readings and internal neural activations, uses the measured motor advantage to propose small changes to readout and recurrent/sensory weights, and tests six update strengths. It preserves a candidate only if its full-episode selection fitness improves. Sensory readings are <em>observed</em>, not artificially changed.</p>
+<p><b>Straight evolution:</b> The other arm randomly mutates weights, biases, and liquid time-constant parameters, tests full episodes, and retains only better candidate networks. Its mutation density scales with neuron count by default.</p>
+<p><b>Fair comparison:</b> Same initialized network at each size and seed, identical disturbance and selection seeds, matched <em>simulated physics transitions</em> for each arm, with motor probes and failed candidates counted. Independent final-test episodes are only evaluated once training ends. The experiment additionally reports a neural multiply-add proxy and approximate wall time, because matching physics does not mean matching computation at different cell counts.</p>
+<p><b>Long runs:</b> The budget is entered in <em>thousands of physics transitions per method, neuron size, and seed</em>. More budget allows more completed learning generations; generations have no separate small fixed cap. At large sizes, many seeds or multi-million-step runs can take a long time in a browser. Keep the tab open and use Pause/Stop as needed.</p>
+<p><b>Scientific caution:</b> Reflex-assisted results measure the contribution of the learned controller on top of the same baseline reflex, not unaided balancing. A larger controller also has more parameters and a different circular graph; scaling here is a benchmark observation, not a universal law.</p>
+</div></details>
+<div class="buttons"><button id="run" class="primary">▶ Run matched neuron sweep</button><button id="pause" disabled>Ⅱ Pause</button><button id="stop" disabled class="warn">■ Stop</button></div><div class="progress"><div id="bar"></div></div><div id="current" class="mono">Awaiting an experiment.</div><p class="muted">Matched by size and seed. Includes motor lookahead and rejected candidates in physics-step budgets; separate previously unused final test. Large runs can take time: keep the tab open.</p></section>
+<section class="panel"><h2>Live progress</h2><div class="data"><div class="metric"><span>Status</span><strong id="status">READY</strong></div><div class="metric"><span>Selection fitness</span><strong id="liveFitness">—</strong></div><div class="metric"><span>Selection survival</span><strong id="liveSurvival">—</strong></div><div class="metric"><span>Accepted changes</span><strong id="liveAccepted">—</strong></div></div><p>Stage: <span id="stage">—</span> · backward probes: <b id="probeCount">0</b></p><label>Training curve for neuron count<select id="plotSize"><option value="8">8 neurons</option></select></label><canvas id="chart" class="canvas" aria-label="Selection fitness against matched physical transitions"></canvas><div id="legend" class="legend"></div><p class="muted">Selection curve, not fresh final-test outcomes. Fitness plotted against physical transitions, with neural computation separately reported.</p><div class="runlog" id="log">Waiting.</div></section>
+<section class="panel wide"><h2>Does more neural capacity change the comparison?</h2><canvas id="sizeChart" class="canvas" aria-label="Independent final fitness versus neuron count"></canvas><div class="legend"><span style="color:#8acef4">● Evolution alone</span><span style="color:#baf58d">● Motor + sensory sequence</span></div><div id="summary"><p>Final-test results appear after the training sweep completes.</p></div><div id="paired"></div><div class="buttons"><button id="biopsy" disabled>📋 Copy one biopsy</button><button id="export" disabled>↓ Full JSON + networks</button></div><p class="muted">The original hypothesis predicts a widening difference as neuron count grows. Look at the difference at every size and its paired uncertainty—not merely who has a higher bar at the largest size.</p></section>
+<section class="panel"><h2>Live four-link challenge</h2><div class="controls"><label>Neurons<select id="demoSize"><option value="16">16 neurons</option></select></label><label>Method<select id="demoArm"><option value="seq">Motor + sensory</option></select></label><label>Start seed<select id="demoSeed"><option value="82941">82941</option></select></label><label>Target rod<select id="pushJoint"><option value="all">All four</option><option value="0">1 · base</option><option value="1">2</option><option value="2">3</option><option value="3">4 · tip</option></select></label><label class="wideInput">Manual push: <span id="pushVal">0.65 rad/s</span><input id="push" type="range" min="5" max="400" step="5" value="65"></label></div><div class="buttons"><button id="pushLeft">← Push left</button><button id="pushRight">Push right →</button><button id="demoReset">↺ Replay</button></div><canvas id="scene" class="canvas scene"></canvas><p id="demoInfo">Finish an experiment to display a controller.</p><p class="muted">Live rod angles: <span id="liveAngles">—</span>. Manual pushes affect this display only.</p></section>
+<section class="panel"><h2>Circular interconnected liquid brain</h2><canvas id="network" class="canvas network"></canvas><h3>Recent sensory → neural → motor history</h3><canvas id="trace" class="canvas trace"></canvas><p class="muted">Each recurrent cell has direct sensory inputs and directed neighbor/cross-ring connections. Neurons update simultaneously, never in hidden layers. The heatmap shows internal recurrent activations, then four motor commands, over the most recent 80 steps.</p></section>
+<section class="panel wide"><h2>Per-seed records</h2><div id="detail"><p>Individual outcomes appear here.</p></div>
+<details open><summary>Interpretation & limitations</summary><p>Both arms share four-link physics, four motor limits, 16 sensory channels, same initial weights at the same neuron count/seed, and identical selection/final test disturbances. Motor-first updates output, sensory and recurrent weights from several time steps of signed motor perturbations. Evolution mutates the same weight groups and state-dependent liquid time-constant parameters. By default its mutation count scales with network size, avoiding an automatic reduction in the fraction of weights touched at larger neuron counts; a fixed-count alternative is available as a separate diagnostic; motor-first does not directly update time constants. Matching physics transitions does not match CPU or neuron operations as neuron count grows: approximate forward multiply-adds and rough milliseconds are recorded separately. The 56% default reflex is an external stabilizer—not evidence the liquid brain balances alone. A change in neuron count also changes the circular graph and parameter count. This is an experimental simulation, not an established scaling law.</p></details>
+<details><summary>Physical model and learning rules</summary><p>Four serial uniform rods, full coupled four-body dynamics, distributed inertia, gravity, damping and four limited relative-joint actuators. Starting near ±65° with four reproducible scheduled pushes. Paired motor perturbation sequences span 2–8 steps, with a 24-step lookahead. Motor and sensor histories are used for approximate backward eligibility credit; there is no full physics backpropagation or full backpropagation through time. For each motor proposal, six conservative update strengths are evaluated on fixed selection episodes before replacing the champion. Evolution evaluates five sparse mutations per generation, including the state-dependent liquid time-constant parameters. Entire unfinished generations are discarded when the physical-step cap is reached.</p></details></section>
+</div><div class="footer">Experimental prototype v6 · single self-contained HTML · synthetic control research · no network dependencies / persistent browser storage.</div></main><script>'use strict';
+(()=>{
+const $=id=>document.getElementById(id);
+const LINKS=4, D=16, DT=.025, STEPS=320, SUB=2, HORIZON=24;
+let N=16;
+const PUSH_TIMES=[1.4,3.05,4.85,6.45], PUSH_STEPS=PUSH_TIMES.map(t=>Math.round(t/DT)), FALL=1.49;
+const MASS=[1,.84,.71,.58],LEN=[.42,.42,.42,.42],I=MASS.map((m,i)=>m*LEN[i]*LEN[i]/12),G=9.81;
+const MAX=[60,37,22,12],RES=[23,16,10,6.3],DAMP=[.12,.10,.08,.06],KP=[11,8.2,5.4,3.4],KD=[3.5,2.7,1.75,1.05];
+const A=Array.from({length:LINKS},()=>Array(LINKS).fill(0)),grav=Array(LINKS).fill(0);
+for(let i=0;i<LINKS;i++){
+ for(let j=0;j<LINKS;j++)for(let k=Math.max(i,j);k<LINKS;k++){
+  const ai=k===i?LEN[i]/2:LEN[i],aj=k===j?LEN[j]/2:LEN[j];A[i][j]+=MASS[k]*ai*aj;
+ }
+ for(let k=i;k<LINKS;k++)grav[i]+=G*MASS[k]*(i===k?LEN[i]/2:LEN[i]);
+}
+const clamp=(v,l,h)=>Math.min(h,Math.max(l,v)), sigmoid=v=>1/(1+Math.exp(-clamp(v,-35,35)));
+function rng(seed){let a=seed>>>0||1;return()=>{a+=0x6D2B79F5;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;};}
+const gaussian=r=>Math.sqrt(-2*Math.log(Math.max(1e-12,r())))*Math.cos(2*Math.PI*r());
+function edgeMask(){return Array.from({length:N},(_,j)=>Array.from({length:N},(_,k)=>{
+ const d=Math.min((j-k+N)%N,(k-j+N)%N);
+ // Local circle edges plus seeded cross-ring shortcuts; each node has incoming and outgoing connections.
+ return j===k || d<=2 || (((j*17+k*13+3)%11)===0);
+}));}
+let MASK=edgeMask(),EDGE_COUNT=MASK.flat().filter(Boolean).length,VIS_EDGES=[],IN_EDGES=[];
+function setNeurons(count){N=clamp(Math.floor(count),8,256);MASK=edgeMask();EDGE_COUNT=MASK.flat().filter(Boolean).length;VIS_EDGES=[];IN_EDGES=Array.from({length:N},(_,j)=>MASK[j].map((v,k)=>v?k:-1).filter(k=>k>=0));for(let j=0;j<N;j++)for(let k=j+1;k<N;k++)if(MASK[j][k]||MASK[k][j])VIS_EDGES.push([j,k]);}
+setNeurons(N);
+let neuralCalls=0,neuralOps=0;
+function parameterCount(){return N*D+EDGE_COUNT+4*N+LINKS*N+LINKS;}
+function newNet(seed){const r=rng(seed),n={wi:[],wr:[],b:[],tb:[],ts:[],tr:[],wo:[],bo:[]};
+ for(let j=0;j<N;j++){
+  n.wi[j]=Array.from({length:D},()=>gaussian(r)*.19);
+  n.wr[j]=Array.from({length:N},(_,k)=>MASK[j][k]?gaussian(r)*.17:0);
+  n.b[j]=gaussian(r)*.045;n.tb[j]=gaussian(r)*.48;n.ts[j]=gaussian(r)*.18;n.tr[j]=gaussian(r)*.18;
+ }
+ for(let i=0;i<LINKS;i++){n.wo[i]=Array.from({length:N},()=>gaussian(r)*.065);n.bo[i]=0;}
+ return n;
+}
+function clone(n){return {wi:n.wi.map(z=>z.slice()),wr:n.wr.map(z=>z.slice()),b:n.b.slice(),tb:n.tb.slice(),ts:n.ts.slice(),tr:n.tr.slice(),wo:n.wo.map(z=>z.slice()),bo:n.bo.slice()};}
+function obs(s){const a=s.a,w=s.w;return [...a.map(Math.sin),...w.map(v=>clamp(v/5,-3,3)),clamp(a[0],-2,2),...a.slice(1).map((v,i)=>clamp(v-a[i],-2,2)),clamp(w[0]/5,-3,3),...w.slice(1).map((v,i)=>clamp((v-w[i])/5,-3,3))];}
+function liquid(n,h,x){if(WORK.active){neuralCalls++;neuralOps+=N*D+EDGE_COUNT+N*LINKS;}const old=h.slice(),next=[],alpha=[],tanhz=[];
+ for(let j=0;j<N;j++){
+  let z=n.b[j];for(let k=0;k<D;k++)z+=n.wi[j][k]*x[k];
+  for(const k of IN_EDGES[j])z+=n.wr[j][k]*old[k];
+  const tau=.06+.32*sigmoid(n.tb[j]+n.ts[j]*x[j%D]+n.tr[j]*old[j]);
+  const al=DT/(DT+tau),t=Math.tanh(z);
+  alpha[j]=al;tanhz[j]=t;next[j]=old[j]+al*(t-old[j]);
+ }
+ const y=[];for(let i=0;i<LINKS;i++){
+  let z=n.bo[i];for(let j=0;j<N;j++)z+=n.wo[i][j]*next[j];y[i]=Math.tanh(z);
+ }
+ return {h:next,old,x,alpha,tanhz,y};
+}
+let CFG={seedCount:3,budget:120000,tilt:65,difficulty:2.5,assist:'reflex',reflex:.56,sequence:4,explore:1,freeze:true,finalEpisodes:12,selectionEpisodes:4,bootstrap:1000};
+let WORK={active:false,used:0,limit:0,finalCounting:false,finalSteps:0};
+class BudgetReached extends Error{constructor(){super('Physics transition budget exhausted');}}
+function reflex(s){const abs=Array.from({length:LINKS},(_,i)=>-(grav[i]+KP[i])*Math.sin(s.a[i])-KD[i]*s.w[i]);
+ return Array.from({length:LINKS},(_,i)=>abs.slice(i).reduce((a,b)=>a+b,0));}
+function torques(s,y){const b=CFG.assist==='reflex'?reflex(s):Array(LINKS).fill(0);
+ return y.map((v,i)=>clamp((CFG.assist==='reflex'?CFG.reflex*b[i]:0)+v*(CFG.assist==='reflex'?RES[i]:MAX[i]),-MAX[i],MAX[i]));}
+function solve(M,b){const m=M.map(r=>r.slice()),v=b.slice();for(let c=0;c<LINKS;c++){
+ let q=c;for(let k=c+1;k<LINKS;k++)if(Math.abs(m[k][c])>Math.abs(m[q][c]))q=k;
+ if(q!==c){[m[q],m[c]]=[m[c],m[q]];[v[q],v[c]]=[v[c],v[q]];}
+ if(Math.abs(m[c][c])<1e-12)return Array(LINKS).fill(0);
+ const div=m[c][c];for(let k=c;k<LINKS;k++)m[c][k]/=div;v[c]/=div;
+ for(let k=0;k<LINKS;k++)if(k!==c){const f=m[k][c];for(let j=c;j<LINKS;j++)m[k][j]-=f*m[c][j];v[k]-=f*v[c];}
+}return v;}
+function accel(s,u){const m=Array.from({length:LINKS},()=>Array(LINKS).fill(0)),c=Array(LINKS).fill(0);
+ for(let i=0;i<LINKS;i++)for(let j=0;j<LINKS;j++){
+  const d=s.a[i]-s.a[j];m[i][j]=A[i][j]*Math.cos(d)+(i===j?I[i]:0);c[i]+=A[i][j]*Math.sin(d)*s.w[j]*s.w[j];
+ }
+ const abs=u.map((v,i)=>v-(u[i+1]||0));
+ return solve(m,abs.map((v,i)=>v-DAMP[i]*s.w[i]-c[i]+grav[i]*Math.sin(s.a[i])));
+}
+function advance(state,u,t,test){if(WORK.active){if(WORK.used>=WORK.limit)throw new BudgetReached();WORK.used++;}else if(WORK.finalCounting)WORK.finalSteps++;
+ const s={a:state.a.slice(),w:state.w.slice(),fall:state.fall};if(s.fall)return s;
+ const pushIdx=PUSH_STEPS.indexOf(t);if(pushIdx!==-1)for(let i=0;i<LINKS;i++)s.w[i]+=test.kicks[pushIdx][i];
+ for(let z=0;z<SUB;z++){
+  const dd=accel(s,u);for(let i=0;i<LINKS;i++){
+   s.w[i]=clamp(s.w[i]+(DT/SUB)*dd[i],-40,40);s.a[i]+=(DT/SUB)*s.w[i];
+  }
+ }
+ if(s.a.some(v=>!Number.isFinite(v)||Math.abs(v)>FALL)||s.w.some(v=>!Number.isFinite(v)||Math.abs(v)>14))s.fall=true;
+ return s;
+}
+function reward(s,u){if(s.fall)return 0;let ang=0,vel=0,eff=0;
+ for(let i=0;i<LINKS;i++){ang+=s.a[i]**2;vel+=s.w[i]**2;eff+=(u[i]/MAX[i])**2;}
+ return Math.max(0,.16+2.04*Math.exp(-2.05*ang-.067*vel)-.02*eff);
+}
+function testSeed(seed){const r=rng(seed),sign=(seed&1)?1:-1,tilt=CFG.tilt*Math.PI/180,trunk=(r()*2-1)*.037;
+ const a=Array.from({length:LINKS},(_,i)=>sign*(tilt+trunk+(r()*2-1)*(.02+.007*i)));
+ const w=Array.from({length:LINKS},()=>(.5-r())*.21),kicks=PUSH_TIMES.map((_,t)=>Array.from({length:LINKS},(_,i)=>
+ (r()*2-1)*(.18+.075*t)*CFG.difficulty+(i===t%LINKS?(t%2?-1:1)*(.29+.11*t)*CFG.difficulty:0)));
+ return {a,w,kicks};
+}
+function rollout(n,test){let s={a:test.a.slice(),w:test.w.slice(),fall:false},h=Array(N).fill(0),total=0,steps=0,ang=0,eff=0;
+ let firstRecovery=null,streak=0,pending=-1;const postPush=PUSH_TIMES.map(()=>null);
+ for(let t=0;t<STEPS && !s.fall;t++){
+  const v=liquid(n,h,obs(s));h=v.h;const u=torques(s,v.y);
+  const idx=PUSH_STEPS.indexOf(t);if(idx!==-1){pending=idx;streak=0;}
+  const nxt=advance(s,u,t,test);total+=reward(nxt,u);steps++;
+  for(let i=0;i<LINKS;i++){ang+=s.a[i]**2;eff+=(u[i]/MAX[i])**2;}s=nxt;
+  if(!s.fall && s.a.every(v=>Math.abs(v)<.18)&&s.w.every(v=>Math.abs(v)<.65)){
+   streak++;if(streak===5){const when=(t-4)*DT;
+    if(firstRecovery===null)firstRecovery=when;
+    if(pending!==-1 && postPush[pending]===null){postPush[pending]=Math.max(0,when-PUSH_TIMES[pending]);pending=-1;}
+   }
+  }else streak=0;
+ }
+ return {score:total/STEPS,alive:steps/STEPS,fall:s.fall,rms:Math.sqrt(ang/(LINKS*Math.max(1,steps))),effort:eff/(LINKS*Math.max(1,steps)),firstRecovery,postPush};
+}
+function judge(n,ids){let sum=0,worst=Infinity,alive=0,rms=0,effort=0,falls=0,recover=0,tt=0,countT=0,vals=[],recTimes=[];
+ for(const id of ids){const v=rollout(n,testSeed(id));vals.push(v.score);sum+=v.score;worst=Math.min(worst,v.score);
+  alive+=v.alive;rms+=v.rms;effort+=v.effort;falls+=v.fall?1:0;
+  if(v.firstRecovery!==null){recover++;tt+=v.firstRecovery;countT++;}recTimes.push(v.postPush);
+ }
+ const k=ids.length;return {fitness:.65*sum/k+.35*worst,mean:sum/k,worst,alive:alive/k,rms:rms/k,effort:effort/k,falls,recoverySuccess:recover/k,firstRecovery:countT?tt/countT:null,postPushRecovery:recTimes,vals};
+}
+function mutate(n,r,scale,freezeOut=false){const c=clone(n),choices=freezeOut?['wi','wr','b','tb','ts','tr']:['wo','wo','wi','wr','b','tb','ts','tr','bo'];
+ const k=choices[Math.floor(r()*choices.length)],a=c[k],density=CFG.evoScale==='scaled'?N/16:1;
+ if(Array.isArray(a[0])){const edits=Math.max(1,Math.round((8+Math.floor(r()*11))*density));for(let e=0;e<edits;e++){
+  const i=Math.floor(r()*a.length),valid=k==='wr'?MASK[i].map((v,j)=>v?j:-1).filter(j=>j!==-1):null,j=valid?valid[Math.floor(r()*valid.length)]:Math.floor(r()*a[i].length);
+  a[i][j]=clamp(a[i][j]+gaussian(r)*scale*(k==='wo'?1:.65),-2,2);
+ }}else {const edits=Math.max(1,Math.round((2+Math.floor(r()*5))*density));for(let e=0;e<edits;e++){const i=Math.floor(r()*a.length);a[i]=clamp(a[i]+gaussian(r)*scale*.7,-2,2);}}return c;}
+function blend(base,trained,t,readout=false){const c=clone(base);for(const k of Object.keys(c)){
+ if(readout&&k!=='wo'&&k!=='bo')continue;
+ const a=c[k],b=trained[k];if(Array.isArray(a[0]))for(let i=0;i<a.length;i++)for(let j=0;j<a[i].length;j++)a[i][j]+=(b[i][j]-a[i][j])*t;
+ else for(let i=0;i<a.length;i++)a[i]+=(b[i]-a[i])*t;
+}return c;}
+const ARMS=[
+{id:'evo',name:'A · Evolution alone',color:'#8acef4',motorPart:0},
+{id:'seq',name:'B · Motor + sensory sequence',color:'#baf58d',motorPart:1}
+];
+const BLENDS=[['readout .12',.12,true],['readout .35',.35,true],['readout .75',.75,true],['full .12',.12,false],['full .35',.35,false],['full .75',.75,false]];
+function seedFor(i){return 82941+i*9973;}
+function ids(seed,kind,n){const salt=kind==='train'?1320003:kind==='selection'?2370001:7460003;
+ return Array.from({length:n},(_,i)=>seed*19+salt+i*(kind==='final'?2741:127));}
+// Multi-step paired antithetic torque perturbation. The (neutral) sensory history is recorded
+// at every perturbed step, and credit is assigned to action times, not just a terminal state.
+function probe(n,state,hBefore,test,t,r,sequenceLength,sham,shamR){
+ const span=sequenceLength,pattern=Array.from({length:span},()=>Array.from({length:LINKS},()=>gaussian(r)));
+ if(span===1){const joint=Math.floor(r()*LINKS);for(let i=0;i<LINKS;i++)if(i!==joint)pattern[0][i]=0;}
+ const lengths=[2.9,1.75,1.05,.65],mag=lengths.map(z=>z*CFG.explore*(.75+.5*r()));
+ function evalArm(sign,record){let s={a:state.a.slice(),w:state.w.slice(),fall:state.fall},h=hBefore.slice(),value=0,disc=1,trace=[];
+  for(let q=0;q<HORIZON&&!s.fall;q++){
+   const v=liquid(n,h,obs(s));h=v.h;let u=torques(s,v.y);
+   if(q<span){if(record)trace.push(v);u=u.map((z,i)=>clamp(z+sign*pattern[q][i]*mag[i],-MAX[i],MAX[i]));}
+   s=advance(s,u,t+q,test);value+=disc*reward(s,u);disc*=.98;
+  }
+  if(!s.fall){let aa=0,vv=0;for(let i=0;i<LINKS;i++){aa+=s.a[i]**2;vv+=s.w[i]**2;}
+   value+=disc*4*Math.exp(-2.6*aa-.12*vv);
+  }
+  return {value,trace};
+ }
+ const plus=evalArm(1,true),minus=evalArm(-1,true);
+ // A sham performs the same paired simulations but discards the observed advantage.
+ const raw=sham?gaussian(shamR):plus.value-minus.value;
+ // Directional credit comes from the fitness contrast; normalize it so that a useful
+ // but numerically small reward difference is not swamped by random mutation scale.
+ // The sign determines which trajectory supplies the sensory and neural trace.
+ const g=clamp(raw/Math.max(.08,Math.abs(raw)), -1,1);
+ const trace=(raw>=0?plus:minus).trace;
+ const oldW=n.wo.map(row=>row.slice());const amp=CFG.assist==='reflex'?RES:MAX;
+ for(let q=0;q<trace.length;q++){
+  const v=trace[q],carry=Array(N).fill(0),age=Math.pow(.91,q);
+  for(let i=0;i<LINKS;i++){
+   const go=g*pattern[q][i]*age*(1-v.y[i]*v.y[i]);
+   for(let j=0;j<N;j++)carry[j]+=go*oldW[i][j];
+   for(let j=0;j<N;j++)n.wo[i][j]=clamp(n.wo[i][j]+.007*go*v.h[j],-2,2);
+   n.bo[i]=clamp(n.bo[i]+.007*go*.3,-1.5,1.5);
+  }
+  const norm=Math.max(1,...carry.map(Math.abs));
+  for(let j=0;j<N;j++){
+   const e=.006*(carry[j]/norm)*v.alpha[j]*(1-v.tanhz[j]*v.tanhz[j]);
+   for(let k=0;k<D;k++)n.wi[j][k]=clamp(n.wi[j][k]+e*v.x[k],-2,2);
+   for(let k=0;k<N;k++)if(MASK[j][k])n.wr[j][k]=clamp(n.wr[j][k]+.6*e*v.old[k],-2,2);
+   n.b[j]=clamp(n.b[j]+.25*e,-1.5,1.5);
+  }
+ }
+ return {advantage:plus.value-minus.value,span,pairedTransitions:0};
+}
+function motorTrain(base,trainingIDs,r,arm,stats){const learner=clone(base);
+ // Re-simulate a complete training episode, probing at states actually encountered.
+ for(let episode=0;episode<2;episode++){
+  const test=testSeed(trainingIDs[episode%trainingIDs.length]);let s={a:test.a.slice(),w:test.w.slice(),fall:false},h=Array(N).fill(0);
+  for(let t=0;t<STEPS&&!s.fall;t++){
+   const before=h.slice(),v=liquid(learner,h,obs(s));h=v.h;
+   if(t<STEPS-HORIZON-1 && t%13===0){
+    // Include t=0: otherwise controllers that fall before the first probe get no motor signal.
+    probe(learner,s,before,test,t,r,arm.single?1:CFG.sequence,!!arm.sham,r);
+    stats.probes++;
+   }
+   let u=torques(s,v.y);
+   // Motor babbling makes the learner experience slightly different states.
+   if(t%13===0){const j=Math.floor(r()*LINKS);u[j]=clamp(u[j]+(r()<.5?-1:1)*CFG.explore*.25,-MAX[j],MAX[j]);}
+   s=advance(s,u,t,test);
+  }
+ }
+ return learner;
+}
+function parseSizes(raw){const parts=String(raw).trim().split(/[\s,;]+/).filter(Boolean);if(!parts.length)throw Error('Enter neuron counts from 8 to 256.');const vals=[];for(const item of parts){if(!/^\d+$/.test(item))throw Error('Neuron sizes must be whole numbers, comma-separated.');const n=Number(item);if(n<8||n>256)throw Error('Neuron count must be 8 through 256.');if(!vals.includes(n))vals.push(n);}return vals.sort((a,b)=>a-b);}
+function startCfg(){const val=id=>Number($(id).value);
+ const n=clamp(Math.floor(val('seeds')||3),1,40),budget=clamp(Math.floor(val('budget')||60),10,20000)*1000;
+ return {seedCount:n,budget,sizes:parseSizes($('sizes').value),tilt:val('tilt'),difficulty:val('difficulty')/100,assist:$('assist').value,reflex:val('reflex')/100,
+ sequence:Math.round(val('sequence')),explore:val('explore')/100,evoScale:$('evoScale').value,freeze:false,finalEpisodes:12,selectionEpisodes:4,bootstrap:1500};
+}
+let DATA={status:'idle',version:'6.0',arms:[],config:null,summary:null,current:null,startedUTC:null,finishedUTC:null};
+let paused=false,stop=false,locked=false;
+function f(v){return v==null?'—':v.toFixed(3);}
+const fmt=v=>Number(v||0).toLocaleString('en-US');
+function log(s){const e=$('log');e.textContent+=s+'\n';e.scrollTop=e.scrollHeight;}
+function notice(s){$('current').textContent=s;}
+function yieldUI(){return new Promise(resolve=>setTimeout(resolve,0));}
+function lock(yes){locked=yes;for(const id of ['seeds','budget','sizes','tilt','difficulty','assist','reflex','sequence','explore','evoScale','quick','protocol','run','everySize','expanded','longRun'])$(id).disabled=yes;
+ $('pause').disabled=!yes;$('stop').disabled=!yes;$('biopsy').disabled=!DATA.arms.length;$('export').disabled=!DATA.arms.length;
+}
+function stageOf(a,arm){if(arm.motorPart===0)return 'evolution';if(arm.motorPart===1)return 'motor';
+ if(arm.adapt){if(a.switched)return 'evolution';if(a.generations>=3&&a.stalls>=3 || WORK.used>=CFG.budget*.65){a.switched=true;a.switchAt=WORK.used;return 'evolution';}return 'motor';}
+ if(WORK.used/CFG.budget >=arm.motorPart){if(!a.switched){a.switched=true;a.switchAt=WORK.used;}return 'evolution';}
+ return 'motor';
+}
+function generation(a,arm,sel,train,seed){const gen=a.generations+1,r=rng(seed+gen*1777+(arm.sham?271:0)+(arm.single?83:0)),origin=a.score.fitness;
+ const stage=stageOf(a,arm),freezeOut=CFG.freeze&&a.switched&&arm.motorPart>0;
+ let best=a.net,bestScore=a.score,who='none',bestMotor=null;
+ if(stage==='motor'){
+  const learned=motorTrain(a.net,train,r,arm,a.stats);
+  for(const [name,ratio,readoutOnly] of BLENDS){const candidate=blend(a.net,learned,ratio,readoutOnly),score=judge(candidate,sel);
+   a.stats.proposals++;if(score.fitness>bestScore.fitness+1e-7){best=candidate;bestScore=score;who=(arm.sham?'sham ':'motor ')+name;}
+  }
+ } else {
+  const sigma=.18*Math.pow(.997,gen);
+  for(let j=0;j<5;j++){
+   const candidate=mutate(a.net,r,sigma,freezeOut),score=judge(candidate,sel);a.stats.proposals++;
+   if(score.fitness>bestScore.fitness+1e-7){best=candidate;bestScore=score;who='evolution';}
+  }
+ }
+ if(best!==a.net){a.net=best;a.score=bestScore;a.stats.accepted++;if(who.startsWith('motor'))a.stats.motor++;else if(who.startsWith('sham'))a.stats.sham++;else a.stats.evolution++;}
+ a.generations++;const delta=a.score.fitness-origin;
+ if(stage==='motor'&&arm.adapt)a.stalls=delta<.012?a.stalls+1:0;
+ a.history.push({work:WORK.used,fitness:a.score.fitness,generation:a.generations,stage,accepted:who,delta,alive:a.score.alive});
+ a.stage=stage;
+}
+async function runArm(seed,arm,armIndex,seedIndex,sizeIndex){CFG=DATA.config;WORK={active:true,used:0,limit:CFG.budget,finalCounting:false,finalSteps:0};neuralCalls=0;neuralOps=0;const started=performance.now();
+ const sel=ids(seed,'selection',CFG.selectionEpisodes),train=ids(seed,'train',3),net=newNet(seed);
+ const a={seed,neurons:N,edges:EDGE_COUNT,parameters:parameterCount(),arm:arm.id,name:arm.name,net,selectionIDs:sel,trainingIDs:train,score:null,baseline:null,history:[],stats:{proposals:0,accepted:0,motor:0,evolution:0,sham:0,probes:0},generations:0,spent:0,complete:false,stage:'baseline',switched:false,switchAt:null,stalls:0};
+ a.score=judge(a.net,sel);a.baseline=structuredClone(a.score);a.history.push({work:WORK.used,fitness:a.score.fitness,generation:0,stage:'baseline',accepted:'baseline',alive:a.score.alive});
+ log(`${N} cells · SEED ${seedIndex+1}/${CFG.seedCount} · ${arm.name} · initial ${f(a.score.fitness)} · ${fmt(CFG.budget)} step cap`);
+ while(!stop){while(paused&&!stop){$('status').textContent='PAUSED';await new Promise(resolve=>setTimeout(resolve,100));}if(stop)break;
+  try{generation(a,arm,sel,train,seed);}catch(err){if(err instanceof BudgetReached)break;throw err;}
+  a.spent=WORK.used;update(a,armIndex,seedIndex,sizeIndex);await yieldUI();
+ }
+ a.spent=WORK.used;a.complete=!stop;WORK.active=false;a.neuralCalls=neuralCalls;a.neuralOps=neuralOps;a.elapsedMs=performance.now()-started;
+ log(`${a.complete?'DONE':'STOPPED'} · ${arm.name} · ${fmt(a.spent)} physics transitions · gen ${a.generations} · accepted ${a.stats.accepted} · score ${f(a.score.fitness)}`);
+ return a;
+}
+function update(a,j,i,sizeIndex){DATA.current=a;const all=ARMS.length*CFG.seedCount*CFG.sizes.length,progress=(sizeIndex*CFG.seedCount*ARMS.length+i*ARMS.length+j+a.spent/CFG.budget)/all;
+ $('bar').style.width=(100*progress).toFixed(2)+'%';$('status').textContent='TRAINING';
+ $('liveFitness').textContent=f(a.score.fitness);$('liveSurvival').textContent=(100*a.score.alive).toFixed(0)+'%';
+ $('liveAccepted').textContent=fmt(a.stats.accepted);$('stage').textContent=a.stage;
+ $('probeCount').textContent=fmt(a.stats.probes);
+ notice(`${N} neurons · seed ${i+1}/${CFG.seedCount} · ${a.name} · ${fmt(a.spent)}/${fmt(CFG.budget)} transitions · generation ${a.generations}`);
+ drawChart();
+}
+function curveAt(a,work){if(work<a.history[0].work)return null;let lo=0,hi=a.history.length-1;
+ while(lo<hi){const m=Math.ceil((hi+lo)/2);if(a.history[m].work<=work)lo=m;else hi=m-1;}return a.history[lo].fitness;
+}
+function curves(){if(!DATA.config)return [];
+ const size=Number($('plotSize').value)||CFG.sizes[0];
+ return ARMS.map(m=>({name:m.name,mode:m.id,color:m.color,data:Array.from({length:17},(_,i)=>{
+  const work=CFG.budget*i/16,rs=DATA.arms.filter(a=>a.neurons===size&&a.arm===m.id&&a.complete),vals=rs.map(a=>curveAt(a,work)).filter(z=>z!==null);
+  return {work,n:vals.length,mean:vals.length?vals.reduce((x,y)=>x+y,0)/vals.length:null};
+ })}));}
+function mean(rs,key){if(!rs.length)return null;return rs.reduce((s,a)=>s+a.final[key],0)/rs.length;}
+function pairedSize(size){const ea=DATA.arms.filter(a=>a.neurons===size&&a.arm==='evo'&&a.complete&&a.final),mm=new Map(ea.map(a=>[a.seed,a.final.fitness]));const d=DATA.arms.filter(a=>a.neurons===size&&a.arm==='seq'&&a.complete&&a.final&&mm.has(a.seed)).map(a=>a.final.fitness-mm.get(a.seed));
+ if(!d.length)return {n:0,mean:null,low:null,high:null,wins:0,ties:0,losses:0};const mean=d.reduce((a,b)=>a+b,0)/d.length;
+ if(d.length<2)return {n:d.length,mean,low:null,high:null,wins:d.filter(x=>x>1e-9).length,ties:d.filter(x=>Math.abs(x)<=1e-9).length,losses:d.filter(x=>x< -1e-9).length};
+ const r=rng(1949+size*301+d.length),boot=[];for(let i=0;i<CFG.bootstrap;i++){let sum=0;for(let j=0;j<d.length;j++)sum+=d[Math.floor(r()*d.length)];boot.push(sum/d.length);}boot.sort((a,b)=>a-b);
+ return {n:d.length,mean,low:boot[Math.floor(boot.length*.025)],high:boot[Math.floor(boot.length*.975)],wins:d.filter(x=>x>1e-9).length,ties:d.filter(x=>Math.abs(x)<=1e-9).length,losses:d.filter(x=>x< -1e-9).length};}
+function summarize(){return {bySize:CFG.sizes.map(size=>({neurons:size,edges:edgeCountFor(size),parameters:parameterCountFor(size),arms:ARMS.map(m=>{const rs=DATA.arms.filter(a=>a.neurons===size&&a.arm===m.id&&a.complete&&a.final);return {id:m.id,n:rs.length,fitness:mean(rs,'fitness'),survival:mean(rs,'alive'),recovery:mean(rs,'recoverySuccess'),rms:mean(rs,'rms'),avgGenerations:rs.length?rs.reduce((s,a)=>s+a.generations,0)/rs.length:null,avgNeuralOps:rs.length?rs.reduce((s,a)=>s+a.neuralOps,0)/rs.length:null,avgNeuralCalls:rs.length?rs.reduce((s,a)=>s+a.neuralCalls,0)/rs.length:null,avgMs:rs.length?rs.reduce((s,a)=>s+a.elapsedMs,0)/rs.length:null};}),paired:pairedSize(size)}))};}
+function edgeCountFor(size){const old=N;setNeurons(size);const k=EDGE_COUNT;setNeurons(old);return k;}
+function parameterCountFor(size){const old=N;setNeurons(size);const k=parameterCount();setNeurons(old);return k;}
+async function finalTests(){WORK.active=false;WORK.finalCounting=true;WORK.finalSteps=0;
+ log('Training finished. Evaluating previously unused matched 12-episode final sets.');
+ for(let i=0;i<DATA.arms.length;i++){
+  const a=DATA.arms[i];if(!a.complete)continue;setNeurons(a.neurons);
+  a.finalIDs=ids(a.seed,'final',CFG.finalEpisodes);const before=WORK.finalSteps;
+  a.final=judge(a.net,a.finalIDs);a.finalSteps=WORK.finalSteps-before;
+  if(i%2===0){notice(`Independent evaluation ${i+1}/${DATA.arms.length}`);await yieldUI();}
+ }
+ DATA.finalEvaluationSteps=WORK.finalSteps;WORK.finalCounting=false;DATA.summary=summarize();
+ renderSummary();log(`INDEPENDENT TESTS COMPLETE · ${fmt(DATA.finalEvaluationSteps)} additional, separate evaluation transitions`);
+}
+async function runCampaign(){if(locked)return;let c;try{c=startCfg();}catch(err){notice(err.message);return;}CFG=c;
+ DATA={status:'running',version:'6.0',config:c,arms:[],summary:null,current:null,startedUTC:new Date().toISOString(),finishedUTC:null,finalEvaluationSteps:0};
+ paused=false;stop=false;lock(true);$('log').textContent='';$('bar').style.width='0%';
+ $('plotSize').innerHTML=c.sizes.map(n=>`<option value="${n}">${n} neurons</option>`).join('');log(`Starting ${c.sizes.join(', ')} neurons × ${c.seedCount} seeds × 2 arms × ${fmt(c.budget)} transitions; motor/sensory sequence ${c.sequence} steps.`);
+ try{for(let h=0;h<c.sizes.length&&!stop;h++)for(let i=0;i<c.seedCount&&!stop;i++)for(let j=0;j<ARMS.length&&!stop;j++){
+   setNeurons(c.sizes[h]);const a=await runArm(seedFor(i),ARMS[j],j,i,h);DATA.arms.push(a);renderSummary();await yieldUI();
+  }
+  if(!stop&&DATA.arms.length===c.seedCount*ARMS.length*c.sizes.length){await finalTests();DATA.status='complete';$('bar').style.width='100%';$('status').textContent='COMPLETE';}
+  else {DATA.status='stopped';$('status').textContent='STOPPED';}
+ }catch(err){DATA.status='error';$('status').textContent='ERROR';log('ERROR '+(err.stack||err));}
+ finally{DATA.finishedUTC=new Date().toISOString();WORK.active=false;WORK.finalCounting=false;lock(false);renderSummary();fillDemo();}
+}
+function renderSummary(){const s=$('summary'),p=$('paired');if(!DATA.arms.length){s.innerHTML='<p>Run the experiment to see results.</p>';p.innerHTML='';return;}
+ if(!DATA.summary){const rows=CFG.sizes.map(size=>`<tr><td>${size}</td>${ARMS.map(m=>{const rs=DATA.arms.filter(a=>a.neurons===size&&a.arm===m.id);return `<td>${rs.length}/${CFG.seedCount}</td><td>${rs.length?f(rs.reduce((x,a)=>x+a.score.fitness,0)/rs.length):'—'}</td>`;}).join('')}</tr>`).join('');s.innerHTML=`<p>Selection fitness during training. Independent tests begin only after all arms finish.</p><div class="tablewrap"><table><thead><tr><th>Neurons</th><th>Evolution runs</th><th>Evolution select.</th><th>Motor runs</th><th>Motor select.</th></tr></thead><tbody>${rows}</tbody></table></div>`;p.innerHTML='';}
+ else{const rows=DATA.summary.bySize.map(v=>{const e=v.arms[0],m=v.arms[1],q=v.paired;return `<tr><td><b>${v.neurons}</b></td><td>${v.parameters}</td><td>${v.edges}</td><td>${e.n}/${m.n}</td><td>${f(e.fitness)}</td><td>${f(m.fitness)}</td><td>${f(q.mean)}</td><td>${q.low===null?'—':f(q.low)+' to '+f(q.high)}</td><td>${q.wins}/${q.ties}/${q.losses}</td><td>${(100*e.survival).toFixed(0)}% / ${(100*m.survival).toFixed(0)}%</td></tr>`;}).join('');s.innerHTML=`<p>Independent final tests: ${CFG.finalEpisodes} unseen episodes per starting seed and method. Difference = motor/sensory − evolution (paired by seed and network size).</p><div class="tablewrap"><table><thead><tr><th>Cells</th><th>Parameters</th><th>Directed edges</th><th>n evo/motor</th><th>Evolution</th><th>Motor + sensory</th><th>Δ fitness</th><th>Bootstrap 95%</th><th>W/T/L</th><th>Survival evo / motor</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+ const efficiency=DATA.summary.bySize.map(v=>`<tr><td>${v.neurons}</td>${v.arms.map(a=>`<td>${fmt(Math.round(a.avgNeuralOps))}</td><td>${Math.round(a.avgMs)}</td><td>${f(a.avgGenerations)}</td><td>${(a.recovery*100).toFixed(1)}%</td>`).join('')}</tr>`).join('');p.innerHTML=`<h3>Neural computation and recovery</h3><div class="tablewrap"><table><thead><tr><th>Cells</th><th>Evo forward multiply-add proxy</th><th>Evo ms</th><th>Evo gen.</th><th>Evo recovery</th><th>Motor forward proxy</th><th>Motor ms</th><th>Motor gen.</th><th>Motor recovery</th></tr></thead><tbody>${efficiency}</tbody></table></div><p class="muted">Every method gets the same budget of simulated physical transitions at each size; larger networks require more operations per forward pass. Milliseconds are approximate wall-clock measurements, not calibrated hardware benchmarks. The 95% intervals use paired seed-level bootstrap resampling.</p>`;
+ }
+ const detail=$('detail'),rows=DATA.arms.map(a=>`<tr><td>${a.neurons}</td><td>${a.seed}</td><td>${a.name}</td><td>${fmt(a.spent)}</td><td>${a.generations}</td><td>${f(a.score.fitness)}</td><td>${f(a.final?.fitness)}</td><td>${a.stats.accepted}</td><td>${fmt(a.neuralOps)}</td></tr>`).join('');detail.innerHTML=`<div class="tablewrap"><table><thead><tr><th>Cells</th><th>Seed</th><th>Arm</th><th>Physics</th><th>Gen</th><th>Selection</th><th>Final</th><th>Accepted</th><th>Neural ops proxy</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+ $('biopsy').disabled=!DATA.arms.length;$('export').disabled=!DATA.arms.length;drawSizeChart();drawChart();}
+function drawSizeChart(){const c=canvasFit($('sizeChart'));if(!c)return;const {ctx,w,h}=c;ctx.fillStyle='#0b1422';ctx.fillRect(0,0,w,h);if(!DATA.summary)return;const all=DATA.summary.bySize,xx=46,x2=w-22,yTop=20,yBottom=h-34,maximum=Math.max(1.5,...all.flatMap(a=>a.arms.map(m=>m.fitness||0)))*1.12;
+ ctx.font='11px system-ui';ctx.fillStyle='#aebed0';for(let i=0;i<=4;i++){const y=yBottom-(yBottom-yTop)*i/4;line(ctx,[[xx,y],[x2,y]],'#293b52',1);ctx.fillText((maximum*i/4).toFixed(2),4,y+3);}const lo=Math.min(...CFG.sizes),hi=Math.max(...CFG.sizes),X=n=>xx+(x2-xx)*(hi===lo?.5:(n-lo)/(hi-lo)),Y=v=>yBottom-(yBottom-yTop)*v/maximum;
+ for(const [i,m] of ARMS.entries()){const points=all.filter(q=>q.arms[i].n).map(q=>[X(q.neurons),Y(q.arms[i].fitness)]);line(ctx,points,m.color,2.8);for(const pt of points){ctx.beginPath();ctx.arc(pt[0],pt[1],4,0,2*Math.PI);ctx.fillStyle=m.color;ctx.fill();}}for(const q of all){ctx.fillStyle='#b0c6da';if(all.length<=12||all.indexOf(q)%Math.ceil(all.length/12)===0||q===all[all.length-1])ctx.fillText(String(q.neurons),X(q.neurons)-5,h-12);}ctx.fillText('Independent final fitness vs neuron count',xx+3,12);}
+function canvasFit(c){const rect=c.getBoundingClientRect(),dpr=Math.min(window.devicePixelRatio||1,2),w=rect.width,h=rect.height;
+ if(w<2||h<2)return null;const W=Math.round(w*dpr),H=Math.round(h*dpr);
+ if(c.width!==W||c.height!==H){c.width=W;c.height=H;}
+ const ctx=c.getContext('2d');if(!ctx)return null;ctx.setTransform(dpr,0,0,dpr,0,0);return {ctx,w,h};
+}
+function line(ctx,p,color,width=2){if(p.length<2)return;ctx.beginPath();ctx.lineWidth=width;ctx.strokeStyle=color;ctx.moveTo(...p[0]);for(const xy of p.slice(1))ctx.lineTo(...xy);ctx.stroke();}
+function drawChart(){const c=canvasFit($('chart'));if(!c)return;const {ctx,w,h}=c;
+ ctx.fillStyle='#0b1422';ctx.fillRect(0,0,w,h);
+ if(!DATA.config)return;const G=curves(),max=Math.max(2.25,...G.flatMap(g=>g.data.map(d=>d.mean||0)))*1.04;
+ const x0=49,x1=w-17,y0=15,y1=h-30;
+ ctx.font='11px system-ui';ctx.strokeStyle='#304157';ctx.fillStyle='#9bb0c7';
+ for(let i=0;i<=4;i++){const y=y1-(y1-y0)*i/4;ctx.beginPath();ctx.moveTo(x0,y);ctx.lineTo(x1,y);ctx.stroke();ctx.fillText((max*i/4).toFixed(1),6,y+4);}
+ for(let i=0;i<=4;i++){const x=x0+(x1-x0)*i/4;{const count=CFG.budget*i/4;ctx.fillText(count>=1e6?(count/1e6).toFixed(count%1e6===0?0:1)+'m':Math.round(count/1000)+'k',x-10,h-9);}}
+ ctx.fillText('Mean selection fitness vs metered physics transitions (NOT final test)',x0+4,11);
+ for(const g of G){const ps=g.data.filter(d=>d.mean!==null).map(d=>[x0+(x1-x0)*d.work/CFG.budget,y1-(y1-y0)*d.mean/max]);line(ctx,ps,g.color,2.3);}
+}
+function initLegend(){$('legend').innerHTML=ARMS.map(m=>`<span><i style="color:${m.color}">●</i> ${m.name}</span>`).join('');}
+let demo={armId:'seq',seed:null,net:null,s:null,h:Array(N).fill(0),v:null,t:0,episode:null,fallen:false,pauseUntil:0,trace:[]},lastFrame=0,pushLog=[];
+function fillDemo(){const arms=DATA.arms.filter(a=>a.complete);if(!arms.length)return;const oldArm=$('demoArm').value,oldSeed=$('demoSeed').value,oldN=$('demoSize').value;
+ $('demoSize').innerHTML=[...new Set(arms.map(a=>a.neurons))].sort((a,b)=>a-b).map(n=>`<option value="${n}">${n} neurons</option>`).join('');if([...$('demoSize').options].some(o=>o.value===oldN))$('demoSize').value=oldN;
+ const size=Number($('demoSize').value),available=arms.filter(a=>a.neurons===size);
+ $('demoArm').innerHTML=ARMS.filter(m=>available.some(a=>a.arm===m.id)).map(m=>`<option value="${m.id}">${m.name}</option>`).join('');if(available.some(a=>a.arm===oldArm))$('demoArm').value=oldArm;
+ $('demoSeed').innerHTML=[...new Set(available.map(a=>a.seed))].map(n=>`<option value="${n}">${n}</option>`).join('');if(available.some(a=>String(a.seed)===oldSeed))$('demoSeed').value=oldSeed;
+ restartDemo();}
+function restartDemo(){if(locked)return;const arm=$('demoArm').value,seed=Number($('demoSeed').value),size=Number($('demoSize').value),a=DATA.arms.find(x=>x.neurons===size&&x.arm===arm&&x.seed===seed&&x.complete);
+ if(!a)return;setNeurons(size);const ep=testSeed(seed*19+999111),ss={a:ep.a.slice(),w:ep.w.slice(),fall:false};demo={armId:arm,seed,net:a.net,s:ss,h:Array(N).fill(0),v:null,t:0,episode:ep,fallen:false,pauseUntil:0,trace:[]};$('demoInfo').textContent=`${size} cells · ${a.name} · seed ${seed} · manual pushes do not alter benchmark fitness.`;drawNet();}
+function manualPush(direction){if(!demo.s || demo.s.fall)return;
+ const joint=$('pushJoint').value,k=Number($('push').value)/100,targets=joint==='all'?[0,1,2,3]:[Number(joint)];
+ for(const j of targets)demo.s.w[j]+=direction*k;
+ pushLog.push({utc:new Date().toISOString(),seed:demo.seed,arm:demo.armId,joints:targets,impulse:direction*k,time:demo.t*DT});
+ $('demoInfo').textContent=`Applied ${(direction*k).toFixed(2)} rad/s to ${joint==='all'?'all rods':'rod '+(Number(joint)+1)} at ${(demo.t*DT).toFixed(2)} s.`;
+}
+function drawScene(){const c=canvasFit($('scene'));if(!c)return;const {ctx,w,h}=c;
+ ctx.fillStyle='#0b1422';ctx.fillRect(0,0,w,h);
+ ctx.strokeStyle='#20344b';for(let j=0;j<13;j++){const x=w*j/12;line(ctx,[[x,0],[x,h]],'#20344b',.7);const y=h*j/12;line(ctx,[[0,y],[w,y]],'#20344b',.7);}
+ const ox=w/2,oy=h*.85,scale=Math.min(w*.39,h*.65)/(LINKS*.42);
+ line(ctx,[[ox,oy],[ox,oy-LINKS*.42*scale]],'#4e637a',1.3);
+ ctx.fillStyle='#647d91';ctx.fillRect(ox-52,oy+6,104,4);
+ if(!demo.s){ctx.fillStyle='#b1c5d9';ctx.fillText('Run a campaign to display a trained four-link controller.',16,28);return;}
+ let prev=[ox,oy],palette=['#baf58d','#8acef4','#eda5ca','#eac780'];
+ for(let i=0;i<LINKS;i++){const next=[prev[0]+Math.sin(demo.s.a[i])*LEN[i]*scale,prev[1]-Math.cos(demo.s.a[i])*LEN[i]*scale];
+  line(ctx,[prev,next],'#071421',13);line(ctx,[prev,next],palette[i],8);
+  ctx.beginPath();ctx.fillStyle='#ecf4ff';ctx.arc(...next,5,0,2*Math.PI);ctx.fill();prev=next;
+ }
+ ctx.fillStyle='#e8f3ff';ctx.beginPath();ctx.arc(ox,oy,7,0,Math.PI*2);ctx.fill();ctx.font='12px system-ui';
+ ctx.fillStyle='#9db8ce';ctx.fillText(`t ${(demo.t*DT).toFixed(2)} s / ${(STEPS*DT).toFixed(1)} s · 4 rods / 4 joint motors`,12,22);
+ ctx.fillText(demo.s.fall?'FALL / restart pending':'45°–78° tilted starts · 4 scheduled pushes · manual challenges',12,h-15);
+ $('liveAngles').textContent=demo.s.a.map(v=>(180*v/Math.PI).toFixed(1)+'°').join(' / ');
+}
+function drawNet(){const c=canvasFit($('network'));if(!c)return;const {ctx,w,h}=c;
+ ctx.fillStyle='#0b1422';ctx.fillRect(0,0,w,h);const cx=w/2,cy=h/2,R=Math.min(w,h)*.36;
+ const points=Array.from({length:N},(_,i)=>[cx+Math.cos(i*2*Math.PI/N-Math.PI/2)*R,cy+Math.sin(i*2*Math.PI/N-Math.PI/2)*R]);
+ const n=demo.net;
+ if(!n){ctx.fillStyle='#b1c5d9';ctx.fillText(`${N}-node circular recurrent network (run to see activations)`,11,23);}
+ for(const [j,k] of VIS_EDGES){
+  const weight=n?(Math.abs(n.wr[j][k])+Math.abs(n.wr[k][j])):0.18;
+  ctx.globalAlpha=.10+Math.min(.40,weight*.5);line(ctx,[points[j],points[k]],'#89bde0',.6+Math.min(2,weight));
+ }
+ ctx.globalAlpha=1;const hh=demo.h||Array(N).fill(0);
+ for(let j=0;j<N;j++){const v=hh[j]||0;ctx.beginPath();ctx.arc(...points[j],Math.max(2.1,Math.min(7.3,300/N))+Math.abs(v)*Math.max(.5,Math.min(5,140/N)),0,Math.PI*2);
+  ctx.fillStyle=v>=0?'#baf58d':'#eda5ca';ctx.fill();ctx.strokeStyle='#0b1422';ctx.lineWidth=1.3;ctx.stroke();
+  if(N<=32){ctx.font='10px system-ui';ctx.fillStyle='#e8f3ff';ctx.fillText(String(j+1),points[j][0]+10,points[j][1]+4);}
+ }
+ ctx.fillStyle='#b1c5d9';ctx.font='11px system-ui';ctx.fillText(`${N} recurrent cells`,9,17);ctx.fillText(`${EDGE_COUNT} directed ring / cross-link weights`,9,33);
+ ctx.fillText('sensory → every neuron → 4 motors',9,h-12);
+}
+function drawTrace(){const c=canvasFit($('trace'));if(!c)return;const {ctx,w,h}=c;
+ ctx.fillStyle='#0b1422';ctx.fillRect(0,0,w,h);
+ const recent=demo.trace||[],left=36,top=8,indices=N<=48?Array.from({length:N},(_,i)=>i):Array.from({length:48},(_,i)=>Math.round(i*(N-1)/47)),rows=indices.length+LINKS,cols=80,cw=(w-left-8)/cols,rh=(h-top-20)/rows;
+ ctx.font='9px system-ui';for(let j=0;j<rows;j++){
+  ctx.fillStyle=j<indices.length?'#9db8ce':'#eac780';ctx.fillText(j<indices.length?`N${indices[j]+1}`:`M${j-indices.length+1}`,3,top+rh*(j+.75));
+ }
+ for(let i=0;i<recent.length;i++){
+  const item=recent[i],x=left+cw*(cols-recent.length+i);
+  for(let j=0;j<rows;j++){
+   const v=j<indices.length?item.h[indices[j]]:item.motors[j-indices.length],scaled=j<indices.length?v:v/MAX[j-indices.length];
+   ctx.globalAlpha=.12+.82*Math.min(1,Math.abs(scaled));ctx.fillStyle=scaled>=0?'#baf58d':'#eda5ca';
+   ctx.fillRect(x,top+j*rh,Math.max(.4,cw-.4),Math.max(.8,rh-.4));
+  }
+ }
+ ctx.globalAlpha=1;ctx.fillStyle='#adbed4';ctx.fillText('Older',left,h-5);ctx.fillText('Now',w-28,h-5);if(N>48)ctx.fillText('48 sampled neurons',Math.max(left+44,w/2-45),h-5);
+}
+function animate(ts){requestAnimationFrame(animate);
+ if(ts-lastFrame>25){lastFrame=ts;if(locked)return;
+  if(demo.net){
+   if(demo.s.fall||demo.t>=STEPS){if(!demo.pauseUntil)demo.pauseUntil=ts+800;
+    if(ts>=demo.pauseUntil)restartDemo();
+   }else{
+    const v=liquid(demo.net,demo.h,obs(demo.s));demo.h=v.h;
+    const u=torques(demo.s,v.y);demo.trace.push({time:demo.t*DT,h:demo.h.slice(),sensory:obs(demo.s),motors:u.slice()});if(demo.trace.length>80)demo.trace.shift();demo.s=advance(demo.s,u,demo.t,demo.episode,false);demo.t++;
+   }
+  }
+  drawScene();drawNet();drawTrace();
+ }
+}
+function biopsyDoc(){return {title:'Motor and sensory neuron-scaling benchmark v6',version:'6.0',status:DATA.status,createdUTC:new Date().toISOString(),config:DATA.config,
+ physics:{links:LINKS,rodLengths:LEN,masses:MASS,torqueLimits:MAX,fallRadians:FALL,dt:DT,substeps:SUB,scheduledPushSeconds:PUSH_TIMES},network:{sizes:CFG.sizes,sensors:D,motors:LINKS,topology:'simultaneously updated circular recurrent network; ring neighbors and crosslinks',sequenceSteps:CFG.sequence},
+ metering:'one physical advance per transition; counts lookahead/probes/rejected trials/selection; separately measured neural forward multiply-add proxy and rough elapsed ms; final tests separate',summary:DATA.summary,
+ arms:DATA.arms.map(a=>({seed:a.seed,neurons:a.neurons,edges:a.edges,parameters:a.parameters,arm:a.arm,spent:a.spent,complete:a.complete,generations:a.generations,baseline:a.baseline,selection:a.score,final:a.final,stats:a.stats,neuralCalls:a.neuralCalls,neuralOps:a.neuralOps,elapsedMs:a.elapsedMs,history:a.history})),manualDemoPushes:pushLog,lastDemoSensoryNeuralMotorHistory:demo.trace||[]};}
+function exportJSON(){if(!DATA.arms.length)return;const full={...biopsyDoc(),champions:DATA.arms.map(a=>({seed:a.seed,neurons:a.neurons,arm:a.arm,network:a.net}))};const blob=new Blob([JSON.stringify(full,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`motor_sensory_scaling_${CFG.sizes.join('-')}_${CFG.seedCount}seeds_${DATA.status}.json`;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),3000);}
+async function copyBiopsy(){const payload=JSON.stringify(biopsyDoc(),null,2);try{await navigator.clipboard.writeText(payload);$('biopsy').textContent='✓ Copied biopsy';log(`BIOPSY COPIED · ${fmt(payload.length)} characters`);setTimeout(()=>$('biopsy').textContent='📋 Copy biopsy',1500);}catch(err){log('Clipboard blocked: '+(err.message||err)+' · use Full JSON export instead.');}}
+function showEstimate(){let sizes;try{sizes=parseSizes($('sizes').value);$('estimate').style.borderColor='#baf58d';}catch(err){$('estimate').textContent=err.message;$('estimate').style.borderColor='#f4a5b8';return;}const n=clamp(Math.floor(Number($('seeds').value)||3),1,40),steps=clamp(Number($('budget').value)||60,10,20000)*1000;
+ $('estimate').textContent=`${sizes.length} sizes × 2 methods × ${n} seeds × ${fmt(steps)} transitions = up to ${fmt(sizes.length*2*n*steps)} metered training transitions. Larger neuron counts also cost more neural computation.${Math.max(...sizes)>64?' ⚠ Large circular networks (>64 cells) can significantly slow the live brain visualization and browser training.':''}${sizes.length*2*n*steps>1e8?' ⚠ This is a very large browser job; try a smaller sweep first.':''}`;}
+for(const [id,valID,suffix,div] of [['tilt','tiltVal','°',1],['difficulty','difficultyVal','%',1],['reflex','reflexVal','%',1],['sequence','sequenceVal',' steps',1],['explore','exploreVal','%',1],['push','pushVal',' rad/s',100]]){
+ $(id).oninput=()=>{$(valID).textContent=id==='sequence'?`${$(id).value} steps (${Math.round(DT*1000*Number($(id).value))} ms)`:id==='push'?`${(Number($(id).value)/div).toFixed(2)}${suffix}`:`${$(id).value}${suffix}`;if(id!=='push')showEstimate();};}
+for(const id of ['seeds','budget','sizes'])$(id).oninput=showEstimate;
+$('quick').onclick=()=>{$('seeds').value=2;$('budget').value=25;$('sizes').value='8,16,24';showEstimate();};
+$('protocol').onclick=()=>{$('seeds').value=30;$('budget').value=120;$('sizes').value='8,12,16,20,24';showEstimate();};
+$('everySize').onclick=()=>{$('sizes').value=Array.from({length:17},(_,i)=>i+8).join(',');showEstimate();};
+$('expanded').onclick=()=>{$('sizes').value='8,12,16,20,24,32,48,64,96,128';showEstimate();};
+$('longRun').onclick=()=>{$('budget').value=600;showEstimate();};
+$('run').onclick=()=>{runCampaign().catch(err=>{log('FATAL '+(err.stack||err));lock(false);});};
+$('pause').onclick=()=>{paused=!paused;$('pause').textContent=paused?'▶ Resume':'Ⅱ Pause';$('status').textContent=paused?'PAUSED':'TRAINING';};
+$('stop').onclick=()=>{stop=true;paused=false;};$('biopsy').onclick=copyBiopsy;$('export').onclick=exportJSON;
+$('plotSize').onchange=drawChart;$('demoSize').onchange=fillDemo;$('demoArm').onchange=restartDemo;$('demoSeed').onchange=restartDemo;$('demoReset').onclick=restartDemo;
+$('pushLeft').onclick=()=>manualPush(-1);$('pushRight').onclick=()=>manualPush(1);
+initLegend();showEstimate();requestAnimationFrame(animate);
+// Public test-only access; no network calls.
+window.__quadTest={newNet,clone,obs,liquid,advance,accel,reflex,torques,testSeed,judge,probe,runCampaign,parseSizes,setNeurons,biopsyDoc,
+ get data(){return DATA;},get mask(){return MASK;},get edges(){return EDGE_COUNT;},get neurons(){return N;},get config(){return CFG;},get work(){return WORK;},get demo(){return demo;},get arms(){return ARMS;}};
+})();
+</script></body></html>
