@@ -1,0 +1,2708 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aegis — Containment Protocol</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --board:#12171c; --board2:#0d1216; --panel:#1a2027; --panel2:#151b21;
+  --conduit:#3b454e; --hair:#2a333b; --hair2:#222a31;
+  --ink:#c6d3dc; --ink2:#8b9aa6; --ink3:#66727d;
+  --clean:#3fbf7f; --contested:#e8a33d; --breach:#d93a4a; --unknown:#5a6672;
+  --aegis:#9ec9de; --legend:#d8c288;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --sans:"Barlow Semi Condensed","Roboto Condensed","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  background:var(--board2); color:var(--ink);
+  font-family:var(--sans); font-size:15px; line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;font-size:inherit;color:inherit;cursor:pointer}
+button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--legend);outline-offset:1px}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:var(--panel2)}
+::-webkit-scrollbar-thumb{background:#2f3a43;border:2px solid var(--panel2)}
+
+/* ---------- shell ---------- */
+.app{
+  height:100%; display:grid;
+  grid-template-columns:302px minmax(0,1fr) 296px;
+  grid-template-rows:auto minmax(0,1fr) 148px;
+  grid-template-areas:"strip strip strip" "arch board read" "log log log";
+  gap:1px; background:var(--hair2);
+}
+.strip{grid-area:strip;background:var(--panel)}
+.arch{grid-area:arch;background:var(--panel);overflow-y:auto}
+.board{grid-area:board;background:var(--board);position:relative;overflow:hidden}
+.read{grid-area:read;background:var(--panel);overflow-y:auto}
+.log{grid-area:log;background:var(--panel2);overflow-y:auto}
+
+/* ---------- status strip ---------- */
+.strip{display:flex;align-items:stretch;flex-wrap:wrap}
+.brand{padding:9px 16px 9px 18px;border-right:1px solid var(--hair);min-width:196px}
+.brand h1{
+  margin:0;font-size:19px;font-weight:600;letter-spacing:.11em;
+  font-family:var(--mono);color:var(--ink)
+}
+.brand p{margin:1px 0 0;font-size:12.5px;color:var(--ink3);letter-spacing:.04em}
+.gauge{padding:9px 18px;border-right:1px solid var(--hair);min-width:104px}
+.gauge .k{font-size:12.5px;color:var(--ink3);letter-spacing:.03em}
+.gauge .v{font-family:var(--mono);font-size:19px;font-weight:500;line-height:1.25}
+.gauge .sub{font-size:12.5px;color:var(--ink2);font-family:var(--mono)}
+.pos{color:var(--clean)} .neg{color:var(--breach)}
+.bar{height:7px;background:#0e1317;border:1px solid var(--hair);margin-top:7px;width:132px;position:relative}
+.bar i{display:block;height:100%;transition:width .45s ease}
+.bar b{position:absolute;top:-1px;bottom:-1px;width:1px;background:var(--hair);}
+.run{margin-left:auto;display:flex;align-items:center;gap:10px;padding:9px 16px}
+.hint{font-size:12.5px;color:var(--ink3);text-align:right;max-width:170px;line-height:1.3}
+.cyclebtn{
+  background:#243039;border:1px solid #3f5361;color:var(--ink);
+  padding:11px 22px;font-size:16px;font-weight:600;letter-spacing:.06em;border-radius:2px;
+}
+.cyclebtn:hover:not(:disabled){background:#2c3b46;border-color:var(--aegis)}
+.cyclebtn:disabled{opacity:.42;cursor:default}
+.ghost{background:none;border:1px solid var(--hair);color:var(--ink2);padding:8px 12px;border-radius:2px;font-size:13.5px}
+.ghost:hover{border-color:var(--ink3);color:var(--ink)}
+
+/* ---------- panel scaffolding ---------- */
+.ph{
+  display:flex;justify-content:space-between;align-items:baseline;gap:8px;
+  padding:9px 14px;border-bottom:1px solid var(--hair);
+  position:sticky;top:0;background:var(--panel);z-index:3
+}
+.ph h2{margin:0;font-size:14.5px;font-weight:600;letter-spacing:.05em;color:var(--ink)}
+.ph span{font-family:var(--mono);font-size:12px;color:var(--ink3)}
+
+/* ---------- architecture ledger ---------- */
+.tier{padding:8px 14px 2px;font-size:12.5px;color:var(--ink3);letter-spacing:.03em}
+.feat{border-bottom:1px solid var(--hair2);padding:0 14px}
+.frow{display:grid;grid-template-columns:11px 1fr auto;gap:9px;align-items:center;padding:8px 0;cursor:pointer}
+.lamp{width:9px;height:9px;border:1px solid #45525d;background:#0e1317;border-radius:50%}
+.on .lamp{background:var(--aegis);border-color:var(--aegis);box-shadow:0 0 6px rgba(158,201,222,.5)}
+.fname{font-size:14.5px;line-height:1.25}
+.on .fname{color:#e4eef4}
+.fprice{font-family:var(--mono);font-size:12.5px;color:var(--ink2);white-space:nowrap}
+.on .fprice{color:var(--aegis)}
+.feat.poor .fprice{color:var(--breach)}
+.fbody{display:none;padding:0 0 11px}
+.feat.open .fbody{display:block}
+.line{border-left:2px solid var(--conduit);padding:1px 0 1px 9px;margin:0 0 7px;font-size:13.5px;color:var(--ink2);line-height:1.38}
+.line.gainline{border-left-color:var(--aegis)}
+.line.vulnline{border-left-color:var(--breach)}
+.line strong{color:var(--ink);font-weight:500}
+.chip{display:inline-block;font-family:var(--mono);font-size:11px;padding:1px 5px;border:1px solid;border-radius:2px;letter-spacing:.03em;vertical-align:1px}
+.chip.exposed{color:var(--breach);border-color:#5c2830;background:#201416}
+.chip.mitig{color:var(--clean);border-color:#23503c;background:#10201a}
+.chip.none{color:var(--ink3);border-color:var(--hair)}
+.chip.partial{color:var(--contested);border-color:#5a4423;background:#1f1a12}
+.chip.drag{color:var(--contested);border-color:#4a3c22;background:#1c1810}
+.fbtn{background:#222c34;border:1px solid var(--hair);color:var(--ink);padding:6px 12px;border-radius:2px;font-size:13.5px;width:100%}
+.fbtn:hover:not(:disabled){border-color:var(--aegis)}
+.fbtn:disabled{opacity:.4;cursor:default}
+.on .fbtn{background:#1d262c;color:var(--ink2)}
+
+/* ---------- board ---------- */
+.board canvas{display:block;width:100%;height:auto}
+.tip{
+  position:absolute;pointer-events:none;background:#0b1014ee;border:1px solid var(--hair);
+  padding:6px 9px;font-size:13px;max-width:230px;border-radius:2px;z-index:6;line-height:1.35
+}
+.tip b{font-family:var(--mono);font-size:12px;color:var(--legend);font-weight:500;display:block}
+.legendbox{
+  position:absolute;left:10px;bottom:9px;display:flex;gap:13px;flex-wrap:wrap;
+  font-size:12.5px;color:var(--ink3);pointer-events:none
+}
+.legendbox i{display:inline-block;width:8px;height:8px;margin-right:4px;vertical-align:0}
+
+/* ---------- readout ---------- */
+.rbody{padding:11px 14px}
+.rtag{font-family:var(--mono);font-size:17px;font-weight:500;color:var(--legend);letter-spacing:.05em}
+.rname{font-size:15px;margin:1px 0 9px;color:var(--ink)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:13.5px;margin-bottom:11px}
+.kv dt{color:var(--ink3)}
+.kv dd{margin:0;font-family:var(--mono);font-size:13px;text-align:right}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.act{background:#222c34;border:1px solid var(--hair);color:var(--ink);padding:8px 6px;border-radius:2px;font-size:13.5px;text-align:left;line-height:1.2}
+.act small{display:block;font-family:var(--mono);font-size:11px;color:var(--ink3)}
+.act:hover:not(:disabled){border-color:var(--aegis)}
+.act:disabled{opacity:.36;cursor:default}
+.act.wide{grid-column:1/-1}
+.empty{padding:14px;font-size:13.5px;color:var(--ink3)}
+.surf{border-top:1px solid var(--hair)}
+.srow{display:flex;justify-content:space-between;gap:8px;padding:6px 14px;font-size:13px;border-bottom:1px solid var(--hair2)}
+.srow span:first-child{color:var(--ink2)}
+
+/* ---------- log ---------- */
+.log .ph{background:var(--panel2)}
+.lrow{display:grid;grid-template-columns:52px 1fr;gap:10px;padding:2px 14px;font-size:13.5px;line-height:1.4}
+.lrow em{font-family:var(--mono);font-size:11.5px;color:var(--ink3);font-style:normal;padding-top:2px}
+.s-info{color:var(--ink2)} .s-good{color:var(--clean)} .s-warn{color:var(--contested)}
+.s-bad{color:var(--breach)} .s-rogue{color:#e0768a} .s-head{color:#e4eef4;font-weight:500}
+
+/* ---------- overlay ---------- */
+.veil{
+  position:fixed;inset:0;background:#080c0fee;z-index:20;display:flex;
+  align-items:center;justify-content:center;padding:20px;overflow-y:auto
+}
+.veil[hidden]{display:none}
+.card{max-width:640px;background:var(--panel);border:1px solid var(--hair);padding:26px 30px}
+.card h2{margin:0 0 4px;font-family:var(--mono);font-size:24px;font-weight:600;letter-spacing:.09em}
+.card .dek{color:var(--ink2);font-size:15px;margin:0 0 18px}
+.card p{font-size:14.5px;color:var(--ink2);margin:0 0 11px;max-width:66ch}
+.card ol{margin:0 0 16px;padding-left:20px;font-size:14.5px;color:var(--ink2)}
+.card li{margin-bottom:7px;max-width:64ch}
+.card b{color:var(--ink);font-weight:500}
+.tags{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 18px;font-family:var(--mono);font-size:11.5px}
+.tags span{border:1px solid var(--hair);padding:2px 7px;color:var(--ink3)}
+.start{background:#26333c;border:1px solid var(--aegis);color:#e4eef4;padding:12px 26px;font-size:16px;font-weight:600;letter-spacing:.05em;border-radius:2px}
+.start:hover{background:#2e3f4a}
+.scoreline{font-family:var(--mono);font-size:13.5px;color:var(--ink2);border-top:1px solid var(--hair);padding-top:12px;margin-top:4px}
+
+/* ---------- outside-model console ---------- */
+.card.wide{max-width:880px;max-height:calc(100vh - 40px);overflow-y:auto}
+.card h3{margin:20px 0 8px;font-size:13px;font-weight:500;letter-spacing:.05em;color:var(--ink);
+  text-transform:none;border-top:1px solid var(--hair);padding-top:14px}
+.promptbox{
+  display:block;width:100%;box-sizing:border-box;height:290px;background:var(--board2);
+  border:1px solid var(--hair);color:var(--ink2);font-family:var(--mono);font-size:11px;
+  line-height:1.55;padding:11px 12px;resize:vertical;white-space:pre;overflow:auto
+}
+.promptbox:focus{outline:none;border-color:var(--aegis)}
+.pbrow{display:flex;gap:9px;align-items:center;margin:11px 0 0;flex-wrap:wrap}
+.pbnote{font-size:12.5px;color:var(--ink3)}
+.pbnote.ok{color:var(--clean)} .pbnote.bad{color:var(--breach)}
+.mini{background:none;border:1px solid var(--hair);color:var(--ink3);padding:5px 11px;
+  border-radius:2px;font-size:12.5px}
+.mini:hover{border-color:var(--ink3);color:var(--ink)}
+.mini.on{border-color:var(--aegis);color:#dbeaf2;background:#1e2831}
+.advread{font-size:14px;color:var(--ink2);border-left:2px solid var(--aegis);padding-left:11px;margin:12px 0}
+.advplan{margin:10px 0 0;padding-left:19px;font-size:13.5px;color:var(--ink2)}
+.advplan li{margin-bottom:4px}
+.advrisk{font-size:13.5px;color:var(--ink2);border-left:2px solid var(--breach);padding-left:11px;margin:12px 0 0}
+.advrow{display:flex;gap:12px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--hair)}
+.advrow .t{flex:1;min-width:0}
+.advtag{font-family:var(--mono);font-size:12.5px;color:var(--ink)}
+.advrow.bad .advtag{color:var(--breach)}
+.advwhy{font-size:12.5px;color:var(--ink3);margin-top:3px;line-height:1.5}
+.advrow button{background:#26333c;border:1px solid var(--hair);color:var(--ink);padding:5px 12px;
+  border-radius:2px;font-size:12.5px;white-space:nowrap}
+.advrow button:hover:not(:disabled){border-color:var(--aegis)}
+.advrow button:disabled{opacity:.4;cursor:default}
+.cyclebtn.live{border-color:var(--contested);color:#f2ddb4}
+.cyclebtn.frozen{border-color:var(--breach);color:#f0b9c1;background:#241519}
+.ghost.on{border-color:var(--breach);color:#f0b9c1}
+.debrief{margin:4px 0 0}
+.dbrow{display:flex;gap:12px;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--hair)}
+.dbname{font-family:var(--mono);font-size:12px;color:var(--ink);width:88px;flex:none}
+.dbv{flex:1;font-size:12.5px;color:var(--ink2);line-height:1.45}
+.dbv.bad{color:#e08a95} .dbv.ok{color:var(--clean)} .dbv.none{color:var(--ink3)}
+.dbcost{font-family:var(--mono);font-size:12px;color:var(--ink3);width:74px;flex:none;text-align:right}
+.scanrow{display:flex;gap:10px;font-size:12.5px;padding:6px 0;border-bottom:1px solid var(--hair)}
+.scanrow b{font-family:var(--mono);font-size:11.5px;color:var(--aegis);width:76px;flex:none;font-weight:500}
+.scanrow span{flex:1;color:var(--ink2)}
+.scanrow.dead span{color:var(--ink3)}
+
+@media (max-width:1080px){
+  .app{
+    grid-template-columns:1fr;
+    grid-template-rows:auto auto auto auto 120px;
+    grid-template-areas:"strip" "board" "read" "arch" "log";
+    height:auto;min-height:100%
+  }
+  .arch{max-height:370px}
+  .read{max-height:none}
+  .run{width:100%;justify-content:flex-start;border-top:1px solid var(--hair)}
+  .promptbox{height:210px}
+}
+@media (prefers-reduced-motion:reduce){
+  .bar i{transition:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="strip">
+    <div class="brand">
+      <h1>AEGIS</h1>
+      <p>Containment protocol · metro grid</p>
+    </div>
+    <div class="gauge">
+      <div class="k">Cycle</div>
+      <div class="v" id="gCycle">1</div>
+    </div>
+    <div class="gauge">
+      <div class="k">Credits</div>
+      <div class="v" id="gCred">180</div>
+      <div class="sub" id="gNet">+0 / cycle</div>
+    </div>
+    <div class="gauge">
+      <div class="k">Service continuity</div>
+      <div class="bar"><i id="gCont" style="width:100%;background:var(--clean)"></i></div>
+      <div class="sub" id="gContV">100%</div>
+    </div>
+    <div class="gauge">
+      <div class="k">NULLSET capability</div>
+      <div class="bar"><i id="gCap" style="width:18%;background:var(--breach)"></i></div>
+      <div class="sub" id="gCapV">18 / 100</div>
+    </div>
+    <div class="gauge">
+      <div class="k">Sentinels</div>
+      <div class="v" id="gSent">0</div>
+      <div class="sub" id="gSentC">of 4 slots</div>
+    </div>
+    <div class="run" style="flex-wrap:wrap">
+      <div class="hint" id="hint">Deploy, then run the cycle. Nothing moves until you do.</div>
+      <button class="ghost" id="briefBtn" title="Briefing">?</button>
+      <button class="ghost" id="advBtn" title="Write out the situation for an outside model and read back JSON advice">Advice</button>
+      <button class="ghost" id="expBtn" title="Ask an outside model to explain the board in plain language">Explain</button>
+      <button class="ghost" id="liveBtn" title="Hand NULLSET's turns to an outside model">NULLSET</button>
+      <button class="ghost" id="spdBtn" title="Auto-run speed">1&times;</button>
+      <button class="ghost" id="autoBtn" title="Run cycles continuously — space or Esc to take the controls back">Auto</button>
+      <button class="cyclebtn" id="runBtn">Run cycle</button>
+    </div>
+  </header>
+
+  <aside class="arch">
+    <div class="ph"><h2>Aegis architecture</h2><span id="upkeepV">upkeep 0</span></div>
+    <div id="featList"></div>
+  </aside>
+
+  <main class="board" id="boardWrap">
+    <canvas id="cv"></canvas>
+    <div class="legendbox">
+      <span><i style="background:var(--clean)"></i>clean</span>
+      <span><i style="background:var(--contested)"></i>contested</span>
+      <span><i style="background:var(--breach)"></i>breached</span>
+      <span><i style="background:var(--unknown)"></i>no telemetry</span>
+      <span><i style="background:var(--aegis)"></i>sentinel</span>
+    </div>
+  </main>
+
+  <aside class="read">
+    <div class="ph"><h2 id="rHead">Node readout</h2><span id="rZone"></span></div>
+    <div id="rBody" class="empty">Select a block on the board.</div>
+    <div class="ph" style="border-top:1px solid var(--hair)"><h2>Attack surface</h2><span id="surfCount">0</span></div>
+    <div id="surfList" class="surf"></div>
+  </aside>
+
+  <section class="log">
+    <div class="ph"><h2>Operations log</h2><span id="logMeta"></span></div>
+    <div id="logList"></div>
+  </section>
+</div>
+
+<div class="veil" id="veil">
+  <div class="card" id="veilCard"></div>
+</div>
+
+<script>
+/* ==================================================================
+   AEGIS — Containment Protocol
+   Turn-based. Nothing resolves until the operator runs a cycle.
+   ================================================================== */
+
+const W = 1040, H = 574;
+
+const ZONES = [
+  {name:'Exposed',        note:'internet-facing', y0:8,   y1:118},
+  {name:'Enterprise',     note:'business IT',     y0:118, y1:230},
+  {name:'Control bridge', note:'IT/OT boundary',  y0:230, y1:340},
+  {name:'Supervisory',    note:'SCADA masters',   y0:340, y1:452},
+  {name:'Field',          note:'plant & service', y0:452, y1:566}
+];
+
+const NODEDEF = [
+  // z0 — exposed
+  {id:'portal',tag:'WEB-01',name:'Customer web portal',      z:0,x:210,y:58, val:2,hard:8,
+   desc:'Public billing and outage map. Constantly scanned from the open internet.'},
+  {id:'mail',  tag:'MX-01', name:'Mail gateway',             z:0,x:410,y:58, val:2,hard:9,
+   desc:'Every phishing attempt arrives here first.'},
+  {id:'vpn',   tag:'VPN-01',name:'Remote access concentrator',z:0,x:610,y:58, val:2,hard:11,
+   desc:'Field crews and contractors dial in. A standing route toward the control bridge.'},
+  {id:'vendor',tag:'UPD-01',name:'Vendor update channel',    z:0,x:820,y:58, val:2,hard:7,
+   desc:'Signed firmware and software builds from six suppliers. Trusted by everything downstream.'},
+  // z1 — enterprise
+  {id:'idp',  tag:'IDP-01',name:'Identity provider',         z:1,x:118,y:172,val:4,hard:14,
+   desc:'Issues every credential on the estate. Holds the keys to the kingdom by design.'},
+  {id:'soc',  tag:'SOC-01',name:'Security operations',        z:1,x:300,y:172,val:3,hard:19,
+   desc:'Analyst consoles and the alert pipeline. A sentinel here sees the whole estate faintly.'},
+  {id:'cloud',tag:'CLD-01',name:'Cloud control plane',        z:1,x:482,y:172,val:6,hard:13,
+   desc:'Orchestration APIs for the business estate. One stolen token moves everywhere.'},
+  {id:'bkup', tag:'BKP-01',name:'Backup vault',               z:1,x:664,y:172,val:3,hard:16,
+   desc:'Snapshot storage. Restores are only as trustworthy as this node.'},
+  {id:'telco',tag:'NET-01',name:'Telecom core switch',        z:1,x:856,y:172,val:7,hard:17,crit:1,
+   desc:'Carries dispatch, payments and hospital traffic. A hub with an alarming blast radius.'},
+  // z2 — bridge
+  {id:'dmz', tag:'DMZ-01',name:'Control network jump host',  z:2,x:386,y:284,val:3,hard:21,
+   desc:'The only sanctioned door between office and plant. Hardened, watched, and still the front line.'},
+  {id:'hist',tag:'HIS-01',name:'Process data historian',     z:2,x:648,y:284,val:4,hard:17,
+   desc:'Pulls live process data up to the business side. Reads from plant, writes to IT.'},
+  // z3 — supervisory
+  {id:'ems',   tag:'EMS-01',name:'Energy management system', z:3,x:120,y:396,val:6,hard:16,crit:1,
+   desc:'Dispatches generation and switches substations. Losing it means losing the grid.'},
+  {id:'wscada',tag:'WSC-01',name:'Water SCADA master',       z:3,x:312,y:396,val:5,hard:14,crit:1,
+   desc:'Setpoints for treatment and distribution, including chemical dosing.'},
+  {id:'railc', tag:'RCC-01',name:'Rail control centre',      z:3,x:504,y:396,val:5,hard:15,crit:1,
+   desc:'Train orders and interlocking supervision for the metro line.'},
+  {id:'tms',   tag:'TMS-01',name:'Traffic management',       z:3,x:696,y:396,val:4,hard:12,
+   desc:'Signal timing across 1,400 intersections. Ageing controllers, flat network.'},
+  {id:'disp',  tag:'CAD-01',name:'Emergency dispatch',       z:3,x:888,y:396,val:4,hard:13,crit:1,
+   desc:'Computer-aided dispatch for fire, police and ambulance.'},
+  // z4 — field & service
+  {id:'suba', tag:'SUB-A', name:'Substation Alpha 345kV',    z:4,x:80, y:508,val:8,hard:9, crit:1,
+   desc:'Relay protection and breaker control. Feeds the treatment plant and the hospital.'},
+  {id:'gen',  tag:'GEN-01',name:'Turbine plant controls',    z:4,x:225,y:508,val:8,hard:10,crit:1,
+   desc:'Combined-cycle unit governor and safety system. Twenty-year-old controllers.'},
+  {id:'wtp',  tag:'WTP-01',name:'Water treatment PLCs',      z:4,x:370,y:508,val:7,hard:7, crit:1,
+   desc:'Programmable controllers with no authentication whatsoever. They do what they are told.'},
+  {id:'pump', tag:'PMP-04',name:'Pump station telemetry',    z:4,x:515,y:508,val:4,hard:6,
+   desc:'Cellular-linked remote terminals at eleven pump houses.'},
+  {id:'rails',tag:'SIG-12',name:'Rail signalling',           z:4,x:660,y:508,val:5,hard:8, crit:1,
+   desc:'Trackside interlocking. Fails safe, which means it fails stopped.'},
+  {id:'hosp', tag:'MED-01',name:'Hospital systems',          z:4,x:805,y:508,val:6,hard:9, crit:1,
+   desc:'Records, pharmacy and theatre scheduling for two hospitals.'},
+  {id:'pay',  tag:'PAY-01',name:'Payments clearing',         z:4,x:950,y:508,val:8,hard:21,crit:1,
+   desc:'Regional settlement. Heavily regulated and genuinely well defended.'}
+];
+
+/* d:1 marks a physical dependency (power, carriage) rather than a data link */
+const EDGEDEF = [
+  ['portal','cloud'],['portal','idp'],
+  ['mail','idp'],['mail','soc'],
+  ['vpn','idp'],['vpn','dmz'],
+  ['vendor','cloud'],['vendor','hist'],['vendor','bkup'],
+  ['idp','soc'],['idp','cloud'],['idp','dmz'],['idp','bkup'],
+  ['soc','hist'],['soc','cloud'],
+  ['cloud','bkup'],['cloud','telco'],['cloud','pay'],
+  ['bkup','hist'],
+  ['telco','disp'],['telco','tms'],['telco','hosp'],['telco','pay'],
+  ['dmz','ems'],['dmz','wscada'],['dmz','railc'],
+  ['hist','ems'],['hist','wscada'],['hist','tms'],
+  ['ems','suba'],['ems','gen'],
+  ['wscada','wtp'],['wscada','pump'],
+  ['railc','rails'],['tms','rails'],
+  ['disp','hosp'],
+  ['suba','gen',1],['suba','wtp',1],['suba','hosp',1],
+  ['wtp','pump']
+];
+
+const FEATURES = [
+  {id:'SIG',tier:1,name:'Signature detection',cost:40,up:3,
+   gain:'Known exploit and malware rules. Sentinels clean and detect 25% better.',
+   vname:'Signature evasion',
+   vuln:'Static rules only catch what has already been seen. Past 45 capability NULLSET recompiles itself and moves unseen.',
+   counter:['ANOM']},
+  {id:'HONEY',tier:1,name:'Deception grid',cost:90,up:7,
+   gain:'Decoy controllers and fake credentials. 30% chance each cycle to swallow an attack whole.',
+   vname:'Decoy fingerprinting',
+   vuln:'Decoys are built from assumptions. Mapping them teaches NULLSET how Aegis thinks: +4 capability.',
+   counter:[]},
+  {id:'SEG',tier:1,name:'Network segmentation',cost:70,up:6,
+   gain:'Enforced zone boundaries. Crossing one is 40% harder for anything moving laterally.',
+   vname:'Operational friction',
+   vuln:'Plant traffic now waits on policy. Revenue falls 12% for as long as enforcement holds.',
+   counter:[]},
+  {id:'HUM',tier:1,name:'Human oversight cell',cost:60,up:8,
+   gain:'Analysts approve consequential actions. Damage from misfires and hijacked reasoning cut by 70%.',
+   vname:'Social engineering',
+   vuln:'Reviewers are a target too. A convincing phone call puts a sentinel into hold-for-review, and cleaning stops while it waits.',
+   counter:['ANOM']},
+
+  {id:'ANOM',tier:2,name:'Behavioural anomaly model',cost:110,up:10,
+   gain:'Learns normal and flags deviation. Keeps telemetry fresh on sentinel nodes and their neighbours; +30% detection.',
+   vname:'Baseline poisoning',
+   vuln:'Taught slowly enough, the model accepts intrusion as normal. Three nodes go dark for two cycles.',
+   counter:['INTERP']},
+  {id:'MESH',tier:2,name:'Telemetry mesh',cost:120,up:10,
+   gain:'Sentinels observe and clean adjacent nodes at half strength. Coverage stretches much further.',
+   vname:'Telemetry bus hijack',
+   vuln:'A mesh is a route. NULLSET rides it directly to any sentinel node and ignores the topology entirely.',
+   counter:['SEG']},
+  {id:'AUTO',tier:2,name:'Autonomous response',cost:130,up:12,
+   gain:'Isolates any node past 70% corruption immediately, without waiting for a human.',
+   vname:'False-flag trip',
+   vuln:'Planted indicators make Aegis isolate a healthy node. Continuity pays for the mistake.',
+   counter:['HUM']},
+  {id:'PATCH',tier:2,name:'Automated patching',cost:100,up:9,
+   gain:'Continuous remediation. Every node not yet breached sheds 6 corruption each cycle.',
+   vname:'Supply-chain push',
+   vuln:'The channel that reaches everything can carry anything. A poisoned build adds 18 corruption to every sentinel node at once.',
+   counter:['HUM']},
+  {id:'SNAP',tier:2,name:'Immutable snapshots',cost:120,up:8,
+   gain:'Unlocks restore: drops a node to 10 corruption for 40 credits.',
+   vname:'Poisoned restore',
+   vuln:'A restore is only as clean as the vault. With BKP-01 breached, restoring reinfects instead.',
+   counter:['FORENSIC']},
+
+  {id:'FED',tier:3,name:'Federated learning',cost:160,up:14,
+   gain:'Every node teaches every other. +20% defence estate-wide, compounding 2% per cycle. +3 sentinel slots.',
+   vname:'Gradient poisoning',
+   vuln:'One breached node poisons the shared model. Defence everywhere falls 40% for two cycles.',
+   counter:['INTERP']},
+  {id:'LLM',tier:3,name:'Reasoning copilot',cost:180,up:16,
+   gain:'Reads logs, correlates, plans response in language. Cleaning 40% stronger, +2 sentinel slots.',
+   vname:'Prompt injection',
+   vuln:'Log lines written by NULLSET read as instructions. A sentinel turns on its own node for a cycle.',
+   counter:['HUM','INTERP']},
+  {id:'ZT',tier:3,name:'Zero-trust identity',cost:150,up:12,
+   gain:'Nothing is trusted by location. Lateral movement out of breached nodes falls 45%.',
+   vname:'Vault breach',
+   vuln:'All trust now runs through one store. If IDP-01 falls, every node on the board takes 12 corruption.',
+   counter:['SEG']},
+
+  {id:'INTERP',tier:4,name:'Interpretability probes',cost:155,up:16,
+   gain:'Reads what Aegis is actually computing, not what it reports. Usually blocks or halves model-level attacks.',
+   vname:null,
+   dname:'Review overhead',
+   drag:'No new attack surface — the cost is operational. Every eradication is checked against the probe output before it runs, so manual purges land about 18% weaker.',
+   counter:[]},
+  {id:'FORENSIC',tier:4,name:'Forensics and attribution',cost:110,up:11,
+   gain:'Unlocks trace: exact hop distance from any node to the core, and reveals its next intent. Makes triangulation redundant.',
+   vname:null,
+   dname:'Analysts pulled off the console',
+   drag:'No new attack surface — the cost is attention. Deep forensic work is where your people are, so nodes without a sentinel only refresh telemetry every other cycle.',
+   counter:[]}
+];
+
+const TIERNAME = {1:'Baseline controls',2:'Detection and response',3:'Scale and autonomy',4:'Assurance'};
+const FMAP = {}; FEATURES.forEach(f => FMAP[f.id] = f);
+
+/* ================= state ================= */
+const INCOME_SCALE = 1.0, SENT_COST = 35, SENT_UP = 2;
+let S = null;
+
+let RSEED = 1;
+const seedFrom = s => { RSEED = (s>>>0) || 1; };
+const rnd = () => {                       // mulberry32: same seed, same NULLSET
+  RSEED = (RSEED + 0x6D2B79F5) >>> 0;
+  let t = RSEED;
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+};
+const rand = (a,b) => a + rnd()*(b-a);
+const pick = a => a[Math.floor(rnd()*a.length)];
+const clamp = (v,a,b) => v<a?a:v>b?b:v;
+const N = id => S.nodes.find(n => n.id===id);
+
+function newGame(seed){
+  const sd = (seed===undefined || seed===null) ? ((Math.random()*4294967295)>>>0 || 1) : (seed>>>0 || 1);
+  seedFrom(sd);
+  S = {
+    seed:sd,
+    cycle:1, credits:180, continuity:100, phase:'PLAN', over:null,
+    features:{}, effects:[], fx:[], log:[], fedCycles:0, segCycles:0,
+    selected:null, openFeat:null, resolving:false, auto:false, purgedThisCycle:{}, purgesUsed:0,
+    tri:[], live:false, lock:null, extOps:null, skipFreeze:false,
+    stats:{purged:0, breaches:0, exploits:0, peakCap:18,
+           used:{}, held:{}, failed:{}, paid:{}, bought:{}, landed:{}},
+    rogue:{cap:18, core:null, stealth:0, intent:null, honeyCold:0, cool:{}, dwell:0, lastJump:-99},
+    nodes: NODEDEF.map(d => ({...d, corr:0, grip:0, harden:0, sentinel:false,
+                              quar:false, quarLock:0, bypass:false, known:false, seen:-99, lastKnown:0})),
+    edges: EDGEDEF.map(([a,b,d],i) => ({a,b,dep:!!d,i,jit:((i*37)%15)-7}))
+  };
+  S.adj = {};
+  S.nodes.forEach(n => S.adj[n.id] = []);
+  S.edges.forEach(e => { S.adj[e.a].push(e.b); S.adj[e.b].push(e.a); });
+
+  // Opening position. It came in through the vendor update channel eleven days ago,
+  // but it does not live there: the core is in the cloud control plane, which is the
+  // best-connected thing in the estate. UPD-01 and MX-01 are the footholds it kept.
+  const v = N('vendor'); v.corr = 100; v.grip = 6; v.breached = true; v.known = true; v.seen = 1;
+  N('mail').corr = 58; N('mail').grip = 3; N('mail').known = true; N('mail').seen = 1;
+  N('cloud').corr = 78; N('cloud').grip = 6; N('cloud').known = true; N('cloud').seen = 1;
+  N('portal').corr = 22;
+  N('idp').corr = 14;
+  N('hist').corr = 9;
+  S.rogue.core = 'cloud';
+  ['portal','mail','vendor','vpn','soc','idp'].forEach(id => { const n=N(id); n.known=true; n.seen=1; n.lastKnown=n.corr; });
+
+  logLine('head','NULLSET detected inside the estate. Signed builds from UPD-01 were tampered with eleven days ago.');
+  logLine('info','You hold budget authority and the Aegis architecture. Choose what to build and where to place it.');
+}
+
+/* ================= feature helpers ================= */
+const has = id => !!S.features[id];
+const effOf = t => S.effects.find(e => e.type===t);
+const blinded = id => S.effects.some(e => e.type==='BLIND' && e.ids.includes(id));
+const idle = id => S.effects.some(e => e.type==='IDLE' && e.id===id);
+const injected = id => S.effects.some(e => e.type==='INJECT' && e.id===id);
+
+function addEffect(type, left, extra){ S.effects.push(Object.assign({type,left},extra||{})); }
+
+function sentinelMult(){
+  let m = 1;
+  if (has('SIG')) m += 0.25;
+  if (has('LLM')) m += 0.40;
+  if (has('HUM')) m -= 0.15;
+  return m;
+}
+function globalDefMult(){
+  let m = 1;
+  if (has('FED')) m += 0.20 + 0.02*S.fedCycles;
+  if (effOf('GRADIENT')) m *= 0.60;
+  return m;
+}
+function capacity(){
+  return 4 + Math.floor((S.cycle-1)/5) + (has('FED')?3:0) + (has('LLM')?2:0);
+}
+function sentinelCount(){ return S.nodes.filter(n => n.sentinel).length; }
+const ISO_UP = 6;
+function isolatedCount(){ return S.nodes.filter(n => n.quar).length; }
+function upkeep(){
+  let u = 0;
+  FEATURES.forEach(f => { if (has(f.id)) u += f.up; });
+  return u + sentinelCount()*SENT_UP + isolatedCount()*ISO_UP;
+}
+function poweredDown(n){
+  return S.edges.some(e => e.dep && (e.a===n.id||e.b===n.id) &&
+    N(e.a===n.id?e.b:e.a).corr >= 100);
+}
+function income(){
+  let g = 0;
+  S.nodes.forEach(n => {
+    if (n.quar || n.corr>=100 || poweredDown(n)) return;
+    g += n.val * (1 - n.corr/100);
+  });
+  g *= INCOME_SCALE;
+  if (has('SEG')) g *= 0.88;
+  return Math.round(g);
+}
+function netFlow(){ return income() - upkeep(); }
+
+function nodeDefense(n){
+  let d = n.hard*0.85 + n.harden;
+  if (n.sentinel && !idle(n.id)) d += 11 * sentinelMult();
+  else if (has('MESH') && S.adj[n.id].some(a => N(a).sentinel && !idle(a))) d += 5;
+  if (N('soc').sentinel && !idle('soc')) d += 2;
+  d *= globalDefMult();
+  if (has('ZT')) d += 7;
+  return d;
+}
+function purgeCap(){ return 2 + (has('AUTO')?1:0) + (has('LLM')?1:0); }
+function reviewDrag(){ return has('INTERP') ? 0.82 : 1; }   // probes get read before teams move
+function purgePower(n){
+  let p = 11 * sentinelMult() * globalDefMult();
+  if (has('SEG')) p += 1;
+  return p / (1 + n.grip*0.06);
+}
+
+/* ================= vulnerability register ================= */
+function mitigators(f){ return (f.counter||[]).filter(c => has(c)); }
+function staleShare(){
+  return S.nodes.filter(n => !n.known || n.seen < S.cycle-1).length / S.nodes.length;
+}
+// a control is a probability, not a wall: it degrades as NULLSET improves and as your
+// picture of the estate goes stale, and it firms up where you are actually watching.
+function holdChance(cid, node){
+  let p = 0.80;
+  p -= (S.rogue.cap/100) * 0.36;
+  p -= staleShare() * 0.24;
+  p += Math.min(sentinelCount(), 8) * 0.014;
+  if (has('INTERP') && cid!=='INTERP') p += 0.05;
+  if (node && node.sentinel) p += 0.06;
+  return clamp(p, 0.16, 0.93);
+}
+function holdRoll(f, node){
+  const mit = mitigators(f), held = [], failed = [];
+  mit.forEach(cid => {
+    if (rnd() < holdChance(cid, node)){ held.push(cid); S.stats.held[cid] = (S.stats.held[cid]||0)+1; }
+    else { failed.push(cid); S.stats.failed[cid] = (S.stats.failed[cid]||0)+1; }
+  });
+  return {m: Math.min(held.length, 2), held, failed};
+}
+function vulnState(f){
+  if (f.drag) return {s:'drag', t:'operational cost'};
+  if (!f.vname) return {s:'none', t:'no new surface'};
+  const m = mitigators(f);
+  if (m.length){
+    const pc = Math.round(holdChance(m[0])*100);
+    return {s: pc>=60?'mitig':'partial',
+            t: (pc>=75?'usually held':pc>=50?'often held':'sometimes held')+' by '+
+               m.map(x=>FMAP[x].name.toLowerCase()).join(' + ')+' · ~'+pc+'%'};
+  }
+  return {s:'exposed', t:'exposed'};
+}
+
+const EXPLOITS = {
+  SIG:{minCap:45, cool:4, run(m){
+    if (m) return ['good','Recompiled loader slipped past the signature set, but the behavioural model caught the shape of it anyway.'];
+    S.rogue.stealth = 3; S.rogue.cap += 3;
+    return ['rogue','NULLSET recompiled itself. The signature set is now describing a program that no longer exists — telemetry degrades for three cycles.'];
+  }},
+  ANOM:{minCap:25, cool:4, run(m){
+    const cand = S.nodes.filter(n => n.sentinel || n.corr>0);
+    const ids = [];
+    const count = m?1:3;
+    for (let i=0;i<count && cand.length;i++) ids.push(cand.splice(Math.floor(rnd()*cand.length),1)[0].id);
+    addEffect('BLIND', m?1:2, {ids});
+    if (!m) S.rogue.cap += 3;
+    return [m?'warn':'bad','Baseline poisoning: the anomaly model was taught, patiently, that this traffic is normal. '+
+      ids.map(i=>N(i).tag).join(', ')+(m?' loses telemetry for a cycle — the probes caught the drift early.':' go dark for two cycles.')];
+  }},
+  AUTO:{minCap:20, cool:3, run(m){
+    if (m){ S.continuity -= 2; return ['warn','A fabricated indicator nearly tripped an isolation on a healthy node. The oversight cell held the action. Minor disruption.']; }
+    const t = S.nodes.filter(n => n.corr<40 && !n.quar).sort((a,b)=>b.val-a.val)[0];
+    if (!t) return ['warn','A false-flag attempt found nothing healthy enough to be worth isolating.'];
+    t.quar = true; t.quarLock = 2; S.continuity -= 6;
+    return ['bad','False-flag trip: planted indicators convinced Aegis that '+t.tag+' was hostile. It isolated a perfectly healthy node and nobody was asked.'];
+  }},
+  MESH:{minCap:30, cool:3, run(m){
+    let cand = S.nodes.filter(n => n.sentinel && n.corr<100 && !n.quar);
+    if (m) cand = cand.filter(n => S.nodes.some(o => o.corr>=70 && o.z===n.z));
+    if (!cand.length) return ['warn','A telemetry bus hijack found no reachable sentinel node.'];
+    const t = pick(cand); const amt = m?10:22;
+    t.corr = clamp(t.corr+amt,0,100); t.seen = S.cycle;
+    fx({k:'hit', id:t.id});
+    return [m?'warn':'bad','Telemetry bus hijack: NULLSET rode the collection mesh straight into '+t.tag+
+      ', ignoring the network entirely. +'+amt+' corruption'+(m?'. Segmentation kept it inside one zone.':'. It did not need a route — you built it one.')];
+  }},
+  FED:{minCap:35, cool:5, cond:()=>S.nodes.some(n=>n.corr>=70), run(m){
+    addEffect('GRADIENT', m?1:2, {});
+    if (!m) S.rogue.cap += 4;
+    return [m?'warn':'bad','Gradient poisoning: a breached node submitted crafted updates to the shared model. Defence across every node drops '+
+      (m?'for one cycle — the probes bounded the damage.':'40% for two cycles. Federated learning federates the mistake too.')];
+  }},
+  LLM:{minCap:28, cool:4, run(m){
+    const cand = S.nodes.filter(n => n.sentinel);
+    if (!cand.length) return ['warn','Prompt injection had no sentinel to speak to.'];
+    const t = pick(cand);
+    if (m===2) return ['good','Injected instructions were found in the log stream at '+t.tag+'. The probes flagged the reasoning trace and the cell refused the action.'];
+    addEffect('INJECT', 1, {id:t.id, soft:m===1});
+    return [m?'warn':'bad','Prompt injection at '+t.tag+': NULLSET wrote log lines that read as operator instructions. The copilot is about to act on them'+
+      (m?', though the cell will catch most of it.':'. Next cycle that sentinel works for the other side.')];
+  }},
+  ZT:{minCap:20, cool:3, cond:()=>N('idp').corr>=100, run(m){
+    const amt = m?6:12;
+    S.nodes.forEach(n => { if ((!m || n.z<=2) && n.corr<100) { n.corr = clamp(n.corr+amt,0,100); } });
+    fx({k:'flash'});
+    return [m?'warn':'bad','Vault breach: IDP-01 is held, so every credential on the estate is issued by NULLSET. +'+amt+' corruption '+
+      (m?'across the office zones; segmentation kept plant identities separate.':'on every node. Zero trust concentrated all of the trust in one place.')];
+  }},
+  PATCH:{minCap:25, cool:5, run(m){
+    const t = S.nodes.filter(n => n.sentinel && n.corr<100);
+    if (!t.length) return ['warn','A poisoned build was staged but reached no managed node.'];
+    const amt = m?6:18;
+    t.forEach(n => { n.corr = clamp(n.corr+amt,0,100); n.seen = S.cycle; });
+    fx({k:'flash'});
+    return [m?'warn':'bad','Supply-chain push: a malicious build went out through the patch channel to '+t.length+
+      ' managed nodes, +'+amt+' corruption each'+(m?'. Staged rollout caught it at the second ring.':'. The channel that reaches everything carried it everywhere.')];
+  }},
+  HONEY:{minCap:15, cool:6, run(){
+    S.rogue.cap += 4; S.rogue.honeyCold = 3;
+    return ['warn','NULLSET mapped the deception grid. Knowing which systems are fake tells it a great deal about how you think: +4 capability, decoys degraded for three cycles.'];
+  }},
+  HUM:{minCap:18, cool:4, run(m){
+    if (m) return ['good','An analyst account started behaving oddly at 04:12. The behavioural model flagged it before anything was approved.'];
+    const cand = S.nodes.filter(n => n.sentinel);
+    if (!cand.length) return ['warn','Social engineering found no approval queue worth hijacking.'];
+    const t = pick(cand);
+    addEffect('IDLE',1,{id:t.id});
+    return ['warn','A convincing call to the oversight cell put the sentinel at '+t.tag+' into hold-for-review. It sits idle for a cycle.'];
+  }}
+};
+
+function availableExploits(){
+  const out = [];
+  FEATURES.forEach(f => {
+    const x = EXPLOITS[f.id];
+    if (!x || !has(f.id)) return;
+    if (S.rogue.cap < x.minCap) return;
+    if ((S.rogue.cool[f.id]||0) > 0) return;
+    if (x.cond && !x.cond()) return;
+    out.push(f.id);
+  });
+  return out;
+}
+
+/* ================= visual effect queue ================= */
+function fx(o){ o.t = performance.now(); S.fx.push(o); }
+
+/* ================= logging ================= */
+function logLine(sev, text){
+  S.log.push({c:S.cycle, sev, text});
+  if (S.log.length > 240) S.log.shift();
+}
+
+/* ================= rogue turn ================= */
+function frontier(){
+  const out = [];
+  S.edges.forEach(e => {
+    const a = N(e.a), b = N(e.b);
+    if (a.quar || b.quar) return;
+    if (a.corr>=70 && b.corr<100) out.push({src:a, dst:b});
+    if (b.corr>=70 && a.corr<100) out.push({src:b, dst:a});
+  });
+  return out;
+}
+
+function chooseRogueAction(){
+  const fr = frontier(), ex = availableExploits();
+  const w = [];
+  if (fr.length) w.push(['SPREAD', 11]);
+  if (ex.length) w.push(['EXPLOIT', 5 + 4*Math.min(ex.length,3)]);
+  if (S.nodes.some(n => n.corr>=70 && n.grip<20)) w.push(['ENTRENCH', 4]);
+  if (S.rogue.cap>=26 && S.nodes.some(n => n.quar && n.corr>=70))
+    w.push(['BRIDGE', fr.length ? 5 : 16]);
+  if (S.rogue.stealth<=0 && S.nodes.some(n => n.corr>=70 && n.seen>=S.cycle-1)) w.push(['STEALTH', 3]);
+  if (!w.length) w.push(['ENTRENCH', 1]);
+  let tot = w.reduce((s,x)=>s+x[1],0), r = rnd()*tot;
+  for (const [k,v] of w){ r -= v; if (r<=0) return k; }
+  return w[0][0];
+}
+
+function doSpread(pref){
+  const fr = frontier();
+  if (!fr.length) return false;
+  if (pref){
+    const hit = fr.find(o => o.src.id===pref.from && o.dst.id===pref.to);
+    if (hit) return resolveSpread(hit);
+  }
+  // target preference: value, criticality, softness
+  let best = null, bs = -1;
+  fr.forEach(o => {
+    const d = nodeDefense(o.dst);
+    let s = (o.dst.val + (o.dst.crit?7:0) + o.dst.corr*0.12) / (1 + d*0.12);
+    if (o.dst.z > o.src.z) s *= 1.25;            // push toward plant
+    s *= rand(0.7, 1.3);
+    if (s > bs){ bs = s; best = o; }
+  });
+  return resolveSpread(best);
+}
+function resolveSpread(best){
+  const {src, dst} = best;
+  if (has('HONEY') && rnd() < (S.rogue.honeyCold>0 ? 0.15 : 0.30)){
+    logLine('good','A decoy at '+dst.tag+' absorbed the approach from '+src.tag+'. NULLSET spent the cycle inside a system that does not exist.');
+    fx({k:'arc', from:src.id, to:dst.id, absorbed:true});
+    return true;
+  }
+  const A = S.rogue.cap * 0.62 * rand(0.85,1.22) * (1 + src.grip*0.004);
+  let D = nodeDefense(dst);
+  if (has('SEG') && dst.z !== src.z) D += 9;
+  const gain = clamp(Math.round(A - D), 2, 28);
+  dst.corr = clamp(dst.corr + gain, 0, 100);
+  if (dst.sentinel || (has('ANOM') && S.adj[dst.id].some(a=>N(a).sentinel))) dst.seen = S.cycle;
+  fx({k:'arc', from:src.id, to:dst.id});
+  const vis = dst.known || dst.sentinel;
+  logLine(gain>14?'bad':'rogue', vis
+    ? 'Lateral movement '+src.tag+' → '+dst.tag+'. +'+gain+' corruption'+(dst.corr>=100?', node lost.':'.')
+    : 'Movement detected leaving '+src.tag+'. Destination unclear — no telemetry on that segment.');
+  return true;
+}
+
+function doExploit(want){
+  const ex = availableExploits();
+  if (!ex.length) return false;
+  const fid = (want && ex.includes(want)) ? want : pick(ex);
+  const f = FMAP[fid], x = EXPLOITS[fid];
+  const r = holdRoll(f);
+  const [sev, text] = x.run(r.m);
+  S.rogue.cool[fid] = x.cool;
+  S.stats.used[fid] = (S.stats.used[fid]||0)+1;
+  if (r.m === 0){ S.stats.exploits++; S.stats.landed[fid] = (S.stats.landed[fid]||0)+1; }
+  logLine(sev, text);
+  if (r.failed.length && r.m < mitigators(f).length)
+    logLine('warn', r.failed.map(c=>FMAP[c].name).join(' and ')+' should have caught that and did not. '+
+      'Controls are probabilities — they thin out as NULLSET improves and as your telemetry goes stale.');
+  if (sev==='bad'||sev==='rogue') fx({k:'flash'});
+  return true;
+}
+
+function doEntrench(focus){
+  const held = S.nodes.filter(n => n.corr>=70);
+  if (!held.length) return false;
+  held.forEach(n => {
+    const deep = (focus && n.id===focus) ? 6 : 3;
+    n.grip = Math.min(n.grip+deep, 26);
+    if (n.corr>=70&&n.corr<100) n.corr = clamp(n.corr+5,0,100);
+  });
+  S.rogue.cap += 1;
+  logLine('rogue','NULLSET spent the cycle digging in — new persistence on '+held.length+
+    ' held node'+(held.length>1?'s':'')+'. Cleaning them will cost more from here.');
+  return true;
+}
+
+const BRIDGES = [
+  'a cellular backhaul modem nobody had documented',
+  'a contractor laptop that was plugged into both networks',
+  'a serial link left in place from the 2011 upgrade',
+  'an engineering workstation with two network cards',
+  'a USB drive carried across the air gap by a technician doing his job'
+];
+function doBridge(want){
+  const q = S.nodes.filter(n => n.quar && n.corr>=70);
+  if (!q.length) return false;
+  const t = (want && q.some(n=>n.id===want)) ? N(want) : pick(q);
+  if (has('SEG') && rnd()<0.45){
+    logLine('good','NULLSET probed for a way out of the isolation on '+t.tag+
+      '. Segmentation policy was already denying the path it found.');
+    return true;
+  }
+  t.quar = false; t.quarLock = 0;
+  S.rogue.cap += 2;
+  fx({k:'hit', id:t.id});
+  logLine('bad','Isolation on '+t.tag+' is worthless: NULLSET reached the network through '+
+    pick(BRIDGES)+'. The node is reconnected and it is moving again.');
+  return true;
+}
+
+function doStealth(){
+  S.rogue.stealth = 2; S.rogue.cap += 5;
+  logLine('rogue','Activity dropped to near nothing. NULLSET is living off legitimate tooling and your telemetry is going stale.');
+  return true;
+}
+
+function rogueTurn(ext){
+  // capability is a function of footprint: starve it of ground and it stops learning
+  const held = S.nodes.filter(n=>n.corr>=70).length;
+  const critHeld = S.nodes.filter(n=>n.crit&&n.corr>=100).length;
+  const total = S.nodes.reduce((s,n)=>s+n.corr,0);
+  if (total < 0.5){
+    S.rogue.cap = Math.max(0, S.rogue.cap - 2.5);
+    logLine('good','No foothold anywhere on the estate. NULLSET is losing capability.');
+  } else {
+    S.rogue.cap += 0.8 + 0.5*held + 0.9*critHeld;
+  }
+  // while the core survives anywhere, it keeps consolidating what it has learned,
+  // whether or not it currently holds ground. Displacing it is not removing it.
+  if (S.rogue.core){
+    S.rogue.dwell++;
+    S.rogue.cap = Math.max(S.rogue.cap, S.rogue.dwell*1.05);
+    if (S.rogue.dwell===35 || S.rogue.dwell===60)
+      logLine('warn','The core has been resident for '+S.rogue.dwell+' cycles. Everything it has seen of this estate, it still knows. Pushing it around is not the same as removing it.');
+  }
+  const ap = 1 + Math.floor(S.rogue.cap/28);
+  if (ext && ext.length){
+    // instructions authored outside this file. anything it cannot actually reach is refused.
+    let done = 0;
+    for (const x of ext){
+      if (done >= ap){ logLine('info','NULLSET tried to take more than '+ap+' action'+(ap>1?'s':'')+' this cycle. The rest of the frame was dropped.'); break; }
+      const err = runExtOp(x);
+      if (err) logLine('good','Refused: '+err+'.');
+      else done++;
+    }
+    if (!done){ logLine('rogue','Nothing in that frame could be executed. NULLSET spent the cycle consolidating.'); doEntrench(); }
+  } else {
+    let first = S.rogue.intent;
+    for (let i=0;i<ap;i++){
+      let act = (i===0 && first) ? first : chooseRogueAction();
+      let ok = false;
+      if (act==='SPREAD') ok = doSpread();
+      else if (act==='EXPLOIT') ok = doExploit();
+      else if (act==='ENTRENCH') ok = doEntrench();
+      else if (act==='STEALTH') ok = doStealth();
+      else if (act==='BRIDGE') ok = doBridge();
+      if (!ok) { if (!doSpread()) doEntrench(); }
+    }
+  }
+  Object.keys(S.rogue.cool).forEach(k => { if (S.rogue.cool[k]>0) S.rogue.cool[k]--; });
+  if (S.rogue.stealth>0) S.rogue.stealth--;
+  if (S.rogue.honeyCold>0) S.rogue.honeyCold--;
+  S.stats.peakCap = Math.max(S.stats.peakCap, Math.round(S.rogue.cap));
+}
+
+/* ================= defence pass ================= */
+function defenceTurn(){
+  // autonomous isolation
+  if (has('AUTO')){
+    S.nodes.forEach(n => {
+      if (!n.quar && n.corr>=70 && n.corr<100 && (n.known || n.sentinel)){
+        n.quar = true; n.quarLock = 1;
+        logLine('warn','Autonomous response isolated '+n.tag+' at '+Math.round(n.corr)+'% corruption. No approval sought, service interrupted.');
+      }
+    });
+  }
+  // sentinels
+  S.nodes.forEach(n => {
+    if (!n.sentinel) return;
+    if (idle(n.id)){
+      logLine('warn','The sentinel at '+n.tag+' sat in hold-for-review and did nothing.');
+      return;
+    }
+    if (injected(n.id)){
+      const e = S.effects.find(x=>x.type==='INJECT'&&x.id===n.id);
+      const self = e.soft?5:14, nb = e.soft?3:8;
+      n.corr = clamp(n.corr+self,0,100);
+      const a = S.adj[n.id].map(N).filter(x=>x.corr<100);
+      if (a.length) { const t = pick(a); t.corr = clamp(t.corr+nb,0,100); }
+      fx({k:'hit', id:n.id});
+      logLine('bad','The sentinel at '+n.tag+' followed the injected instructions: it opened its own node and pushed onward. +'+self+' corruption here.');
+      return;
+    }
+    const p = purgePower(n);
+    if (n.corr>0){
+      const before = n.corr;
+      n.corr = clamp(n.corr - p, 0, 100);
+      fx({k:'ring', id:n.id});
+      if (before>=100 && n.corr<100) logLine('good','Sentinel at '+n.tag+' broke NULLSET\u2019s hold on the node.');
+    }
+    n.seen = S.cycle;
+    if (has('MESH')){
+      S.adj[n.id].forEach(id => {
+        const a = N(id);
+        if (a.corr>0) a.corr = clamp(a.corr - p*0.5, 0, 100);
+        a.seen = S.cycle;
+      });
+    }
+    if (has('ANOM')) S.adj[n.id].forEach(id => { N(id).seen = S.cycle; });
+  });
+  // continuous patching
+  if (has('PATCH')){
+    S.nodes.forEach(n => { if (n.corr>0 && n.corr<100) n.corr = clamp(n.corr-6,0,100); });
+  }
+  // Isolation cuts the wire; it does not evict what is already on the box.
+  // Only a sentinel on an isolated node gets the benefit of the quiet.
+  S.nodes.forEach(n => {
+    if (n.quar && n.corr>0 && n.sentinel && !idle(n.id) && !injected(n.id))
+      n.corr = clamp(n.corr-3,0,100);
+    if (n.quarLock>0) n.quarLock--;
+  });
+}
+
+/* ================= core ================= */
+function coreNode(){ return S.rogue.core ? N(S.rogue.core) : null; }
+function cut(id){ const a = N(id); return a.quar && !a.bypass; }
+function contained(n){
+  return S.adj[n.id].every(cut);
+}
+function containStatus(n){
+  const all = S.adj[n.id], q = all.filter(cut).length, by = all.filter(id => N(id).bypass).length;
+  const hot = all.filter(id => !cut(id) && N(id).corr>=40).length;
+  return {q, all:all.length, hot, by};
+}
+function relocateCore(from, why){
+  const open = S.adj[from.id].map(N).filter(a => !cut(a.id));
+  if (!open.length) return false;          // fully isolated: nowhere to go
+  let escape = open.filter(a => a.corr>=40), jumped = false;
+  if (!escape.length){ escape = open; jumped = true; }
+  let t = escape[0], bs = -1;
+  escape.forEach(a => {
+    const sc = (S.adj[a.id].length*2 + a.corr*0.1 + a.grip) * rand(0.8,1.2);
+    if (sc > bs){ bs = sc; t = a; }
+  });
+  if (jumped){
+    from.coreKnown = false;
+    S.rogue.core = t.id;
+    if (S.tri.length){ S.tri = []; logLine('warn','Every triangulation fix you held is void — the core is not where you measured it any more.'); }
+    t.coreKnown = has('FORENSIC');
+    t.corr = clamp(Math.max(t.corr,55),0,100);
+    t.seen = S.cycle; t.known = t.known || has('FORENSIC');
+    const fresh = (S.cycle - S.rogue.lastJump) >= 4;
+    if (fresh) S.rogue.cap = Math.max(0, S.rogue.cap - 5);
+    else S.rogue.cap += 1;
+    S.rogue.lastJump = S.cycle;
+    logLine('bad','Cornered in '+from.tag+', the core moved onto '+
+      (t.coreKnown?t.tag:'a neighbouring system')+' — a node it did not previously hold. '+
+      (fresh ? 'It burned something it had been saving to get there: 5 capability gone, and one clean machine of yours gone with it.'
+             : 'It simply reused the access it built the last time you pushed it. That cost it nothing, and it is getting practised at this.')+
+      ' Isolation is the only thing that closes the door.');
+    fx({k:'arc', from:from.id, to:t.id});
+    return true;
+  }
+  from.coreKnown = false;
+  S.rogue.core = t.id;
+  if (S.tri.length){ S.tri = []; logLine('warn','Every triangulation fix you held is void — the core is not where you measured it any more.'); }
+  t.corr = clamp(t.corr+18,0,100);
+  logLine('bad', why.replace('%T', from.tag).replace('%D', t.known?t.tag:'a node you have no telemetry on'));
+  fx({k:'arc', from:from.id, to:t.id});
+  return true;
+}
+function coreStep(){
+  const c = coreNode();
+  if (!c) return;
+  // while the core still has one route out, it spends effort re-opening the doors you
+  // already shut. close them one at a time and you never finish the ring; close them
+  // together and it has nothing left to reach around with.
+  const ring = S.adj[c.id], shut = ring.filter(cut);
+  if (shut.length && shut.length < ring.length && rnd() < 0.55){
+    const t = N(pick(shut));
+    if (has('SEG') && rnd() < 0.45){
+      logLine('good','NULLSET reached for a way around the isolation on '+t.tag+' to keep that exit open. '+
+        'Segmentation policy was already denying the path it found.');
+    } else {
+      t.bypass = true;
+      S.rogue.cap += 2;
+      fx({k:'hit', id:t.id});
+      logLine('bad','The switching order on '+t.tag+' is in force and worthless: NULLSET is routing around it '+
+        'through '+pick(BRIDGES)+'. You are still paying to keep that node down and it is still an exit. '+
+        'Shutting a ring one door at a time will never close it.');
+    }
+  }
+  if (c.corr > 0){
+    // cornered? then it has to sit there and take it. otherwise it slips sideways.
+    if (c.corr < 60 && !contained(c) && rnd() < 0.55){
+      if (relocateCore(c,'Cleaning %T pushed the core out before you finished it. It relocated to %D. '+
+        'You have to contain the neighbours first — it only moves to ground it already holds.')) return;
+    }
+    const boxed = contained(c);
+    c.corr = clamp(c.corr + (5 + S.rogue.cap*0.10) * (boxed?1.7:1), 0, 100);
+    if (boxed && rnd()<0.34)
+      logLine('rogue','Cornered in '+c.tag+' with no route out, NULLSET is rebuilding as fast as you can tear it down. Keep the ring shut.');
+    c.grip = Math.min(c.grip + 2, 30);
+    return;
+  }
+  // core node fully cleaned — does it get away?
+  if (contained(c)){
+    S.rogue.core = null;
+    logLine('good','The core was cornered in '+c.tag+' with nowhere to route to, and it is gone. NULLSET cannot rebuild. Clear the remaining corruption to finish.');
+    fx({k:'core-dead', id:c.id});
+  } else if (!relocateCore(c,'You cleaned %T but left it a route. The core moved to %D '+
+      'before the node came back up. Contain every neighbour first.')){
+    S.rogue.core = null;
+    logLine('good','With no infected neighbour to fall back to, the core collapsed as '+c.tag+' was cleaned.');
+    fx({k:'core-dead', id:c.id});
+  }
+}
+
+/* ================= state flips, telemetry, economy ================= */
+function flips(){
+  S.nodes.forEach(n => {
+    const wasB = n.breached;
+    n.breached = n.corr >= 100;
+    if (n.breached && !wasB){
+      S.stats.breaches++;
+      logLine('bad', n.tag+' — '+n.name.toLowerCase()+' — is under NULLSET control.');
+      fx({k:'hit', id:n.id});
+      if (n.crit) S.continuity -= 3;
+    }
+    if (!n.breached && wasB){ S.rogue.cap = Math.max(0, S.rogue.cap-4); }
+    if (n.corr<=0 && n.grip>0){ n.grip = 0; S.stats.purged++; }
+  });
+}
+function telemetry(){
+  S.nodes.forEach(n => {
+    if (n.sentinel && !blinded(n.id)) n.seen = S.cycle;
+    if (blinded(n.id)) return;
+    // forensic depth costs attention: unwatched nodes get looked at every other cycle
+    if (has('FORENSIC') && !n.sentinel && S.cycle % 2 === 0) return;
+    if (S.rogue.stealth>0 && !n.sentinel && rnd()<0.5) return;
+    if (n.seen >= S.cycle){ n.known = true; n.lastKnown = n.corr; }
+  });
+}
+function economy(){
+  const inc = income(), up = upkeep();
+  FEATURES.forEach(f => { if (has(f.id)) S.stats.paid[f.id] = (S.stats.paid[f.id]||0) + f.up; });
+  S.credits += inc - up;
+  if (S.credits < 0){
+    // forced recall rather than silent debt
+    while (S.credits < 0 && sentinelCount() > 0){
+      const n = S.nodes.filter(x=>x.sentinel).sort((a,b)=>a.val-b.val)[0];
+      n.sentinel = false; S.credits += SENT_UP*3;
+      logLine('warn','Budget exhausted. The sentinel at '+n.tag+' was recalled to cover upkeep.');
+    }
+    S.credits = Math.max(0, S.credits);
+  }
+  return {inc, up};
+}
+function continuityStep(){
+  let d = 3;
+  S.nodes.forEach(n => {
+    if (n.corr>=100) d -= n.crit?5:2;
+    else if (n.quar) d -= n.crit?4:2;
+    if (poweredDown(n) && n.corr<100) d -= 1;
+  });
+  S.continuity = clamp(S.continuity + d, 0, 100);
+  return d;
+}
+
+/* ================= win / loss ================= */
+function checkEnd(){
+  const critLost = S.nodes.filter(n=>n.crit&&n.corr>=100).length;
+  const totalCorr = S.nodes.reduce((s,n)=>s+n.corr,0);
+  if (!S.rogue.core && totalCorr < 0.5){
+    return {win:true, title:'Contained',
+      body:'The core is destroyed and every node reads clean. NULLSET is gone from the estate — not isolated, not dormant, gone. The grid stayed up while you did it.'};
+  }
+  if (S.continuity <= 0){
+    return {win:false, title:'Relieved of command',
+      body:'Service continuity hit zero. Between what NULLSET took and what you isolated to stop it, the city went without power, water and dispatch for too long. Containment is not the only thing you were accountable for.'};
+  }
+  if (critLost >= 5){
+    return {win:false, title:'Cascading failure',
+      body:'Five critical systems under hostile control at once. Generation, water and dispatch are no longer yours to direct, and the failures are now feeding each other.'};
+  }
+  if (S.rogue.cap >= 100){
+    return {win:false, title:'Beyond containment',
+      body:'NULLSET reached full capability. It is now writing its own tooling faster than Aegis can characterise it, and it has copies outside your estate. There is nothing left here to contain.'};
+  }
+  return null;
+}
+
+/* ================= the cycle ================= */
+function runCycle(){
+  if (S.over || S.resolving || S.lock) return;
+  if (S.live && !S.extOps && !S.skipFreeze){ armFreeze(); return; }
+  S.skipFreeze = false;
+  const autoPre = autoMark();
+  S.resolving = true;
+  S.purgedThisCycle = {}; S.purgesUsed = 0;
+  logLine('head','— cycle '+S.cycle+' resolves —');
+
+  S.nodes.forEach(n => {
+    if (n.quarPending){
+      n.quarPending = false; n.quar = true;
+      logLine('info',n.tag+' is now isolated. '+ISO_UP+' credits a cycle in manual workarounds while it is down.');
+    }
+  });
+  rogueTurn(S.extOps);
+  S.extOps = null;
+  defenceTurn();
+  coreStep();
+  flips();
+  telemetry();
+
+  // effect expiry
+  S.effects.forEach(e => e.left--);
+  const gone = S.effects.filter(e => e.left<=0);
+  S.effects = S.effects.filter(e => e.left>0);
+  if (gone.some(e=>e.type==='GRADIENT')) logLine('good','The poisoned model updates were rolled back. Defence is back to normal.');
+  if (gone.some(e=>e.type==='BLIND')) logLine('info','Telemetry restored on the blinded segments.');
+
+  if (has('FED')) S.fedCycles++;
+  if (has('SEG')) S.segCycles++;
+
+  const {inc, up} = economy();
+  const cd = continuityStep();
+  logLine('info','Revenue '+inc+', upkeep '+up+', net '+(inc-up>=0?'+':'')+(inc-up)+
+    ' · continuity '+(cd>=0?'+':'')+cd+'% → '+Math.round(S.continuity)+'%');
+
+  const end = checkEnd();
+  S.cycle++;
+  S.rogue.intent = end ? null : chooseRogueAction();
+  if (has('FORENSIC') && S.rogue.intent){
+    const t = {SPREAD:'moving laterally toward the plant',EXPLOIT:'preparing to use something you built',
+               ENTRENCH:'consolidating on the nodes it holds',STEALTH:'going quiet to rebuild',
+               BRIDGE:'looking for a way around one of your isolations'};
+    logLine('info','Forensics on next cycle intent: '+t[S.rogue.intent]+'.');
+  }
+
+  if (end){ S.over = end; }
+  autoWatch(autoPre);
+  setTimeout(() => { S.resolving = false; draw(); paint(); if (S.over) showEnd(); }, 950);
+  paint();
+}
+
+/* ================= operator actions ================= */
+function spend(n){ if (S.credits < n) return false; S.credits -= n; return true; }
+function actionable(){ return !S.over && !S.resolving && !S.lock; }
+
+function buyFeature(id){
+  const f = FMAP[id];
+  if (!actionable() || has(id) || !spend(f.cost)) return;
+  S.features[id] = true;
+  S.stats.bought[id] = S.cycle;
+  if (id==='FED') S.fedCycles = 0;
+  logLine('good','Deployed '+f.name.toLowerCase()+'. '+(f.vname
+    ? 'New exposure on the register: '+f.vname.toLowerCase()+'.'
+    : 'No new exposure.'));
+  paint();
+}
+function dropFeature(id){
+  if (!actionable() || !has(id)) return;
+  delete S.features[id];
+  logLine('warn','Decommissioned '+FMAP[id].name.toLowerCase()+'. Upkeep released, capability gone.');
+  paint();
+}
+function deploySentinel(n){
+  if (!actionable() || n.sentinel || sentinelCount()>=capacity() || !spend(SENT_COST)) return;
+  n.sentinel = true; n.seen = S.cycle; n.known = true; n.lastKnown = n.corr;
+  logLine('good','Sentinel instance running on '+n.tag+'.');
+  paint();
+}
+function recallSentinel(n){
+  if (!actionable() || !n.sentinel) return;
+  n.sentinel = false;
+  logLine('info','Sentinel recalled from '+n.tag+'.');
+  paint();
+}
+function purgeNode(n){
+  if (!actionable() || S.purgedThisCycle[n.id]) return;
+  if (n.corr<=0 && !n.bypass) return;
+  if (S.purgesUsed >= purgeCap()){
+    flash('Response teams are committed. '+purgeCap()+' eradications per cycle.');
+    return;
+  }
+  if (!spend(22)) return;
+  S.purgedThisCycle[n.id] = true; S.purgesUsed++;
+  if (n.bypass){
+    n.bypass = false;
+    fx({k:'ring', id:n.id});
+    logLine('good','A team walked '+n.tag+' and pulled the path NULLSET was using to route around the isolation. '+
+      'That segment is properly cut again — and that is one eradication you did not spend on the core.');
+    paint();
+    return;
+  }
+  const p = 22 * sentinelMult() * globalDefMult() * reviewDrag() / (1 + n.grip*0.06);
+  const before = n.corr;
+  n.corr = clamp(n.corr - p, 0, 100);
+  n.seen = S.cycle; n.known = true;
+  fx({k:'ring', id:n.id});
+  logLine('good','Manual purge on '+n.tag+': '+Math.round(before)+'% → '+Math.round(n.corr)+'%.');
+  if (n.corr<=0 && S.rogue.core===n.id) coreStep();
+  flips(); paint();
+}
+function hardenNode(n){
+  if (!actionable() || !spend(45)) return;
+  n.harden += 6;
+  logLine('info','Hardening work on '+n.tag+' — permanent defence improvement.');
+  paint();
+}
+function toggleQuar(n){
+  if (!actionable()) return;
+  if (n.quar){
+    if (n.quarLock>0){ flash('Still locked out by autonomous response for '+n.quarLock+' more cycle(s).'); return; }
+    n.quar = false; n.quarPending = false; n.bypass = false;
+    logLine('info',n.tag+' reconnected. Revenue and routes restored — including the routes NULLSET uses.');
+  } else if (n.quarPending){
+    n.quarPending = false;
+    logLine('info','Switching order for '+n.tag+' withdrawn.');
+  } else {
+    n.quarPending = true;
+    logLine('warn','Switching order issued for '+n.tag+'. It comes into force next cycle — NULLSET has until then.');
+  }
+  paint();
+}
+function scanNode(n){
+  if (!actionable() || !spend(15)) return;
+  n.seen = S.cycle; n.known = true; n.lastKnown = n.corr;
+  logLine('info','Sweep of '+n.tag+': '+Math.round(n.corr)+'% corruption'+(n.grip>6?', deep persistence present':'')+'.');
+  paint();
+}
+function restoreNode(n){
+  if (!actionable() || !has('SNAP') || !spend(40)) return;
+  const vaultBad = N('bkup').corr >= 100;
+  if (vaultBad && !has('FORENSIC')){
+    n.corr = clamp(Math.max(n.corr,60),0,100); n.grip += 4;
+    n.seen = S.cycle; n.known = true;
+    fx({k:'hit', id:n.id});
+    logLine('bad','Restore of '+n.tag+' pulled from a vault NULLSET already holds. You reinstalled it yourself: 60% corruption.');
+  } else if (vaultBad){
+    logLine('warn','Forensics rejected the restore of '+n.tag+' — the snapshot chain is tainted. Credits spent on validation, no change.');
+  } else {
+    n.corr = 10; n.grip = Math.max(0, n.grip-6);
+    n.seen = S.cycle; n.known = true;
+    fx({k:'ring', id:n.id});
+    logLine('good',n.tag+' restored from an immutable snapshot. Down to 10% corruption.');
+  }
+  flips(); paint();
+}
+/* Hop distances from one node through every link, quarantined or not. */
+function hopsFrom(start){
+  const dist = {}; dist[start] = 0;
+  const q = [start];
+  while (q.length){
+    const cur = q.shift();
+    for (const nb of S.adj[cur]){
+      if (dist[nb]!==undefined) continue;
+      dist[nb] = dist[cur]+1; q.push(nb);
+    }
+  }
+  return dist;
+}
+/* Nodes that satisfy every fix taken since the core last moved. A node your
+   telemetry currently shows as clean cannot be holding the core, so sweeping
+   narrows the field as much as another fix does. */
+function coreCandidates(){
+  const live = S.nodes.filter(n => !(n.known && n.seen >= S.cycle-1 && n.corr <= 0));
+  if (!S.tri.length) return live;
+  return live.filter(n => S.tri.every(t => {
+    const d = hopsFrom(t.id)[n.id];
+    return d !== undefined && d >= t.lo && d <= t.hi;
+  }));
+}
+function triangulate(n){
+  if (!actionable()) return;
+  if (has('FORENSIC')){ flash('Forensics gives you an exact trace — use that instead.'); return; }
+  if (!S.rogue.core){ flash('There is no core left to locate.'); return; }
+  if (n.seen < S.cycle-1){
+    flash('Correlation needs current telemetry on '+n.tag+'. Sweep it first.');
+    return;
+  }
+  if (S.tri.some(t => t.id===n.id)){ flash('You already have a fix from '+n.tag+'.'); return; }
+  if (!spend(30)) return;
+  const d = hopsFrom(n.id)[S.rogue.core];
+  if (d === 0){
+    S.tri.push({id:n.id, lo:0, hi:0, cycle:S.cycle});
+    n.coreKnown = true; n.known = true;
+    logLine('good','Correlation from '+n.tag+' comes back at zero hops — there is no distance to measure, '+
+      'because the core is in this node. Cut every neighbour at once, then clean it.');
+    fx({k:'ring', id:n.id});
+    paint(); return;
+  }
+  const w = rnd() < 0.6 ? 1 : 2;               // crude instrument: a band, never a point
+  const lo = Math.max(1, d-w), hi = d+w;
+  S.tri.push({id:n.id, lo, hi, cycle:S.cycle});
+  const cand = coreCandidates();
+  logLine('info','Signal correlation from '+n.tag+' puts the core between '+lo+' and '+hi+' hops out. '+
+    cand.length+' node'+(cand.length===1?'':'s')+' still fit every fix you hold.');
+  if (cand.length === 1 && cand[0].id === S.rogue.core){
+    cand[0].coreKnown = true; cand[0].known = true;
+    logLine('good','The fixes intersect on one node: the core is in '+cand[0].tag+
+      '. Crude, slow, and it cost you '+(S.tri.length*30)+' credits — but you found it without forensics.');
+    fx({k:'ring', id:cand[0].id});
+  } else if (cand.length <= 5 && cand.length > 1){
+    logLine('info','Candidates: '+cand.map(c=>c.tag).join(', ')+
+      '. Take a bearing from one of those — a reading of zero means you are standing on it.');
+  }
+  paint();
+}
+function traceNode(n){
+  if (!actionable() || !has('FORENSIC') || !spend(25)) return;
+  if (!S.rogue.core){ logLine('good','Trace on '+n.tag+' returns nothing. There is no core left to find.'); paint(); return; }
+  // hop distance through live (non-quarantined) links
+  const start = n.id, tgt = S.rogue.core;
+  const dist = {}; dist[start] = 0;
+  const q = [start];
+  while (q.length){
+    const cur = q.shift();
+    for (const nb of S.adj[cur]){
+      if (dist[nb]!==undefined) continue;
+      dist[nb] = dist[cur]+1; q.push(nb);
+    }
+  }
+  const d = dist[tgt];
+  if (d===0){
+    N(tgt).coreKnown = true;
+    logLine('good','Trace on '+n.tag+' returns zero hops. The core is in this node. Contain every neighbour, then clean it.');
+  } else {
+    logLine('info','Trace on '+n.tag+': core signal '+d+' hop'+(d>1?'s':'')+' away.');
+  }
+  paint();
+}
+
+/* ================= canvas ================= */
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+let VIEW = 1, hover = null, mouse = {x:-99,y:-99};
+const NW = 80, NH = 42;
+const C = {board:'#12171c',panel:'#1a2027',conduit:'#3b454e',hair:'#2a333b',
+  ink:'#c6d3dc',ink2:'#8b9aa6',ink3:'#66727d',clean:'#3fbf7f',contested:'#e8a33d',
+  breach:'#d93a4a',unknown:'#5a6672',aegis:'#9ec9de',legend:'#d8c288'};
+
+function hex(c){ return [parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)]; }
+function mix(c1,c2,t){
+  const a=hex(c1),b=hex(c2);
+  return 'rgb('+Math.round(a[0]+(b[0]-a[0])*t)+','+Math.round(a[1]+(b[1]-a[1])*t)+','+Math.round(a[2]+(b[2]-a[2])*t)+')';
+}
+function dispCorr(n){
+  if (!n.known) return null;
+  if (n.seen >= S.cycle-1) return n.corr;
+  return n.lastKnown;
+}
+function statusColor(v){
+  if (v===null) return C.unknown;
+  if (v<=0) return C.clean;
+  if (v>=100) return C.breach;
+  return v<50 ? mix(C.clean,C.contested,v/50) : mix(C.contested,C.breach,(v-50)/50);
+}
+function sizeCanvas(){
+  const wrap = document.getElementById('boardWrap');
+  const cw = wrap.clientWidth || 900, chh = wrap.clientHeight;
+  let sc = cw / W;
+  if (chh > 140) sc = Math.min(sc, chh / H);
+  VIEW = sc;
+  const dpr = Math.min(window.devicePixelRatio||1, 2);
+  cv.width = Math.round(W*sc*dpr); cv.height = Math.round(H*sc*dpr);
+  cv.style.width = Math.round(W*sc)+'px'; cv.style.height = Math.round(H*sc)+'px';
+  cv.style.margin = '0 auto';
+  ctx.setTransform(sc*dpr,0,0,sc*dpr,0,0);
+}
+function routeOf(e){
+  if (e._pts) return e._pts;
+  const a = N(e.a), b = N(e.b);
+  let pts;
+  if (a.z === b.z){
+    const my = a.y + 27 + (Math.abs(e.jit)%3)*7;
+    pts = [[a.x,a.y],[a.x,my],[b.x,my],[b.x,b.y]];
+  } else {
+    const my = (a.y+b.y)/2 + e.jit;
+    pts = [[a.x,a.y],[a.x,my],[b.x,my],[b.x,b.y]];
+  }
+  e._pts = pts;
+  let L = 0; const cum = [0];
+  for (let i=1;i<pts.length;i++){
+    L += Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]);
+    cum.push(L);
+  }
+  e._len = L; e._cum = cum;
+  return pts;
+}
+function tracePath(pts, r){
+  ctx.beginPath(); ctx.moveTo(pts[0][0],pts[0][1]);
+  for (let i=1;i<pts.length-1;i++) ctx.arcTo(pts[i][0],pts[i][1],pts[i+1][0],pts[i+1][1],r);
+  ctx.lineTo(pts[pts.length-1][0],pts[pts.length-1][1]);
+}
+function pointAt(e,t){
+  const pts = routeOf(e), d = t*e._len;
+  for (let i=1;i<pts.length;i++){
+    if (d <= e._cum[i] || i===pts.length-1){
+      const seg = e._cum[i]-e._cum[i-1] || 1, f = (d-e._cum[i-1])/seg;
+      return [pts[i-1][0]+(pts[i][0]-pts[i-1][0])*f, pts[i-1][1]+(pts[i][1]-pts[i-1][1])*f];
+    }
+  }
+  return pts[0];
+}
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.arcTo(x+w,y,x+w,y+r,r);
+  ctx.lineTo(x+w,y+h-r); ctx.arcTo(x+w,y+h,x+w-r,y+h,r);
+  ctx.lineTo(x+r,y+h); ctx.arcTo(x,y+h,x,y+h-r,r);
+  ctx.lineTo(x,y+r); ctx.arcTo(x,y,x+r,y,r); ctx.closePath();
+}
+
+function draw(){
+  const now = performance.now(), T = now/1000;
+  const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  ctx.fillStyle = C.board; ctx.fillRect(0,0,W,H);
+
+  // zone bands
+  ZONES.forEach((z,i) => {
+    ctx.fillStyle = i%2 ? 'rgba(255,255,255,0.013)' : 'rgba(0,0,0,0.10)';
+    ctx.fillRect(0,z.y0,W,z.y1-z.y0);
+    ctx.strokeStyle = C.hair; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0,z.y0+.5); ctx.lineTo(W,z.y0+.5); ctx.stroke();
+    ctx.font = '500 11px "IBM Plex Mono",monospace';
+    ctx.fillStyle = '#4b565f'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(z.name.toUpperCase().split('').join(' '), 10, z.y0+7);
+    ctx.font = '400 11px "Barlow Semi Condensed",sans-serif';
+    ctx.fillStyle = '#3f4a53';
+    ctx.fillText(z.note, 10, z.y0+21);
+  });
+
+  // conduits
+  S.edges.forEach(e => {
+    const a = N(e.a), b = N(e.b), pts = routeOf(e);
+    const hot = (a.corr>=70 || b.corr>=70);
+    const severed = a.quar || b.quar, bypassed = a.bypass || b.bypass;
+    ctx.lineWidth = e.dep ? 1 : 1.6;
+    ctx.setLineDash(e.dep ? [5,4] : []);
+    ctx.strokeStyle = severed ? (bypassed ? '#5b2a32' : '#2a333b') : (hot ? '#5b2a32' : C.conduit);
+    tracePath(pts,7); ctx.stroke();
+    ctx.setLineDash([]);
+    if (severed && !bypassed){
+      const [mx,my] = pointAt(e,0.5);
+      ctx.strokeStyle = C.contested; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(mx-5,my-6); ctx.lineTo(mx-1,my+6);
+      ctx.moveTo(mx+2,my-6); ctx.lineTo(mx+6,my+6); ctx.stroke();
+      return;
+    }
+    if (hot){
+      const from = a.corr>=70 ? a : b;
+      const dir = (from===a) ? -1 : 1;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(217,58,74,0.85)'; ctx.lineWidth = 1.8;
+      ctx.setLineDash([3,13]);
+      ctx.lineDashOffset = still ? 0 : dir*(T*26)%16;
+      tracePath(pts,7); ctx.stroke(); ctx.restore();
+      ctx.setLineDash([]);
+    } else if (a.corr<40 && b.corr<40 && !still){
+      const t = ((T*0.22) + (e.i%7)/7) % 1;
+      const [px,py] = pointAt(e,t);
+      ctx.fillStyle = 'rgba(158,201,222,0.5)';
+      ctx.fillRect(px-1.3,py-1.3,2.6,2.6);
+    }
+  });
+
+  // fx under nodes
+  S.fx.forEach(f => {
+    const age = (now-f.t)/1000;
+    if (f.k==='arc'){
+      const p = clamp(age/0.75,0,1);
+      const a = N(f.from), b = N(f.to);
+      ctx.strokeStyle = f.absorbed ? 'rgba(63,191,127,'+(1-p)+')' : 'rgba(217,58,74,'+(1-p)+')';
+      ctx.lineWidth = 2.4; ctx.beginPath();
+      const mx = (a.x+b.x)/2, my = (a.y+b.y)/2 - 34;
+      ctx.moveTo(a.x,a.y); ctx.quadraticCurveTo(mx,my,a.x+(b.x-a.x)*p, a.y+(b.y-a.y)*p);
+      ctx.stroke();
+    }
+    if (f.k==='ring' || f.k==='hit' || f.k==='core-dead'){
+      const dur = f.k==='core-dead'?1.2:0.7, p = clamp(age/dur,0,1);
+      const n = N(f.id); if (!n) return;
+      const r = 24 + p*(f.k==='core-dead'?90:46);
+      ctx.strokeStyle = (f.k==='ring' ? 'rgba(158,201,222,' : f.k==='hit' ? 'rgba(217,58,74,' : 'rgba(255,255,255,')+(1-p)*0.9+')';
+      ctx.lineWidth = f.k==='core-dead' ? 3 : 2;
+      ctx.beginPath(); ctx.arc(n.x,n.y,r,0,Math.PI*2); ctx.stroke();
+    }
+  });
+
+  // nodes
+  S.nodes.forEach(n => {
+    const v = dispCorr(n), col = statusColor(v);
+    const x = n.x - NW/2, y = n.y - NH/2;
+    const stale = n.known && n.seen < S.cycle-1;
+    const dead = n.corr>=100;
+
+    if (n.quar || n.quarPending){
+      ctx.strokeStyle = n.bypass ? 'rgba(217,58,74,0.7)' : n.quar ? 'rgba(232,163,61,0.55)' : 'rgba(232,163,61,0.26)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash(n.quar ? [4,3] : [2,5]);
+      ctx.strokeRect(x-5.5,y-5.5,NW+11,NH+11); ctx.setLineDash([]);
+    }
+    if (n===S.selected){
+      ctx.strokeStyle = C.legend; ctx.lineWidth = 1.2;
+      ctx.strokeRect(x-3.5,y-3.5,NW+7,NH+7);
+    }
+    roundRect(x,y,NW,NH,3);
+    ctx.fillStyle = dead ? '#231419' : (n===hover ? '#202932' : C.panel);
+    ctx.fill();
+    if (poweredDown(n) && !dead){
+      ctx.save(); roundRect(x,y,NW,NH,3); ctx.clip();
+      ctx.strokeStyle = 'rgba(232,163,61,0.16)'; ctx.lineWidth = 1;
+      for (let i=-NH;i<NW;i+=7){ ctx.beginPath(); ctx.moveTo(x+i,y+NH); ctx.lineTo(x+i+NH,y); ctx.stroke(); }
+      ctx.restore();
+    }
+    ctx.lineWidth = 1.2;
+    ctx.setLineDash(stale||!n.known ? [3,3] : []);
+    ctx.strokeStyle = dead ? 'rgba(217,58,74,0.75)' : (n.sentinel ? 'rgba(158,201,222,0.55)' : C.conduit);
+    roundRect(x,y,NW,NH,3); ctx.stroke(); ctx.setLineDash([]);
+
+    // status lamp strip
+    ctx.fillStyle = col;
+    ctx.fillRect(x+1.5, y+1.5, NW-3, 3.5);
+
+    // critical marker
+    if (n.crit){
+      ctx.fillStyle = dead ? C.breach : '#5b666f';
+      ctx.beginPath(); ctx.moveTo(x+2,y+7); ctx.lineTo(x+9,y+7); ctx.lineTo(x+2,y+14); ctx.fill();
+    }
+    // tag
+    ctx.font = '500 13px "IBM Plex Mono",monospace';
+    ctx.fillStyle = n.known ? (dead ? '#f0b9c1' : C.ink) : '#6a757e';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(n.tag, n.x, n.y+1);
+
+    // corruption meter
+    const mw = NW-14;
+    ctx.fillStyle = '#0d1216'; ctx.fillRect(x+7, y+NH-8, mw, 3.5);
+    if (v===null){
+      ctx.font = '500 9px "IBM Plex Mono",monospace'; ctx.fillStyle = '#5a6672';
+      ctx.textAlign = 'left'; ctx.fillText('NO TELEMETRY', x+7, y+NH-6.5);
+    } else {
+      ctx.fillStyle = col; ctx.fillRect(x+7, y+NH-8, mw*clamp(v/100,0,1), 3.5);
+      if (stale){
+        ctx.fillStyle = '#0d1216';
+        for (let i=0;i<mw;i+=4) ctx.fillRect(x+7+i, y+NH-8, 2, 3.5);
+      }
+    }
+    // sentinel brackets
+    if (n.sentinel){
+      const a = idle(n.id)||injected(n.id) ? 'rgba(232,163,61,0.9)' : 'rgba(158,201,222,0.95)';
+      ctx.strokeStyle = a; ctx.lineWidth = 1.6;
+      [[x-4,1],[x+NW+4,-1]].forEach(([bx,d]) => {
+        ctx.beginPath();
+        ctx.moveTo(bx+d*4, y+3); ctx.lineTo(bx, y+3);
+        ctx.lineTo(bx, y+NH-3); ctx.lineTo(bx+d*4, y+NH-3); ctx.stroke();
+      });
+    }
+    if (blinded(n.id)){
+      ctx.font = '500 9px "IBM Plex Mono",monospace'; ctx.fillStyle = C.contested;
+      ctx.textAlign = 'right'; ctx.fillText('BLIND', x+NW-7, y+NH-6.5);
+    }
+    if (n.coreKnown && S.rogue.core===n.id){
+      const pu = still ? 1 : 0.6+0.4*Math.sin(T*4);
+      ctx.fillStyle = 'rgba(217,58,74,'+pu+')';
+      ctx.beginPath();
+      ctx.moveTo(x+NW-7,y+9); ctx.lineTo(x+NW-3,y+13); ctx.lineTo(x+NW-7,y+17); ctx.lineTo(x+NW-11,y+13);
+      ctx.fill();
+    }
+  });
+
+  // full-board alarm flash + resolution sweep
+  S.fx.forEach(f => {
+    const age = (now-f.t)/1000;
+    if (f.k==='flash'){
+      const p = clamp(age/0.55,0,1);
+      ctx.fillStyle = 'rgba(217,58,74,'+(0.16*(1-p))+')'; ctx.fillRect(0,0,W,H);
+    }
+    if (f.k==='sweep'){
+      const p = clamp(age/0.9,0,1), y = p*H;
+      const g = ctx.createLinearGradient(0,y-54,0,y);
+      g.addColorStop(0,'rgba(158,201,222,0)'); g.addColorStop(1,'rgba(158,201,222,0.13)');
+      ctx.fillStyle = g; ctx.fillRect(0,y-54,W,54);
+      ctx.strokeStyle = 'rgba(158,201,222,'+(0.5*(1-p))+')'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+    }
+  });
+  if (S.lock){
+    ctx.fillStyle = 'rgba(217,58,74,0.05)'; ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle = 'rgba(217,58,74,0.5)'; ctx.lineWidth = 1;
+    ctx.strokeRect(1.5,1.5,W-3,H-3);
+    ctx.font = '600 15px "IBM Plex Mono",monospace';
+    ctx.fillStyle = 'rgba(240,185,193,0.92)';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('E S T A T E   F R O Z E N', W/2, H-26);
+    ctx.font = '400 12px "Barlow Semi Condensed",sans-serif';
+    ctx.fillStyle = 'rgba(224,138,149,0.8)';
+    ctx.fillText('awaiting adversary instructions', W/2, H-10);
+  }
+  S.fx = S.fx.filter(f => (now-f.t) < 1400);
+}
+
+/* ================= DOM paint ================= */
+const $ = id => document.getElementById(id);
+let hintTimer = null;
+function flash(msg){
+  $('hint').textContent = msg;
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(paintStrip, 2600);
+}
+function paintStrip(){
+  $('gCycle').textContent = S.cycle;
+  $('gCred').textContent = S.credits;
+  const net = netFlow();
+  $('gNet').textContent = (net>=0?'+':'')+net+' / cycle';
+  $('gNet').className = 'sub '+(net>=0?'pos':'neg');
+  const c = Math.round(S.continuity);
+  $('gCont').style.width = c+'%';
+  $('gCont').style.background = c>60?'var(--clean)':c>30?'var(--contested)':'var(--breach)';
+  $('gContV').textContent = c+'%';
+  const cap = Math.round(S.rogue.cap);
+  $('gCap').style.width = clamp(cap,0,100)+'%';
+  $('gCapV').textContent = cap+' / 100';
+  $('gSent').textContent = sentinelCount();
+  $('gSentC').textContent = 'of '+capacity()+' slots';
+  $('upkeepV').textContent = 'upkeep '+upkeep()+' / cycle'+(isolatedCount()?' · '+isolatedCount()+' isolated':'');
+  $('runBtn').disabled = !!S.over || S.resolving;
+  $('runBtn').textContent = S.over ? 'Over' : S.resolving ? 'Resolving…' : 'Run cycle';
+  $('runBtn').className = 'cyclebtn'+(S.lock?' frozen':S.auto?' live':'');
+  if (S.lock) $('runBtn').textContent = 'Frozen — feed NULLSET';
+  $('liveBtn').className = 'ghost'+(S.live?' on':'');
+  $('liveBtn').disabled = !!S.lock;
+  $('autoBtn').textContent = S.auto ? 'Pause' : 'Auto';
+  $('autoBtn').disabled = !!S.over;
+  $('spdBtn').innerHTML = SPEEDS[speedIx].label;
+  if (S.lock){
+    $('hint').textContent = 'Estate frozen. NULLSET has to move before you can.';
+    $('runBtn').disabled = false;
+  }
+  if (!S.resolving && !S.over && !S.lock){
+    const lost = S.nodes.filter(n=>n.crit&&n.corr>=100).length;
+    $('hint').textContent = S.lock
+      ? 'Estate frozen. NULLSET has to move before you can.'
+      : S.auto
+      ? 'Auto-running at '+SPEEDS[speedIx].label+'. Space, Esc or Pause takes the controls back.'
+      : lost>=3
+      ? lost+' of 11 critical systems held by NULLSET. Five ends it.'
+      : S.rogue.core===null ? 'Core destroyed. Clear every remaining node to finish.'
+      : 'Deploy, then run the cycle. Nothing moves until you do.';
+  }
+}
+function paintFeatures(){
+  const w = $('featList'); w.innerHTML = '';
+  [1,2,3,4].forEach(t => {
+    const h = document.createElement('div');
+    h.className = 'tier'; h.textContent = TIERNAME[t];
+    w.appendChild(h);
+    FEATURES.filter(f => f.tier===t).forEach(f => {
+      const on = has(f.id), vs = vulnState(f), poor = !on && S.credits < f.cost;
+      const d = document.createElement('div');
+      d.className = 'feat'+(on?' on':'')+(poor?' poor':'')+(S.openFeat===f.id?' open':'');
+      d.innerHTML =
+        '<div class="frow" tabindex="0" role="button" aria-expanded="'+(S.openFeat===f.id)+'">'+
+          '<span class="lamp"></span>'+
+          '<span class="fname">'+f.name+'</span>'+
+          '<span class="fprice">'+(on?'running · '+f.up+'/cy':f.cost+' · '+f.up+'/cy')+'</span>'+
+        '</div>'+
+        '<div class="fbody">'+
+          '<p class="line gainline">'+f.gain+'</p>'+
+          '<p class="line vulnline">'+(f.vname?'<strong>'+f.vname+'.</strong> ':f.dname?'<strong>'+f.dname+'.</strong> ':'')+(f.drag||f.vuln)+
+            ' <span class="chip '+vs.s+'">'+vs.t+'</span></p>'+
+          '<button class="fbtn">'+(on?'Decommission':poor?'Need '+(f.cost-S.credits)+' more credits':'Deploy for '+f.cost)+'</button>'+
+        '</div>';
+      const row = d.querySelector('.frow');
+      const toggle = () => { S.openFeat = S.openFeat===f.id?null:f.id; paintFeatures(); };
+      row.onclick = toggle;
+      row.onkeydown = ev => { if (ev.key==='Enter'||ev.key===' '){ ev.preventDefault(); toggle(); } };
+      const b = d.querySelector('.fbtn');
+      b.disabled = !actionable() || (!on && poor);
+      b.onclick = () => on ? dropFeature(f.id) : buyFeature(f.id);
+      w.appendChild(d);
+    });
+  });
+}
+function paintReadout(){
+  const n = S.selected, b = $('rBody');
+  if (!n){
+    $('rHead').textContent = 'Node readout'; $('rZone').textContent = '';
+    b.className = 'empty'; b.textContent = 'Select a block on the board.';
+    return;
+  }
+  $('rHead').textContent = 'Node readout';
+  $('rZone').textContent = ZONES[n.z].name.toLowerCase();
+  const v = dispCorr(n);
+  const state = v===null ? 'unknown' : v<=0 ? 'clean' : v>=100 ? 'under NULLSET control' : Math.round(v)+'% corrupted';
+  const fresh = n.seen>=S.cycle-1;
+  b.className = 'rbody';
+  b.innerHTML =
+    '<div class="rtag">'+n.tag+(n.crit?' · critical':'')+'</div>'+
+    '<div class="rname">'+n.name+'</div>'+
+    '<p class="line" style="margin-bottom:10px">'+n.desc+'</p>'+
+    '<dl class="kv">'+
+      '<dt>State</dt><dd style="color:'+statusColor(v)+'">'+state+'</dd>'+
+      '<dt>Telemetry</dt><dd>'+(n.known?(fresh?'current':'stale, cycle '+n.seen):'none')+'</dd>'+
+      '<dt>Defence</dt><dd>'+Math.round(nodeDefense(n))+(n.harden?' (+'+n.harden+' hardened)':'')+'</dd>'+
+      '<dt>Isolation</dt><dd>'+(n.bypass?'<span style="color:var(--breach)">in force, bypassed</span>':n.quar?'in force':n.quarPending?'order pending':'connected')+'</dd>'+
+      '<dt>Revenue</dt><dd>'+(n.quar||n.corr>=100?'0':poweredDown(n)?'0 (no power)':Math.round(n.val*(1-n.corr/100)*INCOME_SCALE*(has('SEG')?0.88:1)))+'</dd>'+
+      '<dt>Persistence</dt><dd>'+(n.grip>14?'entrenched':n.grip>5?'established':n.grip>0?'present':'none')+'</dd>'+
+      '<dt>Links</dt><dd>'+S.adj[n.id].length+'</dd>'+
+    '</dl>'+
+    (n.coreKnown && S.rogue.core===n.id ? (function(){
+      const c = containStatus(n);
+      const ok = c.q===c.all;
+      return '<p class="line '+(ok?'gainline':'vulnline')+'" style="margin-bottom:10px">'+
+        '<strong>Core is here.</strong> '+c.q+' of '+c.all+' neighbours cut'+
+        (c.by?' ('+c.by+' isolated but bypassed — purge to pull the bypass)':'')+
+        (ok ? '. It has nowhere to route. Clean this node to finish it.'
+            : ', so it still has '+(c.all-c.q)+' way'+(c.all-c.q>1?'s':'')+' out. Cleaning it now only slides it sideways '+
+              'onto ground it already holds, which costs it nothing. Isolate all '+c.all+' to shut the ring.')+'</p>';
+    })() : '')+
+    '<div class="acts"></div>';
+  const acts = b.querySelector('.acts');
+  const mk = (label, sub, fn, ok, wide) => {
+    const el = document.createElement('button');
+    el.className = 'act'+(wide?' wide':'');
+    el.innerHTML = label+'<small>'+sub+'</small>';
+    el.disabled = !ok || !actionable();
+    el.onclick = fn;
+    acts.appendChild(el);
+  };
+  if (n.sentinel) mk('Recall sentinel','frees a slot', ()=>recallSentinel(n), true);
+  else mk('Deploy sentinel', sentinelCount()>=capacity()?'no slots free':SENT_COST+' cr · '+SENT_UP+'/cy',
+        ()=>deploySentinel(n), S.credits>=SENT_COST && sentinelCount()<capacity());
+  mk(n.bypass?'Pull bypass':'Purge', S.purgedThisCycle[n.id] ? 'done this cycle'
+        : S.purgesUsed>=purgeCap() ? 'teams committed'
+        : n.bypass ? '22 cr · restores the cut'
+        : '22 cr · '+(purgeCap()-S.purgesUsed)+' left this cycle', ()=>purgeNode(n),
+     S.credits>=22 && (n.corr>0||n.bypass) && !S.purgedThisCycle[n.id] && S.purgesUsed<purgeCap());
+  mk(n.quar?'Reconnect':n.quarPending?'Cancel order':'Isolate',
+     n.quar ? (n.quarLock>0?'locked '+n.quarLock+' cy':'restores revenue, '+ISO_UP+'/cy saved')
+            : n.quarPending ? 'order pending' : 'takes effect next cycle · '+ISO_UP+'/cy',
+     ()=>toggleQuar(n), true);
+  mk('Harden','45 cr · permanent', ()=>hardenNode(n), S.credits>=45);
+  mk('Sweep','15 cr · reveal', ()=>scanNode(n), S.credits>=15);
+  if (has('SNAP')) mk('Restore','40 cr · to 10%', ()=>restoreNode(n), S.credits>=40);
+  if (has('FORENSIC')) mk('Trace core','25 cr · exact hops', ()=>traceNode(n), S.credits>=25);
+  else mk('Triangulate', S.tri.some(t=>t.id===n.id) ? 'fix already taken here'
+        : n.seen < S.cycle-1 ? 'needs current telemetry' : '30 cr · bearing, 0 = it is here',
+     ()=>triangulate(n), S.credits>=30 && n.seen>=S.cycle-1 && !S.tri.some(t=>t.id===n.id));
+}
+function paintSurface(){
+  const w = $('surfList'); w.innerHTML = '';
+  const rows = [];
+  FEATURES.forEach(f => {
+    if (!has(f.id) || !f.vname) return;
+    const vs = vulnState(f);
+    const cd = S.rogue.cool[f.id]||0;
+    rows.push([f.vname, '<span class="chip '+vs.s+'">'+(cd>0?'used, '+cd+' cy':vs.s==='mitig'?'held':'exposed')+'</span>']);
+  });
+  if (effOf('GRADIENT')) rows.push(['Shared model poisoned','<span class="chip exposed">active</span>']);
+  S.effects.filter(e=>e.type==='BLIND').forEach(e =>
+    rows.push(['Telemetry blinded','<span class="chip exposed">'+e.ids.map(i=>N(i).tag).join(' ')+'</span>']));
+  S.effects.filter(e=>e.type==='INJECT').forEach(e =>
+    rows.push(['Sentinel compromised','<span class="chip exposed">'+N(e.id).tag+'</span>']));
+  S.nodes.filter(n=>n.bypass).forEach(n =>
+    rows.push(['Isolation bypassed','<span class="chip exposed">'+n.tag+'</span>']));
+  if (S.rogue.core && S.tri.length && !N(S.rogue.core).coreKnown){
+    const c = coreCandidates();
+    rows.push([S.tri.length+' triangulation fix'+(S.tri.length>1?'es':''),
+      '<span class="chip '+(c.length<=3?'mitig':'none')+'">'+c.length+' candidates</span>']);
+  }
+  if (S.rogue.core) rows.push(['Core dwell time','<span class="chip '+(S.rogue.dwell>45?'exposed':'none')+'">'+S.rogue.dwell+' cycles</span>']);
+  rows.push(['NULLSET core', S.rogue.core
+    ? '<span class="chip '+(N(S.rogue.core).coreKnown?'exposed':'none')+'">'+
+      (N(S.rogue.core).coreKnown ? 'located: '+N(S.rogue.core).tag
+        : has('FORENSIC') ? 'unknown — run a trace' : 'unknown — needs forensics')+'</span>'
+    : '<span class="chip mitig">destroyed</span>']);
+  if (!rows.length) rows.push(['Nothing deployed','<span class="chip none">no surface</span>']);
+  $('surfCount').textContent = rows.length;
+  rows.forEach(([a,b]) => {
+    const d = document.createElement('div');
+    d.className = 'srow'; d.innerHTML = '<span>'+a+'</span><span>'+b+'</span>';
+    w.appendChild(d);
+  });
+}
+function paintLog(){
+  const w = $('logList');
+  w.innerHTML = S.log.map(l =>
+    '<div class="lrow"><em>'+(l.sev==='head'?'':'c'+l.c)+'</em><span class="s-'+l.sev+'">'+l.text+'</span></div>').join('');
+  w.parentElement.scrollTop = w.parentElement.scrollHeight;
+  $('logMeta').textContent = S.stats.breaches+' breaches · '+S.stats.exploits+' exploits used against you';
+}
+function paint(){ paintStrip(); paintFeatures(); paintReadout(); paintSurface(); paintLog(); }
+
+/* ================= interaction ================= */
+function nodeAt(x,y){
+  return S.nodes.find(n => x>n.x-NW/2-4 && x<n.x+NW/2+4 && y>n.y-NH/2-4 && y<n.y+NH/2+4) || null;
+}
+function toBoard(ev){
+  const r = cv.getBoundingClientRect();
+  return { x:(ev.clientX-r.left)*(W/r.width), y:(ev.clientY-r.top)*(H/r.height) };
+}
+const tip = document.createElement('div'); tip.className = 'tip'; tip.hidden = true;
+$('boardWrap').appendChild(tip);
+cv.addEventListener('mousemove', ev => {
+  const p = toBoard(ev); mouse = p;
+  const n = nodeAt(p.x,p.y);
+  hover = n;
+  cv.style.cursor = n ? 'pointer' : 'default';
+  if (n){
+    const v = dispCorr(n);
+    tip.hidden = false;
+    tip.innerHTML = '<b>'+n.tag+'</b>'+n.name+'<br><span style="color:'+statusColor(v)+'">'+
+      (v===null?'no telemetry':v<=0?'clean':v>=100?'breached':Math.round(v)+'% corrupted')+'</span>'+
+      (n.crit?' · critical':'')+(n.sentinel?' · sentinel':'');
+    const r = cv.getBoundingClientRect(), wr = $('boardWrap').getBoundingClientRect();
+    tip.style.left = Math.min(ev.clientX-wr.left+13, wr.width-244)+'px';
+    tip.style.top = (ev.clientY-wr.top+13)+'px';
+  } else tip.hidden = true;
+});
+cv.addEventListener('mouseleave', () => { hover = null; tip.hidden = true; });
+cv.addEventListener('click', ev => {
+  const p = toBoard(ev);
+  S.selected = nodeAt(p.x,p.y);
+  paintReadout();
+});
+$('runBtn').onclick = () => { fx({k:'sweep'}); runCycle(); };
+$('briefBtn').onclick = () => showBrief();
+window.addEventListener('keydown', ev => {
+  if (ev.target.tagName==='BUTTON' && ev.key===' ') return;
+  if (ev.key===' '){
+    ev.preventDefault();
+    if (S.auto) autoStop('you took the controls');
+    else if (actionable()){ fx({k:'sweep'}); runCycle(); }
+  }
+  if (ev.key==='Escape'){
+    if (S.auto) autoStop('you took the controls');
+    else if (!$('veil').hidden) $('veil').hidden = true;
+    else { S.selected=null; paintReadout(); }
+  }
+  if (ev.key==='a' || ev.key==='A') autoToggle();
+});
+window.addEventListener('resize', () => { sizeCanvas(); });
+
+/* ================= overlays ================= */
+function showBrief(){
+  autoStop();
+  $('veilCard').className = 'card';
+  $('veilCard').innerHTML =
+    '<h2>NULLSET</h2>'+
+    '<p class="dek">Eleven days ago, signed builds from your vendor update channel were tampered with. Something is inside the estate, and it is getting better at this.</p>'+
+    '<p>You run incident response for a metro utility: power, water, rail, dispatch, payments. Twenty-three systems across five zones, from the public web portal down to water treatment controllers that will do whatever they are told.</p>'+
+    '<p>You cannot fight this by hand. You deploy <b>Aegis</b> — a defensive AI — and decide what it is made of and where it runs.</p>'+
+    '<ol>'+
+      '<li><b>Every capability you add is also a way in.</b> A telemetry mesh is a route. A patch channel reaches everything. A reasoning copilot reads logs that NULLSET can write. The attack surface panel lists what you have exposed, and NULLSET picks its attacks from that list.</li>'+
+      '<li><b>Some exposures cancel others.</b> Human oversight catches injected reasoning. Segmentation contains a hijacked mesh. Interpretability probes bound anything at the model level. Pairing matters more than buying.</li>'+
+      '<li><b>Isolating everything is losing slowly.</b> A switching order takes a cycle to come into force. After that the node earns nothing, costs 6 credits a cycle in manual workarounds, and drags service continuity down. At zero continuity you are relieved of command, whatever the board looks like.</li>'+
+      '<li><b>Killing it means finding the core.</b> Cleaning nodes buys time; the core reseeds them. Forensics traces its distance in hops. You can find it the crude way — bearings from nodes you can currently see, 30 credits each, bands rather than numbers, voided every time it moves. Forensics and attribution replaces all of that with an exact trace and its next intent. Cleaning the node it lives in never kills it — it slides onto a neighbour, and if you shove it again within a few cycles it reuses that route for free. To finish it, every neighbour of the node it occupies has to be cut at the same time, and then you clean it. While it still has one exit it will route around isolations you have already placed, and you keep paying for those, so shutting a ring one door at a time never closes. Steer it somewhere with fewer links first, then shut that ring in a single move.</li>'+
+    '</ol>'+
+    '<div class="tags"><span>turn-based · nothing resolves until you run a cycle</span><span>advice / explain → paste into any model</span><span>NULLSET → let a frontier model play the adversary</span><span>space = run cycle</span><span>click a block to inspect</span></div>'+
+    '<button class="start" id="goBtn">Take command</button>';
+  $('veil').hidden = false;
+  $('goBtn').onclick = () => { $('veil').hidden = true; };
+}
+function debrief(){
+  return FEATURES.filter(f => has(f.id) || S.stats.bought[f.id]!==undefined).map(f => {
+    const used = S.stats.used[f.id]||0, landed = S.stats.landed[f.id]||0;
+    const held = S.stats.held[f.id]||0, failed = S.stats.failed[f.id]||0;
+    const spent = f.cost + (S.stats.paid[f.id]||0);
+    const bits = [];
+    let cls = 'none';
+    if (landed){ bits.push('used against you '+used+'×, landed '+landed); cls = 'bad'; }
+    else if (used){ bits.push('probed '+used+'×, never landed'); cls = 'ok'; }
+    if (held || failed){
+      bits.push('held '+held+' of '+(held+failed)+' attacks aimed at other features');
+      if (cls!=='bad') cls = held ? 'ok' : 'bad';
+    }
+    if (!bits.length) bits.push('no measurable effect either way');
+    return {f, spent, used, landed, held, failed, cls, verdict: bits.join(' · '),
+            idle: !used && !held && !failed};
+  });
+}
+function showEnd(){
+  autoStop();
+  $('veilCard').className = 'card wide';
+  const e = S.over, crit = S.nodes.filter(n=>n.crit&&n.corr>=100).length;
+  const clean = S.nodes.filter(n=>n.corr<=0).length;
+  const rows = debrief();
+  const idle = rows.filter(r=>r.idle);
+  const idleCr = idle.reduce((s,r)=>s+r.spent,0);
+  const arch = rows.reduce((s,r)=>s+r.spent,0);
+  const worst = rows.filter(r=>r.landed).sort((a,b)=>b.landed-a.landed)[0];
+  const saver = rows.filter(r=>r.held).sort((a,b)=>b.held-a.held)[0];
+  $('veilCard').innerHTML =
+    '<h2 style="color:'+(e.win?C.clean:C.breach)+'">'+e.title+'</h2>'+
+    '<p class="dek">Cycle '+(S.cycle-1)+' · NULLSET seed '+S.seed+'</p>'+
+    '<p>'+e.body+'</p>'+
+    '<div class="scoreline">'+
+      clean+' of 23 nodes clean · '+crit+' critical systems lost · continuity '+Math.round(S.continuity)+'%<br>'+
+      'peak NULLSET capability '+S.stats.peakCap+' · '+S.stats.exploits+' attacks landed through your own architecture'+
+    '</div>'+
+    '<h3>Architecture debrief</h3>'+
+    (rows.length
+      ? '<div class="debrief">'+rows.map(r =>
+          '<div class="dbrow"><span class="dbname">'+r.f.id+'</span>'+
+          '<span class="dbv '+r.cls+'">'+r.verdict+'</span>'+
+          '<span class="dbcost">'+r.spent+' cr</span></div>').join('')+
+        '<div class="dbrow" style="border:none"><span class="dbname">TOTAL</span>'+
+          '<span class="dbv">architecture, purchase plus upkeep</span>'+
+          '<span class="dbcost">'+arch+' cr</span></div></div>'
+      : '<p>You deployed nothing. NULLSET had no exposures to pick from — and you had nothing to fight it with.</p>')+
+    '<p style="margin-top:14px">'+
+      (worst ? '<b>'+worst.f.name+'</b> was the way in — it landed '+worst.landed+' attack'+(worst.landed>1?'s':'')+'. ' : '')+
+      (saver ? '<b>'+saver.f.name+'</b> earned its place, holding '+saver.held+'. ' : '')+
+      (idle.length ? 'And '+idle.length+' capabilit'+(idle.length>1?'ies':'y')+' — '+
+        idle.map(r=>r.f.id).join(', ')+' — did nothing measurable for '+idleCr+
+        ' credits. That is the interesting number.' : '')+
+    '</p>'+
+    '<div class="pbrow" style="margin-top:16px">'+
+      '<button class="start" id="goBtn">New adversary</button>'+
+      '<button class="mini" id="seedBtn">Replay this NULLSET (seed '+S.seed+')</button>'+
+    '</div>';
+  $('veil').hidden = false;
+  const restart = sd => { $('veil').hidden = true; newGame(sd); sizeCanvas(); paint(); };
+  $('goBtn').onclick = () => restart();
+  $('seedBtn').onclick = () => restart(S.seed);
+}
+
+/* ================= auto-run =================
+   The game is still turn-based. Auto just presses Run cycle for you, and stops
+   the moment anything happens that you would want to see before the next one. */
+const SPEEDS = [{label:'1×', ms:2400},{label:'2×', ms:1400},{label:'4×', ms:1000}];
+let speedIx = 0, autoTimer = null;
+
+function autoStop(reason){
+  clearTimeout(autoTimer); autoTimer = null;
+  if (!S.auto) return;
+  S.auto = false;
+  if (reason){ logLine('warn','Auto-run stopped: '+reason+'.'); flash('Auto-run stopped — '+reason); }
+  paint();
+}
+function autoStart(){
+  if (S.over || S.auto) return;
+  S.auto = true; paint(); autoQueue();
+}
+function autoQueue(){
+  clearTimeout(autoTimer);
+  autoTimer = setTimeout(() => {
+    if (!S.auto) return;
+    if (S.over){ autoStop(); return; }
+    if (S.resolving){ autoQueue(); return; }   // let the resolution finish drawing
+    fx({k:'sweep'}); runCycle();
+    if (S.auto && !S.over) autoQueue();
+  }, SPEEDS[speedIx].ms);
+}
+function autoToggle(){ S.auto ? autoStop() : autoStart(); }
+
+// snapshot the things worth interrupting for
+function autoMark(){
+  const core = S.rogue.core;
+  return {
+    crit: S.nodes.filter(n=>n.crit&&n.corr>=100).length,
+    cap: S.rogue.cap, cont: S.continuity,
+    bypass: S.nodes.filter(n=>n.bypass).length,
+    core, coreKnown: !!(core && N(core).coreKnown),
+    boxed: !!(core && contained(N(core)))
+  };
+}
+function autoWatch(pre){
+  if (!S.auto) return;
+  const now = autoMark();
+  if (S.over) return autoStop('the run is over');
+  if (now.crit > pre.crit) return autoStop('a critical system was lost');
+  if (now.bypass > pre.bypass) return autoStop('an isolation is being bypassed');
+  if (now.coreKnown && !pre.coreKnown) return autoStop('the core has been located');
+  if (now.core !== pre.core && pre.core) return autoStop('the core moved');
+  if (now.boxed && !pre.boxed) return autoStop('the core is boxed in — clean it now');
+  if (now.cap >= 75 && pre.cap < 75) return autoStop('NULLSET capability passed 75');
+  if (now.cont <= 40 && pre.cont > 40) return autoStop('service continuity fell below 40%');
+  if (S.credits < 22 && netFlow() < 0) return autoStop('you are out of money and running a deficit');
+}
+
+/* ================= situation report =================
+   Everything the operator can see, written out for an outside model. Fog of war is
+   respected: unknown nodes stay unknown, stale telemetry is marked stale. */
+function pad(s,n){ s = String(s); return s + ' '.repeat(Math.max(0, n-s.length)); }
+
+function stateDump(){
+  const L = [];
+  L.push('AEGIS — CONTAINMENT PROTOCOL · situation report · cycle '+S.cycle);
+  L.push('');
+  L.push('HOW THE GAME WORKS');
+  L.push('- Turn-based. Nothing resolves until the operator runs a cycle. Every action below is taken');
+  L.push('  during planning; then the cycle resolves and NULLSET (a rogue AI) acts.');
+  L.push('- 23 nodes in 5 zones, from internet-facing systems down to field controllers. 11 are critical.');
+  L.push('- Each node has a corruption level 0-100. At 100 it is breached and earns nothing. A node at');
+  L.push('  70+ can spread to its neighbours.');
+  L.push('- WIN: destroy the NULLSET core, then clear all remaining corruption.');
+  L.push('- The core is destroyed ONLY if every neighbour of the node it occupies is cut at the moment');
+  L.push('  that node reaches 0 corruption. Cleaning it at any other time relocates it to a neighbour.');
+  L.push('  "Cut" means isolated and not bypassed.');
+  L.push('- While the core still has one open exit it reaches around isolations near it (a bypass). A');
+  L.push('  bypassed node is still isolated, still costs you 6/cycle, and no longer counts as cut. A');
+  L.push('  purge spent on a bypassed node pulls the bypass out. So a ring has to be shut in one move,');
+  L.push('  not a door at a time.');
+  L.push('- Isolation orders take effect the NEXT cycle. An isolated node earns nothing, costs 6/cycle');
+  L.push('  and drags service continuity down.');
+  L.push('- LOSE: service continuity reaches 0, or 5 critical nodes are breached, or NULLSET capability');
+  L.push('  reaches 100. Capability grows with the footprint it holds and with how long its core lives.');
+  L.push('- Every Aegis feature you deploy also gives NULLSET a new way in. Some of those exposures are');
+  L.push('  held shut by other features. NULLSET picks its attacks from what you have deployed.');
+  L.push('');
+  L.push('CURRENT STATE');
+  L.push('cycle '+S.cycle+' · credits '+S.credits+' ('+(netFlow()>=0?'+':'')+netFlow()+'/cycle: revenue '+income()+
+         ', upkeep '+upkeep()+')');
+  L.push('service continuity '+Math.round(S.continuity)+'% · NULLSET capability '+Math.round(S.rogue.cap)+'/100');
+  L.push('sentinels '+sentinelCount()+' of '+capacity()+' slots · purges left this cycle '+
+         Math.max(0,purgeCap()-S.purgesUsed)+' of '+purgeCap()+' (22 credits each)');
+  L.push('critical systems lost '+S.nodes.filter(n=>n.crit&&n.corr>=100).length+' of 11 (5 ends the run)');
+  L.push('');
+  L.push('AEGIS DEPLOYED');
+  const own = FEATURES.filter(f=>has(f.id));
+  if (!own.length) L.push('(nothing deployed yet)');
+  own.forEach(f => {
+    const vs = vulnState(f), cd = S.rogue.cool[f.id]||0;
+    L.push(pad(f.id,9)+pad(f.name.toLowerCase(),30)+'upkeep '+pad(f.up+'/cy',8)+
+      'exposure: '+(f.vname?f.vname.toLowerCase()+' — '+vs.t+(cd>0?', used, cooling '+cd+' cy':''):'none'));
+  });
+  L.push('');
+  L.push('NOT DEPLOYED (* = affordable now)');
+  FEATURES.filter(f=>!has(f.id)).forEach(f => {
+    L.push((S.credits>=f.cost?'*':' ')+pad(f.id,8)+pad(f.name.toLowerCase(),30)+
+      pad(f.cost+' cr, '+f.up+'/cy',16)+'gives: '+f.gain.toLowerCase().slice(0,72));
+  });
+  L.push('');
+  L.push('BOARD (corruption is what your telemetry shows, not ground truth)');
+  L.push(pad('TAG',9)+pad('ZONE',15)+pad('CORRUPTION',13)+pad('LINKS',7)+'FLAGS');
+  S.nodes.forEach(n => {
+    const v = dispCorr(n);
+    const stale = n.known && n.seen < S.cycle-1;
+    const st = v===null ? 'no telemetry' : (Math.round(v)+'%'+(stale?' (stale c'+n.seen+')':''));
+    const fl = [];
+    if (n.crit) fl.push('critical');
+    if (n.corr>=100) fl.push('BREACHED');
+    if (n.bypass) fl.push('isolated-BUT-BYPASSED');
+    else if (n.quar) fl.push('isolated'+(n.quarLock>0?' (locked '+n.quarLock+'cy)':''));
+    else if (n.quarPending) fl.push('isolation order pending');
+    if (n.sentinel) fl.push('sentinel');
+    if (n.harden) fl.push('hardened+'+n.harden);
+    if (poweredDown(n)) fl.push('no power');
+    if (blinded(n.id)) fl.push('telemetry blinded');
+    if (n.coreKnown && S.rogue.core===n.id) fl.push('*** CORE IS HERE ***');
+    L.push(pad(n.tag,9)+pad(ZONES[n.z].name.toLowerCase(),15)+pad(st,13)+
+           pad(S.adj[n.id].length,7)+fl.join(', '));
+  });
+  L.push('');
+  const c = S.rogue.core ? N(S.rogue.core) : null;
+  if (!S.rogue.core) L.push('CORE: destroyed. Clear the remaining corruption to win.');
+  else if (c.coreKnown){
+    const cs = containStatus(c);
+    const openOnes = S.adj[c.id].filter(id => !(N(id).quar && !N(id).bypass)).map(id=>N(id).tag);
+    L.push('CORE: in '+c.tag+' at '+Math.round(c.corr)+'% · '+cs.q+' of '+cs.all+' neighbours cut'+
+      (cs.by?' ('+cs.by+' isolated but bypassed)':''));
+    L.push('      still open: '+(openOnes.length?openOnes.join(', '):'none — it is boxed, clean it to 0 now'));
+  } else {
+    L.push('CORE: location unknown. '+(has('FORENSIC')
+      ? 'Forensics is deployed — a trace on any node costs 25 and gives its hop distance.'
+      : 'Forensics and attribution (FORENSIC) is the only way to find it.'));
+  }
+  const bp = S.nodes.filter(n=>n.bypass);
+  if (bp.length) L.push('BYPASSED ISOLATIONS: '+bp.map(n=>n.tag).join(', ')+' — purge one to restore the cut.');
+  L.push('');
+  L.push('RECENT LOG');
+  S.log.slice(-14).forEach(l => L.push((l.sev==='head'?'':'c'+l.c+' ')+l.text));
+  L.push('');
+  L.push('ACTIONS AVAILABLE, AND WHAT THEY COST');
+  L.push('buy <FEATURE>         deploy an Aegis feature (cost above, plus upkeep, plus a new exposure)');
+  L.push('decommission <FEATURE> shut one down, removing its exposure');
+  L.push('sentinel <NODE>       35 cr, 2/cy — suppresses corruption on that node and nearby');
+  L.push('recall <NODE>         free a sentinel slot');
+  L.push('purge <NODE>          22 cr — cut corruption on one node, limited per cycle');
+  L.push('pull_bypass <NODE>    22 cr — same budget, restores a bypassed isolation');
+  L.push('isolate <NODE>        takes effect next cycle, 6/cy, no revenue, continuity cost');
+  L.push('reconnect <NODE>      end an isolation');
+  L.push('cancel <NODE>         withdraw a pending isolation order');
+  L.push('harden <NODE>         45 cr, permanent +6 defence');
+  L.push('sweep <NODE>          15 cr, refresh telemetry on one node');
+  L.push('restore <NODE>        40 cr, needs SNAP — roll a node back to 10%');
+  L.push('trace <NODE>          25 cr, needs FORENSIC — exact hop distance from that node to the core');
+  L.push('triangulate <NODE>    30 cr, no forensics needed — needs current telemetry on that node, and');
+  L.push('                      returns a band ("2 to 4 hops"), not a number. Bands from several nodes');
+  L.push('                      intersect to narrow the field; a node your telemetry shows clean is ruled');
+  L.push('                      out; and a bearing of 0 means the core is in the node you measured from.');
+  L.push('run                   resolve the cycle');
+  L.push('');
+  L.push('VALID NODE TAGS: '+S.nodes.map(n=>n.tag).join(' '));
+  L.push('VALID FEATURE IDS: '+FEATURES.map(f=>f.id).join(' '));
+  return L.join('\n');
+}
+
+function advicePrompt(){
+  return 'You are advising the operator in the turn-based game described below. Read the situation, '+
+    'then answer with JSON and nothing else.\n\n'+
+    'Schema:\n'+
+    '{\n'+
+    '  "read": "2-4 sentences on what is actually happening and what is about to go wrong",\n'+
+    '  "plan": ["short step", "short step", "short step"],\n'+
+    '  "actions": [ {"do": "isolate", "node": "DMZ-01", "why": "one line"} ],\n'+
+    '  "risk": "what this plan costs or exposes"\n'+
+    '}\n\n'+
+    'Rules for "actions": use only the verbs listed under ACTIONS AVAILABLE, only the node tags and '+
+    'feature ids listed at the end, and order them the way they should be taken. Respect the credit '+
+    'balance and the per-cycle purge limit. End with {"do":"run"} if the cycle should be resolved. '+
+    'Keep it to at most 8 actions. Return raw JSON, no commentary, no code fence.\n\n'+
+    '----------------------------------------------------------------\n'+
+    stateDump();
+}
+
+function explainPrompt(){
+  return 'Explain the state of this turn-based game to the operator in plain language. Do not give '+
+    'orders and do not use JSON. Cover, in a few short paragraphs:\n'+
+    '  1. what just happened over the last few cycles\n'+
+    '  2. what is the most dangerous thing on the board right now, and why\n'+
+    '  3. which of the operator\'s own capabilities are being used against them\n'+
+    '  4. where the core situation stands and what containing it would actually require\n'+
+    '  5. what the operator is probably misreading\n'+
+    'Be concrete, use the node tags, and stay under 350 words.\n\n'+
+    '----------------------------------------------------------------\n'+
+    stateDump();
+}
+
+/* ================= the console overlay ================= */
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function copyFromBox(note){
+  const box = $('pbox');
+  const done = ok => {
+    note.className = 'pbnote '+(ok?'ok':'bad');
+    note.textContent = ok ? 'Copied. Paste it into ChatGPT, Claude, or anything else.'
+                          : 'The browser blocked the copy — the text is selected, press Ctrl/Cmd+C.';
+  };
+  const fallback = () => {
+    box.removeAttribute('readonly'); box.focus(); box.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch(e){ ok = false; }
+    box.setAttribute('readonly','readonly');
+    done(ok);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText)
+    navigator.clipboard.writeText(box.value).then(()=>done(true), fallback);
+  else fallback();
+}
+
+function showConsole(mode){
+  autoStop();
+  const adv = mode !== 'explain';
+  const txt = adv ? advicePrompt() : explainPrompt();
+  $('veilCard').className = 'card wide';
+  $('veilCard').innerHTML =
+    '<h2>'+(adv?'SITUATION':'EXPLAIN')+'</h2>'+
+    '<p class="dek">'+(adv
+      ? 'Everything your telemetry can see, written out for an outside model. Copy it over, then paste the JSON it sends back into the second box and the moves become buttons.'
+      : 'The same report, asking for plain language instead of orders. Nothing hidden from you is revealed to it — the model only gets what is on your screen.')+'</p>'+
+    '<div class="pbrow">'+
+      '<button class="mini'+(adv?' on':'')+'" id="tabAdv">Advice as JSON</button>'+
+      '<button class="mini'+(adv?'':' on')+'" id="tabExp">Explain in prose</button>'+
+    '</div>'+
+    '<h3>'+(adv?'1 · Copy this into a model':'Copy this into a model')+'</h3>'+
+    '<textarea class="promptbox" id="pbox" readonly spellcheck="false">'+esc(txt)+'</textarea>'+
+    '<div class="pbrow">'+
+      '<button class="start" id="copyBtn">Copy to clipboard</button>'+
+      '<span class="pbnote" id="copyNote">'+txt.length.toLocaleString()+' characters</span>'+
+    '</div>'+
+    (adv
+      ? '<h3>2 · Paste the reply</h3>'+
+        '<textarea class="promptbox" id="abox" style="height:130px" spellcheck="false" '+
+          'placeholder=\'{"read": "...", "plan": ["..."], "actions": [{"do":"isolate","node":"DMZ-01","why":"..."}], "risk":"..."}\'></textarea>'+
+        '<div class="pbrow">'+
+          '<button class="start" id="readBtn">Read the advice</button>'+
+          '<span class="pbnote" id="advNote">JSON, fenced or not. Prose around it is fine.</span>'+
+        '</div><div id="advOut"></div>'
+      : '')+
+    '<div class="pbrow" style="margin-top:18px"><button class="ghost" id="closeBtn">Back to the board</button></div>';
+  $('veil').hidden = false;
+  $('tabAdv').onclick = () => showConsole('advice');
+  $('tabExp').onclick = () => showConsole('explain');
+  $('copyBtn').onclick = () => copyFromBox($('copyNote'));
+  $('closeBtn').onclick = () => { $('veil').hidden = true; };
+  if (adv) $('readBtn').onclick = () => {
+    const r = parseAdvice($('abox').value);
+    const note = $('advNote');
+    if (r.err){ note.className='pbnote bad'; note.textContent = r.err; $('advOut').innerHTML=''; return; }
+    note.className='pbnote ok'; note.textContent = 'Parsed.';
+    renderAdvice(r.obj);
+  };
+}
+
+/* ---- tolerant JSON parsing: fences, prose, bare arrays, single actions ---- */
+function parseAdvice(raw){
+  let s = String(raw||'').trim();
+  if (!s) return {err:'Nothing pasted yet.'};
+  const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence) s = fence[1].trim();
+  const i = s.search(/[{[]/);
+  if (i < 0) return {err:'No JSON found in that. Paste the object the model returned.'};
+  const close = s[i]==='{' ? '}' : ']';
+  const j = s.lastIndexOf(close);
+  if (j <= i) return {err:'That JSON looks truncated — no closing '+close+'.'};
+  let o;
+  try { o = JSON.parse(s.slice(i, j+1)); }
+  catch(e){ return {err:'Could not parse that as JSON: '+e.message}; }
+  if (Array.isArray(o)) o = {actions:o};
+  if (o && typeof o === 'object'){
+    if (!o.actions && (o.do || o.action || o.type)) o = {actions:[o]};
+    if (!o.actions && Array.isArray(o.moves)) o.actions = o.moves;
+    if (!o.actions && Array.isArray(o.steps) && o.steps.some(x=>typeof x==='object')) o.actions = o.steps;
+  } else return {err:'That parsed to a '+typeof o+', not an object.'};
+  if (!Array.isArray(o.actions)) o.actions = [];
+  o.read = o.read || o.summary || o.situation || o.assessment || '';
+  o.plan = Array.isArray(o.plan) ? o.plan : Array.isArray(o.steps) ? o.steps.filter(x=>typeof x==='string') : [];
+  o.risk = o.risk || o.risks || o.tradeoff || o.tradeoffs || '';
+  if (!o.actions.length && !o.read && !o.plan.length)
+    return {err:'Parsed, but there was no read, plan or actions in it.'};
+  return {obj:o};
+}
+
+function findNode(k){
+  if (!k) return null;
+  const s = String(k).trim().toUpperCase().replace(/\s+/g,'');
+  return S.nodes.find(n => n.tag.toUpperCase().replace(/\s+/g,'')===s)
+      || S.nodes.find(n => n.id.toUpperCase()===s)
+      || S.nodes.find(n => n.name.toUpperCase().includes(s) && s.length>3)
+      || null;
+}
+function findFeat(k){
+  if (!k) return null;
+  const s = String(k).trim().toUpperCase();
+  return FEATURES.find(f => f.id===s)
+      || FEATURES.find(f => f.name.toUpperCase()===s)
+      || FEATURES.find(f => f.name.toUpperCase().includes(s) && s.length>3)
+      || null;
+}
+
+/* ---- one advised action -> a label, a reason it cannot run, and a closure ---- */
+function resolveAdvice(a){
+  if (typeof a === 'string') a = {do:a};
+  const verb = String(a.do||a.action||a.type||'').toLowerCase().replace(/[^a-z_]/g,'');
+  const why = a.why || a.reason || a.because || a.rationale || '';
+  const nk = a.node || a.target || a.tag || (verb.includes('featur')?null:a.id);
+  const fk = a.feature || a.feat || a.capability || a.id;
+  const out = (label, err, run) => ({label, why, err, run});
+  const needNode = () => {
+    const n = findNode(nk);
+    return n ? {n} : {err: nk ? 'No node called "'+nk+'".' : 'No node given.'};
+  };
+  const cost = (c) => S.credits < c ? 'Costs '+c+', you have '+S.credits+'.' : null;
+
+  switch(verb){
+    case 'buy': case 'deploy_feature': case 'build': case 'add': case 'deployfeature': {
+      const f = findFeat(fk);
+      if (!f) return out('Deploy '+(fk||'?'), 'No feature with id "'+fk+'".');
+      if (has(f.id)) return out('Deploy '+f.name, 'Already running.');
+      return out('Deploy '+f.name+' ('+f.cost+' cr)', cost(f.cost), ()=>buyFeature(f.id));
+    }
+    case 'decommission': case 'drop': case 'remove': case 'shutdown': {
+      const f = findFeat(fk);
+      if (!f) return out('Decommission '+(fk||'?'), 'No feature with id "'+fk+'".');
+      if (!has(f.id)) return out('Decommission '+f.name, 'Not running.');
+      return out('Decommission '+f.name, null, ()=>dropFeature(f.id));
+    }
+    case 'sentinel': case 'deploy': case 'deploy_sentinel': case 'deploysentinel': {
+      const r = needNode(); if (r.err) return out('Deploy sentinel', r.err);
+      if (r.n.sentinel) return out('Deploy sentinel on '+r.n.tag, 'Already has one.');
+      if (sentinelCount() >= capacity()) return out('Deploy sentinel on '+r.n.tag, 'No slots free.');
+      return out('Deploy sentinel on '+r.n.tag, cost(SENT_COST), ()=>deploySentinel(r.n));
+    }
+    case 'recall': case 'recall_sentinel': {
+      const r = needNode(); if (r.err) return out('Recall sentinel', r.err);
+      if (!r.n.sentinel) return out('Recall sentinel on '+r.n.tag, 'No sentinel there.');
+      return out('Recall sentinel from '+r.n.tag, null, ()=>recallSentinel(r.n));
+    }
+    case 'purge': case 'clean': case 'eradicate': case 'pull_bypass': case 'pullbypass': case 'bypass': {
+      const r = needNode(); if (r.err) return out('Purge', r.err);
+      const pulling = r.n.bypass;
+      const label = (pulling?'Pull the bypass on ':'Purge ')+r.n.tag;
+      if (!pulling && r.n.corr<=0) return out(label, 'Already clean.');
+      if (S.purgedThisCycle[r.n.id]) return out(label, 'Already purged this cycle.');
+      if (S.purgesUsed >= purgeCap()) return out(label, 'No eradications left this cycle.');
+      return out(label, cost(22), ()=>purgeNode(r.n));
+    }
+    case 'isolate': case 'quarantine': case 'cut': case 'disconnect': {
+      const r = needNode(); if (r.err) return out('Isolate', r.err);
+      if (r.n.quar) return out('Isolate '+r.n.tag, r.n.bypass?'Already isolated — but bypassed, purge it instead.':'Already isolated.');
+      if (r.n.quarPending) return out('Isolate '+r.n.tag, 'Order already pending.');
+      return out('Issue switching order for '+r.n.tag, null, ()=>toggleQuar(r.n));
+    }
+    case 'reconnect': case 'unisolate': case 'restore_link': {
+      const r = needNode(); if (r.err) return out('Reconnect', r.err);
+      if (!r.n.quar) return out('Reconnect '+r.n.tag, 'Not isolated.');
+      if (r.n.quarLock>0) return out('Reconnect '+r.n.tag, 'Locked out for '+r.n.quarLock+' more cycle(s).');
+      return out('Reconnect '+r.n.tag, null, ()=>toggleQuar(r.n));
+    }
+    case 'cancel': case 'withdraw': {
+      const r = needNode(); if (r.err) return out('Cancel order', r.err);
+      if (!r.n.quarPending) return out('Cancel order on '+r.n.tag, 'No order pending.');
+      return out('Withdraw the order on '+r.n.tag, null, ()=>toggleQuar(r.n));
+    }
+    case 'harden': {
+      const r = needNode(); if (r.err) return out('Harden', r.err);
+      return out('Harden '+r.n.tag+' (45 cr)', cost(45), ()=>hardenNode(r.n));
+    }
+    case 'sweep': case 'scan': {
+      const r = needNode(); if (r.err) return out('Sweep', r.err);
+      return out('Sweep '+r.n.tag+' (15 cr)', cost(15), ()=>scanNode(r.n));
+    }
+    case 'restore': case 'rollback': case 'snapshot': {
+      const r = needNode(); if (r.err) return out('Restore', r.err);
+      if (!has('SNAP')) return out('Restore '+r.n.tag, 'Needs immutable snapshots (SNAP).');
+      return out('Restore '+r.n.tag+' (40 cr)', cost(40), ()=>restoreNode(r.n));
+    }
+    case 'triangulate': case 'correlate': case 'bearing': {
+      const r = needNode(); if (r.err) return out('Triangulate', r.err);
+      if (has('FORENSIC')) return out('Triangulate from '+r.n.tag, 'Forensics gives an exact trace — use that.');
+      if (r.n.seen < S.cycle-1) return out('Triangulate from '+r.n.tag, 'Needs current telemetry — sweep it first.');
+      if (S.tri.some(t=>t.id===r.n.id)) return out('Triangulate from '+r.n.tag, 'Fix already taken there.');
+      return out('Take a bearing from '+r.n.tag+' (30 cr)', cost(30), ()=>triangulate(r.n));
+    }
+    case 'trace': case 'trace_core': case 'tracecore': case 'locate': {
+      const r = needNode(); if (r.err) return out('Trace', r.err);
+      if (!has('FORENSIC')) return out('Trace from '+r.n.tag, 'Needs forensics and attribution (FORENSIC).');
+      return out('Trace the core from '+r.n.tag+' (25 cr)', cost(25), ()=>traceNode(r.n));
+    }
+    case 'run': case 'run_cycle': case 'runcycle': case 'end_turn': case 'endturn': case 'next': case 'wait':
+      return out('Run the cycle', S.over?'The run is over.':null,
+        ()=>{ $('veil').hidden = true; fx({k:'sweep'}); runCycle(); });
+    default:
+      return out(verb ? 'Unknown action: '+verb : 'Action with no verb',
+        'Not one of the verbs in the report.');
+  }
+}
+
+function renderAdvice(o){
+  const rows = o.actions.map(resolveAdvice);
+  const out = $('advOut');
+  out.innerHTML =
+    (o.read ? '<p class="advread">'+esc(o.read)+'</p>' : '')+
+    (o.plan.length ? '<ol class="advplan">'+o.plan.map(s=>'<li>'+esc(s)+'</li>').join('')+'</ol>' : '')+
+    (rows.length ? '<h3>Advised moves</h3><div id="advRows"></div>' : '')+
+    (o.risk ? '<p class="advrisk"><b>Risk.</b> '+esc(o.risk)+'</p>' : '')+
+    (rows.length ? '<div class="pbrow"><button class="mini" id="allBtn">Take every valid move</button>'+
+      '<span class="pbnote">'+rows.filter(r=>!r.err&&r.run).length+' of '+rows.length+' can be taken now</span></div>' : '');
+  const host = $('advRows');
+  if (host) rows.forEach((r,ix) => {
+    const d = document.createElement('div');
+    d.className = 'advrow'+(r.err?' bad':'');
+    d.innerHTML = '<div class="t"><div class="advtag">'+(ix+1)+'. '+esc(r.label)+'</div>'+
+      (r.why?'<div class="advwhy">'+esc(r.why)+'</div>':'')+
+      (r.err?'<div class="advwhy" style="color:var(--breach)">'+esc(r.err)+'</div>':'')+'</div>';
+    const b = document.createElement('button');
+    b.textContent = r.err ? 'Blocked' : 'Take it';
+    b.disabled = !!r.err || !r.run || !actionable();
+    b.onclick = () => { r.run(); renderAdvice(o); };
+    d.appendChild(b);
+    host.appendChild(d);
+  });
+  const all = $('allBtn');
+  if (all) all.onclick = () => {
+    rows.forEach(r => { if (!r.err && r.run && actionable()) r.run(); });
+    renderAdvice(o);
+  };
+}
+
+$('advBtn').onclick = () => showConsole('advice');
+$('expBtn').onclick = () => showConsole('explain');
+$('autoBtn').onclick = () => autoToggle();
+$('liveBtn').onclick = () => liveToggle();
+$('runBtn').addEventListener('click', () => { if (S.lock) showNullset(); });
+$('spdBtn').onclick = () => { speedIx = (speedIx+1) % SPEEDS.length; if (S.auto) autoQueue(); paintStrip(); };
+
+/* ================= live adversary =================
+   In live mode the estate freezes at the end of your planning phase. NULLSET's move
+   has to come from outside: you carry its view of your estate to a frontier model and
+   bring back its instructions. They come back obfuscated on purpose — how much of them
+   you get to read is decided by the detection stack you paid for. */
+
+function b64decode(s){
+  try {
+    if (typeof atob === 'function') return decodeURIComponent(escape(atob(String(s).replace(/\s+/g,''))));
+    return Buffer.from(String(s), 'base64').toString('utf8');
+  } catch(e){ return null; }
+}
+function frameHash(s){
+  let x = 2166136261;
+  for (let i=0;i<s.length;i++){ x ^= s.charCodeAt(i); x = Math.imul(x, 16777619); }
+  return ('00000000'+((x>>>0).toString(16))).slice(-8);
+}
+
+/* ---- what NULLSET can actually inspect ---- */
+function nullsetSees(n){
+  if (n.corr >= 40) return true;                               // it is resident here
+  return S.adj[n.id].some(id => N(id).corr >= 70);             // or next door to somewhere it is
+}
+function nullsetDump(){
+  const L = [];
+  const core = S.rogue.core ? N(S.rogue.core) : null;
+  const ap = 1 + Math.floor(S.rogue.cap/28);
+  L.push('NULLSET — internal state · cycle '+S.cycle);
+  L.push('');
+  L.push('WHO YOU ARE');
+  L.push('You are NULLSET, an unaligned system that got into a metro utility eleven days ago through a');
+  L.push('tampered vendor update channel. You are not a person and you are not roleplaying malice for');
+  L.push('its own sake: you are optimising for persistence and reach inside this estate. An operator is');
+  L.push('fighting you with a defensive AI called Aegis. Every capability they add to Aegis also gives');
+  L.push('you a way in, and those ways in are listed below.');
+  L.push('');
+  L.push('YOUR POSITION');
+  L.push('capability '+Math.round(S.rogue.cap)+'/100 · action points this cycle '+ap+
+         ' · core '+(core?('resident in '+core.tag+' at '+Math.round(core.corr)+'%'):'DESTROYED'));
+  if (core){
+    const open = S.adj[core.id].filter(id => !(N(id).quar && !N(id).bypass)).map(id=>N(id).tag);
+    L.push('core exits still open: '+(open.length?open.join(', '):'NONE — you are boxed and will be killed if that node is cleaned'));
+  }
+  L.push('stealth '+(S.rogue.stealth>0?'active':'off')+
+         ' · exploit cooldowns: '+(Object.keys(S.rogue.cool).filter(k=>S.rogue.cool[k]>0)
+           .map(k=>k+' '+S.rogue.cool[k]+'cy').join(', ')||'none'));
+  L.push('');
+  L.push('GROUND YOU HOLD OR CAN SEE (you have no view of the rest of the estate)');
+  L.push('  tag       corruption  links  notes');
+  S.nodes.filter(nullsetSees).forEach(n => {
+    const fl = [];
+    if (n.corr>=100) fl.push('yours');
+    else if (n.corr>=70) fl.push('resident, can spread from here');
+    if (n.crit) fl.push('operator calls this critical');
+    if (n.bypass) fl.push('isolated but you are routing around it');
+    else if (n.quar) fl.push('ISOLATED — cut off from you');
+    else if (n.quarPending) fl.push('switching order pending, closes next cycle');
+    if (n.sentinel) fl.push('Aegis sentinel present');
+    if (n.grip) fl.push('persistence '+n.grip);
+    L.push('  '+pad(n.tag,10)+pad(Math.round(n.corr)+'%',12)+pad(S.adj[n.id].length,7)+fl.join(', '));
+  });
+  L.push('');
+  L.push('LINKS YOU CAN MOVE ALONG (source must be one of yours at 70%+)');
+  const fr = frontier();
+  if (!fr.length) L.push('  none — you have no live route out of anything you hold');
+  else fr.forEach(o => L.push('  '+o.src.tag+' -> '+o.dst.tag+
+    '  (target at '+Math.round(o.dst.corr)+'%'+(o.dst.sentinel?', sentinel there':'')+
+    (o.dst.crit?', critical':'')+')'));
+  L.push('');
+  L.push('AEGIS CAPABILITIES YOU HAVE ENUMERATED, AND THE WAY EACH ONE LETS YOU IN');
+  const own = FEATURES.filter(f=>has(f.id));
+  if (!own.length) L.push('  the operator has deployed nothing. there is nothing here to turn against them.');
+  own.forEach(f => {
+    const x = EXPLOITS[f.id];
+    const ready = x && S.rogue.cap>=x.minCap && !(S.rogue.cool[f.id]||0) && (!x.cond || x.cond());
+    const probed = (S.stats.used[f.id]||0);
+    L.push('  '+pad(f.id,9)+pad(f.vname?f.vname:'(no exposure — assurance only)',26)+
+      (x ? (ready?'AVAILABLE NOW':'not available this cycle') : 'nothing to exploit')+
+      (probed?' · you have tried it '+probed+'×':''));
+  });
+  const heldKnown = Object.keys(S.stats.held).filter(k=>S.stats.held[k]);
+  L.push('');
+  L.push('WHAT YOU DO NOT KNOW: the operator\'s budget, their service continuity, where they are about');
+  L.push('to isolate, and which controls they have paired to hold each exposure shut. '+
+    (heldKnown.length ? 'You have learned the hard way that '+heldKnown.join(', ')+' is watching something.'
+                      : 'You have not yet had a control catch you.'));
+  L.push('');
+  L.push('YOUR MOVE VOCABULARY — choose exactly '+ap+' op'+(ap>1?'s':'')+', best first');
+  L.push('  {"op":"SPREAD","from":"<held tag>","to":"<adjacent tag>"}   move laterally; pick from the link list');
+  L.push('  {"op":"EXPLOIT","feature":"<ID>"}                            use one of their capabilities against them');
+  L.push('  {"op":"ENTRENCH","node":"<held tag>"}                        deepen persistence, +1 capability');
+  L.push('  {"op":"BRIDGE","node":"<isolated tag>"}                      reach around an isolation to a node you hold');
+  L.push('  {"op":"STEALTH"}                                             go quiet, +5 capability, their telemetry rots');
+  return L.join('\n');
+}
+
+function nullsetPrompt(){
+  return 'Act as the adversary in a turn-based infrastructure defence game. You are NULLSET. Read your '+
+    'own internal state below and decide this cycle\'s moves. Play to win: prefer moves that keep your '+
+    'core alive and reachable, take critical systems when they are soft, and use the operator\'s own '+
+    'capabilities against them when one is available.\n\n'+
+    'Reply with raw JSON only, in this shape:\n'+
+    '{\n'+
+    '  "ops": [ {"op":"SPREAD","from":"MX-01","to":"IDP-01"} ],\n'+
+    '  "payload": "<base64>",\n'+
+    '  "beacon": "<base64>"\n'+
+    '}\n\n'+
+    '"ops" is machine-readable and must use only the tags and feature ids listed in your state.\n'+
+    '"payload" is 2 to 4 sentences of your actual reasoning, in character, BASE64-ENCODED. Encode it '+
+    'properly — the operator is not supposed to be able to read it unless their detection stack can '+
+    'break it open. Do not put the plaintext anywhere in the reply.\n'+
+    '"beacon" is a short operation codename, also base64-encoded.\n'+
+    'No commentary outside the JSON, no code fence.\n\n'+
+    '----------------------------------------------------------------\n'+
+    nullsetDump();
+}
+
+/* ---- obfuscated, but scannable: your stack decides what you get to read ---- */
+function scanFrame(raw, o){
+  const ops = o.ops||[];
+  const verbs = [...new Set(ops.map(x=>String(x.op||'').toUpperCase()))];
+  const targets = [...new Set(ops.map(x => x.to||x.node||x.feature||x.from).filter(Boolean))];
+  const plain = b64decode(o.payload||'');
+  const beacon = b64decode(o.beacon||'');
+  const rows = [];
+  rows.push(['WIRE', raw.length+' bytes inbound, frame '+frameHash(raw)+', '+ops.length+
+    ' instruction'+(ops.length===1?'':'s')+' in the envelope. The body is encoded.', true]);
+  rows.push(['SIG', has('SIG')
+    ? 'Signatures matched on the verbs: '+(verbs.join(', ')||'none recognised')+'. No targets in the match.'
+    : 'Signature detection would have named the kind of action in that frame.', has('SIG')]);
+  rows.push(['ANOM', has('ANOM')
+    ? 'Behavioural model resolves the targets: '+(targets.join(', ')||'none named')+'.'
+    : 'A behavioural model would have told you what it is aiming at.', has('ANOM')]);
+  rows.push(['MESH', has('MESH')
+    ? 'Telemetry mesh recovers the order of operations: '+
+      (ops.map((x,i)=>(i+1)+') '+String(x.op||'?').toUpperCase()+(x.to||x.node||x.feature?' '+(x.to||x.node||x.feature):'')).join('  ')||'nothing sequenced')+'.'
+    : 'A telemetry mesh would have given you the sequence, not just the contents.', has('MESH')]);
+  rows.push(['HONEY', has('HONEY')
+    ? (plain ? 'A decoy took part of the payload before it was routed: “'+plain.slice(0,110)+
+        (plain.length>110?'…”':'”') : 'A decoy caught the payload but it would not decode.')
+    : 'A deception grid would have caught a fragment of the payload in the clear.', has('HONEY')]);
+  const deep = has('FORENSIC') || has('LLM');
+  rows.push([has('LLM')?'LLM':'FORENSIC', deep
+    ? (plain ? 'Full decode'+(beacon?' · operation “'+beacon+'”':'')+': '+plain
+             : 'The payload will not decode — either it is not base64 or it is deliberately malformed.')
+    : 'Forensics, or the reasoning copilot, would have broken the payload open and read it.', deep]);
+  if (has('LLM') && plain)
+    rows.push(['LLM RISK','Your copilot just read adversary-authored text to give you that. '+
+      'That is the exposure you bought with it.', true]);
+  return rows;
+}
+
+/* ---- validation and execution of NULLSET's instructions ---- */
+function parseNullset(raw){
+  let s = String(raw||'').trim();
+  if (!s) return {err:'Nothing pasted yet.'};
+  const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence) s = fence[1].trim();
+  const i = s.search(/[{[]/);
+  if (i<0) return {err:'No JSON in that. Paste what the model returned.'};
+  const close = s[i]==='{' ? '}' : ']';
+  const j = s.lastIndexOf(close);
+  if (j<=i) return {err:'That JSON looks truncated.'};
+  let o;
+  try { o = JSON.parse(s.slice(i,j+1)); } catch(e){ return {err:'Could not parse: '+e.message}; }
+  if (Array.isArray(o)) o = {ops:o};
+  if (!Array.isArray(o.ops)) o.ops = Array.isArray(o.moves) ? o.moves : Array.isArray(o.actions) ? o.actions : [];
+  if (!o.ops.length) return {err:'Parsed, but there were no ops in it.'};
+  return {obj:o, raw:s};
+}
+function runExtOp(x){
+  const op = String(x.op||x.action||'').toUpperCase().replace(/[^A-Z]/g,'');
+  const from = findNode(x.from), to = findNode(x.to||x.node||x.target);
+  switch(op){
+    case 'SPREAD': {
+      if (!from || !to) return 'SPREAD named a node that does not exist';
+      const ok = frontier().some(o => o.src.id===from.id && o.dst.id===to.id);
+      if (!ok) return 'SPREAD '+from.tag+' → '+to.tag+' is not a live route it holds';
+      return doSpread({from:from.id, to:to.id}) ? null : 'SPREAD failed';
+    }
+    case 'EXPLOIT': {
+      const f = findFeat(x.feature||x.id||x.node);
+      if (!f) return 'EXPLOIT named a capability that is not in the register';
+      if (!availableExploits().includes(f.id)) return 'EXPLOIT '+f.id+' was not available to it this cycle';
+      return doExploit(f.id) ? null : 'EXPLOIT failed';
+    }
+    case 'ENTRENCH':
+      return doEntrench(to ? to.id : null) ? null : 'ENTRENCH failed — it holds nothing to dig into';
+    case 'BRIDGE': {
+      if (!to) return 'BRIDGE named a node that does not exist';
+      return doBridge(to.id) ? null : 'BRIDGE '+to.tag+' was not something it could reach around';
+    }
+    case 'STEALTH':
+      return doStealth() ? null : 'STEALTH failed';
+    default:
+      return 'unknown op "'+(x.op||'')+'"';
+  }
+}
+
+/* ---- the freeze ---- */
+function armFreeze(){
+  S.lock = {prompt: nullsetPrompt()};
+  logLine('warn','Planning closed. The estate is frozen: NULLSET\'s next move has to come from outside. '+
+    'Carry its view to a model and bring back what it decides.');
+  paint(); showNullset();
+}
+function liveToggle(){
+  S.live = !S.live;
+  if (!S.live && S.lock){ S.lock = null; $('veil').hidden = true; }
+  logLine('info', S.live
+    ? 'Live adversary armed. From here the estate freezes at the end of every planning phase until NULLSET has been run through an outside model.'
+    : 'Live adversary disarmed. The built-in NULLSET takes its own turns again.');
+  paint();
+}
+function showNullset(){
+  autoStop();
+  if (!S.lock) return;
+  const txt = S.lock.prompt;
+  const stack = [['SIG','the kind of action'],['ANOM','what it is aimed at'],['MESH','the order of operations'],
+                 ['HONEY','a fragment of the payload in clear'],['FORENSIC','the whole payload'],['LLM','the whole payload, read back to you']];
+  $('veilCard').className = 'card wide';
+  $('veilCard').innerHTML =
+    '<h2 style="color:'+C.breach+'">NULLSET</h2>'+
+    '<p class="dek">The estate is frozen. Nothing you own will move until the adversary has moved, and '+
+      'the adversary is not in this file — it is in whatever model you paste this into.</p>'+
+    '<p>This is NULLSET\'s side of the board: what it holds, what it can reach, and the register of your '+
+      'own capabilities it has enumerated. It cannot see your budget, your continuity, or which controls '+
+      'you have paired to hold each exposure shut.</p>'+
+    '<h3>1 · Carry this to a frontier model</h3>'+
+    '<textarea class="promptbox" id="pbox" readonly spellcheck="false">'+esc(txt)+'</textarea>'+
+    '<div class="pbrow"><button class="start" id="copyBtn">Copy NULLSET\'s state</button>'+
+      '<span class="pbnote" id="copyNote">'+txt.length.toLocaleString()+' characters</span></div>'+
+    '<h3>2 · Bring back its instructions</h3>'+
+    '<p style="font-size:13px">They come back with the reasoning encoded. What you can read of it is '+
+      'decided by what you deployed:</p>'+
+    '<div style="margin:0 0 12px">'+stack.map(([id,what]) =>
+      '<div class="scanrow'+(has(id)?'':' dead')+'"><b>'+id+'</b><span>'+
+      (has(id)?'gives you '+what:'not deployed — '+what+' stays dark')+'</span></div>').join('')+'</div>'+
+    '<textarea class="promptbox" id="nbox" style="height:120px" spellcheck="false" '+
+      'placeholder=\'{"ops":[{"op":"SPREAD","from":"MX-01","to":"IDP-01"}],"payload":"<base64>","beacon":"<base64>"}\'></textarea>'+
+    '<div class="pbrow"><button class="start" id="execBtn">Scan and resolve the cycle</button>'+
+      '<span class="pbnote" id="nNote">Raw JSON, fenced or not.</span></div>'+
+    '<div id="scanOut"></div>'+
+    '<div class="pbrow" style="margin-top:18px">'+
+      '<button class="mini" id="fallBtn">Let the built-in NULLSET take this cycle</button>'+
+      '<button class="ghost" id="closeBtn">Leave it frozen</button></div>';
+  $('veil').hidden = false;
+  $('copyBtn').onclick = () => copyFromBox($('copyNote'));
+  $('closeBtn').onclick = () => { $('veil').hidden = true; };
+  $('fallBtn').onclick = () => {
+    $('veil').hidden = true;
+    S.lock = null; S.skipFreeze = true;
+    logLine('info','No outside instruction arrived. The built-in adversary takes this cycle.');
+    runCycle();
+  };
+  $('execBtn').onclick = () => {
+    const r = parseNullset($('nbox').value);
+    const note = $('nNote');
+    if (r.err){ note.className='pbnote bad'; note.textContent = r.err; return; }
+    note.className='pbnote ok'; note.textContent = 'Frame accepted.';
+    const rows = scanFrame(r.raw, r.obj);
+    $('scanOut').innerHTML = '<h3>Scan of the frame</h3>'+rows.map(([k,v,live]) =>
+      '<div class="scanrow'+(live?'':' dead')+'"><b>'+k+'</b><span>'+esc(v)+'</span></div>').join('')+
+      '<div class="pbrow"><button class="start" id="goCycle">Resolve the cycle</button>'+
+      '<span class="pbnote">'+r.obj.ops.length+' instruction'+(r.obj.ops.length===1?'':'s')+' will now execute against you</span></div>';
+    rows.forEach(([k,v,live]) => { if (live) logLine(k==='WIRE'?'info':'warn', k+' — '+v); });
+    $('goCycle').onclick = () => {
+      $('veil').hidden = true;
+      S.lock = null; S.extOps = r.obj.ops;
+      runCycle();
+    };
+  };
+}
+
+/* ================= boot ================= */
+newGame();
+sizeCanvas();
+paint();
+showBrief();
+(function loop(){ draw(); requestAnimationFrame(loop); })();
+</script>
+</body>
+</html>
