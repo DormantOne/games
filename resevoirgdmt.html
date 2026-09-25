@@ -1,0 +1,1289 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GDMT reservoir board</title>
+<style>
+:root{
+  --bg:#06060f;--s1:#0b0b18;--s2:#11112a;--s3:#17173a;
+  --line:#1e1e3f;--line2:#33335f;--dim:#56567c;--txt:#9494b4;--bright:#eeeef8;
+  --mag:#ff2d78;--red:#ff3355;--ok:#00e87b;--amb:#ffb020;--pur:#9b6dff;--cy:#00d4ff;
+  --sans:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif;
+  --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--txt);
+  font-family:var(--sans);font-size:13px;-webkit-font-smoothing:antialiased}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+#stage{position:relative;width:100%;height:100%}
+#net{position:absolute;inset:0;width:100%;height:100%}
+#net text{user-select:none;pointer-events:none}
+
+#graphBox{position:absolute;left:12px;bottom:86px;width:392px;background:rgba(8,8,20,.84);
+  border:1px solid var(--line);border-radius:4px;padding:6px 8px 2px}
+#graphBox .hd{display:flex;gap:9px;align-items:baseline;flex-wrap:wrap;margin-bottom:2px}
+#graphBox .ttl{color:var(--dim);font-size:11px}
+#gKeys{display:flex;gap:7px;flex-wrap:wrap}
+#gKeys button{background:none;border:0;padding:0;font-size:10.5px;font-family:var(--mono);cursor:pointer}
+#graph{display:block;width:100%;height:112px}
+
+#panel{position:absolute;right:12px;top:12px;width:288px;background:rgba(8,8,20,.88);
+  border:1px solid var(--line);border-radius:4px;padding:11px 12px;max-height:calc(100% - 110px);
+  overflow-y:auto}
+#panel h2{margin:0 0 7px;font-size:13px;font-weight:500;color:var(--bright)}
+#panel .row{display:flex;justify-content:space-between;gap:8px;padding:2.5px 0;font-size:11.5px}
+#panel .row b{color:var(--bright);font-weight:400}
+#panel .sec{margin-top:9px;padding-top:7px;border-top:1px solid var(--line);color:var(--dim);font-size:10.5px}
+#panel .tip{font-size:11px;margin-top:5px;line-height:1.45}
+#panel .hint{color:var(--dim);font-size:11px;line-height:1.55}
+.pill{display:inline-block;padding:1px 6px;border-radius:8px;font-size:10px;font-family:var(--mono)}
+
+#bench{position:absolute;left:0;right:0;bottom:0;height:72px;border-top:1px solid var(--line);
+  background:var(--s1);display:flex;align-items:center;gap:13px;padding:0 13px;overflow-x:auto}
+.ctrl{display:flex;flex-direction:column;gap:3px;min-width:96px}
+.ctrl-top{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+.ctrl-lbl{font-size:10.5px}
+.ctrl-val{color:var(--bright);font-size:11.5px}
+input[type=range]{appearance:none;-webkit-appearance:none;width:100%;height:13px;background:none;cursor:pointer;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:3px;background:var(--s3);border-radius:2px}
+input[type=range]::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:11px;height:11px;
+  margin-top:-4px;border-radius:50%;background:var(--mag);border:0}
+input[type=range]::-moz-range-track{height:3px;background:var(--s3);border-radius:2px}
+input[type=range]::-moz-range-thumb{width:11px;height:11px;border:0;border-radius:50%;background:var(--mag)}
+input[type=range].drv::-webkit-slider-thumb{background:var(--amb)}
+input[type=range].drv::-moz-range-thumb{background:var(--amb)}
+input[type=range]:focus-visible{outline:1px solid var(--cy);outline-offset:3px}
+button.b{appearance:none;background:var(--s2);border:1px solid var(--line2);color:var(--txt);
+  border-radius:3px;padding:6px 10px;font-family:var(--sans);font-size:11.5px;cursor:pointer;
+  transition:all 150ms ease;white-space:nowrap}
+button.b:hover{color:var(--bright);border-color:var(--cy)}
+button.b:active{transform:scale(.97)}
+button.b:focus-visible{outline:1px solid var(--cy);outline-offset:1px}
+button.b.on{background:var(--cy);border-color:var(--cy);color:var(--bg)}
+.sep{width:1px;height:38px;background:var(--line);flex:0 0 auto}
+.grp{display:flex;gap:5px;align-items:center;flex:0 0 auto}
+.lbl{color:var(--dim);font-size:10px;margin-right:2px}
+
+#ov{position:absolute;inset:0;background:rgba(4,4,10,.86);display:none;overflow:auto;padding:26px}
+#ov.on{display:block}
+#ovCard{max-width:920px;margin:0 auto;background:var(--s1);border:1px solid var(--line2);
+  border-radius:6px;padding:20px 22px;position:relative}
+#ovCard h2{margin:0 0 4px;color:var(--bright);font-size:16px;font-weight:500}
+#ovCard p{margin:0 0 12px;color:var(--dim);font-size:12px;line-height:1.6}
+#ovCard table{border-collapse:collapse;width:100%;font-size:11.5px;margin-bottom:14px}
+#ovCard th{text-align:left;color:var(--dim);font-weight:400;font-size:10.5px;padding:4px 8px 4px 0;
+  border-bottom:1px solid var(--line)}
+#ovCard td{padding:4px 8px 4px 0;border-bottom:1px solid var(--line);color:var(--txt)}
+textarea{width:100%;height:330px;background:#07071a;color:#9be0a0;border:1px solid var(--line2);
+  border-radius:5px;padding:10px;font-family:var(--mono);font-size:10.5px;line-height:1.45;resize:vertical}
+#dead{position:absolute;inset:0;background:rgba(6,6,15,.76);display:none;align-items:center;justify-content:center}
+#dead.on{display:flex}
+#dead .card{background:var(--s1);border:1px solid var(--red);border-radius:5px;padding:20px 24px;max-width:440px}
+#dead h2{margin:0 0 6px;color:var(--red);font-size:17px;font-weight:500}
+#dead p{margin:0 0 14px;line-height:1.55;font-size:12.5px}
+@media (prefers-reduced-motion:reduce){*{transition-duration:0ms!important}}
+</style>
+</head>
+<body>
+<div id="stage">
+  <svg id="net" preserveAspectRatio="xMidYMid meet"></svg>
+
+  <div id="graphBox">
+    <div class="hd"><span class="ttl">levels over time</span><span id="gKeys"></span></div>
+    <canvas id="graph"></canvas>
+  </div>
+
+  <aside id="panel"></aside>
+
+  <div id="bench"></div>
+
+  <div id="ov"><div id="ovCard"></div></div>
+  <div id="dead"><div class="card">
+    <h2 id="deadTitle">event</h2><p id="deadWhy"></p>
+    <button class="b" id="deadReset">start again</button>
+  </div></div>
+</div>
+
+<script>
+/* ===========================================================================
+   GDMT reservoir board.
+
+   Three things this fixes from the previous version, and they are the reason
+   the numbers can be trusted at all:
+
+   1. Conduits act on DEVIATION FROM A REFERENCE STATE. A conduit contributes
+      w * (source - source.ref) / (source.hi - source.lo), and w is expressed in
+      the TARGET's own display units. So at the reference state every conduit
+      contributes exactly zero, `ref` really is the resting value it claims to
+      be, and a weight reads directly as "this drug at target dose moves that
+      variable by this much". Both of those make the weights fittable to trial
+      deltas and make LLM edits safe.
+
+   2. Hidden reservoirs carry the indirect actions. Drugs mostly do not touch
+      the labs directly; they move a hidden intermediary which moves the labs.
+      That is where the interesting behaviour lives: neurohormonal drive is what
+      retains sodium, so it is the only thing that can make a patient congested,
+      and it is why RAAS inhibition raises potassium rather than lowering it.
+
+   3. dt is FIXED and substepped. The speed control changes how many steps run
+      per frame, never the step size, so the physics cannot depend on the slider.
+
+   Not validated for clinical use. Weights carry a `src` field naming where each
+   came from; `guess` means nobody has checked it.
+   =========================================================================== */
+
+var MODEL = {
+  meta: {
+    name: "GDMT HFrEF reservoir board",
+    version: "6.0",
+    time_unit: "days",
+    physics:
+      "eq_eff(T) = ref(T) + SUM over conduits into T of  w * dev(source) * mult, " +
+      "where dev(x) = (x - ref_x)/(hi_x - lo_x) in [-1,1] and w is in T's own units. " +
+      "mult comes from modulators: mult = clamp(1 + coef*dev(mod_source), 0.1, 3). " +
+      "Each reservoir springs toward eq_eff at rate 1/tau_days. Tipping points need " +
+      "DWELL days past a threshold to latch and release only past a hysteresis margin. " +
+      "Therapies are prescriptions: they hold at the prescribed dose and do not spring.",
+    llm_instructions:
+      "Weights are in the TARGET reservoir's display units, at full deviation of the " +
+      "source. So arni->sbp w:-9 means 'ARNI at 100% of target dose lowers the SBP " +
+      "equilibrium by 9 mmHg'. Keep every `ref` equal to the drug-naive resting value; " +
+      "the invariant is that with all therapies at 0 and drivers at their ref, nothing " +
+      "moves. Prefer routing a drug effect through a hidden reservoir over adding a " +
+      "direct arrow to a lab. Check the reachability panel after editing: a threshold " +
+      "outside its variable's reachable range can never fire."
+  },
+
+  reservoirs: {
+    /* ---- therapies: the only things the clinician touches ---- */
+    arni:     {label:"ARNI",        unit:"%tgt", lo:0,hi:100, ref:0, group:"rx", color:"#ff2d78", tau:null},
+    bb:       {label:"Beta-blocker",unit:"%tgt", lo:0,hi:100, ref:0, group:"rx", color:"#ff2d78", tau:null},
+    mra:      {label:"MRA",         unit:"%tgt", lo:0,hi:100, ref:0, group:"rx", color:"#ff2d78", tau:null},
+    sglt2i:   {label:"SGLT2i",      unit:"%tgt", lo:0,hi:100, ref:0, group:"rx", color:"#ff2d78", tau:null},
+    diuretic: {label:"Loop diuretic",unit:"%tgt",lo:0,hi:100, ref:0, group:"rx", color:"#ff2d78", tau:null},
+
+    /* ---- disease drivers: what makes the patient worse ---- */
+    hfact:  {label:"HF activity", unit:"", lo:0,hi:100, ref:45, group:"drv", color:"#ffb020", tau:null,
+             note:"Disease process independent of treatment. Without a driver the model is monotone in dose and nothing bad can ever happen."},
+    naload: {label:"Na / fluid load", unit:"", lo:0,hi:100, ref:40, group:"drv", color:"#ffb020", tau:null,
+             note:"Diet and adherence. The other way a patient becomes congested."},
+
+    /* ---- hidden reservoirs: the indirect actors ---- */
+    neuro:    {label:"Neurohormonal drive", unit:"", lo:0,hi:100, ref:55, group:"hid", color:"#9b6dff", tau:3,
+               note:"Sympathetic and RAAS activation. The hub: it retains sodium, wastes potassium, drives remodelling, and is what three of the four pillars actually treat."},
+    fibrosis: {label:"Remodelling substrate", unit:"", lo:0,hi:100, ref:60, group:"hid", color:"#9b6dff", tau:120,
+               note:"Interstitial fibrosis and chamber geometry. Slow. This is why ejection fraction takes months to move and cannot be rushed."},
+    renalres: {label:"Renal reserve", unit:"", lo:0,hi:100, ref:70, group:"hid", color:"#9b6dff", tau:400,
+               note:"Nephron reserve. Does not move much, but it sets how violently potassium and creatinine respond to the same dose."},
+    congest:  {label:"Venous congestion", unit:"", lo:0,hi:100, ref:45, group:"hid", color:"#9b6dff", tau:2.5,
+               note:"Filling pressure rather than total volume. Drives natriuretic peptide and congests the kidney, which is why diuresing a wet patient can improve creatinine."},
+
+    /* ---- observables: what you actually measure ---- */
+    sbp:    {label:"SBP",        unit:"mmHg",  lo:60, hi:200,  ref:128, group:"obs", color:"#fb923c", tau:0.3,
+             critical:{below:70, grace:1.0, mode:"cardiogenic shock"}},
+    hr:     {label:"Heart rate", unit:"bpm",   lo:40, hi:150,  ref:82,  group:"obs", color:"#f472b6", tau:0.25},
+    ef:     {label:"LVEF",       unit:"%",     lo:5,  hi:65,   ref:28,  group:"obs", color:"#34d399", tau:90},
+    volume: {label:"Volume",     unit:"%euv",  lo:60, hi:140,  ref:104, group:"obs", color:"#60a5fa", tau:1.5},
+    cr:     {label:"Creatinine", unit:"mg/dL", lo:0.5,hi:5.0,  ref:1.1, group:"obs", color:"#fca5a5", tau:1.0},
+    k:      {label:"Potassium",  unit:"mEq/L", lo:2.5,hi:7.0,  ref:4.2, group:"obs", color:"#d8b4fe", tau:0.5,
+             critical:{above:6.0, grace:1.5, mode:"malignant arrhythmia"}},
+    bnp:    {label:"NT-proBNP",  unit:"pg/mL", lo:50, hi:5000, ref:1800,group:"obs", color:"#fdba74", tau:5}
+  },
+
+  /* Weights are in the TARGET's units, at full deviation of the source. */
+  conduits: [
+    /* ARNI */
+    {id:"arni_neuro",  from:"arni",  to:"neuro",   w:-11,   src:"mechanism", mech:"Neprilysin inhibition plus AT1 blockade: the main action is on the hidden hub, not on any lab"},
+    {id:"arni_sbp",    from:"arni",  to:"sbp",     w:-8,    src:"PARADIGM-HF (-3.2 mmHg vs enalapril at 8 mo; larger from a RAASi-naive baseline)", mech:"Afterload reduction"},
+    {id:"arni_vol",    from:"arni",  to:"volume",  w:-4,    src:"guess", mech:"Natriuresis from preserved natriuretic peptides"},
+    {id:"arni_k",      from:"arni",  to:"k",       w:0.15,  src:"guess (most of the effect routes via neuro)", mech:"Direct aldosterone-independent component"},
+    {id:"arni_cr",     from:"arni",  to:"cr",      w:0.08,  src:"guess", mech:"Efferent arteriolar dilation drops filtration pressure"},
+    {id:"arni_fib",    from:"arni",  to:"fibrosis",w:-10,   src:"PROVE-HF remodelling", mech:"Anti-remodelling beyond load reduction"},
+
+    /* Beta-blocker */
+    {id:"bb_hr",       from:"bb",    to:"hr",      w:-11,   src:"CIBIS-II / MERIT-HF magnitude", mech:"Beta-1 blockade"},
+    {id:"bb_neuro",    from:"bb",    to:"neuro",   w:-10,   src:"mechanism", mech:"Blunts the sympathetic limb of the hub"},
+    {id:"bb_sbp",      from:"bb",    to:"sbp",     w:-5,    src:"guess", mech:"Reduced cardiac output and renin release"},
+
+    /* MRA */
+    {id:"mra_k",       from:"mra",   to:"k",       w:0.25,  src:"EMPHASIS-HF (+0.1 to 0.2 mEq/L); RALES (+0.30)", mech:"Blocks distal potassium excretion"},
+    {id:"mra_cr",      from:"mra",   to:"cr",      w:0.08,  src:"EMPHASIS-HF (0.15 vs 0.07 on placebo at 1 mo)", mech:"Haemodynamic drop in filtration"},
+    {id:"mra_fib",     from:"mra",   to:"fibrosis",w:-16,   src:"mechanism", mech:"Anti-fibrotic; the slow route to a better ejection fraction"},
+    {id:"mra_neuro",   from:"mra",   to:"neuro",   w:-5,   src:"mechanism", mech:"Aldosterone escape blocked"},
+    {id:"mra_vol",     from:"mra",   to:"volume",  w:-3,    src:"guess", mech:"Weak natriuresis"},
+
+    /* SGLT2 inhibitor */
+    {id:"sg_vol",      from:"sglt2i",to:"volume",  w:-5,    src:"guess", mech:"Osmotic diuresis"},
+    {id:"sg_cong",     from:"sglt2i",to:"congest", w:-9,    src:"guess", mech:"Preferential interstitial decongestion"},
+    {id:"sg_cr",       from:"sglt2i",to:"cr",      w:0.10,  src:"DAPA-HF eGFR dip direction", mech:"Initial tubuloglomerular feedback dip"},
+    {id:"sg_ren",      from:"sglt2i",to:"renalres",w:16,     src:"DAPA-HF renal slope direction", mech:"Long-run nephron protection; opposite sign to the initial dip, on a much slower clock"},
+    {id:"sg_sbp",      from:"sglt2i",to:"sbp",     w:-3,    src:"guess", mech:"Mild volume and arterial effect"},
+    {id:"sg_bnp",      from:"sglt2i",to:"bnp",     w:-180,  src:"guess", mech:"Residual effect not carried by congestion"},
+
+    /* Loop diuretic */
+    {id:"di_vol",      from:"diuretic",to:"volume",w:-20,   src:"guess", mech:"Loop natriuresis"},
+    {id:"di_cong",     from:"diuretic",to:"congest",w:-26,  src:"guess", mech:"Decongestion, the symptomatic benefit"},
+    {id:"di_k",        from:"diuretic",to:"k",     w:-0.75, src:"guess", mech:"Kaliuresis"},
+    {id:"di_cr",       from:"diuretic",to:"cr",    w:0.55,  src:"guess", mech:"Prerenal, once you go past euvolaemia"},
+    {id:"di_neuro",    from:"diuretic",to:"neuro", w:12,    src:"mechanism", mech:"Loop diuretics ACTIVATE renin-angiotensin. The one arrow in here that makes a drug harmful through the hidden hub"},
+
+    /* Disease drivers */
+    {id:"hf_neuro",    from:"hfact", to:"neuro",   w:55,    src:"structural", mech:"Disease activity drives the hub"},
+    {id:"hf_fib",      from:"hfact", to:"fibrosis",w:40,    src:"structural", mech:"Ongoing remodelling"},
+    {id:"na_vol",      from:"naload",to:"volume",  w:45,    src:"structural", mech:"Dietary sodium and fluid"},
+
+    /* Hidden to observable: the indirect actions */
+    {id:"nu_hr",       from:"neuro", to:"hr",      w:14,    src:"mechanism", mech:"Sympathetic chronotropy"},
+    {id:"nu_sbp",      from:"neuro", to:"sbp",     w:10,    src:"mechanism", mech:"Vasoconstriction"},
+    {id:"nu_vol",      from:"neuro", to:"volume",  w:26,    src:"mechanism", mech:"Sodium and water retention. This is the ONLY arrow that can make a patient congested, and without it volume can only fall"},
+    {id:"nu_k",        from:"neuro", to:"k",       w:-0.75, src:"mechanism", mech:"Aldosterone wastes potassium, so suppressing the hub RAISES it. This is why ARNI and MRA together are more than additive"},
+    {id:"nu_fib",      from:"neuro", to:"fibrosis",w:34,    src:"mechanism", mech:"Neurohormonal drive remodels the ventricle"},
+    {id:"nu_ren",      from:"neuro", to:"renalres",w:-14,    src:"mechanism", mech:"Slow nephron attrition"},
+    {id:"fib_ef",      from:"fibrosis",to:"ef",    w:-30,   src:"PROVE-HF: +9.4 EF points at 12 mo, +5.2 at 6", mech:"The substrate sets the ejection fraction, on a 120-day clock"},
+    {id:"vol_cong",    from:"volume",to:"congest", w:42,    src:"structural", mech:"Total volume raises filling pressure"},
+    {id:"vol_sbp",     from:"volume",to:"sbp",     w:20,    src:"structural", mech:"Starling"},
+    {id:"cong_bnp",    from:"congest",to:"bnp",    w:3400,  src:"structural, checked: ARNI incremental over a beta-blocker gives -19% NT-proBNP here, against roughly -25 to -30% vs enalapril in PARADIGM-HF. Slightly conservative, and note the trial comparator was an active ACE inhibitor while this one is a beta-blocker alone", mech:"Wall stress is what the peptide measures. There is deliberately NO direct drug arrow to NT-proBNP: neprilysin inhibition degrades BNP but not NT-proBNP, which is exactly why the trials track the N-terminal fragment, so the whole ARNI effect here has to arrive through falling wall stress"},
+    {id:"cong_cr",     from:"congest",to:"cr",     w:1.1,  src:"cardio-renal literature", mech:"Renal venous congestion. Why diuresing a wet patient can IMPROVE creatinine"},
+    {id:"cong_ren",    from:"congest",to:"renalres",w:-12,   src:"guess", mech:"Chronic congestion damages the kidney"},
+    {id:"fib_cong",    from:"fibrosis",to:"congest",w:26,   src:"mechanism", mech:"A stiff remodelled ventricle reaches a higher filling pressure at the same volume"},
+    {id:"ef_cong",     from:"ef",    to:"congest", w:-18,   src:"mechanism", mech:"Better emptying lowers filling pressure"},
+    {id:"ef_sbp",      from:"ef",    to:"sbp",     w:20,     src:"structural", mech:"Stroke volume"},
+    {id:"ef_neuro",    from:"ef",    to:"neuro",   w:-18,   src:"mechanism", mech:"Better output quiets the hub. The negative feedback loop that makes recovery self-sustaining"},
+    {id:"ef_bnp",      from:"ef",    to:"bnp",     w:-700,  src:"guess", mech:"Residual, beyond congestion"},
+    {id:"cr_k",        from:"cr",    to:"k",       w:1.6,   src:"mechanism", mech:"Impaired excretion. Absent from the previous model, and the single most important interaction in titration"},
+    {id:"ren_cr",      from:"renalres",to:"cr",    w:-3.2,  src:"structural", mech:"Reserve sets baseline clearance"}
+  ],
+
+  /* Modulators move nothing. They scale a named conduit's weight. */
+  modulators: [
+    {id:"m_ren_mrak", from:"renalres", edge:"mra_k",  coef:-1.8,
+     src:"EMPHASIS-HF: K>5.5 in 16.6% with CKD vs 9.3% placebo, and rates rise as renal function falls",
+     mech:"A worse kidney makes the same MRA dose far more hyperkalaemic"},
+    {id:"m_ren_arnik",from:"renalres", edge:"arni_k", coef:-1.0, src:"same direction as above",
+     mech:"Same amplification for the ARNI potassium effect"},
+    {id:"m_ren_dicr", from:"renalres", edge:"di_cr",  coef:-1.2, src:"guess",
+     mech:"Low reserve makes diuretic-induced creatinine rise steeper"},
+    {id:"m_cong_divol",from:"congest", edge:"di_vol", coef:0.6,  src:"guess",
+     mech:"A congested patient has more to give to a loop diuretic"},
+    {id:"m_ef_arnisbp",from:"ef",      edge:"arni_sbp",coef:0.5, src:"PARADIGM-HF low-SBP subgroup",
+     mech:"The lower the ejection fraction, the more a vasodilator costs in pressure"}
+  ],
+
+  /* Two kinds, kept apart on purpose. */
+  tipping_points: [
+    {id:"cardiorenal", kind:"physiology", key:"congest", op:">", val:70, dwell:2.0, hyst:6,
+     label:"Diuretic resistance", effects:{edge:{di_vol:0.45, di_cong:0.55}, eq:{cr:0.4}},
+     desc:"Sustained congestion blunts the loop response and congests the kidney further"},
+    {id:"lowoutput", kind:"physiology", key:"sbp", op:"<", val:85, dwell:0.5, hyst:5,
+     label:"Low-output spiral", effects:{eq:{ef:-6, neuro:15}},
+     desc:"Below the autoregulatory floor, poor perfusion begets poor perfusion"},
+    {id:"hyperK_rx", kind:"protocol", key:"k", op:">", val:5.5, dwell:0.4, hyst:0.25,
+     label:"Hold K-sparing", effects:{dose:{mra:-40, arni:-15}},
+     desc:"Guideline reflex: back off MRA, then ARNI, and recheck"},
+    {id:"aki_rx", kind:"protocol", key:"cr", op:">", val:2.5, dwell:0.5, hyst:0.2,
+     label:"Hold for AKI", effects:{dose:{mra:-35, arni:-20, diuretic:-25}},
+     desc:"Guideline reflex on worsening renal function"},
+    {id:"hypotn_rx", kind:"protocol", key:"sbp", op:"<", val:90, dwell:0.4, hyst:6,
+     label:"Hold vasodilators", effects:{dose:{arni:-25, bb:-15}},
+     desc:"Guideline reflex on symptomatic hypotension"},
+    {id:"brady_rx", kind:"protocol", key:"hr", op:"<", val:55, dwell:0.4, hyst:5,
+     label:"Reduce beta-blocker", effects:{dose:{bb:-30}},
+     desc:"Guideline reflex on bradycardia"},
+    {id:"congest_rx", kind:"protocol", key:"congest", op:">", val:65, dwell:1.0, hyst:6,
+     label:"Ramp diuresis", effects:{dose:{diuretic:22}},
+     desc:"Guideline reflex on clinical congestion"},
+    {id:"hypoK_rx", kind:"protocol", key:"k", op:"<", val:3.5, dwell:0.5, hyst:0.2,
+     label:"Reduce K-wasting", effects:{dose:{diuretic:-25}},
+     desc:"Guideline reflex on hypokalaemia"}
+  ],
+
+  /* Annualised hazard of CV death or HF hospitalisation, built from the state. */
+  outcome: {
+    h0: 0.1078,
+    fit: "b_* are the declared ratios scaled by 5.70, fitted to the four hazard-ratio anchors below (one free parameter, four targets, rmse 0.070). h0 is separate and only sets the absolute level: it puts untreated annual risk near 28%.",
+    known_limitation: "ONE composite hazard, split 35/65 into cardiovascular death and heart failure admission. The trials report DIFFERENT hazard ratios for the two (0.50 for death, 0.32 for admission), meaning treatment reduces admissions considerably more than it reduces death. A single hazard with a fixed split cannot reproduce that, and measured over 3 years this model gives about 0.46 for death and 0.56 for first admission. Fixing it needs two hazards with separate coefficient vectors, admission weighted toward congestion and death toward ejection fraction and neurohormonal drive.",
+    unfitted: "Every anchor is a drug ADDED TO a beta-blocker, so beta-blocker versus nothing was never fitted and the model under-credits it: 33% versus 38% three-year cardiovascular death where the trials imply far more benefit.",
+    b_ef:      0.4845,
+    b_bnp:     0.6555,
+    b_congest: 0.4845,
+    b_neuro:   0.3990,
+    b_sbp:     0.3135,
+    b_k:       0.2565,
+    b_cr:      0.3420,
+    anchors: [
+      {id:"comprehensive", label:"Four pillars vs beta-blocker alone",
+       target:0.38, ci:"0.30-0.47",
+       src:"Vaduganathan 2020 Lancet, cross-trial: HR 0.38 for CV death or HF admission vs ACEi/ARB + BB",
+       a:{bb:100}, b:{arni:100,bb:100,mra:100,sglt2i:100}},
+      {id:"arni_alone", label:"ARNI added to a beta-blocker",
+       target:0.80, ci:"0.73-0.87",
+       src:"PARADIGM-HF primary composite HR 0.80 vs enalapril",
+       a:{bb:100}, b:{arni:100,bb:100}},
+      {id:"mra_alone", label:"MRA added to a beta-blocker",
+       target:0.63, ci:"0.54-0.74",
+       src:"EMPHASIS-HF primary composite. FROM MEMORY, not verified in build - check before trusting",
+       a:{bb:100}, b:{bb:100,mra:100}},
+      {id:"sglt2i_alone", label:"SGLT2i added to a beta-blocker",
+       target:0.74, ci:"0.65-0.85",
+       src:"DAPA-HF primary composite. FROM MEMORY, not verified in build - check before trusting",
+       a:{bb:100}, b:{bb:100,sglt2i:100}}
+    ]
+  },
+
+  /* Characteristics, not states. Baseline pressure, renal reserve and how much
+     remodelling has already happened differ between people and cannot be
+     reached by any dose, so they belong here and not in the conduit graph. */
+  patient: {sbp_ref:128, hr_ref:82, renalres0:70, fibrosis0:60},
+
+  noise: {sbp:1.6, hr:1.2, k:0.045, cr:0.030, volume:0.9, bnp:26, congest:0.7,
+          neuro:0.6, ef:0.05, fibrosis:0.10, renalres:0.04, tau:1.2},
+
+  scenarios: [
+    {id:"naive", label:"Newly diagnosed, drug naive",
+     note:"The reference state. Nothing moves until you change something.",
+     rx:{}, drv:{hfact:45, naload:40}},
+    {id:"congested", label:"Congested on diuretic alone", pt:{sbp_ref:118, hr_ref:92, renalres0:58, fibrosis0:74},
+     note:"Wet, symptomatic, no disease-modifying therapy. The common starting point.",
+     rx:{diuretic:55}, drv:{hfact:62, naload:70},
+     lv:{volume:126, congest:74, bnp:3200, neuro:78, k:3.9, cr:1.4}},
+    {id:"ckd", label:"Low renal reserve", pt:{sbp_ref:126, hr_ref:80, renalres0:28, fibrosis0:62},
+     note:"Same disease, worse kidney. Watch what the same MRA dose does to potassium.",
+     rx:{diuretic:45}, drv:{hfact:52, naload:45},
+     lv:{renalres:32, cr:1.9, k:4.7}},
+    {id:"lowbp", label:"Marginal blood pressure", pt:{sbp_ref:102, hr_ref:70, renalres0:62, fibrosis0:82},
+     note:"SBP 98 at baseline. Titration is limited by pressure, not by potassium.",
+     rx:{diuretic:35, bb:25}, drv:{hfact:55, naload:40},
+     lv:{sbp:98, ef:20, neuro:70}},
+    {id:"optimised", label:"Fully optimised",
+     note:"All four pillars at target dose, three months in. For comparison.",
+     rx:{arni:100, bb:100, mra:100, sglt2i:100, diuretic:20}, drv:{hfact:45, naload:40},
+     lv:{ef:40, fibrosis:32, neuro:30, congest:28, bnp:700, volume:92}}
+  ]
+};
+
+/* ======================== engine ======================== */
+
+var DT = 0.01;            /* days. Fixed. Never touched by the speed control. */
+var S = {}, TIP = {}, EDGE = {}, MOD = {}, ou = {};
+var st = {t:0, running:true, speed:2, dead:false, cause:"", sel:null, hover:null,
+          hist:[], events:[], traces:["ef","bnp","k","congest","neuro","sbp"], win:60,
+          autoTip:true, deficit:{}, riskNow:0, focus:true};
+
+var R = MODEL.reservoirs;
+var IDS = Object.keys(R);
+var clamp = function(v,a,b){return v<a?a:v>b?b:v;};
+var lerp = function(a,b,u){return a+(b-a)*u;};
+var dev = function(k,v){return clamp((v-R[k].ref)/(R[k].hi-R[k].lo), -1, 1);};
+
+function applyPatient(pt){
+  var q = pt || MODEL.patient;
+  R.sbp.ref = q.sbp_ref;
+  R.hr.ref = q.hr_ref;
+}
+
+function initState(){
+  applyPatient();
+  /* Mutate in place rather than reassigning. Reassigning S leaves any captured
+     reference pointing at a dead object, which is a whole class of silent bug. */
+  for (var old in S) delete S[old];
+  for (var o2 in TIP) delete TIP[o2];
+  for (var o3 in EDGE) delete EDGE[o3];
+  for (var o4 in MOD) delete MOD[o4];
+  for (var o5 in ou) delete ou[o5];
+  st.t = 0; st.dead = false; st.hist = []; st.events = []; st.deficit = {};
+  st.admissions = 0; st.firstAdm = null; st.refract = 0; st.cause = "";
+  IDS.forEach(function(k){ S[k] = R[k].ref; });
+  S.renalres = MODEL.patient.renalres0;
+  S.fibrosis = MODEL.patient.fibrosis0;
+  MODEL.tipping_points.forEach(function(tp){ TIP[tp.id] = {on:false, hold:0}; });
+  MODEL.conduits.forEach(function(c){ EDGE[c.id] = {flux:0, mult:1, w:c.w}; });
+  MODEL.modulators.forEach(function(m){ MOD[m.id] = {mult:1}; });
+  IDS.forEach(function(k){ if(R[k].critical) st.deficit[k] = 0; });
+  IDS.forEach(function(k){ ou[k] = 0; });
+}
+
+/* Edge weights after modulators and after any latched tipping point. */
+function resolveEdges(){
+  MODEL.conduits.forEach(function(c){ EDGE[c.id].mult = 1; EDGE[c.id].w = c.w; });
+  MODEL.modulators.forEach(function(m){
+    var f = clamp(1 + m.coef * dev(m.from, S[m.from]), 0.1, 3);
+    MOD[m.id].mult = f;
+    if (EDGE[m.edge]) EDGE[m.edge].mult *= f;
+  });
+  MODEL.tipping_points.forEach(function(tp){
+    if (!TIP[tp.id].on || !tp.effects.edge) return;
+    for (var e in tp.effects.edge) if (EDGE[e]) EDGE[e].mult *= tp.effects.edge[e];
+  });
+  MODEL.conduits.forEach(function(c){ EDGE[c.id].w = c.w * EDGE[c.id].mult; });
+}
+
+function effEq(key){
+  var e = R[key].ref;
+  MODEL.conduits.forEach(function(c){
+    if (c.to !== key) return;
+    var contrib = EDGE[c.id].w * dev(c.from, S[c.from]);
+    EDGE[c.id].flux = contrib;
+    e += contrib;
+  });
+  MODEL.tipping_points.forEach(function(tp){
+    if (TIP[tp.id].on && tp.effects.eq && tp.effects.eq[key] !== undefined)
+      e += tp.effects.eq[key];
+  });
+  return e;
+}
+
+function tipCondition(tp){
+  var v = S[tp.key];
+  return tp.op === "<" ? v < tp.val : v > tp.val;
+}
+
+function step(dt){
+  resolveEdges();
+
+  /* tipping points: dwell to latch, hysteresis to release */
+  MODEL.tipping_points.forEach(function(tp){
+    var s = TIP[tp.id], v = S[tp.key];
+    if (s.on){
+      var clear = tp.op === "<" ? v > tp.val + tp.hyst : v < tp.val - tp.hyst;
+      if (clear){ s.on = false; s.hold = 0; logEvent(tp.label + " released", "tip"); }
+    } else if (tipCondition(tp)){
+      s.hold += dt;
+      if (s.hold >= tp.dwell){ s.on = true; logEvent(tp.label + " engaged", "tip"); }
+    } else {
+      s.hold = Math.max(0, s.hold - dt * 1.5);
+    }
+  });
+
+  /* protocol reflexes act on prescribed dose, at a bounded rate per day */
+  if (st.autoTip) MODEL.tipping_points.forEach(function(tp){
+    if (!TIP[tp.id].on || !tp.effects.dose) return;
+    for (var d in tp.effects.dose)
+      S[d] = clamp(S[d] + tp.effects.dose[d] * dt, 0, 100);
+  });
+
+  /* spring to effective equilibrium, with correlated noise on the RATE so the
+     clamps cannot rectify it into a one-sided force */
+  var nz = MODEL.noise;
+  IDS.forEach(function(k){
+    var r = R[k];
+    if (r.tau === null) return;                      /* therapies and drivers are held */
+    var eq = effEq(k);
+    var rate = (eq - S[k]) / r.tau;
+    if (nz[k]){
+      ou[k] += (-ou[k] / nz.tau) * dt + nz[k] * Math.sqrt(dt) * (Math.random()*2-1) * 1.7;
+      rate += ou[k];
+    }
+    S[k] = clamp(S[k] + rate * dt, r.lo, r.hi);
+    r._rate = rate;
+  });
+
+  /* life-critical deficits */
+  var worst = null;
+  IDS.forEach(function(k){
+    var c = R[k].critical; if (!c) return;
+    var bad = c.above !== undefined ? S[k] > c.above : S[k] < c.below;
+    st.deficit[k] = Math.max(0, st.deficit[k] + (bad ? dt : -dt * 0.5));
+    if (!worst || st.deficit[k] / c.grace > st.deficit[worst] / R[worst].critical.grace) worst = k;
+  });
+  if (worst && st.deficit[worst] >= R[worst].critical.grace && !st.dead) die(worst);
+
+  st.riskNow = riskOf(S);
+
+  /* The outcome layer has to be consequential or it is decoration. Draw against
+     the calibrated hazard each step. About a third of events are cardiovascular
+     death, matching the ratio of the two published hazard ratios (0.50 for CV
+     death, 0.32 for admission); the rest are admissions, which are survivable,
+     treated, and leave the patient a little worse than before. */
+  st.refract = Math.max(0, (st.refract || 0) - dt);
+  if (!st.dead && st.riskNow > 0){
+    var hDay = -Math.log(1 - Math.min(st.riskNow, 0.995)) / 365;
+    if (Math.random() < 1 - Math.exp(-hDay * dt)){
+      if (Math.random() < 0.35) cvDeath();
+      else if (st.refract <= 0) admit();
+    }
+  }
+  st.t += dt;
+}
+
+function cvDeath(){
+  st.dead = true; st.running = false;
+  st.cause = "Cardiovascular death, drawn against an annualised risk of " +
+    (st.riskNow*100).toFixed(0) + "% at the time. " +
+    (st.admissions ? "There had been " + st.admissions + " admission" +
+      (st.admissions > 1 ? "s" : "") + " first. " : "") +
+    "This is a draw from a calibrated curve, not a prediction about this run.";
+  document.getElementById("deadTitle").textContent = "cardiovascular death";
+  document.getElementById("deadWhy").textContent = st.cause;
+  document.getElementById("dead").classList.add("on");
+}
+
+function admit(){
+  /* An admission needs a refractory interval and a bounded cost. Without the
+     interval the same patient re-draws the next step; without the bound, each
+     admission adds substrate, which raises risk, which makes the next admission
+     likelier, and the count runs away. The trials report time to FIRST
+     admission, so that is what `firstAdm` records. */
+  st.admissions = (st.admissions || 0) + 1;
+  if (st.firstAdm === null || st.firstAdm === undefined) st.firstAdm = st.t;
+  st.refract = 45;
+  S.congest = clamp(S.congest - 22, R.congest.lo, R.congest.hi);
+  S.volume  = clamp(S.volume - 12, R.volume.lo, R.volume.hi);
+  S.diuretic = clamp(S.diuretic + 25, 0, 100);
+  /* capped: repeated admissions cost substrate, but cannot drive it to the wall */
+  S.fibrosis = clamp(Math.min(S.fibrosis + 1.5, R.fibrosis.ref + 20), R.fibrosis.lo, R.fibrosis.hi);
+  logEvent("admitted for heart failure (#" + st.admissions + ")", "adm");
+}
+
+/* annualised risk of CV death or HF hospitalisation */
+function riskOf(x){
+  var o = MODEL.outcome;
+  var lin = o.b_ef      * Math.max(0, 35 - x.ef) / 10
+          + o.b_bnp     * Math.max(0, Math.log(Math.max(x.bnp,50) / 900))
+          + o.b_congest * Math.max(0, x.congest - 40) / 20
+          + o.b_neuro   * Math.max(0, x.neuro - 45) / 20
+          + o.b_sbp     * Math.max(0, 100 - x.sbp) / 10
+          + o.b_k       * Math.max(0, Math.abs(x.k - 4.4) - 0.6)
+          + o.b_cr      * Math.max(0, x.cr - 1.4);
+  var h = o.h0 * Math.exp(lin);
+  return 1 - Math.exp(-h);
+}
+
+function die(k){
+  st.dead = true; st.running = false;
+  var engaged = MODEL.tipping_points.filter(function(tp){return TIP[tp.id].on;})
+    .map(function(tp){return tp.label;});
+  st.cause = R[k].label + " stayed past " +
+    (R[k].critical.above !== undefined ? "above " + R[k].critical.above : "below " + R[k].critical.below) +
+    " for " + R[k].critical.grace + " days. " +
+    (engaged.length ? "Engaged at the time: " + engaged.join(", ") + "." : "No tipping point was engaged.");
+  document.getElementById("deadTitle").textContent = R[k].critical.mode;
+  document.getElementById("deadWhy").textContent = st.cause;
+  document.getElementById("dead").classList.add("on");
+}
+
+function logEvent(label, kind){
+  st.events.push({t:st.t, label:label, kind:kind});
+  if (st.events.length > 400) st.events.splice(0, 120);
+  var l = document.getElementById("logLine");
+  if (l) l.textContent = "day " + st.t.toFixed(1) + " — " + label;
+}
+
+/* settle a hypothetical, no noise, for calibration and reachability */
+function settle(over, days, pt){
+  var sbpRefSave = R.sbp.ref;
+  if (pt) applyPatient(pt);
+  var save = {}, saveTip = {};
+  IDS.forEach(function(k){ save[k] = S[k]; });
+  MODEL.tipping_points.forEach(function(tp){ saveTip[tp.id] = {on:TIP[tp.id].on, hold:TIP[tp.id].hold}; });
+  var autos = st.autoTip;
+  st.autoTip = false;
+  IDS.forEach(function(k){ S[k] = R[k].ref; });
+  S.renalres = (pt ? pt.renalres0 : MODEL.patient.renalres0);
+  S.fibrosis = (pt ? pt.fibrosis0 : MODEL.patient.fibrosis0);
+  for (var key in over) if (S[key] !== undefined) S[key] = over[key];
+  MODEL.tipping_points.forEach(function(tp){ TIP[tp.id] = {on:false, hold:0}; });
+  var n = Math.round((days || 500) / 0.05);
+  for (var i = 0; i < n; i++){
+    resolveEdges();
+    MODEL.tipping_points.forEach(function(tp){
+      var s = TIP[tp.id], v = S[tp.key];
+      if (s.on){
+        var clear = tp.op === "<" ? v > tp.val + tp.hyst : v < tp.val - tp.hyst;
+        if (clear){ s.on = false; s.hold = 0; }
+      } else if (tipCondition(tp)){
+        s.hold += 0.05; if (s.hold >= tp.dwell) s.on = true;
+      } else s.hold = Math.max(0, s.hold - 0.075);
+    });
+    IDS.forEach(function(k){
+      if (R[k].tau === null) return;
+      S[k] = clamp(S[k] + (effEq(k) - S[k]) / R[k].tau * 0.05, R[k].lo, R[k].hi);
+    });
+  }
+  var out = {}; IDS.forEach(function(k){ out[k] = S[k]; });
+  IDS.forEach(function(k){ S[k] = save[k]; });
+  MODEL.tipping_points.forEach(function(tp){ TIP[tp.id] = saveTip[tp.id]; });
+  st.autoTip = autos;
+  R.sbp.ref = sbpRefSave;
+  return out;
+}
+
+/* Reachability: the audit that caught five dead thresholds, as a live feature. */
+function reachability(){
+  /* Extremes of the dose space crossed with the patient space, settled over a
+     titration window rather than to the infinite horizon, because the question
+     is whether a threshold can fire in a patient you might actually see. */
+  var ext = [0, 100], di = [0, 50, 100], drv = [30, 95];
+  var pts = [{sbp_ref:128, hr_ref:88, renalres0:70, fibrosis0:45},
+             {sbp_ref:128, hr_ref:82, renalres0:25, fibrosis0:60},
+             {sbp_ref:105, hr_ref:70, renalres0:70, fibrosis0:85},
+             {sbp_ref:105, hr_ref:68, renalres0:35, fibrosis0:85},
+             {sbp_ref:120, hr_ref:78, renalres0:15, fibrosis0:66}];
+  var reach = {}; IDS.forEach(function(k){ reach[k] = [Infinity, -Infinity]; });
+  var n = 0;
+  function rec(x){ n++; IDS.forEach(function(k){
+    reach[k][0] = Math.min(reach[k][0], x[k]); reach[k][1] = Math.max(reach[k][1], x[k]); }); }
+  var i0,i1,i2,i3,i4,j0,j1,q;
+  for (q of pts) for (i0 of ext) for (i1 of ext) for (i2 of ext) for (i3 of ext) for (i4 of di)
+    for (j0 of drv) for (j1 of drv)
+      rec(settle({arni:i0, bb:i1, mra:i2, sglt2i:i3, diuretic:i4, hfact:j0, naload:j1}, 70, q));
+  reachability.n = n;
+  return MODEL.tipping_points.map(function(tp){
+    var r = reach[tp.key];
+    var fires = tp.op === "<" ? r[0] < tp.val : r[1] > tp.val;
+    var margin = tp.op === "<" ? tp.val - r[0] : r[1] - tp.val;
+    return {tp:tp, lo:r[0], hi:r[1], fires:fires, margin:margin};
+  });
+}
+
+function calibrate(){
+  return MODEL.outcome.anchors.map(function(a){
+    var ra = riskOf(settle(Object.assign({}, a.a), 365));
+    var rb = riskOf(settle(Object.assign({}, a.b), 365));
+    var hr = Math.log(1 - rb) / Math.log(1 - ra);
+    return {a:a, hr:hr, riskA:ra, riskB:rb, err:hr - a.target};
+  });
+}
+
+/* ======================== layout ======================== */
+
+var SVGNS = "http://www.w3.org/2000/svg";
+function el(n, a){ var e = document.createElementNS(SVGNS, n);
+  for (var k in (a||{})) e.setAttribute(k, a[k]); return e; }
+var $ = function(id){ return document.getElementById(id); };
+
+var VW = 1180, VH = 660, G = {};
+var POS = {};
+function layout(){
+  var rx = ["arni","bb","mra","sglt2i","diuretic"];
+  rx.forEach(function(k,i){ POS[k] = {x:128 + i*168, y:72, r:31}; });
+  POS.hfact  = {x:990,  y:66, r:21};
+  POS.naload = {x:1088, y:66, r:21};
+  var hid = ["neuro","fibrosis","renalres","congest"];
+  hid.forEach(function(k,i){ POS[k] = {x:250 + i*228, y:288, r:25}; });
+  var obs = ["sbp","hr","ef","volume","cr","k","bnp"];
+  obs.forEach(function(k,i){ POS[k] = {x:112 + i*159, y:500, r:29}; });
+}
+
+function anchorPair(a, b){
+  var dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx,dy) || 1;
+  return [{x:a.x + dx/L*(a.r+2), y:a.y + dy/L*(a.r+2)},
+          {x:b.x - dx/L*(b.r+3), y:b.y - dy/L*(b.r+3)}];
+}
+
+function build(){
+  var svg = $("net");
+  svg.setAttribute("viewBox", "0 0 " + VW + " " + VH);
+  svg.innerHTML = "";
+  G = {nodes:[], edges:[], mods:[]};
+  var gE = el("g"), gD = el("g"), gM = el("g"), gN = el("g");
+  svg.append(gE, gD, gM, gN);
+
+  MODEL.conduits.forEach(function(c){
+    var a = POS[c.from], b = POS[c.to]; if (!a || !b) return;
+    var p = anchorPair(a,b);
+    var col = c.w < 0 ? "#00d4ff" : "#ff7a3d";
+    var line = el("line", {x1:p[0].x, y1:p[0].y, x2:p[1].x, y2:p[1].y,
+      stroke:col, "stroke-width":1.3, "stroke-opacity":0.14});
+    var hit = el("line", {x1:p[0].x, y1:p[0].y, x2:p[1].x, y2:p[1].y,
+      stroke:"transparent", "stroke-width":10, style:"cursor:pointer"});
+    hit.addEventListener("click", function(e){ e.stopPropagation(); select({edge:c}); });
+    hit.addEventListener("pointerenter", function(){ st.hover = {edge:c}; });
+    hit.addEventListener("pointerleave", function(){ st.hover = null; });
+    var dots = [0,1].map(function(){
+      var d = el("circle", {r:1.6, fill:col, opacity:0, cx:p[0].x, cy:p[0].y});
+      gD.appendChild(d); return d; });
+    gE.append(line, hit);
+    G.edges.push({c:c, line:line, dots:dots, p:p, phase:Math.random(), ref:0.001, col:col});
+  });
+
+  MODEL.modulators.forEach(function(m){
+    var a = POS[m.from], b = POS[EDGE_TARGET(m.edge)]; if (!a || !b) return;
+    var p = anchorPair(a,b);
+    var line = el("path", {d:bow(p[0], p[1], 26), fill:"none", stroke:"#9b6dff",
+      "stroke-width":1.2, "stroke-dasharray":"4 4", "stroke-opacity":0.3});
+    var hit = el("path", {d:bow(p[0], p[1], 26), fill:"none", stroke:"transparent",
+      "stroke-width":10, style:"cursor:pointer"});
+    hit.addEventListener("click", function(e){ e.stopPropagation(); select({mod:m}); });
+    hit.addEventListener("pointerenter", function(){ st.hover = {mod:m}; });
+    hit.addEventListener("pointerleave", function(){ st.hover = null; });
+    gM.append(line, hit);
+    G.mods.push({m:m, line:line});
+  });
+
+  IDS.forEach(function(k){
+    var r = R[k], p = POS[k]; if (!p) return;
+    var g = el("g"), parts = {};
+    if (r.critical){
+      parts.halo = el("circle", {cx:p.x, cy:p.y, r:p.r + 8, fill:"none",
+        stroke:"#2b2b52", "stroke-width":2});
+      parts.grace = el("path", {fill:"none", stroke:"#ff3355", "stroke-width":2.6,
+        "stroke-linecap":"round", d:""});
+      g.append(parts.halo, parts.grace);
+    }
+    parts.shell = el("circle", {cx:p.x, cy:p.y, r:p.r, fill:"#0d0d20",
+      stroke:r.group === "hid" ? "#2c2c55" : "#3b3b6e", "stroke-width":1.3,
+      "stroke-dasharray":r.group === "hid" ? "3 3" : ""});
+    parts.disc = el("circle", {cx:p.x, cy:p.y, r:0, fill:r.color, "fill-opacity":0.5});
+    parts.rim  = el("circle", {cx:p.x, cy:p.y, r:0, fill:"none", stroke:r.color, "stroke-width":1.5});
+    g.append(parts.shell, parts.disc, parts.rim);
+
+    parts.tips = MODEL.tipping_points.filter(function(tp){ return tp.key === k; })
+      .map(function(tp){
+        var c = el("circle", {cx:p.x, cy:p.y, r:0, fill:"none", "stroke-width":1.2,
+          "stroke-dasharray":"3 3"});
+        var arc = el("path", {fill:"none", stroke:"#ff7a3d", "stroke-width":2.2,
+          "stroke-linecap":"round", d:""});
+        g.append(c, arc); return {tp:tp, ring:c, arc:arc};
+      });
+
+    parts.val = el("text", {x:p.x, y:p.y + 4.5, "text-anchor":"middle", fill:"#eeeef8",
+      "font-size":r.group === "drv" ? 11 : 13.5, "font-family":"var(--mono)"});
+    parts.lbl = el("text", {x:p.x, y:p.y + p.r + (r.critical ? 22 : 15), "text-anchor":"middle",
+      fill:r.group === "hid" ? "#9b6dff" : "#9494b4", "font-size":11});
+    parts.lbl.textContent = r.label;
+    parts.unit = el("text", {x:p.x, y:p.y + p.r + (r.critical ? 34 : 27), "text-anchor":"middle",
+      fill:"#56567c", "font-size":10, "font-family":"var(--mono)"});
+    parts.unit.textContent = r.unit || "";
+    g.append(parts.val, parts.lbl, parts.unit);
+
+    var hit = el("circle", {cx:p.x, cy:p.y, r:p.r + (r.critical ? 8 : 3),
+      fill:"transparent", style:"cursor:pointer"});
+    hit.addEventListener("click", function(e){ e.stopPropagation(); select({node:k}); });
+    hit.addEventListener("pointerenter", function(){ st.hover = {node:k}; });
+    hit.addEventListener("pointerleave", function(){ st.hover = null; });
+    g.appendChild(hit);
+    gN.appendChild(g);
+    G.nodes.push({k:k, g:g, parts:parts, p:p});
+  });
+
+  /* band captions */
+  [[46, 72, "therapies — the only things you prescribe"],
+   [46, 288, "hidden — indirect action, not measurable at the bedside"],
+   [46, 500, "observable"]].forEach(function(c){
+    var t = el("text", {x:c[0], y:c[1] - 44, fill:"#3d3d66", "font-size":10.5});
+    t.textContent = c[2]; svg.appendChild(t);
+  });
+  svg.addEventListener("click", function(){ select(null); });
+}
+
+function EDGE_TARGET(edgeId){
+  var c = MODEL.conduits.filter(function(x){ return x.id === edgeId; })[0];
+  return c ? c.to : null;
+}
+function bow(a, b, k){
+  var mx = (a.x+b.x)/2, my = (a.y+b.y)/2;
+  var nx = -(b.y-a.y), ny = b.x-a.x, L = Math.hypot(nx,ny)||1;
+  return "M" + a.x + " " + a.y + " Q" + (mx+nx/L*k) + " " + (my+ny/L*k) + " " + b.x + " " + b.y;
+}
+function arcPath(cx, cy, rad, frac){
+  var a0 = -Math.PI/2, a1 = a0 + frac*Math.PI*2;
+  return "M" + (cx+rad*Math.cos(a0)) + " " + (cy+rad*Math.sin(a0)) +
+    " A" + rad + " " + rad + " 0 " + (frac>0.5?1:0) + " 1 " +
+    (cx+rad*Math.cos(a1)) + " " + (cy+rad*Math.sin(a1));
+}
+
+/* ======================== drawing ======================== */
+
+var TIPCOL = {dormant:"#2e2e58", near:"#ffb020", arming:"#ff7a3d", engaged:"#ff3355"};
+function tipState(tp){
+  var s = TIP[tp.id];
+  if (s.on) return "engaged";
+  if (s.hold > 0.001) return "arming";
+  var gap = tp.op === "<" ? S[tp.key] - tp.val : tp.val - S[tp.key];
+  var span = R[tp.key].hi - R[tp.key].lo;
+  return gap < span * 0.10 ? "near" : "dormant";
+}
+
+function focusSet(){
+  var t = st.sel || st.hover;
+  if (!t || !st.focus) return null;
+  if (t.node) return t.node;
+  if (t.edge) return null;
+  return null;
+}
+
+function draw(dtReal){
+  var fk = focusSet();
+  G.nodes.forEach(function(n){
+    var r = R[n.k], p = n.p, v = S[n.k];
+    var frac = clamp((v - r.lo) / (r.hi - r.lo), 0, 1);
+    n.parts.disc.setAttribute("r", p.r * frac);
+    n.parts.rim.setAttribute("r", p.r * frac);
+    var dp = (r.unit === "mg/dL" || r.unit === "mEq/L") ? 2 : 0;
+    n.parts.val.textContent = v.toFixed(dp);
+    n.parts.tips.forEach(function(t){
+      var stt = tipState(t.tp), rr = Math.max(1, p.r * (t.tp.val - r.lo) / (r.hi - r.lo));
+      t.ring.setAttribute("r", rr);
+      t.ring.setAttribute("stroke", TIPCOL[stt]);
+      t.ring.setAttribute("opacity", stt === "dormant" ? 0.35 : 0.95);
+      t.ring.setAttribute("stroke-dasharray", stt === "engaged" ? "" : "3 3");
+      var f = clamp(TIP[t.tp.id].hold / t.tp.dwell, 0, 1);
+      t.arc.setAttribute("d", stt === "arming" && f > 0.03 ? arcPath(p.x, p.y, rr, f) : "");
+    });
+    if (n.parts.grace){
+      var c = r.critical, f2 = clamp(st.deficit[n.k] / c.grace, 0, 1);
+      n.parts.grace.setAttribute("d", f2 <= 0.002 ? "" : arcPath(p.x, p.y, p.r + 8, f2));
+      n.parts.halo.setAttribute("stroke", f2 > 0.01 ? "#4a1420" : "#2b2b52");
+    }
+    var isSel = st.sel && st.sel.node === n.k, isHov = st.hover && st.hover.node === n.k;
+    n.parts.shell.setAttribute("stroke", isSel ? "#eeeef8" : isHov ? "#6f6fa8"
+      : r.group === "hid" ? "#2c2c55" : "#3b3b6e");
+    var dim = fk && fk !== n.k && !touches(fk, n.k);
+    n.g.setAttribute("opacity", dim ? 0.3 : 1);
+  });
+
+  G.edges.forEach(function(e){
+    var mag = Math.abs(e.c.w * dev(e.c.from, S[e.c.from]));
+    var scale = Math.abs(R[e.c.to].hi - R[e.c.to].lo) * 0.25;
+    var norm = clamp(mag / scale, 0, 1);
+    var isSel = st.sel && st.sel.edge === e.c, isHov = st.hover && st.hover.edge === e.c;
+    var rel = !fk || e.c.from === fk || e.c.to === fk;
+    var op = isSel ? 1 : isHov ? 0.85 : (rel ? 0.16 + 0.6*norm : 0.04);
+    e.line.setAttribute("stroke-opacity", op);
+    e.line.setAttribute("stroke", isSel ? "#eeeef8" : e.col);
+    e.line.setAttribute("stroke-width", isSel ? 2.2 : 1.3);
+    e.phase = (e.phase + dtReal * (0.05 + norm * 0.85)) % 1;
+    var fwd = (e.c.w * dev(e.c.from, S[e.c.from])) >= 0;
+    e.dots.forEach(function(d, i){
+      if ((norm < 0.03 && !isSel) || !rel){ d.setAttribute("opacity", 0); return; }
+      var u = (e.phase + i/e.dots.length) % 1; if (!fwd) u = 1 - u;
+      d.setAttribute("cx", lerp(e.p[0].x, e.p[1].x, u));
+      d.setAttribute("cy", lerp(e.p[0].y, e.p[1].y, u));
+      d.setAttribute("r", 1.2 + 1.5*norm);
+      d.setAttribute("opacity", 0.3 + 0.65*norm);
+    });
+  });
+
+  G.mods.forEach(function(m){
+    var f = MOD[m.m.id].mult;
+    var away = Math.abs(f - 1);
+    var isSel = st.sel && st.sel.mod === m.m, isHov = st.hover && st.hover.mod === m.m;
+    var tgt = EDGE_TARGET(m.m.edge);
+    var rel = !fk || m.m.from === fk || tgt === fk;
+    m.line.setAttribute("stroke-opacity", isSel ? 1 : isHov ? 0.8 : (rel ? 0.18 + clamp(away,0,1)*0.6 : 0.04));
+    m.line.setAttribute("stroke", isSel ? "#eeeef8" : "#9b6dff");
+  });
+}
+
+function touches(fk, k){
+  var hit = false;
+  MODEL.conduits.forEach(function(c){
+    if ((c.from === fk && c.to === k) || (c.to === fk && c.from === k)) hit = true; });
+  MODEL.modulators.forEach(function(m){
+    if (m.from === fk && EDGE_TARGET(m.edge) === k) hit = true;
+    if (EDGE_TARGET(m.edge) === fk && m.from === k) hit = true; });
+  return hit;
+}
+
+/* ======================== inspector ======================== */
+
+function select(s){ st.sel = s; paintPanel(); }
+
+function paintPanel(){
+  var p = $("panel"), t = st.sel || st.hover;
+  var risk = '<div class="row"><span>1-year risk, CV death or HF admission</span><b class="num" style="color:' +
+    (st.riskNow > 0.25 ? "#ff3355" : st.riskNow > 0.13 ? "#ffb020" : "#00e87b") + '">' +
+    (st.riskNow*100).toFixed(1) + '%</b></div>';
+
+  if (!t){
+    var tips = MODEL.tipping_points.map(function(tp){
+      var s = tipState(tp);
+      return '<div class="tip"><span class="pill" style="background:' + TIPCOL[s] +
+        '22;color:' + TIPCOL[s] + '">' + s + '</span> <b style="color:#eeeef8">' + tp.label +
+        '</b> <span style="color:#56567c">' + tp.kind + ' · ' + R[tp.key].label + ' ' +
+        tp.op + ' ' + tp.val + '</span></div>';
+    }).join("");
+    p.innerHTML = '<h2>Patient</h2>' + risk +
+      '<div class="row"><span>day</span><b class="num">' + st.t.toFixed(1) + '</b></div>' +
+      '<div class="row"><span>dose achieved, four pillars</span><b class="num">' +
+      Math.round((S.arni + S.bb + S.mra + S.sglt2i)/4) + '% of target</b></div>' +
+      '<div class="row"><span>HF admissions so far</span><b class="num" style="color:' +
+      (st.admissions ? "#ffb020" : "#9494b4") + '">' + (st.admissions || 0) +
+      (st.firstAdm !== null && st.firstAdm !== undefined ?
+        ' <span style="color:#56567c">first on day ' + st.firstAdm.toFixed(0) + '</span>' : '') +
+      '</b></div>' +
+      '<div class="sec">tipping points</div>' + tips +
+      '<div class="sec">Click any circle or line to inspect it. Solid lines are conduits and ' +
+      'shift a target\'s equilibrium. Dashed purple lines are modulators: they move nothing ' +
+      'and instead scale another conduit\'s weight.</div>';
+    return;
+  }
+  if (t.node) return paintNode(t.node, p, risk);
+  if (t.edge) return paintEdge(t.edge, p);
+  return paintMod(t.mod, p);
+}
+
+function paintNode(k, p, risk){
+  var r = R[k], v = S[k];
+  var inc = MODEL.conduits.filter(function(c){ return c.to === k; });
+  var out = MODEL.conduits.filter(function(c){ return c.from === k; });
+  var eq = effEq(k);
+  var h = '<h2>' + r.label + '</h2>' +
+    '<div class="row"><span>' + ({rx:"therapy", drv:"disease driver", hid:"hidden reservoir", obs:"observable"})[r.group] +
+    '</span><b class="num">' + v.toFixed(r.unit === "mg/dL" || r.unit === "mEq/L" ? 2 : 1) + ' ' + r.unit + '</b></div>';
+  if (r.tau !== null){
+    h += '<div class="row"><span>resting value</span><b class="num">' + r.ref + '</b></div>' +
+         '<div class="row"><span>equilibrium now</span><b class="num">' + eq.toFixed(2) + '</b></div>' +
+         '<div class="row"><span>net rate</span><b class="num">' +
+         ((r._rate||0) >= 0 ? "+" : "") + (r._rate||0).toFixed(3) + ' /day</b></div>' +
+         '<div class="row"><span>time constant</span><b class="num">' + r.tau + ' days</b></div>';
+  } else {
+    h += '<div class="row"><span>held at</span><b class="num">' + v.toFixed(0) + '</b></div>';
+  }
+  if (r.critical){
+    var c = r.critical, f = clamp(st.deficit[k]/c.grace, 0, 1);
+    h += '<div class="sec">life critical</div>' +
+      '<div class="row"><span>fails ' + (c.above !== undefined ? "above " + c.above : "below " + c.below) +
+      '</span><b class="num">' + c.mode + '</b></div>' +
+      '<div class="row"><span>deficit</span><b class="num" style="color:' +
+      (f > 0.5 ? "#ff3355" : f > 0 ? "#ffb020" : "#9494b4") + '">' +
+      st.deficit[k].toFixed(2) + ' of ' + c.grace + ' d</b></div>';
+  }
+  if (r.note) h += '<div class="sec">' + r.note + '</div>';
+  if (inc.length){
+    h += '<div class="sec">what moves it, right now</div>';
+    inc.map(function(c){ return {c:c, v:EDGE[c.id].w * dev(c.from, S[c.from])}; })
+      .sort(function(a,b){ return Math.abs(b.v) - Math.abs(a.v); })
+      .forEach(function(x){
+        h += '<div class="row"><span>' + R[x.c.from].label +
+          (EDGE[x.c.id].mult !== 1 ? ' <span style="color:#9b6dff">×' + EDGE[x.c.id].mult.toFixed(2) + '</span>' : '') +
+          '</span><b class="num" style="color:' + (x.v >= 0 ? "#ff7a3d" : "#00d4ff") + '">' +
+          (x.v >= 0 ? "+" : "") + x.v.toFixed(2) + '</b></div>';
+      });
+  }
+  if (out.length) h += '<div class="sec">it drives: ' +
+    out.map(function(c){ return R[c.to].label; }).join(", ") + '</div>';
+  var mytips = MODEL.tipping_points.filter(function(tp){ return tp.key === k; });
+  mytips.forEach(function(tp){
+    var s = tipState(tp), gap = tp.op === "<" ? v - tp.val : tp.val - v;
+    h += '<div class="tip"><span class="pill" style="background:' + TIPCOL[s] + '22;color:' +
+      TIPCOL[s] + '">' + s + '</span> <b style="color:#eeeef8">' + tp.label + '</b> ' +
+      '<span style="color:#56567c">(' + tp.kind + ')</span><br><span style="color:#56567c">' +
+      (TIP[tp.id].on ? 'engaged; releases at ' + (tp.op === "<" ? tp.val + tp.hyst : tp.val - tp.hyst).toFixed(2)
+        : TIP[tp.id].hold > 0.001 ? 'past the edge ' + TIP[tp.id].hold.toFixed(2) + ' of ' + tp.dwell + ' d needed to latch'
+        : gap.toFixed(2) + ' away') + ' · ' + tp.desc + '</span></div>';
+  });
+  p.innerHTML = h + (r.group === "obs" ? risk : "");
+}
+
+function paintEdge(c, p){
+  var w = EDGE[c.id].w, base = c.w, m = EDGE[c.id].mult;
+  var d = dev(c.from, S[c.from]), contrib = w * d;
+  var mods = MODEL.modulators.filter(function(x){ return x.edge === c.id; });
+  var tipmods = MODEL.tipping_points.filter(function(tp){
+    return TIP[tp.id].on && tp.effects.edge && tp.effects.edge[c.id] !== undefined; });
+  var h = '<h2>' + R[c.from].label + ' → ' + R[c.to].label + '</h2>' +
+    '<div class="row"><span>conduit</span><b>' + (base < 0 ? "lowers" : "raises") + ' ' + R[c.to].label + '</b></div>' +
+    '<div class="row"><span>weight at full dose</span><b class="num">' +
+    (base >= 0 ? "+" : "") + base + ' ' + R[c.to].unit + '</b></div>' +
+    '<div class="row"><span>source deviation</span><b class="num">' +
+    (d >= 0 ? "+" : "") + (d*100).toFixed(0) + '%</b></div>' +
+    '<div class="row"><span>shifting equilibrium by</span><b class="num" style="color:' +
+    (contrib >= 0 ? "#ff7a3d" : "#00d4ff") + '">' + (contrib >= 0 ? "+" : "") +
+    contrib.toFixed(2) + ' ' + R[c.to].unit + '</b></div>';
+  if (m !== 1) h += '<div class="row"><span style="color:#9b6dff">scaled by</span>' +
+    '<b class="num" style="color:#9b6dff">×' + m.toFixed(2) + '</b></div>';
+  h += '<div class="sec">' + c.mech + '</div>' +
+    '<div class="sec">weight source: ' + c.src +
+    (c.src === "guess" || c.src.indexOf("guess") === 0 ?
+      ' <span style="color:#ff7a3d">— not checked against anything</span>' : '') + '</div>';
+  mods.forEach(function(x){
+    h += '<div class="tip" style="color:#9b6dff">modulated by ' + R[x.from].label +
+      ', coefficient ' + (x.coef >= 0 ? "+" : "") + x.coef + ', currently ×' +
+      MOD[x.id].mult.toFixed(2) + '<br><span style="color:#56567c">' + x.mech + '</span></div>';
+  });
+  tipmods.forEach(function(tp){
+    h += '<div class="tip" style="color:#ff3355">' + tp.label + ' is engaged and scaling this by ×' +
+      tp.effects.edge[c.id] + '</div>';
+  });
+  p.innerHTML = h;
+}
+
+function paintMod(m, p){
+  var c = MODEL.conduits.filter(function(x){ return x.id === m.edge; })[0];
+  var f = MOD[m.id].mult;
+  p.innerHTML = '<h2>' + R[m.from].label + ' modulates ' + R[c.from].label + ' → ' + R[c.to].label + '</h2>' +
+    '<div class="row"><span>type</span><b>modulator, moves nothing</b></div>' +
+    '<div class="row"><span>coefficient</span><b class="num">' + (m.coef >= 0 ? "+" : "") + m.coef + '</b></div>' +
+    '<div class="row"><span>' + R[m.from].label + ' deviation</span><b class="num">' +
+    (dev(m.from, S[m.from])*100).toFixed(0) + '%</b></div>' +
+    '<div class="row"><span>scaling that conduit by</span><b class="num" style="color:' +
+    (f > 1.02 ? "#ff7a3d" : f < 0.98 ? "#00d4ff" : "#9494b4") + '">×' + f.toFixed(2) + '</b></div>' +
+    '<div class="row"><span>effective weight</span><b class="num">' +
+    EDGE[c.id].w.toFixed(2) + ' ' + R[c.to].unit + ' <span style="color:#56567c">(base ' + c.w + ')</span></b></div>' +
+    '<div class="sec">' + m.mech + '</div>' +
+    '<div class="sec">source: ' + m.src + '</div>';
+}
+
+/* ======================== graph ======================== */
+
+function drawGraph(){
+  var cv = $("graph"), dpr = window.devicePixelRatio || 1;
+  var w = cv.clientWidth, h = cv.clientHeight;
+  if (!w || !h) return;
+  cv.width = w*dpr; cv.height = h*dpr;
+  var c = cv.getContext("2d"); c.setTransform(dpr,0,0,dpr,0,0);
+  c.clearRect(0,0,w,h);
+  if (st.hist.length < 2) return;
+  var tN = st.hist[st.hist.length-1].t;
+  var t0 = st.win === 0 ? st.hist[0].t : Math.max(st.hist[0].t, tN - st.win);
+  var X = function(t){ return 2 + (t-t0)/Math.max(0.001, tN-t0)*(w-4); };
+  var Y = function(u){ return h-14 - u*(h-22); };
+  c.strokeStyle = "#1a1a38"; c.lineWidth = 1;
+  [0,0.5,1].forEach(function(u){ c.beginPath(); c.moveTo(2,Y(u)); c.lineTo(w-2,Y(u)); c.stroke(); });
+  st.events.filter(function(e){ return e.t >= t0; }).forEach(function(e){
+    c.strokeStyle = e.kind === "tip" ? "rgba(255,51,85,.4)" : "rgba(255,45,120,.4)";
+    c.beginPath(); c.moveTo(X(e.t),2); c.lineTo(X(e.t),h-12); c.stroke();
+  });
+  st.traces.forEach(function(k){
+    var r = R[k]; if (!r) return;
+    c.beginPath(); var started = false;
+    st.hist.forEach(function(s){
+      if (s.t < t0) return;
+      var u = clamp((s.v[k]-r.lo)/(r.hi-r.lo),0,1);
+      started ? c.lineTo(X(s.t),Y(u)) : (c.moveTo(X(s.t),Y(u)), started = true);
+    });
+    c.strokeStyle = r.color; c.lineWidth = 1.5; c.globalAlpha = 0.92; c.stroke();
+    c.globalAlpha = 1;
+  });
+  c.fillStyle = "#56567c"; c.font = "10px ui-monospace,monospace"; c.textAlign = "right";
+  c.fillText("day " + tN.toFixed(0), w-3, h-2);
+  c.textAlign = "left"; c.fillText("day " + t0.toFixed(0), 3, h-2);
+}
+
+/* ======================== bench ======================== */
+
+function bench(){
+  var b = $("bench"); b.innerHTML = "";
+  var grp = document.createElement("div"); grp.className = "grp";
+  grp.innerHTML = '<span class="lbl">prescribe</span>'; b.appendChild(grp);
+  ["arni","bb","mra","sglt2i","diuretic"].forEach(function(k){
+    var w = document.createElement("div"); w.className = "ctrl";
+    w.innerHTML = '<div class="ctrl-top"><span class="ctrl-lbl" style="color:' + R[k].color + '">' +
+      R[k].label + '</span><span class="ctrl-val num" id="cv_' + k + '">0</span></div>' +
+      '<input type="range" min="0" max="100" step="5" value="0" id="ci_' + k +
+      '" aria-label="' + R[k].label + ' dose">';
+    b.appendChild(w);
+    w.querySelector("input").oninput = function(){
+      S[k] = +this.value; $("cv_"+k).textContent = this.value;
+      logEvent(R[k].label + " to " + this.value + "% of target", "rx");
+    };
+  });
+  b.appendChild(sep());
+  var g2 = document.createElement("div"); g2.className = "grp";
+  g2.innerHTML = '<span class="lbl">disease</span>'; b.appendChild(g2);
+  ["hfact","naload"].forEach(function(k){
+    var w = document.createElement("div"); w.className = "ctrl"; w.style.minWidth = "86px";
+    w.innerHTML = '<div class="ctrl-top"><span class="ctrl-lbl" style="color:#ffb020">' +
+      R[k].label + '</span><span class="ctrl-val num" id="cv_' + k + '">' + R[k].ref + '</span></div>' +
+      '<input type="range" class="drv" min="0" max="100" step="5" value="' + R[k].ref +
+      '" id="ci_' + k + '" aria-label="' + R[k].label + '">';
+    b.appendChild(w);
+    w.querySelector("input").oninput = function(){
+      S[k] = +this.value; $("cv_"+k).textContent = this.value;
+      logEvent(R[k].label + " to " + this.value, "drv");
+    };
+  });
+  b.appendChild(sep());
+
+  var g3 = document.createElement("div"); g3.className = "grp";
+  var mk = function(label, title, fn, id){
+    var x = document.createElement("button"); x.className = "b"; x.textContent = label;
+    x.title = title; x.onclick = fn; if (id) x.id = id; g3.appendChild(x); return x;
+  };
+  mk("pause", "pause or resume", function(){
+    if (st.dead) return;
+    st.running = !st.running; $("pauseBtn").textContent = st.running ? "pause" : "play";
+  }, "pauseBtn");
+  mk("2 d/s", "simulated days per second", function(){
+    st.speed = st.speed === 2 ? 10 : st.speed === 10 ? 40 : st.speed === 40 ? 0.5 : 2;
+    this.textContent = st.speed + " d/s";
+  });
+  mk("reflexes on", "protocol reflexes automatically adjust doses", function(){
+    st.autoTip = !st.autoTip;
+    this.textContent = st.autoTip ? "reflexes on" : "reflexes off";
+    this.classList.toggle("on", st.autoTip);
+  }).classList.add("on");
+  mk("reachability", "can every threshold actually fire?", openReach);
+  mk("calibration", "does the model reproduce the trial hazard ratios?", openCal);
+  mk("model JSON", "view, copy or load the model", openJSON);
+  b.appendChild(g3);
+  b.appendChild(sep());
+
+  var g4 = document.createElement("div"); g4.className = "grp";
+  g4.innerHTML = '<span class="lbl">start from</span>';
+  var sel = document.createElement("select");
+  sel.style.cssText = "background:#11112a;color:#9494b4;border:1px solid #33335f;border-radius:3px;" +
+    "padding:5px 6px;font-family:inherit;font-size:11.5px";
+  MODEL.scenarios.forEach(function(sc,i){
+    var o = document.createElement("option"); o.value = i; o.textContent = sc.label; sel.appendChild(o);
+  });
+  sel.onchange = function(){ loadScenario(MODEL.scenarios[+this.value]); };
+  g4.appendChild(sel);
+  var rb = document.createElement("button"); rb.className = "b"; rb.textContent = "reset";
+  rb.onclick = function(){ loadScenario(MODEL.scenarios[+sel.value]); };
+  g4.appendChild(rb);
+  b.appendChild(g4);
+
+  var log = document.createElement("div");
+  log.style.cssText = "margin-left:auto;color:#56567c;font-size:10.5px;font-family:var(--mono);" +
+    "text-align:right;max-width:230px;flex:0 0 auto";
+  log.id = "logLine"; b.appendChild(log);
+
+  var keys = $("gKeys");
+  IDS.filter(function(k){ return R[k].tau !== null; }).forEach(function(k){
+    var x = document.createElement("button");
+    x.textContent = R[k].label.length > 11 ? R[k].label.slice(0,10) + "." : R[k].label;
+    x.style.color = st.traces.indexOf(k) >= 0 ? R[k].color : "#3d3d66";
+    x.onclick = function(){
+      var i = st.traces.indexOf(k);
+      i >= 0 ? st.traces.splice(i,1) : st.traces.push(k);
+      x.style.color = st.traces.indexOf(k) >= 0 ? R[k].color : "#3d3d66";
+      drawGraph();
+    };
+    keys.appendChild(x);
+  });
+}
+function sep(){ var d = document.createElement("div"); d.className = "sep"; return d; }
+
+function loadScenario(sc){
+  $("dead").classList.remove("on");
+  if (sc.pt) MODEL.patient = Object.assign({}, MODEL.patient, sc.pt);
+  initState();
+  for (var k in (sc.rx||{})) S[k] = sc.rx[k];
+  for (var k2 in (sc.drv||{})) S[k2] = sc.drv[k2];
+  for (var k3 in (sc.lv||{})) S[k3] = clamp(sc.lv[k3], R[k3].lo, R[k3].hi);
+  st.running = true;
+  var pb = $("pauseBtn"); if (pb) pb.textContent = "pause";
+  ["arni","bb","mra","sglt2i","diuretic","hfact","naload"].forEach(function(k){
+    var i = $("ci_"+k), v = $("cv_"+k);
+    if (i) i.value = S[k]; if (v) v.textContent = Math.round(S[k]);
+  });
+  logEvent(sc.label, "rx");
+  paintPanel();
+}
+
+/* ======================== overlays ======================== */
+
+function closeOv(){ $("ov").classList.remove("on"); }
+function ovShell(title, body, lead){
+  $("ov").classList.add("on");
+  $("ovCard").innerHTML = '<button class="b" style="position:absolute;top:12px;right:14px" ' +
+    'onclick="closeOv()">close</button><h2>' + title + '</h2><p>' + lead + '</p>' + body;
+}
+
+function openReach(){
+  var rows = reachability();
+  var body = '<table><tr><th>tipping point</th><th>kind</th><th>needs</th>' +
+    '<th>reachable</th><th>verdict</th></tr>';
+  rows.forEach(function(r){
+    var u = R[r.tp.key].unit;
+    body += '<tr><td>' + r.tp.label + '</td><td style="color:#56567c">' + r.tp.kind + '</td>' +
+      '<td class="num">' + R[r.tp.key].label + ' ' + r.tp.op + ' ' + r.tp.val + '</td>' +
+      '<td class="num" style="color:#56567c">' + r.lo.toFixed(2) + ' to ' + r.hi.toFixed(2) + '</td>' +
+      '<td class="num" style="color:' + (r.fires ? "#00e87b" : "#ff3355") + '">' +
+      (r.fires ? "fires, margin " + r.margin.toFixed(2) : "NEVER, short by " + (-r.margin).toFixed(2)) +
+      ' ' + u + '</td></tr>';
+  });
+  body += '</table>';
+  ovShell("Reachability", body,
+    "Every threshold, swept against what its variable can actually reach across the dose and " +
+    "driver space (three levels on each of five drugs and two drivers, 2187 combinations, each " +
+    "settled to equilibrium with noise off). A threshold outside that range can never fire, and " +
+    "looks exactly like one that simply is not firing yet. This check exists because five of the " +
+    "six thresholds in the previous version of this model were dead and nobody could have known.");
+}
+
+function openCal(){
+  var rows = calibrate();
+  var body = '<table><tr><th>comparison</th><th>trial HR</th><th>model HR</th>' +
+    '<th>error</th><th>risk A → B</th></tr>';
+  rows.forEach(function(r){
+    var bad = Math.abs(r.err) > 0.08;
+    body += '<tr><td>' + r.a.label + '<div style="color:#56567c;font-size:10.5px;margin-top:2px">' +
+      r.a.src + '</div></td>' +
+      '<td class="num">' + r.a.target.toFixed(2) + '<div style="color:#56567c;font-size:10px">' +
+      r.a.ci + '</div></td>' +
+      '<td class="num" style="color:' + (bad ? "#ff3355" : "#00e87b") + '">' + r.hr.toFixed(2) + '</td>' +
+      '<td class="num" style="color:' + (bad ? "#ff3355" : "#56567c") + '">' +
+      (r.err >= 0 ? "+" : "") + r.err.toFixed(2) + '</td>' +
+      '<td class="num" style="color:#56567c">' + (r.riskA*100).toFixed(1) + '% → ' +
+      (r.riskB*100).toFixed(1) + '%</td></tr>';
+  });
+  body += '</table>';
+  ovShell("Calibration against the trials", body,
+    "The outcome layer converts the state into an annualised risk of cardiovascular death or " +
+    "heart failure admission. Each row settles two hypothetical patients differing only in what " +
+    "they are prescribed, and compares the implied hazard ratio with the published one. This is " +
+    "the reason to work in GDMT rather than shock: the effect sizes exist, so the model can be " +
+    "held to them. Two of the four anchors were verified while building this; the two marked " +
+    "FROM MEMORY were not and should be checked before anyone leans on them. " +
+    "Two things this table cannot show. The fit is sub-additive: single drugs score too " +
+    "generously and the combination not generously enough, which is what a shared hidden hub " +
+    "does once one drug has already suppressed it. And there is only one composite hazard here, " +
+    "split into death and admission by a fixed fraction, so the model cannot reproduce the two " +
+    "different published hazard ratios at once. See `known_limitation` in the model JSON.");
+}
+
+function openJSON(){
+  var body = '<div style="display:flex;gap:6px;margin-bottom:10px">' +
+    '<button class="b" id="cpBtn">copy</button>' +
+    '<button class="b" id="ldBtn">load into model</button></div>' +
+    '<textarea id="jsonEdit" spellcheck="false"></textarea>';
+  ovShell("Model JSON", body,
+    "The whole model is data. Weights are in the target reservoir\'s own units at full deviation " +
+    "of the source, so a weight reads as \'this drug at target dose moves that variable by this " +
+    "much\', which is what makes them fittable. Every weight carries a `src` field naming where it " +
+    "came from; `guess` means nobody has checked it. Edit here, or hand the whole thing to a model " +
+    "along with the `llm_instructions` field.");
+  $("jsonEdit").value = JSON.stringify(MODEL, null, 2);
+  $("cpBtn").onclick = function(){
+    navigator.clipboard.writeText($("jsonEdit").value).then(function(){
+      $("cpBtn").textContent = "copied"; setTimeout(function(){ $("cpBtn").textContent = "copy"; }, 1400);
+    });
+  };
+  $("ldBtn").onclick = function(){
+    try {
+      var d = JSON.parse($("jsonEdit").value);
+      ["reservoirs","conduits","modulators","tipping_points","outcome","noise","scenarios","meta"]
+        .forEach(function(f){ if (d[f]) MODEL[f] = d[f]; });
+      R = MODEL.reservoirs; IDS = Object.keys(R);
+      initState(); layout(); build(); bench(); closeOv(); paintPanel();
+    } catch(e){ alert("Invalid JSON: " + e.message); }
+  };
+}
+
+/* ======================== loop ======================== */
+
+var prev = performance.now(), acc = 0, tickN = 0;
+function frame(now){
+  var dtReal = Math.min(0.05, (now - prev)/1000); prev = now;
+  if (st.running){
+    acc += dtReal * st.speed;
+    var guard = 0;
+    while (acc > DT && guard++ < 400){ step(DT); acc -= DT; }
+    if (++tickN % 3 === 0){
+      var snap = {t:st.t, v:{}};
+      IDS.forEach(function(k){ snap.v[k] = S[k]; });
+      st.hist.push(snap);
+      if (st.hist.length > 3000) st.hist.splice(0, 700);
+    }
+  }
+  draw(dtReal);
+  drawGraph();
+  if (tickN % 8 === 0) paintPanel();
+  requestAnimationFrame(frame);
+}
+
+initState();
+layout();
+build();
+bench();
+loadScenario(MODEL.scenarios[0]);
+paintPanel();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
