@@ -1,0 +1,2467 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>glucosim — insulin and glucose, hour by hour</title>
+<style>
+/* ============================ tokens ==================================== */
+:root{
+  --ink:#0d1520; --panel:#14202e; --raise:#1b2b3c; --rule:#28394d; --rule-soft:#1f2e40;
+  --fg:#e4edf5; --fg-dim:#93a9be; --fg-faint:#5f7793;
+
+  /* range colours follow the ambulatory glucose profile convention */
+  --vlow:#b8253f; --low:#e8615f; --inrange:#3fb984; --high:#e0a33c; --vhigh:#c9762f;
+  --insulin:#7c9fe0; --insulin-deep:#4a6fb5; --carb:#d9a24a; --exercise:#5fbfd0;
+  /* the one attention colour in the whole interface: a dose is due */
+  --signal:#f5b52b;
+
+  --mono:"SF Mono","JetBrains Mono",ui-monospace,"Roboto Mono",Menlo,Consolas,monospace;
+  --sans:"Inter","Helvetica Neue",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  --r:6px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--ink); color:var(--fg); font-family:var(--sans);
+  font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  font-feature-settings:"kern" 1,"liga" 1;
+}
+.num{font-family:var(--mono); font-feature-settings:"tnum" 1; font-variant-numeric:tabular-nums}
+h1,h2,h3,h4{margin:0; font-weight:600; letter-spacing:-0.012em}
+h1{font-size:19px} h2{font-size:16px} h3{font-size:13.5px} h4{font-size:12.5px}
+p{margin:0 0 .6em}
+button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer; border:none; background:none}
+button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-visible{
+  outline:2px solid var(--signal); outline-offset:2px; border-radius:3px;
+}
+input,select{
+  font-family:inherit; font-size:13px; background:var(--ink); color:var(--fg);
+  border:1px solid var(--rule); border-radius:4px; padding:5px 7px;
+}
+input[type=number]{font-family:var(--mono); font-variant-numeric:tabular-nums}
+input[type=range]{accent-color:var(--insulin); padding:0; border:none; background:none}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:var(--ink)}
+::-webkit-scrollbar-thumb{background:var(--rule); border-radius:5px}
+.dim{color:var(--fg-dim)} .faint{color:var(--fg-faint)}
+.tiny{font-size:11.5px; line-height:1.45}
+.small{font-size:12.5px}
+
+/* tabs, slider bank, junction overlay ------------------------------------ */
+.tabs{display:flex; gap:2px; border-bottom:1px solid var(--rule); margin-bottom:16px; flex-wrap:wrap}
+.tabs button{
+  padding:8px 15px; font-size:13px; color:var(--fg-dim); border-bottom:2px solid transparent;
+  margin-bottom:-1px; border-radius:4px 4px 0 0;
+}
+.tabs button:hover{color:var(--fg); background:var(--panel)}
+.tabs button[aria-pressed=true]{color:var(--inrange); border-bottom-color:var(--inrange)}
+.sliders{display:grid; grid-template-columns:repeat(auto-fit,minmax(232px,1fr)); gap:13px 22px; margin-top:6px}
+.sl label{display:flex; justify-content:space-between; font-size:12px; color:var(--fg-dim); gap:8px}
+.sl label b{font-family:var(--mono); color:var(--fg); font-weight:500}
+.sl input[type=range]{width:100%; margin-top:3px}
+.sl .note{font-size:11px; color:var(--fg-faint); line-height:1.35}
+.paste{width:100%; min-height:78px; font-family:var(--mono); font-size:11.5px; resize:vertical}
+.fitout{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px 18px; margin-top:12px}
+.fitout div dt{font-size:11px; color:var(--fg-faint)}
+.fitout div dd{margin:1px 0 0; font-family:var(--mono); font-size:15px}
+
+#junction{position:fixed; inset:0; background:rgba(6,11,17,.86); z-index:60; display:none; padding:18px; overflow-y:auto}
+#junction.on{display:grid; place-items:center}
+.jcard{
+  max-width:620px; width:100%; background:var(--panel); border:1px solid var(--signal);
+  border-radius:8px; padding:0 0 20px; box-shadow:0 0 60px -18px var(--signal);
+}
+.jbar{height:4px; background:var(--rule-soft); border-radius:8px 8px 0 0; overflow:hidden}
+.jbar i{display:block; height:100%; background:var(--signal); transition:width .1s linear}
+.jhead{padding:16px 22px 12px; border-bottom:1px solid var(--rule-soft)}
+.jhead .kicker{font-size:11.5px; color:var(--signal); margin-bottom:5px}
+.jhead h2{margin-bottom:5px}
+.jhead p{color:var(--fg-dim); margin:0; font-size:13px}
+.jfacts{display:grid; grid-template-columns:repeat(auto-fit,minmax(92px,1fr)); gap:11px 16px; padding:14px 22px}
+.jfacts div dt{font-size:11px; color:var(--fg-faint)}
+.jfacts div dd{margin:1px 0 0; font-family:var(--mono); font-size:17px}
+.jopts{display:flex; flex-direction:column; gap:7px; padding:4px 22px 0}
+.jopt{
+  text-align:left; border:1px solid var(--rule); border-radius:var(--r); padding:10px 13px;
+  display:flex; gap:12px; align-items:baseline;
+}
+.jopt:hover{border-color:var(--signal); background:var(--raise)}
+.jopt .k{font-family:var(--mono); font-size:11px; color:var(--fg-faint); width:14px; flex-shrink:0}
+.jopt b{font-weight:550} .jopt i{font-style:normal; color:var(--fg-dim); font-size:12px; display:block; margin-top:2px}
+.jclock{padding:11px 22px 0; font-size:12px; color:var(--fg-dim); display:flex; justify-content:space-between}
+.jclock b{font-family:var(--mono); color:var(--signal); font-size:15px}
+
+/* ============================ setup sheet =============================== */
+#setup{position:fixed; inset:0; overflow-y:auto; background:var(--ink); z-index:40}
+.sheet{max-width:860px; margin:0 auto; padding:44px 22px 90px}
+.masthead{border-bottom:1px solid var(--rule); padding-bottom:18px; margin-bottom:34px}
+.masthead .wordmark{font-size:28px; font-weight:650; letter-spacing:-0.03em; margin-bottom:4px}
+.masthead .wordmark b{color:var(--inrange); font-weight:650}
+.masthead .sub{color:var(--fg-dim); max-width:60ch}
+
+/* the setup really is a sequence, so it is numbered */
+.step{display:grid; grid-template-columns:30px 1fr; gap:16px; margin-bottom:38px}
+.step .n{
+  font-family:var(--mono); font-size:12px; color:var(--fg-faint);
+  border:1px solid var(--rule); border-radius:50%; width:26px; height:26px;
+  display:grid; place-items:center; margin-top:1px;
+}
+.step h2{margin-bottom:3px}
+.step .lede{color:var(--fg-dim); margin-bottom:14px; max-width:66ch}
+
+.cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:10px}
+.card{
+  background:var(--panel); border:1px solid var(--rule-soft); border-radius:var(--r);
+  padding:13px 14px; text-align:left; display:block; width:100%;
+  transition:border-color .12s, background .12s;
+}
+.card:hover{border-color:var(--rule); background:var(--raise)}
+.card[aria-pressed=true]{border-color:var(--inrange); background:var(--raise)}
+.card[aria-pressed=true] .cname{color:var(--inrange)}
+.cname{font-weight:600; margin-bottom:5px}
+.cdesc{color:var(--fg-dim); font-size:12.5px; line-height:1.45}
+.cstat{margin-top:9px; padding-top:8px; border-top:1px solid var(--rule-soft); font-size:11.5px; color:var(--fg-faint)}
+
+.row{display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center}
+.field{display:flex; flex-direction:column; gap:4px}
+.field label{font-size:12px; color:var(--fg-dim)}
+.checks{display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:8px 18px; margin-top:12px}
+.check{display:flex; gap:9px; align-items:flex-start; cursor:pointer; padding:2px 0}
+.check input{margin-top:3px; accent-color:var(--inrange)}
+.check span b{display:block; font-weight:550}
+.check span i{font-style:normal; color:var(--fg-dim); font-size:12px}
+
+table.grid{width:100%; border-collapse:collapse; margin-top:10px}
+table.grid th{
+  text-align:left; font-size:11.5px; font-weight:550; color:var(--fg-faint);
+  padding:0 8px 6px 0; border-bottom:1px solid var(--rule-soft);
+}
+table.grid td{padding:5px 8px 5px 0; border-bottom:1px solid var(--rule-soft); vertical-align:middle}
+table.grid input,table.grid select{padding:4px 6px; font-size:12.5px}
+table.grid tr:last-child td{border-bottom:none}
+.linkbtn{color:var(--insulin); font-size:12.5px; padding:4px 0; text-decoration:underline; text-underline-offset:2px}
+.linkbtn.warn{color:var(--low)}
+.xbtn{color:var(--fg-faint); font-size:15px; line-height:1; padding:2px 5px; border-radius:3px}
+.xbtn:hover{color:var(--low); background:var(--raise)}
+
+.readout{background:var(--panel); border:1px solid var(--rule-soft); border-radius:var(--r); padding:14px 16px; margin-top:14px}
+.readout dl{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px 20px; margin:0}
+.readout dt{font-size:11.5px; color:var(--fg-faint); margin-bottom:2px}
+.readout dd{margin:0; font-family:var(--mono); font-size:15px; font-variant-numeric:tabular-nums}
+.readout dd em{font-style:normal; font-size:11.5px; color:var(--fg-dim); font-family:var(--sans)}
+
+.startbar{
+  position:sticky; bottom:0; margin:34px -22px -90px; padding:16px 22px 22px;
+  background:linear-gradient(to top,var(--ink) 62%,transparent);
+  display:flex; gap:16px; align-items:center; flex-wrap:wrap;
+}
+.primary{
+  background:var(--inrange); color:#062015; font-weight:650; padding:11px 26px;
+  border-radius:var(--r); letter-spacing:-0.01em;
+}
+.primary:hover{filter:brightness(1.08)}
+.ghost{border:1px solid var(--rule); padding:8px 15px; border-radius:var(--r); color:var(--fg-dim)}
+.ghost:hover{border-color:var(--fg-dim); color:var(--fg)}
+.disclaimer{border-left:2px solid var(--high); padding:2px 0 2px 12px; color:var(--fg-dim); font-size:12px; max-width:64ch}
+
+/* ============================ run screen ================================ */
+#app{display:none; min-height:100vh; flex-direction:column}
+#app.on{display:flex}
+.topbar{
+  display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+  padding:9px 16px; border-bottom:1px solid var(--rule); background:var(--panel);
+  position:sticky; top:0; z-index:20;
+}
+.topbar .mark{font-weight:650; letter-spacing:-0.03em; font-size:16px}
+.topbar .mark b{color:var(--inrange); font-weight:650}
+.chip{
+  font-size:12px; color:var(--fg-dim); border:1px solid var(--rule);
+  border-radius:20px; padding:3px 11px; white-space:nowrap;
+}
+.chip b{color:var(--fg); font-weight:550}
+.clock{font-family:var(--mono); font-size:20px; font-variant-numeric:tabular-nums; letter-spacing:-0.01em}
+.clock span{font-size:12px; color:var(--fg-dim); margin-left:7px; font-family:var(--sans)}
+.spacer{flex:1}
+.seg{display:flex; border:1px solid var(--rule); border-radius:var(--r); overflow:hidden}
+.seg button{padding:5px 11px; font-size:12px; color:var(--fg-dim); border-right:1px solid var(--rule)}
+.seg button:last-child{border-right:none}
+.seg button[aria-pressed=true]{background:var(--raise); color:var(--fg)}
+.seg button:hover{background:var(--raise)}
+
+.stage{display:grid; grid-template-columns:minmax(0,1fr) 336px; gap:14px; padding:14px 16px 26px; align-items:start}
+.panel{background:var(--panel); border:1px solid var(--rule-soft); border-radius:var(--r)}
+.panel > header{
+  display:flex; align-items:baseline; gap:10px; padding:10px 14px 8px;
+  border-bottom:1px solid var(--rule-soft);
+}
+.panel > header .hint{color:var(--fg-faint); font-size:11.5px; margin-left:auto; text-align:right}
+.panel .body{padding:13px 14px}
+.stack{display:flex; flex-direction:column; gap:14px; min-width:0}
+
+/* live glucose ---------------------------------------------------------- */
+.livebar{display:flex; align-items:flex-end; gap:20px; padding:14px 16px 6px; flex-wrap:wrap}
+.bignum{display:flex; align-items:baseline; gap:9px; line-height:0.9}
+.bignum .v{font-family:var(--mono); font-size:58px; font-weight:500; letter-spacing:-0.04em}
+.bignum .u{color:var(--fg-faint); font-size:12px}
+.arrow{font-size:26px; line-height:1; transition:transform .3s}
+.trendtext{color:var(--fg-dim); font-size:12.5px; padding-bottom:5px}
+.trendtext b{color:var(--fg); font-weight:550}
+.zonetag{font-size:12px; font-weight:600; padding:3px 10px; border-radius:20px; margin-bottom:6px}
+.charts{padding:0 8px 8px}
+canvas{display:block; width:100%; touch-action:none}
+.legend{display:flex; gap:14px; flex-wrap:wrap; padding:6px 16px 12px; font-size:11.5px; color:var(--fg-faint)}
+.legend i{display:inline-block; width:9px; height:9px; border-radius:2px; margin-right:5px; vertical-align:-1px}
+
+/* medication rack ------------------------------------------------------- */
+.rack{display:grid; grid-template-columns:repeat(auto-fill,minmax(158px,1fr)); gap:9px}
+.med{
+  position:relative; text-align:left; border:1px solid var(--rule-soft); border-radius:var(--r);
+  background:var(--raise); padding:10px 11px; transition:border-color .15s, box-shadow .15s;
+}
+.med:hover:not(:disabled){border-color:var(--fg-faint)}
+.med:disabled{opacity:.42; cursor:not-allowed}
+.med .mname{font-weight:600; font-size:13px; margin-bottom:1px}
+.med .mdose{font-family:var(--mono); font-size:11.5px; color:var(--fg-dim)}
+.med .mwhen{font-size:11px; color:var(--fg-faint); margin-top:6px; display:flex; justify-content:space-between; gap:6px}
+.med .kind{position:absolute; top:0; left:0; bottom:0; width:3px; border-radius:var(--r) 0 0 var(--r)}
+.med.due{border-color:var(--signal); box-shadow:0 0 0 1px var(--signal), 0 0 18px -6px var(--signal)}
+.med.due .mwhen{color:var(--signal); font-weight:600}
+.med.due{animation:breathe 1.7s ease-in-out infinite}
+@keyframes breathe{50%{box-shadow:0 0 0 1px var(--signal), 0 0 26px -3px var(--signal)}}
+.med.taken{border-color:var(--inrange)}
+.med.missed .mname{text-decoration:line-through; text-decoration-color:var(--low)}
+.med.missed .mwhen{color:var(--low)}
+@media (prefers-reduced-motion:reduce){.med.due{animation:none}}
+
+.actionrow{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; padding-top:12px; border-top:1px solid var(--rule-soft)}
+.act{border:1px solid var(--rule); border-radius:var(--r); padding:7px 12px; font-size:12.5px; color:var(--fg-dim)}
+.act:hover{border-color:var(--fg-dim); color:var(--fg)}
+.act.rescue{border-color:#5d2733; color:var(--low)}
+.act.rescue:hover{background:#2a1620; color:var(--low)}
+
+/* calculator ------------------------------------------------------------ */
+.calc{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+.calcline{display:flex; justify-content:space-between; gap:10px; padding:4px 0; font-size:12.5px; border-bottom:1px dashed var(--rule-soft)}
+.calcline:last-of-type{border-bottom:none}
+.calcline b{font-family:var(--mono); font-weight:500}
+.calctotal{display:flex; justify-content:space-between; align-items:baseline; margin-top:8px; padding-top:9px; border-top:1px solid var(--rule)}
+.calctotal .t{font-family:var(--mono); font-size:24px}
+.scale{width:100%; border-collapse:collapse; font-size:12px}
+.scale td{padding:3px 6px; border-bottom:1px solid var(--rule-soft); font-family:var(--mono)}
+.scale td:last-child{text-align:right}
+.scale tr.hit td{background:var(--raise); color:var(--signal); font-weight:600}
+
+/* right rail ------------------------------------------------------------ */
+.rail{display:flex; flex-direction:column; gap:14px; min-width:0}
+.kv{display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:5px 0}
+.kv + .kv{border-top:1px solid var(--rule-soft)}
+.kv .k{font-size:12.5px; color:var(--fg-dim)}
+.kv .v{font-family:var(--mono); font-size:14.5px; font-variant-numeric:tabular-nums}
+.kv .v small{font-size:11px; color:var(--fg-faint); font-family:var(--sans)}
+.meter{height:5px; background:var(--rule-soft); border-radius:3px; overflow:hidden; margin-top:5px}
+.meter i{display:block; height:100%; border-radius:3px; transition:width .3s}
+
+.tirbar{display:flex; height:22px; border-radius:4px; overflow:hidden; margin:2px 0 9px}
+.tirbar i{transition:width .4s}
+.tirkey{display:grid; grid-template-columns:1fr auto; gap:1px 10px; font-size:11.5px}
+.tirkey .lab{color:var(--fg-dim)} .tirkey .val{font-family:var(--mono); text-align:right}
+
+.hypobox{border:1px solid var(--rule); border-radius:var(--r); padding:11px 12px; margin-top:4px}
+.hypobox .top{display:flex; align-items:baseline; justify-content:space-between; gap:10px}
+.hypobox .big{font-family:var(--mono); font-size:30px; line-height:1}
+.hypobox .band{font-size:11.5px; font-weight:600; padding:2px 8px; border-radius:20px}
+details.why{margin-top:9px}
+details.why summary{font-size:11.5px; color:var(--insulin); cursor:pointer; list-style:none}
+details.why summary::-webkit-details-marker{display:none}
+details.why summary::before{content:"⌄ "; display:inline-block; transition:transform .15s}
+details.why[open] summary::before{transform:rotate(180deg)}
+details.why .inner{font-size:11.5px; color:var(--fg-dim); margin-top:7px; line-height:1.5}
+details.why table{width:100%; border-collapse:collapse; margin-top:6px; font-size:11px}
+details.why td{padding:2px 0; border-bottom:1px solid var(--rule-soft)}
+details.why td:last-child{text-align:right; font-family:var(--mono)}
+
+.coach{font-size:12.5px; line-height:1.55; color:var(--fg-dim)}
+.coach b{color:var(--fg); font-weight:550}
+.coach .flag{color:var(--signal)}
+.coach .bad{color:var(--low)}
+
+#log{max-height:290px; overflow-y:auto; font-size:12px}
+.entry{display:grid; grid-template-columns:44px 1fr; gap:9px; padding:5px 0; border-bottom:1px solid var(--rule-soft)}
+.entry:last-child{border-bottom:none}
+.entry .ts{font-family:var(--mono); color:var(--fg-faint); font-size:11.5px}
+.entry .tx{color:var(--fg-dim); line-height:1.4}
+.entry.hi .tx{color:var(--fg)}
+.entry.warn .tx{color:var(--signal)}
+.entry.bad .tx{color:var(--low)}
+
+/* report --------------------------------------------------------------- */
+#report{position:fixed; inset:0; background:rgba(6,11,17,.9); z-index:50; overflow-y:auto; display:none}
+#report.on{display:block}
+.reportcard{max-width:800px; margin:36px auto; background:var(--panel); border:1px solid var(--rule); border-radius:8px; padding:26px 28px 30px}
+.verdict{display:flex; align-items:center; gap:18px; flex-wrap:wrap; padding:16px 0 20px; border-bottom:1px solid var(--rule)}
+.verdict .ring{
+  width:88px; height:88px; border-radius:50%; display:grid; place-items:center;
+  font-family:var(--mono); font-size:30px; flex-shrink:0;
+}
+.verdict h2{margin-bottom:4px}
+.badge{display:inline-block; font-size:12px; font-weight:600; padding:3px 10px; border-radius:20px; margin-right:7px}
+.repgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(126px,1fr)); gap:16px 20px; margin:20px 0}
+.repgrid .cell dt{font-size:11.5px; color:var(--fg-faint)}
+.repgrid .cell dd{margin:2px 0 0; font-family:var(--mono); font-size:20px}
+table.runs{width:100%; border-collapse:collapse; font-size:12px; margin-top:8px}
+table.runs th{text-align:right; font-size:11px; color:var(--fg-faint); font-weight:550; padding:0 6px 5px; border-bottom:1px solid var(--rule)}
+table.runs th:first-child{text-align:left}
+table.runs td{text-align:right; padding:6px; border-bottom:1px solid var(--rule-soft); font-family:var(--mono)}
+table.runs td:first-child{text-align:left; font-family:var(--sans)}
+table.runs tr.cur td{background:var(--raise)}
+
+@media (max-width:1080px){
+  .stage{grid-template-columns:minmax(0,1fr)}
+  .rail{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+}
+@media (max-width:700px){
+  .sheet{padding:28px 15px 90px}
+  .step{grid-template-columns:1fr; gap:8px} .step .n{display:none}
+  .stage{padding:10px 10px 22px}
+  .bignum .v{font-size:44px}
+  .calc{grid-template-columns:1fr}
+  .rail{grid-template-columns:1fr}
+  .topbar{gap:10px; padding:8px 11px}
+  .topbar .mark{width:100%}
+}
+</style>
+</head>
+<body>
+
+<!-- ======================== setup ==================================== -->
+<div id="setup">
+<div class="sheet">
+  <div class="masthead">
+    <div class="wordmark">gluco<b>sim</b></div>
+    <div class="sub">Pick a pancreas, plan a day, choose a regimen, then run it minute by minute.
+      The job is to bring the A1c down without pushing anyone low.</div>
+  </div>
+
+  <section class="step">
+    <div class="n num">1</div>
+    <div>
+      <h2>Who are you treating?</h2>
+      <div class="lede">Pick a taught case, build a pancreas from scratch, or reconstruct
+        someone you actually look after.</div>
+      <div class="tabs" id="pxTabs">
+        <button data-m="case" aria-pressed="true">Taught cases</button>
+        <button data-m="build">Build a patient</button>
+        <button data-m="real">From real data</button>
+      </div>
+
+      <div id="caseBox">
+        <div class="cards" id="caseCards"></div>
+      </div>
+
+      <div id="buildBox" hidden>
+        <div class="cards" id="typeCards"></div>
+        <div class="sliders" id="advBox"></div>
+        <div class="checks" id="modCards"></div>
+      </div>
+
+      <div id="realBox" hidden>
+        <div class="lede" style="margin-bottom:12px">Enter what you know, then let the model
+          fit this person's insulin sensitivity so a simulated day reproduces their real numbers.
+          One A1c is not much to fit to, so treat the result as a rehearsal, not a prediction.</div>
+        <div class="row">
+          <div class="field"><label for="rType">Diabetes</label>
+            <select id="rType"><option value="t1">type 1</option><option value="t2">type 2</option><option value="t3c">type 3c</option></select></div>
+          <div class="field"><label for="rWt">Weight (kg)</label><input type="number" id="rWt" value="82" min="30" max="200" style="width:78px"></div>
+          <div class="field"><label for="rEgfr">eGFR</label><input type="number" id="rEgfr" value="88" min="8" max="130" style="width:70px"></div>
+          <div class="field"><label for="rA1c">Recent A1c (%)</label><input type="number" id="rA1c" value="8.4" min="4.5" max="16" step="0.1" style="width:78px"></div>
+        </div>
+        <div class="field" style="margin-top:13px">
+          <label for="rCgm">Or paste sensor readings — one per line, or comma separated, mg/dL or mmol/L</label>
+          <textarea class="paste" id="rCgm" placeholder="142
+168
+205
+..."></textarea>
+        </div>
+        <div class="row" style="margin-top:11px">
+          <button class="ghost" id="rFit">Fit this patient</button>
+          <span class="tiny faint">Fits insulin sensitivity against the day and regimen chosen below.</span>
+        </div>
+        <div id="fitOut"></div>
+      </div>
+
+      <div class="row" style="margin-top:16px">
+        <div class="field" style="flex:1; min-width:200px">
+          <label>Body weight <span class="num" id="wtOut">68</span> kg</label>
+          <input type="range" id="wt" min="38" max="180" step="1" value="68">
+        </div>
+        <div class="field">
+          <label for="days">Run length</label>
+          <select id="days"><option value="1">1 day</option><option value="2">2 days</option><option value="3">3 days</option></select>
+        </div>
+      </div>
+      <div class="readout" id="patientOut"></div>
+    </div>
+  </section>
+
+  <section class="step">
+    <div class="n num">2</div>
+    <div>
+      <h2>What does the day look like?</h2>
+      <div class="lede">Carbohydrate drives every insulin decision, and when it arrives matters as
+        much as how much. Fat and protein slow a meal down; juice arrives almost at once.</div>
+      <div class="cards" id="mealPresets"></div>
+      <table class="grid" id="mealTable"></table>
+      <button class="linkbtn" id="addMeal">Add a meal</button>
+      <h4 style="margin-top:22px">Activity</h4>
+      <div class="lede" style="margin-top:3px">Muscle takes up glucose without needing insulin, and stays
+        hungry for hours afterwards. Late lows are usually last night's workout.</div>
+      <table class="grid" id="actTable"></table>
+      <button class="linkbtn" id="addAct">Add activity</button>
+    </div>
+  </section>
+
+  <section class="step">
+    <div class="n num">3</div>
+    <div>
+      <h2>Choose the regimen</h2>
+      <div class="lede">This sets the schedule you will be held to. Every dose in it becomes a button
+        that lights up when it comes due.</div>
+      <div class="cards" id="regCards"></div>
+      <div class="readout" id="regOut"></div>
+      <div class="row" style="margin-top:14px">
+        <div class="field"><label for="target">Glucose target (mg/dL)</label><input type="number" id="target" value="120" min="80" max="200" step="5" style="width:80px"></div>
+        <div class="field"><label for="icr">Carb ratio (g per unit)</label><input type="number" id="icr" step="0.5" min="1" style="width:80px"></div>
+        <div class="field"><label for="isf">Correction factor (mg/dL per unit)</label><input type="number" id="isf" step="1" min="5" style="width:80px"></div>
+        <div class="field"><label for="basal">Basal dose (units)</label><input type="number" id="basal" step="0.5" min="0" style="width:80px"></div>
+        <div class="field"><label for="aggr">Bolus scaling <span class="num" id="aggrOut">100</span>%</label>
+          <input type="range" id="aggr" min="50" max="150" step="5" value="100" style="width:150px"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="step">
+    <div class="n num">4</div>
+    <div>
+      <h2>How should the day run?</h2>
+      <div class="lede">Watch it play out, or have it stop you at every point where a real
+        clinician would have to decide something.</div>
+      <div class="cards" id="modeCards"></div>
+      <div class="row" style="margin-top:14px">
+        <div class="field"><label for="timerSel">Time to decide at each junction</label>
+          <select id="timerSel">
+            <option value="0">no limit</option>
+            <option value="15">15 seconds</option>
+            <option value="25" selected>25 seconds</option>
+            <option value="45">45 seconds</option>
+          </select></div>
+        <div class="tiny faint" style="max-width:34ch">When the clock runs out, nothing happens —
+          which is itself a decision, and is scored as one.</div>
+      </div>
+      <div class="checks" style="margin-top:14px">
+        <label class="check"><input type="checkbox" id="chime"><span><b>Chime when a dose is due</b><i>A short tone as well as the flashing button.</i></span></label>
+      </div>
+      <input type="checkbox" id="autopilot" hidden>
+    </div>
+  </section>
+
+  <div class="startbar">
+    <button class="primary" id="start">Start the day</button>
+    <div class="disclaimer">A teaching model, deliberately simplified. It is not a dosing calculator
+      and nothing here applies to a real person.</div>
+  </div>
+</div>
+</div>
+
+<!-- ======================== run screen =============================== -->
+<div id="app">
+  <div class="topbar">
+    <div class="mark">gluco<b>sim</b></div>
+    <div class="chip" id="ptChip"></div>
+    <div class="chip" id="modeChip" hidden></div>
+    <div class="clock num"><span id="clk">06:00</span><span id="dayLbl">day 1</span></div>
+    <div class="spacer"></div>
+    <div class="seg" id="speed">
+      <button data-s="0" title="Pause">❙❙</button>
+      <button data-s="20">slow</button>
+      <button data-s="60" aria-pressed="true">normal</button>
+      <button data-s="240">fast</button>
+    </div>
+    <button class="ghost" id="skip">Skip to next dose</button>
+    <button class="ghost" id="finish">End the run</button>
+  </div>
+
+  <div class="stage">
+    <div class="stack">
+      <section class="panel">
+        <div class="livebar">
+          <div>
+            <div class="zonetag" id="zone">in range</div>
+            <div class="bignum"><span class="v num" id="bg">—</span><span class="u">mg/dL</span></div>
+          </div>
+          <div class="arrow" id="arrow">→</div>
+          <div class="trendtext" id="trend"></div>
+          <div class="spacer"></div>
+          <div class="seg" id="win">
+            <button data-w="6">6 h</button>
+            <button data-w="12" aria-pressed="true">12 h</button>
+            <button data-w="24">24 h</button>
+          </div>
+        </div>
+        <div class="charts">
+          <canvas id="cgm" height="330"></canvas>
+          <canvas id="flux" height="86"></canvas>
+        </div>
+        <div class="legend">
+          <span><i style="background:var(--inrange)"></i>70–180 target</span>
+          <span><i style="background:var(--low)"></i>below 70</span>
+          <span><i style="background:var(--high)"></i>above 180</span>
+          <span><i style="background:var(--carb)"></i>carbohydrate arriving</span>
+          <span><i style="background:var(--insulin)"></i>insulin acting</span>
+          <span class="faint">dashed line ahead of now is the model's own forecast if you do nothing</span>
+        </div>
+      </section>
+
+      <section class="panel">
+        <header><h3>Medication</h3><div class="hint">A button lights amber when its dose is due, and goes quiet once the window closes</div></header>
+        <div class="body">
+          <div class="rack" id="rack"></div>
+          <div class="actionrow" id="extras"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <header><h3>Dosing</h3><div class="hint" id="calcHint"></div></header>
+        <div class="body calc">
+          <div>
+            <h4 style="margin-bottom:8px">Bolus calculator</h4>
+            <div class="row" style="gap:8px; margin-bottom:10px">
+              <div class="field"><label for="cCarb">Carbs (g)</label><input type="number" id="cCarb" value="0" min="0" step="5" style="width:72px"></div>
+              <div class="field"><label>Glucose now</label><div class="num" id="cBg" style="padding:6px 0; font-size:15px">—</div></div>
+              <div class="field"><label><input type="checkbox" id="cCorr" checked style="accent-color:var(--inrange)"> correct too</label>
+                <div class="tiny faint">subtracts insulin still on board</div></div>
+            </div>
+            <div id="calcLines"></div>
+            <div class="calctotal"><span class="dim small">Deliver</span><span class="t" id="cTotal">0.0 u</span></div>
+            <button class="act" id="cGive" style="margin-top:10px; width:100%; text-align:center">Give this bolus</button>
+          </div>
+          <div>
+            <h4 style="margin-bottom:8px">Sliding scale</h4>
+            <div class="tiny dim" style="margin-bottom:7px">Correction only, from the glucose in front of you.
+              It treats a number that is already several hours old — which is why it chases and overshoots.</div>
+            <table class="scale" id="scaleTable"></table>
+            <button class="act" id="ssGive" style="margin-top:10px; width:100%; text-align:center">Give scale dose</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="rail">
+      <section class="panel">
+        <header><h3>On board</h3></header>
+        <div class="body">
+          <div id="onboard"></div>
+          <div class="coach" id="coach" style="margin-top:12px; padding-top:11px; border-top:1px solid var(--rule-soft)"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <header><h3>How it is going</h3><div class="hint" id="spanLbl"></div></header>
+        <div class="body">
+          <div class="tirbar" id="tirbar"></div>
+          <div class="tirkey" id="tirkey"></div>
+          <div style="margin-top:13px" id="glyMetrics"></div>
+          <div class="hypobox">
+            <div class="top">
+              <div>
+                <div class="tiny dim">Hypoglycaemia index</div>
+                <div class="big" id="hypoVal">0.0</div>
+              </div>
+              <div class="band" id="hypoBand">clean</div>
+            </div>
+            <div class="meter"><i id="hypoMeter" style="width:0%; background:var(--inrange)"></i></div>
+            <details class="why">
+              <summary>what goes into it</summary>
+              <div class="inner">
+                Time below range, counted so that the things clinicians actually fear dominate: depth,
+                darkness, and how often it happens.
+                <table id="hypoParts"></table>
+                Zero is clean. Under 5 is the goal. Over 20 means the regimen is unsafe whatever the A1c says.
+              </div>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <header><h3>Log</h3></header>
+        <div class="body"><div id="log"></div></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- ======================== decision junction ======================= -->
+<div id="junction"><div class="jcard">
+  <div class="jbar"><i id="jBar" style="width:100%"></i></div>
+  <div class="jhead">
+    <div class="kicker" id="jKicker">decision point</div>
+    <h2 id="jTitle"></h2>
+    <p id="jPrompt"></p>
+  </div>
+  <dl class="jfacts" id="jFacts"></dl>
+  <div class="jopts" id="jOpts"></div>
+  <div class="jclock"><span id="jClockLbl"></span><b id="jCount"></b></div>
+</div></div>
+
+<!-- ======================== report =================================== -->
+<div id="report"><div class="reportcard" id="reportCard"></div></div>
+
+<script>
+/* ==========================================================================
+   glucosim engine — a compact, teachable glucose–insulin model
+   Units: glucose mg/dL, fluxes mg/min, insulin mU/L, dose U, carbs g
+   Integration: explicit Euler, dt = 1 min
+   ========================================================================== */
+
+const K = {
+  vg: 1.6,          // dL/kg   glucose distribution volume
+  vi: 0.12,         // L/kg    insulin distribution volume
+  keIns: 0.139,     // /min    plasma insulin clearance (t½ ≈ 5 min)
+  p2: 0.028,        // /min    insulin action equilibration (t½ ≈ 25 min)
+
+  egp0: 2.0,        // mg/kg/min hepatic output at reference insulin action
+  kEgp: 0.045,      // insulin suppression steepness
+  egpFloor: 0.18,   // fraction insulin cannot suppress
+
+  uii0: 1.0,        // mg/kg/min insulin-independent uptake at G = 100
+  uiiKm: 80,
+  uiiCap: 1.15,     // brain and other GLUT1 uptake saturates; it does not track G
+  uidKc: 60,       // above euglycaemia, insulin-mediated disposal saturates
+
+  si0: 0.00092,     // (mg/min)/(kg·mU/L·mg/dL)
+
+  secMax: 1.25,     // mU/min/kg max portal secretion, pre-hepatic extraction
+  secK: 140,        // mg/dL half-max
+  secH: 3,
+  incretin: 0.14,   // mU/min per mg/min of gut glucose appearance
+
+  crThresh: 90,     // mg/dL where counterregulation starts
+  crSpan: 26,
+  crGain: 1.45,     // EGP multiplier at full counterregulatory response
+
+  renalThresh: 190,
+  kRen: 0.75,       // mg/min per mg/dL above threshold
+
+  ka2: 0.045,       // /min second gut compartment
+  carbF: 0.72,      // systemic appearance after ~28% splanchnic first pass
+};
+
+const GI = { fast: 0.075, mixed: 0.032, fatty: 0.016 };   // gastric emptying, /min
+
+/* ---------- insulin pharmacokinetics ---------------------------------------
+   Rapid, regular and NPH use two-compartment (gamma) absorption peaking at
+   tau. Long-acting analogues are modelled as a near-flat depot. */
+const INS = {
+  lispro:   { kind: 'gamma', tau: 40,  label: 'lispro',   cls: 'rapid' },
+  faster:   { kind: 'gamma', tau: 28,  label: 'ultra-rapid', cls: 'rapid' },
+  inhaled:  { kind: 'gamma', tau: 14,  label: 'inhaled',  cls: 'rapid' },
+  regular:  { kind: 'gamma', tau: 105, label: 'regular',  cls: 'short' },
+  nph:      { kind: 'gamma', tau: 200, label: 'NPH',      cls: 'inter' },
+  glargine: { kind: 'flat',  dur: 1320, ramp: 90,  label: 'glargine', cls: 'long' },
+  degludec: { kind: 'flat',  dur: 2100, ramp: 150, label: 'degludec', cls: 'long' },
+  weekly:   { kind: 'flat',  dur: 8200, ramp: 700, label: 'weekly basal', cls: 'long' },
+};
+
+function insRate(kind, units, dt) {              // mU/min
+  if (dt < 0) return 0;
+  const p = INS[kind], mU = units * 1000;
+  if (p.kind === 'gamma') {
+    if (dt > p.tau * 9) return 0;
+    return mU * (dt / (p.tau * p.tau)) * Math.exp(-dt / p.tau);
+  }
+  const plateau = mU / (p.dur + p.ramp * 0.5);
+  if (dt > p.dur + p.ramp) return 0;
+  if (dt < p.ramp) return plateau * (dt / p.ramp);
+  if (dt < p.dur) return plateau;
+  return plateau * (1 - (dt - p.dur) / p.ramp);
+}
+
+function insRemaining(kind, units, dt) {         // U still unabsorbed
+  if (dt < 0) return units;
+  const p = INS[kind];
+  if (p.kind === 'gamma') {
+    const x = dt / p.tau;
+    return units * (1 + x) * Math.exp(-x);
+  }
+  const total = p.dur + p.ramp * 0.5;
+  let used;
+  if (dt < p.ramp) used = dt * dt / (2 * p.ramp);
+  else if (dt < p.dur) used = p.ramp / 2 + (dt - p.ramp);
+  else used = total - Math.pow(Math.max(0, p.dur + p.ramp - dt), 2) / (2 * p.ramp);
+  return units * Math.max(0, 1 - used / total);
+}
+
+/* ---------- non-insulin agents -------------------------------------------- */
+const ORAL = {
+  metformin:    { tHalf: 300,  tAbs: 55,  label: 'metformin' },
+  sulfonylurea: { tHalf: 430,  tAbs: 70,  label: 'glimepiride' },
+  repaglinide:  { tHalf: 62,   tAbs: 22,  label: 'repaglinide' },
+  dpp4:         { tHalf: 700,  tAbs: 65,  label: 'sitagliptin' },
+  sglt2:        { tHalf: 720,  tAbs: 85,  label: 'empagliflozin' },
+  glp1:         { tHalf: 9000, tAbs: 900, label: 'semaglutide' },
+  tirzepatide:  { tHalf: 8000, tAbs: 900, label: 'tirzepatide' },
+  pramlintide:  { tHalf: 50,   tAbs: 18,  label: 'pramlintide' },
+  sotagliflozin:{ tHalf: 620,  tAbs: 80,  label: 'sotagliflozin' },
+  pio:          { tHalf: 1400, tAbs: 180, label: 'pioglitazone' },
+  pert:         { tHalf: 110,  tAbs: 25,  label: 'enzymes' },
+};
+
+function oralLevel(drug, dt) {                   // 0..1, peak normalised to 1
+  if (dt < 0) return 0;
+  const p = ORAL[drug];
+  const ke = Math.LN2 / p.tHalf, ka = Math.LN2 / p.tAbs;
+  if (dt > p.tHalf * 6) return 0;
+  const tmax = Math.log(ka / ke) / (ka - ke);
+  const norm = Math.exp(-ke * tmax) - Math.exp(-ka * tmax);
+  return Math.max(0, (Math.exp(-ke * dt) - Math.exp(-ka * dt)) / norm);
+}
+
+/* ---------- patients ------------------------------------------------------ */
+const TYPES = {
+  t1: { name: 'Type 1', beta: 0.00, alpha: 0.45, siMul: 1.00, egpMul: 1.00, weight: 68, exocrine: false },
+  t2: { name: 'Type 2', beta: 0.55, alpha: 1.00, siMul: 0.60, egpMul: 1.10, weight: 96, exocrine: false },
+  t3c:{ name: 'Type 3c', beta: 0.05, alpha: 0.05, siMul: 1.10, egpMul: 0.95, weight: 61, exocrine: true },
+};
+
+function egpFactor(P, x) {
+  return Math.max(K.egpFloor, P.egpA / (1 + K.kEgp * x));
+}
+// Effective glucose for insulin-mediated disposal. Linear up to euglycaemia, so
+// nothing about the hypoglycaemic end changes, then saturating: hyperglycaemia
+// does drive its own disposal, but not in proportion.
+function gEff(G) { return G <= 100 ? G : 100 + (G - 100) * K.uidKc / (K.uidKc + G - 100); }
+function solveX(P, G) {
+  const uii = P.uii0 * Math.min(K.uiiCap, 1.8 * G / (G + K.uiiKm));
+  return Math.max(0.5, (P.egp0 - uii) / (P.si * gEff(G)));
+}
+function solveXNoBeta(P, G) {
+  let lo = 0, hi = 300;
+  for (let i = 0; i < 60; i++) {
+    const x = (lo + hi) / 2;
+    const uii = P.uii0 * Math.min(K.uiiCap, 1.8 * G / (G + K.uiiKm));
+    if (P.egp0 * egpFactor(P, x) - uii - P.si * x * gEff(G) > 0) lo = x; else hi = x;
+  }
+  return (lo + hi) / 2;
+}
+
+function makePatient(o) {
+  const base = TYPES[o.type] || TYPES.t1;
+  const W = o.weight ?? base.weight;
+  // Every axis below is continuous. The three named types are only presets over
+  // these numbers, so a hand-built or data-fitted patient is a first-class one.
+  const beta = o.beta ?? base.beta * (o.honeymoon ? 3 : 1);
+  const alpha = o.alpha ?? base.alpha * (o.impairedAwareness ? 0.45 : 1);
+  const egfr = o.egfr ?? (o.ckd ? 34 : 92);
+  const gastric = o.gastric ?? (o.gastroparesis ? 0.45 : 1);
+  const exo = o.exo ?? (base.exocrine ? 0.62 : 1);
+  const P = {
+    type: o.type, typeName: o.typeName || base.name, W,
+    beta, alpha, egfr, gastric, exo,
+    exocrine: exo < 0.95,
+    pert: o.pert ?? false,
+    alcohol: o.alcohol ?? false,
+    impairedAwareness: o.impairedAwareness ?? (alpha < 0.3),
+    vg: K.vg * W,
+    vi: K.vi * W,
+    egp0: K.egp0 * W * (o.egpMul ?? base.egpMul),
+    uii0: K.uii0 * W,
+    si: K.si0 * W * (o.siMul ?? base.siMul),
+    secMax: K.secMax * W,
+    siMul: o.siMul ?? base.siMul,
+    egpMul: o.egpMul ?? base.egpMul,
+  };
+  // Insulin deficiency raises hepatic output by about half in anyone, so the EGP
+  // curve is anchored to a non-diabetic of this body size, not to this patient.
+  const xNorm = (K.egp0 - K.uii0 * Math.min(K.uiiCap, 1.8 * 100 / 180)) / (K.si0 * 100);
+  P.egpA = 1 + K.kEgp * xNorm;
+  P.xRef = solveX(P, 100);
+  P.xBasal = solveXNoBeta(P, 118);
+  const span = INS.glargine.dur + INS.glargine.ramp * 0.5;
+  const fullReplace = P.xBasal * K.keIns * P.vi * 1.44 * (span / 1440);
+  // Type 2 still makes its own insulin, so it starts on a conventional 0.2 U/kg
+  P.basalUday = Math.round((P.beta > 0.25 ? 0.2 * W : fullReplace) * 2) / 2;
+  P.tdd = ({ t1: 0.55, t2: 0.65, t3c: 0.45 }[o.type]) * W;
+  P.isfRule = Math.round(1800 / P.tdd);
+  P.icrRule = Math.round(500 / P.tdd);
+  if (o.fast) { P.isf = P.isfRule; P.icr = P.icrRule; }   // skip probes when fitting
+  else { P.isf = calibrateISF(P); P.icr = calibrateICR(P); }
+  return P;
+}
+
+/* ---------- simulation state ---------------------------------------------- */
+function newState(P, opts = {}) {
+  const G0 = opts.G0 ?? (P.type === 't2' ? 158 : 172);
+  return {
+    t: 0, clock0: opts.clock0 ?? 360,
+    G: G0, sensor: G0,
+    Ip: P.beta > 0.2 ? 12 : 2,
+    X: P.beta > 0.2 ? 12 : 2,
+    D1: 0, D2: 0, mealKa: GI.mixed,
+    ketone: 0, lactate: 0.9,
+    insDoses: [], oralDoses: [], exercise: [], rescue: [],
+    exAfter: 0, siNoise: 0, absNoise: 0,
+    det: false, hist: [],
+  };
+}
+
+const clockOf = S => (S.clock0 + S.t) % 1440;
+
+// A dose may carry a mult: how much response that particular dose produced.
+// Amylin analogues and enzyme capsules vary a lot meal to meal, and that
+// variability is where their risk lives, not in the average effect.
+function level(S, drug) {
+  let L = 0;
+  for (const d of S.oralDoses) if (d.drug === drug) L += oralLevel(drug, S.t - d.t0) * (d.mult === undefined ? 1 : d.mult);
+  return Math.min(1.9, L);
+}
+function iob(S) {
+  let u = 0;
+  for (const d of S.insDoses) if (INS[d.kind].kind === 'gamma') u += insRemaining(d.kind, d.units, S.t - d.t0);
+  return u;
+}
+const cob = S => (S.D1 + S.D2) / 1000;
+
+function eatMeal(S, carbs, gi) {
+  S.D1 += carbs * 1000;
+  S.mealKa = GI[gi] ?? GI.mixed;
+}
+
+function step(S, P) {
+  const dt = 1, clock = clockOf(S);
+
+  if (!S.det) {
+    S.siNoise = S.siNoise * 0.994 + (Math.random() - 0.5) * 0.030;
+    S.absNoise = S.absNoise * 0.990 + (Math.random() - 0.5) * 0.050;
+  }
+
+  // dawn phenomenon: cortisol and growth hormone from about 03:00
+  const dawn = (clock >= 180 && clock < 480)
+    ? 1 + 0.30 * Math.sin(Math.PI * (clock - 180) / 300) : 1;
+
+  const met = level(S, 'metformin'), su = level(S, 'sulfonylurea');
+  const rep = level(S, 'repaglinide'), dpp4 = level(S, 'dpp4');
+  const glp1 = level(S, 'glp1'), tirz = level(S, 'tirzepatide');
+  const pram = level(S, 'pramlintide'), sota = level(S, 'sotagliflozin');
+  const pio = level(S, 'pio'), pertL = level(S, 'pert');
+  const sglt2 = level(S, 'sglt2');
+  const flozin = Math.min(1.6, sglt2 + sota);            // renal SGLT2 blockade
+  const incretin = Math.min(1.6, glp1 + 1.35 * tirz);    // tirzepatide adds GIP
+  const renalFrac = Math.min(1, P.egfr / 90);
+
+  let ex = 0;
+  for (const e of S.exercise) if (S.t >= e.t0 && S.t < e.t0 + e.dur) ex = Math.max(ex, e.intensity);
+  if (ex > 0) S.exAfter = Math.max(S.exAfter, 0.55 * ex); else S.exAfter *= 0.9923;
+
+  // gut
+  // Gastric emptying: incretins and amylin all slow it, and sotagliflozin also
+  // blocks intestinal SGLT1 so some carbohydrate never crosses at all.
+  const slowing = Math.min(0.78, 0.45 * Math.min(1, glp1) + 0.55 * Math.min(1, tirz)
+    + 0.62 * Math.min(1, pram * 2.2) + 0.20 * Math.min(1, sota));
+  let ka1 = S.mealKa * (1 - slowing) * P.gastric;
+  let bioav = K.carbF * (1 - 0.12 * Math.min(1, sota));
+  if (P.exo < 0.95 && !(P.pert && pertL > 0.25)) bioav *= Math.max(0.28, P.exo + S.absNoise);
+  const toD2 = ka1 * S.D1;
+  S.D1 -= toD2 * dt;
+  S.D2 += toD2 * dt - K.ka2 * S.D2 * dt;
+  const raMeal = Math.max(0, bioav * K.ka2 * S.D2);
+
+  // beta cell
+  const hill = Math.pow(S.G, K.secH) / (Math.pow(S.G, K.secH) + Math.pow(K.secK, K.secH));
+  const gGate = Math.max(0, Math.min(1, (S.G - 72) / 60));
+  const offSwitch = Math.max(0, Math.min(1, (S.G - 58) / 26));
+  const incretinAmp = 1 + 1.9 * Math.min(1.4, incretin) + 0.55 * dpp4;
+  let sec = P.beta * (P.secMax * hill + K.incretin * raMeal * gGate * incretinAmp) * offSwitch;
+  // Sulfonylureas squeeze almost regardless of glucose. That is why they cause
+  // hypoglycaemia, and why they do nothing at all without beta cells.
+  // Repaglinide hits the same channel but clears in about an hour and is cleared
+  // by the liver, so it neither accumulates in renal failure nor keeps squeezing
+  // between meals. Glimepiride does both.
+  const suGate = Math.max(0, Math.min(1, (S.G - 42) / 28));
+  const suRenal = 1 + 0.9 * (1 - renalFrac);
+  sec += P.beta * (95 * su * suRenal + 108 * rep) * suGate;
+  sec *= 0.5;                                     // hepatic first-pass extraction
+
+  let raIns = 0;
+  for (const d of S.insDoses) raIns += insRate(d.kind, d.units, S.t - d.t0);
+  const clr = K.keIns * (0.55 + 0.45 * renalFrac);   // insulin is renally cleared
+  S.Ip = Math.max(0, S.Ip + ((raIns + sec) / P.vi - clr * S.Ip) * dt);
+  S.X += K.p2 * (S.Ip - S.X) * dt;
+
+  // counterregulation and rescue glucagon
+  const cr = P.alpha * Math.min(1.6, Math.max(0, (K.crThresh - S.G) / K.crSpan));
+  let rescueEgp = 0;
+  for (const g of S.rescue) {
+    const d = S.t - g.t0;
+    if (d >= 0 && d < 150) rescueEgp += 7.5 * P.W * (d / 22) * Math.exp(-d / 22) * g.dose;
+  }
+
+  // Hepatic output. Ethanol blocks gluconeogenesis, which is both the baseline
+  // supply and the substrate the glucagon rescue depends on — so a drink with
+  // dinner does not just lower glucose overnight, it also removes the brake.
+  const alc = (P.alcohol && (clock >= 1140 || clock < 300)) ? 1 : 0;
+  let egp = P.egp0 * egpFactor(P, S.X) * dawn * (1 + K.crGain * cr * (1 - 0.55 * alc));
+  egp *= (1 - 0.30 * met);
+  egp *= (1 - 0.11 * Math.min(1, incretin) - 0.10 * Math.min(1, pram));
+  if (alc) egp *= 0.55;
+  egp += rescueEgp;
+
+  // uptake and excretion
+  const uii = P.uii0 * Math.min(K.uiiCap, 1.8 * S.G / (S.G + K.uiiKm)) * (1 + 2.3 * ex);
+  const siEff = P.si * (1 + S.siNoise) * (1 + S.exAfter) * (1 + 0.34 * pio) * (1 + 0.10 * met);
+  const uid = siEff * S.X * gEff(S.G);
+  const thr = flozin > 0.2 ? K.renalThresh - 92 * Math.min(1, flozin) : K.renalThresh;
+  const uren = Math.max(0, K.kRen * (1 + 0.35 * flozin) * renalFrac * (S.G - thr));
+
+  const dG = (egp + raMeal - uii - uid - uren) / P.vg;
+  S.G = Math.max(15, Math.min(600, S.G + dG * dt));
+
+  // ketogenesis proxy: insulin deficiency, amplified by SGLT2 inhibition
+  const cover = S.X / Math.max(1, P.xBasal);
+  const ketoDrive = (Math.max(0, 1 - cover) + 0.20 * Math.min(1, flozin)) * (1 + 1.4 * flozin) * (P.beta < 0.2 ? 1 : 0.25);
+  S.ketone = Math.max(0, Math.min(6, S.ketone + (ketoDrive * 0.026 - 0.008 * S.ketone) * dt));
+  // Lactate risk marker: metformin retained by a failing kidney
+  S.lactate = Math.max(0, Math.min(9, S.lactate
+    + (met * Math.max(0, 1 - P.egfr / 45) * 0.030 - 0.010 * S.lactate) * dt));
+
+  // CGM reading: interstitial lag plus sensor noise
+  S.sensor += (S.G - S.sensor) / 9 * dt;
+  const shown = S.det ? S.sensor : S.sensor + (Math.random() - 0.5) * 4;
+
+  S.t += dt;
+  const row = { t: S.t, clock, G: S.G, s: shown, X: S.X, ra: raMeal,
+                iob: iob(S), cob: cob(S), egp, uid, cr, ket: S.ketone, lac: S.lactate, ex, dG };
+  S.hist.push(row);
+  return row;
+}
+
+/* ---------- self-calibration ----------------------------------------------
+   Correction factor and carb ratio come from running the model itself, with
+   biological noise off, using paired arms — one gets the dose, one does not —
+   so the answer is the effect of the insulin, not of whatever was happening
+   anyway. Both are then shown next to the classic rules of thumb. */
+// Calibration must not pick up transient influences: the probe runs into the
+// evening, so a patient who drinks with dinner would otherwise come out with a
+// carb ratio derived from an alcohol-suppressed liver.
+const calibPatient = P => ({ ...P, alcohol: false });
+function settled(P, G0) {
+  const S = newState(P, { G0, clock0: 600 });      // mid-morning, no dawn effect
+  S.det = true;
+  S.insDoses.push({ kind: 'glargine', units: P.basalUday, t0: -600 });
+  S.Ip = P.xBasal; S.X = P.xBasal;
+  for (let i = 0; i < 420; i++) step(S, P);
+  S.hist = [];
+  return S;
+}
+const fork = S => { const c = JSON.parse(JSON.stringify(S)); c.hist = []; return c; };
+
+function calibrateISF(P0) {
+  const P = calibPatient(P0);
+  const base = settled(P, 150);
+  base.G = base.sensor = 170;
+  const ctrl = fork(base), test = fork(base);
+  test.insDoses.push({ kind: 'lispro', units: 1, t0: test.t });
+  let effect = 0;
+  for (let i = 0; i < 330; i++) { step(ctrl, P); step(test, P); effect = Math.max(effect, ctrl.G - test.G); }
+  return Math.max(8, Math.round(effect));
+}
+
+function calibrateICR(P0) {
+  const P = calibPatient(P0);
+  const carbs = 65, floor = 82, base = settled(P, 120);
+  const nadir = u => {
+    const c = fork(base);
+    c.insDoses.push({ kind: 'lispro', units: u, t0: c.t });
+    for (let i = 0; i < 15; i++) step(c, P);
+    eatMeal(c, carbs, 'mixed');
+    let n = 1e9;
+    for (let i = 0; i < 330; i++) { step(c, P); n = Math.min(n, c.G); }
+    return n;
+  };
+  let lo = 0.1, hi = 30;
+  for (let i = 0; i < 18; i++) { const mid = (lo + hi) / 2; if (nadir(mid) > floor) lo = mid; else hi = mid; }
+  return Math.max(2, Math.round(carbs / ((lo + hi) / 2) * 2) / 2);
+}
+
+/* ---------- glycaemic metrics --------------------------------------------- */
+function metrics(hist) {
+  const n = hist.length;
+  if (!n) return null;
+  const g = hist.map(h => h.s);
+  const mean = g.reduce((a, b) => a + b, 0) / n;
+  const pct = f => 100 * g.filter(f).length / n;
+  const vlow = pct(x => x < 54), low = pct(x => x >= 54 && x < 70);
+  const inr = pct(x => x >= 70 && x <= 180);
+  const high = pct(x => x > 180 && x <= 250), vhigh = pct(x => x > 250);
+  const sd = Math.sqrt(g.reduce((a, b) => a + (b - mean) ** 2, 0) / n);
+
+  // Kovatchev Low Blood Glucose Index
+  let lbgi = 0;
+  for (const x of g) {
+    const f = 1.509 * (Math.pow(Math.log(Math.max(20, x)), 1.084) - 5.381);
+    if (f < 0) lbgi += 10 * f * f;
+  }
+  lbgi /= n;
+
+  // Klonoff Glycemia Risk Index
+  const gri = Math.min(100, 3.0 * vlow + 2.4 * low + 1.6 * vhigh + 0.8 * high);
+
+  // Episodes per the international consensus: 15+ consecutive minutes under 70,
+  // ended by 15+ minutes at or above it.
+  const episodes = [];
+  let run = null, gap = 0, nocturnal = 0;
+  for (const h of hist) {
+    if (h.s < 70) {
+      gap = 0;
+      if (h.clock < 360) nocturnal++;
+      if (!run) run = { start: h.clock, mins: 0, nadir: h.s, night: h.clock < 360 };
+      run.mins++; run.nadir = Math.min(run.nadir, h.s);
+    } else if (run && ++gap >= 15) {
+      if (run.mins >= 15) episodes.push(run);
+      run = null;
+    }
+  }
+  if (run && run.mins >= 15) episodes.push(run);
+  const events = episodes.length;
+  const severe = episodes.filter(e => e.nadir < 54 && e.mins >= 20).length;
+  const nocturnalPct = 100 * nocturnal / n;
+
+  /* ---- Hypoglycaemia Index -----------------------------------------------
+     One 0–100 number for how much hypoglycaemia a regimen caused, weighted so
+     the things clinicians actually fear dominate:
+       depth      time under 54 counts four times as heavily as 54–70
+       darkness   minutes between midnight and 06:00 carry extra weight
+       frequency  each discrete episode costs a flat 3, so several short lows
+                  score worse than one long one of the same total duration
+       severity   an episode under 54 lasting 20 min or more costs 12
+     0 is clean, under 5 is the target, over 20 is unsafe.                  */
+  const hypoIx = Math.min(100,
+    1.0 * (low + vlow) + 3.0 * vlow + 0.8 * nocturnalPct + 3 * events + 12 * severe);
+
+  return { n, mean, sd, cv: 100 * sd / mean, vlow, low, inr, high, vhigh,
+           lbgi, gri, hypoIx, events, severe, episodes, nocturnalPct,
+           gmi: 3.31 + 0.02392 * mean,
+           peakKet: hist.reduce((a, h) => Math.max(a, h.ket), 0) };
+}
+
+function score(m, missed) {
+  const a1c = Math.max(0, Math.min(1, 1 - (m.gmi - 6.5) / 2.5));
+  const tir = Math.max(0, Math.min(1, m.inr / 90));
+  const hypo = Math.max(0, 1 - m.hypoIx / 15);
+  return Math.max(0, Math.min(100,
+    Math.round(45 * a1c + 30 * tir + 25 * hypo - 2 * (missed || 0))));
+}
+</script>
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const mk = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+const hhmm = m => { m = ((m % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+const parseHM = s => { const [a, b] = String(s).split(':').map(Number); return (a || 0) * 60 + (b || 0); };
+const cl = (v, a, b) => Math.max(a, Math.min(b, v));
+const r1 = v => Math.round(v * 10) / 10;
+const half = v => Math.round(v * 2) / 2;
+let uid = 0;
+
+/* ======================= reference content ============================== */
+const TYPE_INFO = {
+  t1: { title: 'Type 1', line: 'Autoimmune, twelve years in',
+    desc: 'No beta cells, so every unit is injected and nothing switches off when glucose falls. The glucagon response is already half gone.',
+    stat: 'insulin required · glucagon partly lost' },
+  t2: { title: 'Type 2', line: 'Insulin resistant, 96 kg',
+    desc: 'Still makes insulin, just not enough against a resistant liver and muscle. Both counterregulatory hormones work, which makes this the forgiving one.',
+    stat: 'insulin resistant · counterregulation intact' },
+  t3c: { title: 'Type 3c', line: 'After pancreatitis',
+    desc: 'The pancreas is gone and the alpha cells went with it. No insulin, no glucagon, no enzymes. Brittle in both directions.',
+    stat: 'insulin required · no glucagon · malabsorption' },
+};
+const MODS = [
+  { k: 'alcohol', t: 'Two drinks with dinner', d: 'Ethanol blocks gluconeogenesis, which is also what the glucagon rescue runs on. The classic three in the morning low.' },
+  { k: 'pert', t: 'Taking pancreatic enzymes', d: 'Only matters if enzyme output is reduced. Without them, carbohydrate absorption is incomplete and different every meal.' },
+];
+const SLIDERS = [
+  { k: 'beta', lab: 'Beta-cell function', min: 0, max: 1, step: 0.01, unit: '%', pct: true,
+    note: 'How much insulin the pancreas still makes. At zero, no secretagogue can do anything at all.' },
+  { k: 'alpha', lab: 'Glucagon reserve', min: 0, max: 1.2, step: 0.01, unit: '%', pct: true,
+    note: 'The counterregulatory rescue. The difference between a low that self-corrects and one that keeps going.' },
+  { k: 'siMul', lab: 'Insulin sensitivity', min: 0.25, max: 1.7, step: 0.05, unit: '×',
+    note: 'One is a lean, sensitive adult. Half is marked resistance. A third is someone on high-dose steroids.' },
+  { k: 'egpMul', lab: 'Hepatic glucose output', min: 0.7, max: 1.7, step: 0.05, unit: '×',
+    note: 'What metformin turns down, and what sets the fasting number.' },
+  { k: 'egfr', lab: 'eGFR', min: 8, max: 130, step: 1, unit: '',
+    note: 'Clears insulin and glimepiride, and spills glucose above the renal threshold. Below 30, metformin comes off.' },
+  { k: 'gastric', lab: 'Gastric emptying', min: 0.2, max: 1.5, step: 0.05, unit: '×',
+    note: 'Below one is gastroparesis: the bolus lands well before the food does.' },
+  { k: 'exo', lab: 'Enzyme output', min: 0.25, max: 1, step: 0.01, unit: '%', pct: true,
+    note: 'Exocrine function. Reduced means carbohydrate absorbs incompletely and unpredictably.' },
+];
+const BEHAV = [
+  { k: 'carbErr', lab: 'Carb counting error', min: 0, max: 45, step: 1, unit: '%',
+    note: 'How far off the estimate on the plate is. The commonest reason a correct ratio still misses.' },
+  { k: 'siteVar', lab: 'Absorption variability', min: 0, max: 35, step: 1, unit: '%',
+    note: 'Lipohypertrophy, leakage, a bruised site. The dose you gave is not always the dose that worked.' },
+  { k: 'adherence', lab: 'Adherence', min: 40, max: 100, step: 5, unit: '%',
+    note: 'Chance a scheduled dose actually gets taken when the run is on autopilot.' },
+];
+const MEAL_PRESETS = {
+  standard: { name: 'Three meals and a snack', desc: 'A conventional day: 55 g at breakfast, 70 at lunch, 85 at dinner, 20 before bed.',
+    meals: [[450, 55, 'mixed'], [750, 70, 'mixed'], [1110, 85, 'fatty'], [1290, 20, 'fast']], acts: [[1200, 30, 0.4]] },
+  lowcarb: { name: 'Lower carbohydrate', desc: 'Around 100 g across the day. Smaller boluses, smaller mistakes, flatter trace.',
+    meals: [[450, 25, 'fatty'], [750, 35, 'mixed'], [1110, 40, 'fatty']], acts: [[1020, 45, 0.6]] },
+  heavy: { name: 'Carbohydrate heavy', desc: 'Cereal, a sandwich, pasta and dessert. Around 320 g, most of it fast.',
+    meals: [[450, 90, 'fast'], [750, 100, 'fast'], [1110, 110, 'mixed'], [1290, 25, 'fast']], acts: [] },
+  shift: { name: 'Skipped meals, late dinner', desc: 'Nothing until mid-afternoon, then a large dinner at ten. The regimen was not designed for this day.',
+    meals: [[870, 45, 'fast'], [1320, 120, 'fatty']], acts: [[600, 60, 0.7]] },
+  poor: { name: 'Barely eating', desc: 'Two small plates, both picked at. What an unwell or elderly patient actually manages.',
+    meals: [[510, 20, 'mixed'], [1050, 30, 'mixed']], acts: [] },
+};
+
+/* ======================= dose descriptors ============================== */
+const D = {
+  basal: (kind, at, units, label) => ({ drug: kind, cls: INS[kind].cls === 'long' ? 'long' : 'inter', mode: 'fixed', units, at, win: 90, label: label || INS[kind].label, detail: 'basal' }),
+  mealBolus: (m, lead, scale, kind) => ({ drug: kind || 'lispro', cls: 'rapid', mode: 'carb', mealId: m.id, at: m.time - lead, win: 45,
+    scale: scale || 1, label: INS[kind || 'lispro'].label, detail: (lead ? lead + ' min before ' : 'with ') + m.name }),
+  fixedBolus: (m, lead, units) => ({ drug: 'lispro', cls: 'rapid', mode: 'fixed', units, at: m.time - lead, win: 45,
+    label: 'lispro', detail: 'fixed, ' + m.name }),
+  oral: (drug, at, amount, detail) => ({ drug, cls: 'oral', mode: 'oral', amount, at, win: 120, label: ORAL[drug].label, detail }),
+  slide: at => ({ drug: 'lispro', cls: 'rapid', mode: 'sliding', at, win: 60, label: 'lispro', detail: 'sliding scale' }),
+};
+const SS_ROWS = [[70, 149, 0], [150, 199, 2], [200, 249, 4], [250, 299, 6], [300, 349, 8], [350, 999, 10]];
+const slideDose = g => { if (g < 70) return 0; const r = SS_ROWS.find(r => g >= r[0] && g <= r[1]); return r ? r[2] : 0; };
+const perMeal = (c, drug, amount, note) => c.meals.map(m => D.oral(drug, m.time, amount, note + m.name));
+const metBid = () => [D.oral('metformin', 480, '1000 mg', 'with breakfast'), D.oral('metformin', 1140, '1000 mg', 'with dinner')];
+
+/* ======================= regimens ====================================== */
+const REGIMENS = {
+  t1: [
+    { id: 'mdi', name: 'Basal–bolus, carbohydrate counted', tag: 'standard of care',
+      blurb: 'Long-acting once at night. Rapid-acting fifteen minutes before each meal, sized to that meal and corrected for the current glucose.',
+      build: (P, c) => [D.basal('glargine', 1320, c.basal), ...c.meals.map(m => D.mealBolus(m, 15))] },
+    { id: 'lateBolus', name: 'Basal–bolus, bolus at the first bite', tag: 'common in practice',
+      blurb: 'Identical doses, given as the plate arrives instead of a quarter of an hour ahead. Worth seeing what that head start is actually worth.',
+      build: (P, c) => [D.basal('glargine', 1320, c.basal), ...c.meals.map(m => D.mealBolus(m, 0))] },
+    { id: 'ultra', name: 'Ultra-rapid analogue at the first bite', tag: 'faster insulin',
+      blurb: 'The same late timing, but with an analogue that peaks in half the time. Fixing a timing problem with pharmacology instead of with behaviour.',
+      build: (P, c) => [D.basal('glargine', 1320, c.basal), ...c.meals.map(m => D.mealBolus(m, 0, 1, 'faster'))] },
+    { id: 'inhaled', name: 'Inhaled insulin at meals', tag: 'very fast, very short',
+      blurb: 'Peaks around a quarter of an hour and is gone inside two. Excellent against a fast breakfast, thin cover for a fatty dinner.',
+      build: (P, c) => [D.basal('glargine', 1320, c.basal), ...c.meals.map(m => D.mealBolus(m, 0, 1, 'inhaled'))] },
+    { id: 'weekly', name: 'Weekly basal, rapid at meals', tag: 'one basal injection a week',
+      blurb: 'Flat and forgiving day to day, but a titration error now takes a week to wash out instead of a night.',
+      build: (P, c) => [{ ...D.basal('weekly', 1320, half(c.basal * 6.25), 'weekly basal'), win: 180 }, ...c.meals.map(m => D.mealBolus(m, 15))] },
+    { id: 'fixed', name: 'Basal–bolus, fixed meal doses', tag: 'no carb counting',
+      blurb: 'The mealtime dose never changes. Comfortable on a predictable plate and badly wrong on an unusual one.',
+      build: (P, c) => { const avg = c.meals.reduce((a, m) => a + m.carbs, 0) / Math.max(1, c.meals.length);
+        return [D.basal('glargine', 1320, c.basal), ...c.meals.map(m => D.fixedBolus(m, 15, half(avg / c.icr * c.aggr / 100)))]; } },
+    { id: 'nph', name: 'NPH and regular, twice daily', tag: 'pre-analogue',
+      blurb: 'Two injections instead of five. NPH peaks in the afternoon and again in the small hours, so meals have to fit its schedule rather than yours.',
+      build: (P, c) => { const tdd = c.basal + c.meals.reduce((a, m) => a + m.carbs, 0) / c.icr,
+        am = tdd * 0.66, pm = tdd * 0.34; return [
+        D.basal('nph', 420, half(am * 0.66), 'NPH'), { ...D.basal('regular', 420, half(am * 0.34), 'regular'), cls: 'short', detail: 'with breakfast' },
+        D.basal('nph', 1080, half(pm * 0.5), 'NPH'), { ...D.basal('regular', 1080, half(pm * 0.5), 'regular'), cls: 'short', detail: 'with dinner' }]; } },
+    { id: 'pram', name: 'Basal–bolus plus amylin at meals', tag: 'needs the bolus cut',
+      blurb: 'Pramlintide slows the stomach and suppresses glucagon, flattening the peak by a different amount at every meal. It earns its place against a large fast plate. The label says to halve the mealtime bolus; run it both ways and see what that costs in time in range.',
+      build: (P, c) => [D.basal('glargine', 1320, c.basal), ...c.meals.map(m => D.mealBolus(m, 15)),
+        ...perMeal(c, 'pramlintide', '60 mcg', 'with ')] },
+    { id: 'sota', name: 'Basal–bolus plus an SGLT inhibitor', tag: 'off-label, ketone risk',
+      blurb: 'Sotagliflozin blocks renal SGLT2 and intestinal SGLT1, flattening meals and lowering the A1c without touching insulin. It also raises ketones in someone who cannot make any.',
+      build: (P, c) => [D.basal('glargine', 1320, c.basal), ...c.meals.map(m => D.mealBolus(m, 15)),
+        D.oral('sotagliflozin', 480, '200 mg', 'with breakfast')] },
+    { id: 'basalonly', name: 'Basal insulin only', tag: 'incomplete',
+      blurb: 'Long-acting and nothing else. The fasting glucose will look respectable and every meal will run away.',
+      build: (P, c) => [D.basal('glargine', 1320, c.basal)] },
+    { id: 'ss', name: 'Sliding scale alone', tag: 'still written on wards',
+      blurb: 'No basal and no meal cover: a correction every four hours based on a glucose that is already history. Reactive by construction.',
+      build: () => [360, 600, 840, 1080, 1320, 120].map(t => D.slide(t)) },
+  ],
+  t2: [
+    { id: 'met', name: 'Metformin alone', tag: 'first line',
+      blurb: 'Turns down hepatic glucose output. Cannot cause hypoglycaemia, which is most of why it is first.',
+      build: () => metBid() },
+    { id: 'metsu', name: 'Metformin and glimepiride', tag: 'cheap, effective, risky',
+      blurb: 'Squeezes the remaining beta cells whether or not glucose is high, and is cleared by the kidney so it accumulates. That is where both its power and its danger come from.',
+      build: () => [...metBid(), D.oral('sulfonylurea', 480, '4 mg', 'with breakfast')] },
+    { id: 'metrep', name: 'Metformin and repaglinide with meals', tag: 'same channel, safer',
+      blurb: 'The same target as glimepiride, gone within the hour and cleared by the liver. Dosed per meal, so skipping the meal skips the dose. Run this against glimepiride on a poor-intake day or a low eGFR.',
+      build: (P, c) => [...metBid(), ...perMeal(c, 'repaglinide', '1 mg', 'with ')] },
+    { id: 'metglp', name: 'Metformin and semaglutide', tag: 'weight and glucose',
+      blurb: 'Weekly. Insulin release only when glucose is up, glucagon down, the stomach slowed and appetite with it. Very little hypoglycaemia on its own.',
+      build: () => [...metBid(), D.oral('glp1', 540, '1 mg', 'once weekly')] },
+    { id: 'mettirz', name: 'Metformin and tirzepatide', tag: 'dual incretin',
+      blurb: 'GIP as well as GLP-1: a stronger incretin effect and more gastric slowing than semaglutide, with the same near-absence of hypoglycaemia.',
+      build: () => [...metBid(), D.oral('tirzepatide', 540, '10 mg', 'once weekly')] },
+    { id: 'metsglt', name: 'Metformin and empagliflozin',
+      blurb: 'Drops the renal threshold so the kidney spills glucose all day. Independent of insulin entirely, so again almost no hypoglycaemia.',
+      build: () => [...metBid(), D.oral('sglt2', 480, '10 mg', 'with breakfast')] },
+    { id: 'modern', name: 'Metformin, tirzepatide and empagliflozin', tag: 'no hypoglycaemia risk',
+      blurb: 'Three mechanisms, none of which forces insulin out of a beta cell. The combination most likely to reach target without a single low.',
+      build: () => [...metBid(), D.oral('tirzepatide', 540, '10 mg', 'once weekly'), D.oral('sglt2', 480, '10 mg', 'with breakfast')] },
+    { id: 'metbasal', name: 'Metformin and bedtime basal insulin', tag: 'when orals run out',
+      blurb: 'Long-acting at night to fix the fasting number, titrated up until it is in range. Push past that and you have bought nocturnal lows instead.',
+      build: (P, c) => [...metBid(), D.basal('glargine', 1320, c.basal)] },
+    { id: 'metweekly', name: 'Metformin and weekly basal insulin', tag: 'one injection a week',
+      blurb: 'The same job as bedtime glargine with a fraction of the injections, and a week of inertia when the dose is wrong.',
+      build: (P, c) => [...metBid(), { ...D.basal('weekly', 1320, half(c.basal * 6.25), 'weekly basal'), win: 180 }] },
+    { id: 'bb', name: 'Full basal–bolus and metformin', tag: 'maximal',
+      blurb: 'Everything insulin can offer. Lowest achievable A1c, highest hypoglycaemia exposure, five injections a day.',
+      build: (P, c) => [...metBid(), D.basal('glargine', 1320, c.basal), ...c.meals.map(m => D.mealBolus(m, 15))] },
+    { id: 'ss', name: 'Sliding scale alone', tag: 'inpatient anti-pattern',
+      blurb: 'Correction every four hours and nothing scheduled. Reliably produces both the highs it is treating and the lows it causes.',
+      build: () => [360, 600, 840, 1080, 1320, 120].map(t => D.slide(t)) },
+  ],
+  t3c: [
+    { id: 'bbpert', name: 'Cautious basal–bolus with enzymes', tag: 'recommended',
+      blurb: 'Enzymes with every meal so the carbohydrate actually turns up, conservative doses and a higher target, because there is no glucagon to catch a mistake.',
+      build: (P, c) => [D.basal('glargine', 1320, c.basal),
+        ...c.meals.flatMap(m => [D.oral('pert', m.time, '40 000 units', 'with ' + m.name), D.mealBolus(m, 10)])] },
+    { id: 'bbfaster', name: 'Ultra-rapid analogue with enzymes', tag: 'matched to erratic absorption',
+      blurb: 'A shorter insulin tail is easier to live with when you cannot predict how much of the meal will cross the gut wall.',
+      build: (P, c) => [D.basal('glargine', 1320, c.basal),
+        ...c.meals.flatMap(m => [D.oral('pert', m.time, '40 000 units', 'with ' + m.name), D.mealBolus(m, 5, 1, 'faster')])] },
+    { id: 'bbnopert', name: 'Basal–bolus without enzymes', tag: 'the usual mistake',
+      blurb: 'The insulin is dosed for the carbohydrate on the plate, but a third of it never crosses the gut wall, and not the same third each time.',
+      build: (P, c) => [D.basal('glargine', 1320, c.basal), ...c.meals.map(m => D.mealBolus(m, 10))] },
+    { id: 'tight', name: 'Tight basal–bolus, dosed off the rules of thumb', tag: 'too tight for this pancreas',
+      blurb: 'The 500 and 1800 rules and a type 1 target, applied to someone with no glucagon. The A1c comes out excellent right up until it does not.',
+      build: (P, c) => [D.basal('glargine', 1320, half(c.basal * 1.2)),
+        ...c.meals.flatMap(m => [D.oral('pert', m.time, '40 000 units', 'with ' + m.name),
+          D.mealBolus(m, 20, Math.max(1.4, P.icr / Math.max(1, P.icrRule)))])] },
+    { id: 'su', name: 'Glimepiride and metformin', tag: 'mechanistically hopeless',
+      blurb: 'Written when type 3c is mistaken for type 2. There are no beta cells left to squeeze.',
+      build: () => [...metBid(), D.oral('sulfonylurea', 480, '4 mg', 'with breakfast')] },
+    { id: 'repa', name: 'Repaglinide with meals', tag: 'also hopeless, for the same reason',
+      blurb: 'The safer secretagogue is still a secretagogue. Worth one run to see that safe and effective are different questions.',
+      build: (P, c) => perMeal(c, 'repaglinide', '1 mg', 'with ') },
+    { id: 'basalonly', name: 'Basal insulin only, enzymes', tag: 'incomplete',
+      blurb: 'Safer than it sounds in a brittle patient, and never enough after a meal.',
+      build: (P, c) => [D.basal('glargine', 1320, c.basal), ...perMeal(c, 'pert', '40 000 units', 'with ')] },
+  ],
+};
+
+/* ======================= taught cases ================================== */
+const CASES = [
+  { id: 't1-new', name: 'Newly diagnosed type 1', who: '24 years old, 66 kg, two months in',
+    find: 'A honeymoon pancreas is still contributing. Look at how far the measured carb ratio sits from the 500 rule, and remember that gap closes over the next year.',
+    px: { type: 't1', weight: 66, beta: 0.16, alpha: 0.6, siMul: 1.05, egfr: 108 },
+    meals: 'standard', regimen: 'mdi' },
+  { id: 't1-brittle', name: 'Brittle type 1', who: '19 years old, 62 kg, eleven years in',
+    find: 'The average is respectable and the day is chaos. Variability, not mean glucose, is the thing to fix.',
+    px: { type: 't1', weight: 62, beta: 0, alpha: 0.18, siMul: 1.15, egfr: 112 },
+    behav: { carbErr: 30, siteVar: 18, adherence: 90 }, meals: 'heavy', regimen: 'mdi' },
+  { id: 't1-gastro', name: 'Type 1 with gastroparesis', who: '44 years old, 71 kg, autonomic neuropathy',
+    find: 'The bolus arrives long before the food. Watch the early low and the late high, then try dosing after the meal instead.',
+    px: { type: 't1', weight: 71, beta: 0, alpha: 0.22, gastric: 0.32, egfr: 58 },
+    meals: 'standard', regimen: 'mdi' },
+  { id: 't1-alcohol', name: 'Type 1, two drinks with dinner', who: '27 years old, 74 kg, doses correctly',
+    find: 'Every dose was right and the A1c looks excellent. Look at the night.',
+    px: { type: 't1', weight: 74, beta: 0, alpha: 0.42, alcohol: true },
+    meals: 'standard', regimen: 'mdi' },
+  { id: 't2-new', name: 'Newly diagnosed type 2', who: '54 years old, 104 kg, A1c 8.6',
+    find: 'What metformin alone can and cannot do, and why the fasting number moves further than the post-meal ones.',
+    px: { type: 't2', weight: 104, beta: 0.6, alpha: 1, siMul: 0.5, egpMul: 1.15, egfr: 86 },
+    meals: 'heavy', regimen: 'met' },
+  { id: 't2-su-ckd', name: 'Elderly type 2 on glimepiride', who: '79 years old, 66 kg, eGFR 24, barely eating',
+    find: 'Three hits at once: a renally cleared secretagogue, a failing kidney, no food. Then swap to repaglinide and run the identical day.',
+    px: { type: 't2', weight: 66, beta: 0.45, alpha: 0.85, siMul: 0.72, egfr: 24 },
+    meals: 'poor', regimen: 'metsu' },
+  { id: 't2-overbasal', name: 'Over-basalised type 2', who: '61 years old, 98 kg, basal crept to 0.55 u/kg',
+    find: 'Nocturnal lows with a high daytime trace. The answer is less basal and some meal cover, not more basal.',
+    px: { type: 't2', weight: 98, beta: 0.4, alpha: 0.95, siMul: 0.55, egfr: 74 },
+    meals: 'standard', regimen: 'metbasal', over: { basal: 64 } },
+  { id: 't3c-whipple', name: 'Type 3c after pancreatoduodenectomy', who: '58 years old, 59 kg, no enzymes prescribed',
+    find: 'Enzyme replacement is a glucose drug. Run it without, then with, and compare the swings rather than the averages.',
+    px: { type: 't3c', weight: 59, beta: 0.03, alpha: 0.04, exo: 0.42, siMul: 1.1, pert: false },
+    meals: 'standard', regimen: 'bbnopert' },
+  { id: 'steroid', name: 'Inpatient on high-dose steroids', who: '66 years old, 92 kg, dexamethasone, scale only',
+    find: 'Marked resistance plus a regimen that can only react. Scheduled insulin is the fix and the scale will never find it.',
+    px: { type: 't2', weight: 92, beta: 0.5, alpha: 1, siMul: 0.3, egpMul: 1.42, egfr: 66 },
+    meals: 'standard', regimen: 'ss' },
+];
+
+const RUN_MODES = [
+  { id: 'watch', name: 'Watch it play out', desc: 'Every scheduled dose given on time and correctly. The fastest way to compare two regimens.' },
+  { id: 'manual', name: 'You do the dosing', desc: 'Buttons light up when a dose is due. Nothing happens unless you press something.' },
+  { id: 'live', name: 'Stop me at every decision', desc: 'The clock halts wherever a clinician would have to decide something, with a countdown and a scored verdict afterwards.' },
+];
+
+/* ======================= configuration state =========================== */
+const cfg = {
+  src: 'case', caseId: null, days: 1,
+  px: { type: 't1', weight: 68, beta: 0, alpha: 0.45, siMul: 1, egpMul: 1, egfr: 92, gastric: 1, exo: 1, pert: true, alcohol: false },
+  behav: { carbErr: 0, siteVar: 0, adherence: 100 },
+  meals: [], acts: [], preset: 'standard',
+  regimen: 'mdi', target: 120, icr: 12, isf: 45, basal: 15, aggr: 100,
+  runMode: 'manual', timer: 25, chime: false, autopilot: false,
+  fitted: null,
+};
+let P = null;
+
+const mealName = t => t < 630 ? 'breakfast' : t < 900 ? 'lunch' : t < 1020 ? 'afternoon snack' : t < 1260 ? 'dinner' : 'bedtime snack';
+function loadPreset(k) {
+  const p = MEAL_PRESETS[k]; cfg.preset = k;
+  cfg.meals = p.meals.map(([time, carbs, gi]) => ({ id: ++uid, time, carbs, gi, name: mealName(time) }));
+  cfg.acts = p.acts.map(([time, dur, intensity]) => ({ id: ++uid, time, dur, intensity }));
+}
+function applyType(k) {
+  const b = TYPES[k];
+  Object.assign(cfg.px, { type: k, weight: b.weight, beta: b.beta, alpha: b.alpha,
+    siMul: b.siMul, egpMul: b.egpMul, egfr: 92, gastric: 1, exo: b.exocrine ? 0.62 : 1, pert: !!b.exocrine });
+  cfg.regimen = REGIMENS[k][0].id;
+}
+function applyCase(c) {
+  cfg.caseId = c.id;
+  applyType(c.px.type);
+  Object.assign(cfg.px, c.px);
+  Object.assign(cfg.behav, { carbErr: 0, siteVar: 0, adherence: 100 }, c.behav || {});
+  loadPreset(c.meals);
+  cfg.regimen = c.regimen;
+  $('#wt').value = cfg.px.weight; $('#wtOut').textContent = cfg.px.weight;
+  refreshPatient();
+  if (c.over) for (const [k, v] of Object.entries(c.over)) { cfg[k] = v; const el = $('#' + k); if (el) el.value = v; }
+  refreshRegOut();
+}
+
+/* ======================= setup rendering =============================== */
+function renderTabs() {
+  for (const b of $('#pxTabs').querySelectorAll('button')) b.setAttribute('aria-pressed', b.dataset.m === cfg.src);
+  $('#caseBox').hidden = cfg.src !== 'case';
+  $('#buildBox').hidden = cfg.src !== 'build';
+  $('#realBox').hidden = cfg.src !== 'real';
+}
+function renderCases() {
+  const box = $('#caseCards'); box.innerHTML = '';
+  for (const c of CASES) {
+    const reg = REGIMENS[c.px.type].find(r => r.id === c.regimen);
+    const b = mk('button', 'card', `<div class="cname">${c.name}</div>
+      <div class="cdesc"><b style="color:var(--fg)">${c.who}.</b> ${c.find}</div>
+      <div class="cstat">${MEAL_PRESETS[c.meals].name.toLowerCase()} · ${reg ? reg.name.toLowerCase() : c.regimen}</div>`);
+    b.setAttribute('aria-pressed', cfg.caseId === c.id);
+    b.onclick = () => { applyCase(c); renderAll(); };
+    box.appendChild(b);
+  }
+}
+function renderTypeCards() {
+  const box = $('#typeCards'); box.innerHTML = '';
+  for (const k of ['t1', 't2', 't3c']) {
+    const i = TYPE_INFO[k];
+    const b = mk('button', 'card', `<div class="cname">${i.title}</div>
+      <div class="cdesc"><b style="color:var(--fg)">${i.line}.</b> ${i.desc}</div><div class="cstat">${i.stat}</div>`);
+    b.setAttribute('aria-pressed', cfg.px.type === k);
+    b.onclick = () => { cfg.caseId = null; applyType(k); $('#wt').value = cfg.px.weight; $('#wtOut').textContent = cfg.px.weight;
+      renderCases(); renderTypeCards(); renderSliders(); renderMods(); renderRegCards(); refreshPatient(); };
+    box.appendChild(b);
+  }
+}
+function renderSliders() {
+  const box = $('#advBox'); box.innerHTML = '';
+  const add = (def, store) => {
+    const raw = store[def.k];
+    const shown = def.pct ? Math.round(raw * 100) : Math.round(raw * 100) / 100;
+    const d = mk('div', 'sl', `<label><span>${def.lab}</span><b>${shown}${def.unit}</b></label>
+      <input type="range" min="${def.min}" max="${def.max}" step="${def.step}" value="${raw}">
+      <div class="note">${def.note}</div>`);
+    const inp = d.querySelector('input'), out = d.querySelector('b');
+    inp.oninput = e => {
+      const v = +e.target.value;
+      store[def.k] = v;
+      out.textContent = (def.pct ? Math.round(v * 100) : Math.round(v * 100) / 100) + def.unit;
+      cfg.caseId = null;
+      clearTimeout(inp._t); inp._t = setTimeout(() => { refreshPatient(); renderCases(); }, 160);
+    };
+    box.appendChild(d);
+  };
+  for (const s of SLIDERS) add(s, cfg.px);
+  for (const s of BEHAV) add(s, cfg.behav);
+}
+function renderMods() {
+  const box = $('#modCards'); box.innerHTML = '';
+  for (const m of MODS) {
+    const l = mk('label', 'check', `<input type="checkbox" ${cfg.px[m.k] ? 'checked' : ''}><span><b>${m.t}</b><i>${m.d}</i></span>`);
+    l.querySelector('input').onchange = e => { cfg.px[m.k] = e.target.checked; cfg.caseId = null; refreshPatient(); };
+    box.appendChild(l);
+  }
+}
+function renderMealPresets() {
+  const box = $('#mealPresets'); box.innerHTML = '';
+  for (const [k, p] of Object.entries(MEAL_PRESETS)) {
+    const b = mk('button', 'card', `<div class="cname">${p.name}</div><div class="cdesc">${p.desc}</div>`);
+    b.setAttribute('aria-pressed', cfg.preset === k);
+    b.onclick = () => { loadPreset(k); renderMealPresets(); renderMeals(); renderActs(); refreshRegOut(); };
+    box.appendChild(b);
+  }
+}
+function renderMeals() {
+  const t = $('#mealTable');
+  t.innerHTML = '<tr><th style="width:88px">Time</th><th style="width:82px">Carbs (g)</th><th>Composition</th><th style="width:34px"></th></tr>';
+  cfg.meals.sort((a, b) => a.time - b.time);
+  for (const m of cfg.meals) {
+    const tr = mk('tr', null, `<td><input type="time" value="${hhmm(m.time)}" style="width:82px"></td>
+      <td><input type="number" value="${m.carbs}" min="0" max="300" step="5" style="width:66px"></td>
+      <td><select style="width:100%; max-width:250px">
+        <option value="fast">fast — juice, cereal, white bread</option>
+        <option value="mixed">mixed — a normal plate</option>
+        <option value="fatty">slow — pizza, curry, lots of fat</option></select></td>
+      <td><button class="xbtn" title="Remove">×</button></td>`);
+    const [ti, ca, gi] = tr.querySelectorAll('input,select');
+    gi.value = m.gi;
+    ti.onchange = e => { m.time = parseHM(e.target.value); m.name = mealName(m.time); renderMeals(); refreshRegOut(); };
+    ca.onchange = e => { m.carbs = cl(+e.target.value || 0, 0, 300); refreshRegOut(); };
+    gi.onchange = e => { m.gi = e.target.value; };
+    tr.querySelector('button').onclick = () => { cfg.meals = cfg.meals.filter(x => x !== m); renderMeals(); refreshRegOut(); };
+    t.appendChild(tr);
+  }
+}
+function renderActs() {
+  const t = $('#actTable');
+  t.innerHTML = '<tr><th style="width:88px">Time</th><th style="width:98px">Minutes</th><th>Effort</th><th style="width:34px"></th></tr>';
+  cfg.acts.sort((a, b) => a.time - b.time);
+  for (const a of cfg.acts) {
+    const tr = mk('tr', null, `<td><input type="time" value="${hhmm(a.time)}" style="width:82px"></td>
+      <td><input type="number" value="${a.dur}" min="5" max="240" step="5" style="width:66px"></td>
+      <td><select style="width:100%; max-width:250px">
+        <option value="0.3">easy walk</option><option value="0.55">brisk, steady</option>
+        <option value="0.8">hard session</option><option value="1">flat out</option></select></td>
+      <td><button class="xbtn" title="Remove">×</button></td>`);
+    const [ti, du, ins] = tr.querySelectorAll('input,select');
+    ins.value = String(a.intensity);
+    ti.onchange = e => { a.time = parseHM(e.target.value); renderActs(); };
+    du.onchange = e => { a.dur = cl(+e.target.value || 30, 5, 240); };
+    ins.onchange = e => { a.intensity = +e.target.value; };
+    tr.querySelector('button').onclick = () => { cfg.acts = cfg.acts.filter(x => x !== a); renderActs(); };
+    t.appendChild(tr);
+  }
+}
+function renderRegCards() {
+  const box = $('#regCards'); box.innerHTML = '';
+  for (const r of REGIMENS[cfg.px.type]) {
+    const b = mk('button', 'card', `<div class="cname">${r.name}</div><div class="cdesc">${r.blurb}</div>
+      ${r.tag ? `<div class="cstat">${r.tag}</div>` : ''}`);
+    b.setAttribute('aria-pressed', cfg.regimen === r.id);
+    b.onclick = () => { cfg.regimen = r.id; renderRegCards(); refreshRegOut(); };
+    box.appendChild(b);
+  }
+}
+function renderModeCards() {
+  const box = $('#modeCards'); box.innerHTML = '';
+  for (const m of RUN_MODES) {
+    const b = mk('button', 'card', `<div class="cname">${m.name}</div><div class="cdesc">${m.desc}</div>`);
+    b.setAttribute('aria-pressed', cfg.runMode === m.id);
+    b.onclick = () => { cfg.runMode = m.id; cfg.autopilot = m.id === 'watch'; renderModeCards(); };
+    box.appendChild(b);
+  }
+}
+function renderAll() {
+  renderTabs(); renderCases(); renderTypeCards(); renderSliders(); renderMods();
+  renderMealPresets(); renderMeals(); renderActs(); renderRegCards(); renderModeCards();
+}
+function currentRegimen() { return REGIMENS[cfg.px.type].find(r => r.id === cfg.regimen) || REGIMENS[cfg.px.type][0]; }
+
+function refreshPatient() {
+  P = makePatient(cfg.px);
+  cfg.icr = P.icr; cfg.isf = P.isf; cfg.basal = P.basalUday;
+  $('#icr').value = cfg.icr; $('#isf').value = cfg.isf; $('#basal').value = cfg.basal;
+  const warn = [];
+  if (cfg.px.egfr < 30) warn.push('eGFR below 30: metformin should come off, and glimepiride will accumulate.');
+  else if (cfg.px.egfr < 45) warn.push('eGFR below 45: reduce metformin and expect insulin to clear more slowly.');
+  if (P.beta < 0.12) warn.push('Almost no beta-cell function, so nothing that squeezes the pancreas will do anything.');
+  if (P.alpha < 0.12) warn.push('No glucagon reserve. Nothing will catch a low on the way down.');
+  if (P.exo < 0.95 && !cfg.px.pert) warn.push('Enzyme output is reduced with no replacement prescribed, so absorption will be erratic.');
+  $('#patientOut').innerHTML = `<dl>
+    <div><dt>Beta-cell function</dt><dd>${Math.round(P.beta * 100)}%<em> of normal</em></dd></div>
+    <div><dt>Glucagon defence</dt><dd>${Math.round(P.alpha * 100)}%<em> of normal</em></dd></div>
+    <div><dt>Measured correction factor</dt><dd>${P.isf}<em> mg/dL per unit · rule of thumb ${P.isfRule}</em></dd></div>
+    <div><dt>Measured carb ratio</dt><dd>${P.icr}<em> g per unit · rule of thumb ${P.icrRule}</em></dd></div>
+    <div><dt>${P.beta > 0.25 ? 'Starting basal dose' : 'Basal requirement'}</dt><dd>${P.basalUday}<em> units${P.beta > 0.25 ? ' · 0.2 u/kg, titrate' : '/day, measured'}</em></dd></div>
+  </dl>
+  <div class="tiny faint" style="margin-top:11px; padding-top:9px; border-top:1px solid var(--rule-soft)">
+    Those two factors were measured by running this patient twice, once with the dose and once without,
+    rather than taken from the 1800 and 500 rules. Where they disagree, the rule of thumb is the thing
+    that is wrong.</div>
+  ${warn.length ? `<div class="tiny" style="margin-top:9px; color:var(--high)">${warn.join('<br>')}</div>` : ''}`;
+  refreshRegOut();
+}
+function refreshRegOut() {
+  if (!P) return;
+  const num = (sel, fb) => { const v = $(sel).value; return v === '' || isNaN(+v) ? fb : +v; };
+  cfg.target = num('#target', 120); cfg.icr = num('#icr', P.icr) || P.icr;
+  cfg.isf = num('#isf', P.isf) || P.isf; cfg.basal = num('#basal', P.basalUday);
+  cfg.aggr = num('#aggr', 100) || 100;
+  const sched = currentRegimen().build(P, cfg).slice().sort((a, b) => a.at - b.at);
+  const carbOf = d => { const m = cfg.meals.find(x => x.id === d.mealId); return m ? m.carbs : 0; };
+  const rows = sched.map(d => {
+    const amt = d.mode === 'fixed' ? d.units + ' u' : d.mode === 'oral' ? d.amount
+      : d.mode === 'carb' ? `${carbOf(d)} g ÷ ${cfg.icr} ≈ ${half(carbOf(d) / cfg.icr * cfg.aggr / 100 * (d.scale || 1))} u`
+      : 'from the scale';
+    return `<tr><td class="num" style="width:62px">${hhmm(d.at)}</td><td style="width:120px">${d.label}</td>
+      <td class="num">${amt}</td><td class="dim tiny">${d.detail}</td></tr>`;
+  }).join('');
+  const daily = sched.reduce((a, d) => a + (d.cls === 'oral' ? 0 : d.mode === 'fixed'
+    ? (d.drug === 'weekly' ? d.units / 7 : d.units)
+    : d.mode === 'carb' ? carbOf(d) / cfg.icr * cfg.aggr / 100 * (d.scale || 1) : 0), 0);
+  $('#regOut').innerHTML = `<h4 style="margin-bottom:7px">${sched.length} scheduled doses a day</h4>
+    <table class="grid" style="margin-top:0">${rows || '<tr><td class="dim">Nothing scheduled.</td></tr>'}</table>
+    <div class="tiny faint" style="margin-top:10px">Projected insulin: about ${r1(daily)} units a day${daily ? ` (${Math.round(daily / cfg.px.weight * 100) / 100} u/kg)` : ''}.</div>`;
+}
+
+/* ======================= wiring ======================================== */
+loadPreset('standard');
+renderAll();
+$('#pxTabs').onclick = e => { const b = e.target.closest('button'); if (!b) return; cfg.src = b.dataset.m; renderTabs(); };
+let wtTimer;
+$('#wt').oninput = e => { cfg.px.weight = +e.target.value; $('#wtOut').textContent = cfg.px.weight; cfg.caseId = null;
+  clearTimeout(wtTimer); wtTimer = setTimeout(() => { refreshPatient(); renderCases(); }, 140); };
+$('#aggr').oninput = e => { $('#aggrOut').textContent = e.target.value; refreshRegOut(); };
+$('#days').onchange = e => { cfg.days = +e.target.value; };
+$('#timerSel').onchange = e => { cfg.timer = +e.target.value; };
+for (const id of ['#target', '#icr', '#isf', '#basal']) $(id).onchange = refreshRegOut;
+$('#addMeal').onclick = () => { cfg.meals.push({ id: ++uid, time: 780, carbs: 40, gi: 'mixed', name: 'lunch' }); renderMeals(); refreshRegOut(); };
+$('#addAct').onclick = () => { cfg.acts.push({ id: ++uid, time: 1020, dur: 30, intensity: 0.55 }); renderActs(); };
+$('#chime').onchange = e => { cfg.chime = e.target.checked; };
+$('#wt').value = cfg.px.weight; $('#wtOut').textContent = cfg.px.weight;
+refreshPatient();
+
+window.__gs = { cfg, get P() { return P; }, set P(v) { P = v; }, currentRegimen, REGIMENS, CASES,
+  D, SS_ROWS, slideDose, MEAL_PRESETS, refreshPatient, refreshRegOut, renderAll,
+  loadPreset, mealName, $, mk, hhmm, cl, r1, half };
+})();
+(() => {
+'use strict';
+const G = window.__gs;
+const { cfg, currentRegimen, SS_ROWS, slideDose, $, mk, hhmm, cl, r1, half } = G;
+
+const CLOCK0 = 360;                                    // the day starts at 06:00
+const absT = (at, day) => ((at - CLOCK0 + 1440) % 1440) + day * 1440;
+const clockAt = t => (CLOCK0 + t) % 1440;
+const dayOf = t => Math.floor(t / 1440) + 1;
+const zoneOf = g => g < 54 ? 'vlow' : g < 70 ? 'low' : g <= 180 ? 'inrange' : g <= 250 ? 'high' : 'vhigh';
+const zoneWord = { vlow: 'dangerously low', low: 'below range', inrange: 'in range', high: 'above range', vhigh: 'far above range' };
+const gauss = () => (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
+// Per-dose response variability, as a percentage, for the agents where it matters
+const ORAL_VAR = { pramlintide: 50, pert: 28, repaglinide: 12 };
+const doseMult = drug => Math.max(0.2, 1 + (ORAL_VAR[drug] || 0) / 100 * gauss());
+const jitter = pct => Math.max(0.35, 1 + (pct / 100) * gauss());
+const CV = {};
+const cssv = k => (CV[k] || (CV[k] = getComputedStyle(document.documentElement).getPropertyValue('--' + k).trim()));
+
+let P, S, slots = [], mealEv = [], actEv = [], endT = 1440, speed = 60, running = false;
+let missed = 0, logRows = [], met = null, fc = [], lastMet = -99, lastFc = -99, lastRack = -99, winH = 12;
+let junction = null, jLog = [], jCool = {}, prevSpeed = 60;
+const runs = [];
+
+let ac; function beep() {
+  if (!cfg.chime) return;
+  try {
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'sine'; o.frequency.value = 880;
+    g.gain.setValueAtTime(0, ac.currentTime);
+    g.gain.linearRampToValueAtTime(0.10, ac.currentTime + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0005, ac.currentTime + 0.26);
+    o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime + 0.28);
+  } catch (e) { /* no audio */ }
+}
+function log(text, kind) {
+  logRows.unshift({ clock: S ? clockAt(S.t) : CLOCK0, text, kind });
+  if (logRows.length > 400) logRows.pop();
+}
+
+/* ================= scheduling, shared with the headless run ============ */
+function buildSchedule(Px, conf, days) {
+  const desc = currentRegimen().build(Px, conf);
+  const sl = desc.map(d => ({ ...d, instances: Array.from({ length: days }, (_, day) => ({
+    t: absT(d.at, day), status: 'pending', given: 0, at: null })) }));
+  sl.forEach(x => x.instances.sort((a, b) => a.t - b.t));
+  const me = [], ae = [];
+  for (let d = 0; d < days; d++) {
+    for (const m of conf.meals) me.push({ t: absT(m.time, d), carbs: m.carbs, gi: m.gi, name: m.name, id: m.id, done: false });
+    for (const a of conf.acts) ae.push({ t: absT(a.time, d), dur: a.dur, intensity: a.intensity, done: false });
+  }
+  return { slots: sl, mealEv: me, actEv: ae };
+}
+// Nobody wakes up insulin-naive: whatever this regimen gives once or twice a day
+// was also given yesterday.
+function seedYesterday(St, Px, sl) {
+  let basal = false;
+  for (const s of sl) {
+    const yest = absT(s.at, 0) - (s.drug === 'weekly' ? 4320 : 1440);
+    if ((s.cls === 'long' || s.cls === 'inter') && s.mode === 'fixed' && s.units > 0) {
+      St.insDoses.push({ kind: s.drug, units: s.units, t0: yest }); basal = true;
+    } else if (s.cls === 'oral') St.oralDoses.push({ drug: s.drug, t0: yest });
+  }
+  if (basal) { St.Ip = Px.xBasal * 0.85; St.X = Px.xBasal * 0.85; }
+}
+function computeUnits(St, Px, conf, s, estimateError) {
+  if (s.mode === 'fixed') return s.units;
+  if (s.mode === 'sliding') return slideDose(St.sensor);
+  if (s.mode === 'carb') {
+    const m = conf.meals.find(x => x.id === s.mealId);
+    const seen = (m ? m.carbs : 0) * (estimateError ? jitter(conf.behav.carbErr) : 1);
+    const carb = seen / conf.icr * conf.aggr / 100 * (s.scale || 1);
+    const corr = Math.max(0, (St.sensor - conf.target) / conf.isf - iob(St));
+    return half(Math.max(0, carb + corr));
+  }
+  return 0;
+}
+
+/* ================= headless day, used for fitting ===================== */
+function simHeadless(px, conf, days) {
+  const Px = makePatient({ ...px, fast: true });
+  const St = newState(Px, { G0: px.type === 't2' ? 165 : 172, clock0: CLOCK0 });
+  St.det = true;
+  const { slots: sl, mealEv: me, actEv: ae } = buildSchedule(Px, conf, days);
+  seedYesterday(St, Px, sl);
+  for (let t = 0; t < days * 1440; t++) {
+    for (const m of me) if (!m.done && m.t <= t) { m.done = true; eatMeal(St, m.carbs, m.gi); }
+    for (const a of ae) if (!a.done && a.t <= t) { a.done = true; St.exercise.push({ t0: t, dur: a.dur, intensity: a.intensity }); }
+    for (const s of sl) for (const i of s.instances) if (i.status === 'pending' && t >= i.t) {
+      i.status = 'taken';
+      if (s.mode === 'oral') St.oralDoses.push({ drug: s.drug, t0: t, mult: 1 });
+      else { const u = computeUnits(St, Px, conf, s, false); if (u > 0) St.insDoses.push({ kind: s.drug, units: u, t0: t }); }
+    }
+    step(St, Px);
+  }
+  return { P: Px, S: St, m: metrics(St.hist) };
+}
+
+/* ================= fitting to a real patient ========================== */
+function parseCgm(txt) {
+  const nums = (String(txt).match(/\d+(\.\d+)?/g) || []).map(Number).filter(n => n > 0);
+  if (nums.length < 6) return null;
+  const mmol = nums.filter(n => n <= 33).length > nums.length * 0.7;
+  const g = nums.map(n => (mmol ? n * 18 : n)).filter(n => n >= 20 && n <= 600);
+  if (g.length < 6) return null;
+  // resample to one minute so the episode rules and the index mean the same thing
+  const hist = [];
+  for (let t = 0; t < 1440; t++) {
+    const x = t / 1440 * (g.length - 1), i = Math.floor(x), f = x - i;
+    const v = g[i] + (g[Math.min(g.length - 1, i + 1)] - g[i]) * f;
+    hist.push({ t, clock: t % 1440, G: v, s: v, ket: 0 });
+  }
+  return { n: g.length, unit: mmol ? 'mmol/L' : 'mg/dL', m: metrics(hist) };
+}
+function fitSensitivity(px, conf, targetGmi) {
+  let lo = 0.18, hi = 2.1;
+  for (let i = 0; i < 15; i++) {
+    const mid = (lo + hi) / 2;
+    const gmi = simHeadless({ ...px, siMul: mid }, conf, 1).m.gmi;
+    if (gmi > targetGmi) lo = mid; else hi = mid;
+  }
+  return Math.round((lo + hi) / 2 * 100) / 100;
+}
+$('#rFit').onclick = () => {
+  const btn = $('#rFit');
+  btn.textContent = 'Fitting…'; btn.disabled = true;
+  setTimeout(() => {
+    try {
+      const obs = parseCgm($('#rCgm').value);
+      const targetGmi = obs ? obs.m.gmi : cl(+$('#rA1c').value || 8, 4.5, 16);
+      Object.assign(cfg.px, {
+        type: $('#rType').value,
+        weight: cl(+$('#rWt').value || 82, 30, 200),
+        egfr: cl(+$('#rEgfr').value || 88, 8, 130),
+      });
+      const b = TYPES[cfg.px.type];
+      Object.assign(cfg.px, { beta: b.beta, alpha: b.alpha, egpMul: b.egpMul, exo: b.exocrine ? 0.62 : 1, pert: !!b.exocrine });
+      $('#wt').value = cfg.px.weight;
+      const fitted = fitSensitivity(cfg.px, cfg, targetGmi);
+      cfg.px.siMul = fitted;
+      cfg.caseId = null;
+      G.refreshPatient(); G.renderAll();
+      const sim = simHeadless(cfg.px, cfg, 1).m;
+      const cell = (k, v, sub) => `<div><dt>${k}</dt><dd>${v}</dd>${sub ? `<div class="tiny faint">${sub}</div>` : ''}</div>`;
+      $('#fitOut').innerHTML = `<div class="readout">
+        <h4 style="margin-bottom:4px">Fitted insulin sensitivity ${fitted}×</h4>
+        <div class="tiny dim">Everything else was held at the type default. One free parameter against
+          one target is all this deserves, so it reproduces the average and nothing more.</div>
+        <dl class="fitout" style="margin-top:12px">
+          ${cell('Target A1c', targetGmi.toFixed(1) + '%', obs ? 'from ' + obs.n + ' readings' : 'as entered')}
+          ${cell('Simulated A1c', sim.gmi.toFixed(1) + '%', 'on the day and regimen below')}
+          ${obs ? cell('Their time in range', obs.m.inr.toFixed(0) + '%', 'observed') : ''}
+          ${cell('Simulated time in range', sim.inr.toFixed(0) + '%', '')}
+          ${obs ? cell('Their hypo index', obs.m.hypoIx.toFixed(1), 'observed') : ''}
+          ${cell('Simulated hypo index', sim.hypoIx.toFixed(1), '')}
+          ${obs ? cell('Their variability', Math.round(obs.m.cv) + '%', 'CV') : ''}
+        </dl>
+        ${obs && Math.abs(obs.m.inr - sim.inr) > 18 ? `<div class="tiny" style="color:var(--high); margin-top:10px">
+          The averages match but the shape does not, which usually means the day or the regimen entered
+          below is not the day they are actually having.</div>` : ''}</div>`;
+    } catch (e) {
+      $('#fitOut').innerHTML = `<div class="tiny" style="color:var(--low); margin-top:10px">Could not fit that. Check the numbers and try again.</div>`;
+    }
+    btn.textContent = 'Fit this patient'; btn.disabled = false;
+  }, 20);
+};
+
+/* ================= starting a live run ================================= */
+function start() {
+  P = G.P;
+  S = newState(P, { G0: cfg.px.type === 't2' ? 165 : 172, clock0: CLOCK0 });
+  endT = cfg.days * 1440; speed = 60; missed = 0; logRows = []; met = null; fc = [];
+  lastMet = -99; lastFc = -99; lastRack = -99; junction = null; jLog = []; jCool = {};
+  const built = buildSchedule(P, cfg, cfg.days);
+  slots = built.slots; mealEv = built.mealEv; actEv = built.actEv;
+  seedYesterday(S, P, slots);
+
+  $('#setup').style.display = 'none';
+  $('#app').classList.add('on');
+  $('#ptChip').innerHTML = `<b>${P.typeName}</b> · ${P.W} kg · eGFR ${Math.round(cfg.px.egfr)} · ${currentRegimen().name.toLowerCase()}`;
+  const mode = cfg.runMode;
+  $('#modeChip').hidden = mode === 'manual';
+  $('#modeChip').innerHTML = mode === 'watch' ? 'autopilot'
+    : `<b>live</b> · ${cfg.timer ? cfg.timer + ' s to decide' : 'no time limit'}`;
+  $('#spanLbl').textContent = cfg.days === 1 ? 'over the day so far' : 'over the run so far';
+  buildScaleTable(); buildExtras(); buildRack(); updateRack();
+  log(`06:00. ${P.typeName}, ${P.W} kg, on ${currentRegimen().name.toLowerCase()}.`, 'hi');
+  if (mode === 'watch') log('Autopilot: every scheduled dose will be given on time.', 'warn');
+  if (mode === 'live') log('Live mode: the clock will stop at each decision point.', 'warn');
+  running = true; frame.last = performance.now(); frame.acc = 0;
+  syncSpeed();
+  requestAnimationFrame(frame);
+}
+
+/* ================= the minute loop ==================================== */
+function tick() {
+  const t = S.t;
+  for (const m of mealEv) if (!m.done && m.t <= t) {
+    m.done = true; eatMeal(S, m.carbs, m.gi);
+    log(`${m.name}, ${m.carbs} g of ${m.gi === 'fast' ? 'fast' : m.gi === 'fatty' ? 'slow, fatty' : 'mixed'} carbohydrate.`, 'hi');
+  }
+  for (const a of actEv) if (!a.done && a.t <= t) {
+    a.done = true; S.exercise.push({ t0: t, dur: a.dur, intensity: a.intensity });
+    log(`${a.dur} minutes of ${a.intensity >= 0.8 ? 'hard' : a.intensity >= 0.5 ? 'brisk' : 'easy'} activity begins.`);
+  }
+  for (const s of slots) for (const i of s.instances) {
+    if (i.status === 'pending' && t >= i.t) {
+      if (cfg.autopilot) {
+        if (Math.random() * 100 <= cfg.behav.adherence) { give(s, i, false); }
+        else { i.status = 'missed'; missed++; log(`Not taken: ${s.label}, ${s.detail}.`, 'bad'); }
+        continue;
+      }
+      i.status = 'due'; beep();
+      if (s.mode === 'carb') { const m = cfg.meals.find(x => x.id === s.mealId); if (m) $('#cCarb').value = m.carbs; }
+    } else if (i.status === 'due' && t > i.t + s.win) {
+      i.status = 'missed'; missed++;
+      log(`Missed: ${s.label} ${s.detail}, due ${hhmm(clockAt(i.t))}.`, 'bad');
+    }
+  }
+  step(S, P);
+}
+
+function give(s, i, manual) {
+  const recorded = s.mode === 'oral' ? 0 : half(computeUnits(S, P, cfg, s, true));
+  if (s.mode === 'oral') S.oralDoses.push({ drug: s.drug, t0: S.t, mult: doseMult(s.drug) });
+  else if (recorded > 0) S.insDoses.push({ kind: s.drug, units: recorded * jitter(cfg.behav.siteVar), t0: S.t });
+  i.status = 'taken'; i.given = recorded; i.at = S.t;
+  const drift = S.t - i.t;
+  const timing = !manual || Math.abs(drift) < 6 ? '' : drift > 0 ? ` — ${Math.round(drift)} min late` : ` — ${Math.round(-drift)} min early`;
+  const amt = s.mode === 'oral' ? s.amount : recorded > 0 ? recorded + ' u' : 'nothing — the scale says hold';
+  log(`${s.label} ${amt}. ${s.detail}${timing}.`, drift > s.win ? 'warn' : null);
+  updateRack();
+  return recorded;
+}
+
+function frame(now) {
+  if (!running) return;
+  const dt = Math.min(0.25, (now - (frame.last || now)) / 1000); frame.last = now;
+  if (junction) { tickJunction(); render(); return requestAnimationFrame(frame); }
+  if (speed > 0 && S.t < endT) {
+    frame.acc = (frame.acc || 0) + dt * speed;
+    let n = Math.min(600, Math.floor(frame.acc)); frame.acc -= Math.floor(frame.acc);
+    for (let i = 0; i < n && S.t < endT; i++) {
+      tick();
+      if (cfg.runMode === 'live' && S.t % 2 === 0) {
+        if (S.t - lastFc >= 5) { fc = forecast(); lastFc = S.t; }
+        const j = detectJunction();
+        if (j) { openJunction(j); break; }
+      }
+    }
+    if (S.t >= endT) { speed = 0; syncSpeed(); finish(); }
+  }
+  render();
+  requestAnimationFrame(frame);
+}
+
+/* ================= forecast =========================================== */
+function forecast() {
+  const c = JSON.parse(JSON.stringify({ ...S, hist: [] }));
+  c.det = true; c.hist = [];
+  const out = [];
+  for (let i = 0; i < 150; i++) { const r = step(c, P); out.push({ t: r.t, s: r.G }); }
+  return out;
+}
+function predictedLow() {
+  for (const p of fc) if (p.s < 70) return { at: p.t, mins: p.t - S.t, val: p.s };
+  return null;
+}
+
+/* ================= decision junctions ================================= */
+function cool(key, mins) {
+  if (S.t - (jCool[key] === undefined ? -9999 : jCool[key]) < mins) return false;
+  jCool[key] = S.t; return true;
+}
+const nothing = (delta, verdict) => ({ label: 'Nothing, for now', hint: 'Watch and recheck', delta, verdict, run: () => log('Chose to wait.') });
+const rescue = (grams, delta, verdict) => ({ label: `${grams} g of fast carbohydrate`, hint: grams === 15 ? 'The rule of fifteen' : grams < 15 ? 'A light treat' : 'A generous treat',
+  delta, verdict, run: () => { eatMeal(S, grams, 'fast'); log(`Rescue: ${grams} g of fast carbohydrate.`, 'warn'); } });
+const glucagonOpt = (delta, verdict) => ({ label: 'Glucagon 1 mg', hint: 'For when swallowing is unsafe', delta, verdict,
+  run: () => { S.rescue.push({ t0: S.t, dose: 1 }); log('Glucagon 1 mg given.', 'bad'); } });
+
+function detectJunction() {
+  const g = S.sensor, ob = iob(S), cb = cob(S);
+  const h = S.hist[S.hist.length - 1] || {};
+  const n = S.hist.length;
+  const rate = n > 21 ? (S.hist[n - 1].s - S.hist[n - 21].s) / 20 : 0;
+  const lo = predictedLow();
+  const dueList = [];
+  for (const s of slots) for (const i of s.instances) if (i.status === 'due') dueList.push({ s, i });
+  const due = dueList[0];
+
+  if (g < 54 && cool('vlow', 100)) return {
+    kicker: 'severe hypoglycaemia', title: `Glucose ${Math.round(g)} and falling`,
+    prompt: 'Below 54 counts as clinically significant hypoglycaemia whatever the patient says they feel. There is still insulin working.',
+    facts: [['glucose', Math.round(g)], ['trend', r1(rate) + '/min'], ['insulin on board', r1(ob) + ' u'], ['carbs on board', Math.round(cb) + ' g']],
+    opts: [
+      rescue(30, 2, 'Right. Fifteen grams under-treats at this depth, especially with insulin still absorbing.'),
+      rescue(15, 1, 'The right idea, but fifteen grams rarely holds a level this low with insulin still on board. Expect to repeat it.'),
+      glucagonOpt(0, 'Reserved for when someone cannot safely swallow. This patient can, so oral glucose is faster and gentler.'),
+      nothing(-3, 'No. Below 54 is where the counterregulatory defences are already failing, and waiting is how a treatable low becomes an ambulance.'),
+    ] };
+
+  if (g < 70 && cool('low', 70)) return {
+    kicker: 'hypoglycaemia', title: `Glucose ${Math.round(g)}`,
+    prompt: ob > 1 ? `${r1(ob)} units are still absorbing, so this has further to fall.` : 'Below range, with little insulin left working.',
+    facts: [['glucose', Math.round(g)], ['trend', r1(rate) + '/min'], ['insulin on board', r1(ob) + ' u'], ['glucagon reserve', Math.round(P.alpha * 100) + '%']],
+    opts: [
+      rescue(15, 2, 'Correct. Fifteen grams, recheck in fifteen minutes, repeat if still low.'),
+      rescue(30, 0, 'It will work, and it will also put them well above range in an hour. Over-treating a low is the commonest cause of the high that follows it.'),
+      ...(due ? [{ label: `Give the ${due.s.label} that is due anyway`, hint: due.s.detail, delta: -3,
+        verdict: 'No. Treat the low first. The scheduled dose can follow once glucose is back above 80.',
+        run: () => give(due.s, due.i, true) }] : []),
+      nothing(-2, P.alpha < 0.2 ? 'No, and particularly not in this patient. With almost no glucagon reserve there is nothing to catch it.'
+        : 'Risky. Counterregulation may hold it, but you cannot know that in advance.'),
+    ] };
+
+  if (lo && lo.mins <= 45 && g >= 70 && cool('predlow', 80)) {
+    const pendingBolus = slots.flatMap(s => s.instances.map(i => ({ s, i })))
+      .find(x => x.s.mode === 'carb' && (x.i.status === 'pending' || x.i.status === 'due') && x.i.t - S.t < 60);
+    return {
+      kicker: 'heading low', title: `Under 70 forecast in ${Math.round(lo.mins)} minutes`,
+      prompt: `Glucose is ${Math.round(g)} and falling at ${r1(rate)} a minute, with ${r1(ob)} units still absorbing and ${Math.round(cb)} grams left to arrive.`,
+      facts: [['glucose', Math.round(g)], ['forecast nadir', Math.round(lo.val)], ['insulin on board', r1(ob) + ' u'], ['carbs on board', Math.round(cb) + ' g']],
+      opts: [
+        ...(pendingBolus ? [{ label: 'Cut the next meal bolus in half', hint: pendingBolus.s.detail, delta: 2,
+          verdict: 'Good. Acting on the trend rather than the number is the whole point of having a forecast.',
+          run: () => { pendingBolus.s.scale = (pendingBolus.s.scale || 1) * 0.5; log('Next meal bolus reduced by half.', 'warn'); } }] : []),
+        rescue(15, 1, 'It works, and it also means treating a low that had not happened yet. Reducing the insulin ahead of it is usually the better lever.'),
+        { label: 'Eat the upcoming meal without a bolus', hint: 'Carbohydrate instead of a correction', delta: 1,
+          verdict: 'Reasonable if the meal really is imminent. Watch the peak afterwards.', run: () => log('Decided to eat without bolusing.') },
+        nothing(-2, 'The forecast was right in front of you. Waiting for the number to confirm it costs you the twenty minutes you needed.'),
+      ] };
+  }
+
+  if (g > 250 && (S.hist[n - 1] || {}).ket > 1.0 && cool('keto', 200)) return {
+    kicker: 'ketones rising', title: `Glucose ${Math.round(g)}, ketones ${r1(S.ketone)}`,
+    prompt: 'This is not just a high number. Ketones at this level mean there is not enough insulin present, and correcting the glucose alone will not fix that.',
+    facts: [['glucose', Math.round(g)], ['ketones', r1(S.ketone)], ['insulin on board', r1(ob) + ' u'], ['insulin action', r1((S.hist[n - 1] || {}).X || 0)]],
+    opts: [
+      { label: 'Correction bolus and fluids, then recheck ketones', hint: 'Treat the insulin deficit', delta: 2,
+        verdict: 'Correct. Ketones need insulin and volume, and a recheck to confirm they are clearing.',
+        run: () => { const u = half(Math.max(0, (g - cfg.target) / cfg.isf - iob(S))); if (u) S.insDoses.push({ kind: 'lispro', units: u, t0: S.t }); log(`Correction ${u} u plus fluids for ketosis.`, 'warn'); } },
+      { label: 'Correction bolus only', hint: 'Fix the number', delta: 1,
+        verdict: 'Half of it. The insulin is the important part, but ketosis is a volume-depleted state as well.',
+        run: () => { const u = half(Math.max(0, (g - cfg.target) / cfg.isf - iob(S))); if (u) S.insDoses.push({ kind: 'lispro', units: u, t0: S.t }); log(`Correction ${u} u.`); } },
+      nothing(-3, 'No. Ketones above one with a glucose this high is the beginning of diabetic ketoacidosis, and it does not resolve on its own.'),
+    ] };
+
+  const nextAct = actEv.find(a => !a.done && a.t - S.t <= 25 && a.t >= S.t);
+  if (nextAct && ob > 1.2 && cool('preex', 140)) return {
+    kicker: 'about to exercise', title: `${nextAct.dur} minutes of activity in ${Math.round(nextAct.t - S.t)} minutes`,
+    prompt: `There are ${r1(ob)} units still absorbing. Working muscle takes up glucose without needing any of it, and stays sensitive for hours afterwards.`,
+    facts: [['glucose', Math.round(g)], ['insulin on board', r1(ob) + ' u'], ['carbs on board', Math.round(cb) + ' g'], ['effort', nextAct.intensity >= 0.8 ? 'hard' : 'moderate']],
+    opts: [
+      rescue(20, 2, 'Correct. Carbohydrate before exercise with insulin on board, and expect to need more afterwards too.'),
+      { label: 'Delay the session by two hours', hint: 'Let the bolus finish first', delta: 1,
+        verdict: 'Safe and sensible, though it is not always a choice a patient has.',
+        run: () => { nextAct.t += 120; log('Activity postponed by two hours.'); } },
+      nothing(-2, 'Exercising on top of an active bolus is one of the most reliable ways to produce a low, and the late rebound sensitivity means it can happen twice.'),
+    ] };
+
+  if (due && cool('dose:' + due.s.label + due.s.detail + due.i.t, 0)) {
+    const proposed = half(computeUnits(S, P, cfg, due.s, false));
+    const isCarb = due.s.mode === 'carb';
+    return {
+      kicker: 'dose due', title: `${due.s.label} — ${due.s.detail}`,
+      prompt: isCarb ? `The calculator wants ${proposed} units for this meal at a glucose of ${Math.round(g)}, with ${r1(ob)} already on board.`
+        : `${due.s.mode === 'oral' ? due.s.amount : proposed + ' units'} is scheduled now. Glucose is ${Math.round(g)}.`,
+      facts: [['glucose', Math.round(g)], ['calculated dose', due.s.mode === 'oral' ? due.s.amount : proposed + ' u'], ['insulin on board', r1(ob) + ' u'], ['trend', r1(rate) + '/min']],
+      opts: [
+        { label: due.s.mode === 'oral' ? 'Take it' : `Give ${proposed} units`, hint: 'As calculated', delta: g < 80 ? -2 : 2,
+          verdict: g < 80 ? 'Not at this glucose. The full calculated dose on top of a level this low will take them under.'
+            : 'Right. This is what the ratio and the correction factor are for.',
+          run: () => give(due.s, due.i, true) },
+        ...(due.s.mode !== 'oral' ? [{ label: `Give half of it, ${half(proposed / 2)} units`, hint: 'Hedge downwards', delta: g < 90 ? 2 : rate < -1 ? 1 : -1,
+          verdict: g < 90 ? 'Good judgement. Reducing the dose when they are already low or falling is the right instinct.'
+            : 'Under-dosing a meal without a reason to leaves them high for hours, and the correction afterwards is the stacking you were trying to avoid.',
+          run: () => { due.s.scale = (due.s.scale || 1) * 0.5; give(due.s, due.i, true); due.s.scale *= 2; } }] : []),
+        { label: 'Hold this dose', hint: 'Skip it entirely', delta: g < 70 ? 2 : -2,
+          verdict: g < 70 ? 'Correct. Treat the low, then reconsider.' : 'A missed scheduled dose at a normal glucose costs the rest of the day.',
+          run: () => { due.i.status = 'missed'; missed++; log(`Held: ${due.s.label}, ${due.s.detail}.`, 'bad'); } },
+      ] };
+  }
+
+  if (rate < -2.5 && g < 150 && g >= 70 && cool('fall', 70)) return {
+    kicker: 'falling fast', title: `Dropping ${r1(-rate)} mg/dL a minute`,
+    prompt: `Glucose is ${Math.round(g)}. At this rate it reaches 70 in about ${Math.round((g - 70) / -rate)} minutes.`,
+    facts: [['glucose', Math.round(g)], ['rate', r1(rate) + '/min'], ['insulin on board', r1(ob) + ' u'], ['carbs on board', Math.round(cb) + ' g']],
+    opts: [
+      rescue(15, 2, 'Correct. A fall this steep does not need to reach 70 before you act on it.'),
+      nothing(-2, 'The sensor lags the blood by about ten minutes, so by the time the number looks alarming they are already lower than it says.'),
+    ] };
+
+  return null;
+}
+
+function openJunction(def) {
+  prevSpeed = speed || 60; speed = 0; syncSpeed();
+  junction = { def, phase: 'choose', deadline: cfg.timer ? performance.now() + cfg.timer * 1000 : null, opened: performance.now() };
+  $('#jKicker').textContent = def.kicker;
+  $('#jTitle').textContent = def.title;
+  $('#jPrompt').textContent = def.prompt;
+  $('#jFacts').innerHTML = def.facts.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('');
+  $('#jClockLbl').textContent = hhmm(clockAt(S.t)) + (cfg.timer ? ' · decide' : ' · no time limit');
+  renderJunctionOpts();
+  $('#junction').classList.add('on');
+  beep();
+}
+function renderJunctionOpts() {
+  const box = $('#jOpts'); box.innerHTML = '';
+  junction.def.opts.forEach((o, idx) => {
+    const b = mk('button', 'jopt', `<span class="k">${idx + 1}</span><span><b>${o.label}</b><i>${o.hint}</i></span>`);
+    b.onclick = () => chooseJunction(idx);
+    box.appendChild(b);
+  });
+}
+function chooseJunction(idx) {
+  const o = junction.def.opts[idx];
+  const secs = Math.round((performance.now() - junction.opened) / 100) / 10;
+  o.run();
+  jLog.push({ clock: clockAt(S.t), title: junction.def.title, choice: o.label, verdict: o.verdict, delta: o.delta, secs });
+  log(`${junction.def.kicker}: ${o.label.toLowerCase()}.`, o.delta < 0 ? 'bad' : 'warn');
+  junction.phase = 'verdict';
+  const good = o.delta > 1, bad = o.delta < 0;
+  const colour = good ? 'inrange' : bad ? 'low' : 'high';
+  $('#jOpts').innerHTML = `<div style="border-left:2px solid var(--${colour}); padding:2px 0 2px 13px; margin:4px 0 14px">
+      <div style="font-weight:600; color:var(--${colour}); margin-bottom:4px">${o.label}</div>
+      <div class="small dim">${o.verdict}</div></div>`;
+  const cont = mk('button', 'primary', 'Carry on');
+  cont.style.alignSelf = 'flex-start';
+  cont.onclick = closeJunction;
+  $('#jOpts').appendChild(cont);
+  cont.focus();
+  $('#jBar').style.width = '0%';
+  $('#jCount').textContent = secs.toFixed(1) + ' s';
+  $('#jClockLbl').textContent = hhmm(clockAt(S.t)) + ' · decided in';
+}
+function timeoutJunction() {
+  const secs = cfg.timer;
+  jLog.push({ clock: clockAt(S.t), title: junction.def.title, choice: 'Ran out of time', secs,
+    verdict: 'The clock expired and nothing was done. Not deciding is a decision, and it is scored as one.', delta: -2 });
+  log(`${junction.def.kicker}: no decision made in time.`, 'bad');
+  junction.phase = 'verdict';
+  $('#jOpts').innerHTML = `<div style="border-left:2px solid var(--low); padding:2px 0 2px 13px; margin:4px 0 14px">
+      <div style="font-weight:600; color:var(--low); margin-bottom:4px">Out of time</div>
+      <div class="small dim">Nothing was done. That is itself a decision, and it is scored as one.</div></div>`;
+  const cont = mk('button', 'primary', 'Carry on');
+  cont.style.alignSelf = 'flex-start';
+  cont.onclick = closeJunction;
+  $('#jOpts').appendChild(cont);
+  cont.focus();
+}
+function closeJunction() {
+  $('#junction').classList.remove('on');
+  junction = null; speed = prevSpeed; syncSpeed();
+  frame.last = performance.now(); frame.acc = 0;
+}
+function tickJunction() {
+  if (junction.phase !== 'choose' || !junction.deadline) { if (!junction.deadline) { $('#jBar').style.width = '100%'; $('#jCount').textContent = '—'; } return; }
+  const left = junction.deadline - performance.now();
+  const frac = cl(left / (cfg.timer * 1000), 0, 1);
+  $('#jBar').style.width = (frac * 100) + '%';
+  $('#jBar').style.background = frac < 0.25 ? cssv('low') : cssv('signal');
+  $('#jCount').textContent = Math.max(0, Math.ceil(left / 1000)) + ' s';
+  if (left <= 0) timeoutJunction();
+}
+
+/* ================= chart plumbing ===================================== */
+const YB = [[40, 0], [70, 0.20], [180, 0.62], [250, 0.80], [400, 1]];
+function yFrac(g) {
+  g = cl(g, 40, 400);
+  for (let i = 1; i < YB.length; i++) if (g <= YB[i][0]) {
+    const [g0, f0] = YB[i - 1], [g1, f1] = YB[i];
+    return f0 + (g - g0) / (g1 - g0) * (f1 - f0);
+  }
+  return 1;
+}
+function fitCanvas(c, h) {
+  const dpr = window.devicePixelRatio || 1, w = c.clientWidth || 600;
+  if (c.width !== Math.round(w * dpr) || c.height !== Math.round(h * dpr)) {
+    c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); c.style.height = h + 'px';
+  }
+  const x = c.getContext('2d');
+  x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, w, h);
+  return { x, w, h };
+}
+function drawCGM() {
+  const c = $('#cgm'), H = window.innerWidth < 700 ? 250 : 330;
+  const { x, w, h } = fitCanvas(c, H);
+  const L = 38, R = 10, T = 8, strip = 26, B = 22;
+  const pw = w - L - R, ph = h - T - strip - B;
+  const yOf = g => T + ph - yFrac(g) * ph;
+  const look = Math.round(winH * 60 * 0.17);
+  const t1 = S.t + look, t0 = t1 - winH * 60;
+  const xOf = t => L + (t - t0) / (t1 - t0) * pw;
+
+  for (const [a, b, k, al] of [[40, 54, 'vlow', .16], [54, 70, 'low', .14], [70, 180, 'inrange', .085], [180, 250, 'high', .10], [250, 400, 'vhigh', .12]]) {
+    x.globalAlpha = al; x.fillStyle = cssv(k); x.fillRect(L, yOf(b), pw, yOf(a) - yOf(b));
+  }
+  x.globalAlpha = 1;
+  x.fillStyle = 'rgba(4,9,16,.42)';
+  for (let d = -1; d <= cfg.days + 1; d++) {
+    const a = absT(1320, d), b = a + 480;
+    if (b < t0 || a > t1) continue;
+    x.fillRect(xOf(Math.max(a, t0)), T, xOf(Math.min(b, t1)) - xOf(Math.max(a, t0)), ph);
+  }
+  x.font = '10px ' + cssv('mono'); x.textAlign = 'right'; x.textBaseline = 'middle';
+  for (const [g, strong] of [[54, 1], [70, 1], [100, 0], [180, 1], [250, 0], [300, 0]]) {
+    x.strokeStyle = strong ? cssv('rule') : cssv('rule-soft');
+    x.lineWidth = 1; x.setLineDash(strong ? [] : [2, 4]);
+    x.beginPath(); x.moveTo(L, yOf(g) + .5); x.lineTo(L + pw, yOf(g) + .5); x.stroke();
+    x.fillStyle = strong ? cssv('fg-dim') : cssv('fg-faint'); x.fillText(g, L - 7, yOf(g));
+  }
+  x.setLineDash([]);
+  x.textAlign = 'center'; x.textBaseline = 'top';
+  const stp = winH <= 6 ? 60 : winH <= 12 ? 120 : 180;
+  for (let m = Math.ceil((CLOCK0 + t0) / stp) * stp; m <= CLOCK0 + t1; m += stp) {
+    const tt = m - CLOCK0;
+    x.strokeStyle = cssv('rule-soft'); x.beginPath();
+    x.moveTo(xOf(tt) + .5, T); x.lineTo(xOf(tt) + .5, T + ph); x.stroke();
+    x.fillStyle = cssv('fg-faint'); x.fillText(hhmm(m), xOf(tt), T + ph + strip + 5);
+  }
+  x.fillStyle = 'rgba(255,255,255,.028)'; x.fillRect(xOf(S.t), T, xOf(t1) - xOf(S.t), ph);
+
+  const hist = S.hist, from = Math.max(0, hist.length - winH * 60 - 2);
+  x.strokeStyle = 'rgba(228,237,245,.20)'; x.lineWidth = 1; x.beginPath();
+  for (let i = from; i < hist.length; i++) {
+    const p = hist[i];
+    i === from ? x.moveTo(xOf(p.t), yOf(p.G)) : x.lineTo(xOf(p.t), yOf(p.G));
+  }
+  x.stroke();
+  x.lineWidth = 2.2; x.lineJoin = 'round'; x.lineCap = 'round';
+  let cur = null;
+  for (let i = from + 1; i < hist.length; i++) {
+    const a = hist[i - 1], b = hist[i], k = zoneOf((a.s + b.s) / 2);
+    if (k !== cur) { if (cur) x.stroke(); cur = k; x.strokeStyle = cssv(k); x.beginPath(); x.moveTo(xOf(a.t), yOf(a.s)); }
+    x.lineTo(xOf(b.t), yOf(b.s));
+  }
+  if (cur) x.stroke();
+  if (fc.length) {
+    x.setLineDash([4, 4]); x.lineWidth = 1.6; x.strokeStyle = 'rgba(228,237,245,.5)';
+    x.beginPath(); x.moveTo(xOf(S.t), yOf(S.sensor));
+    for (const p of fc) { if (p.t > t1) break; x.lineTo(xOf(p.t), yOf(p.s)); }
+    x.stroke(); x.setLineDash([]);
+    const lo = predictedLow();
+    if (lo && lo.at <= t1) { x.fillStyle = cssv('low'); x.beginPath(); x.arc(xOf(lo.at), yOf(lo.val), 3.2, 0, 7); x.fill(); }
+  }
+  x.strokeStyle = cssv('fg-dim'); x.lineWidth = 1; x.beginPath();
+  x.moveTo(xOf(S.t) + .5, T); x.lineTo(xOf(S.t) + .5, T + ph + strip); x.stroke();
+  x.fillStyle = cssv(zoneOf(S.sensor));
+  x.beginPath(); x.arc(xOf(S.t), yOf(S.sensor), 4.2, 0, 7); x.fill();
+  x.globalAlpha = .28; x.beginPath(); x.arc(xOf(S.t), yOf(S.sensor), 9, 0, 7); x.fill(); x.globalAlpha = 1;
+
+  const sy = T + ph + strip / 2;
+  const glyph = (t, kind, colour, alpha) => {
+    if (t < t0 || t > t1) return;
+    const px = xOf(t);
+    x.strokeStyle = colour; x.lineWidth = 1; x.globalAlpha = alpha * .3;
+    x.beginPath(); x.moveTo(px + .5, T); x.lineTo(px + .5, T + ph); x.stroke();
+    x.globalAlpha = alpha; x.fillStyle = colour;
+    if (kind === 'meal') { x.beginPath(); x.arc(px, sy, 4.4, 0, 7); x.fill(); }
+    else if (kind === 'ins') { x.beginPath(); x.moveTo(px, sy - 5); x.lineTo(px + 4.4, sy + 4); x.lineTo(px - 4.4, sy + 4); x.closePath(); x.fill(); }
+    else if (kind === 'oral') x.fillRect(px - 3.4, sy - 3.4, 6.8, 6.8);
+    else if (kind === 'rescue') { x.fillRect(px - 4.6, sy - 1.3, 9.2, 2.6); x.fillRect(px - 1.3, sy - 4.6, 2.6, 9.2); }
+    x.globalAlpha = 1;
+  };
+  for (const a of actEv) {
+    if (a.t + a.dur < t0 || a.t > t1) continue;
+    x.globalAlpha = a.done ? .55 : .25; x.fillStyle = cssv('exercise');
+    const xa = xOf(Math.max(a.t, t0)), xb = xOf(Math.min(a.t + a.dur, t1));
+    x.fillRect(xa, sy + 6, Math.max(2, xb - xa), 3); x.globalAlpha = 1;
+  }
+  for (const m of mealEv) glyph(m.t, 'meal', cssv('carb'), m.done ? 1 : .38);
+  for (const s of slots) for (const i of s.instances) {
+    if (i.status === 'taken') glyph(i.at, s.mode === 'oral' ? 'oral' : 'ins',
+      s.cls === 'oral' ? cssv('inrange') : (s.cls === 'long' || s.cls === 'inter') ? cssv('insulin-deep') : cssv('insulin'), 1);
+    else if (i.status !== 'missed') glyph(i.t, s.mode === 'oral' ? 'oral' : 'ins', s.cls === 'oral' ? cssv('inrange') : cssv('insulin'), .32);
+  }
+  for (const g of S.rescue) glyph(g.t0, 'rescue', cssv('low'), 1);
+}
+function drawFlux() {
+  const c = $('#flux');
+  const { x, w, h } = fitCanvas(c, 86);
+  const L = 38, R = 10, pw = w - L - R, mid = h * 0.52;
+  const look = Math.round(winH * 60 * 0.17);
+  const t1 = S.t + look, t0 = t1 - winH * 60;
+  const xOf = t => L + (t - t0) / (t1 - t0) * pw;
+  const hist = S.hist, from = Math.max(0, hist.length - winH * 60 - 2);
+  let maxRa = 260, maxX = 26;
+  for (let i = from; i < hist.length; i++) { maxRa = Math.max(maxRa, hist[i].ra); maxX = Math.max(maxX, hist[i].X); }
+  x.strokeStyle = cssv('rule-soft'); x.lineWidth = 1;
+  x.beginPath(); x.moveTo(L, mid + .5); x.lineTo(L + pw, mid + .5); x.stroke();
+  const area = (key, scale, up, colour) => {
+    const span = up ? mid - 4 : h - mid - 4, sign = up ? -1 : 1;
+    x.beginPath(); x.moveTo(xOf(hist[from].t), mid);
+    for (let i = from; i < hist.length; i++) x.lineTo(xOf(hist[i].t), mid + sign * (hist[i][key] / scale) * span);
+    x.lineTo(xOf(hist[hist.length - 1].t), mid); x.closePath();
+    x.globalAlpha = .30; x.fillStyle = colour; x.fill(); x.globalAlpha = 1;
+    x.strokeStyle = colour; x.lineWidth = 1.4; x.beginPath();
+    for (let i = from; i < hist.length; i++) {
+      const yy = mid + sign * (hist[i][key] / scale) * span;
+      i === from ? x.moveTo(xOf(hist[i].t), yy) : x.lineTo(xOf(hist[i].t), yy);
+    }
+    x.stroke();
+  };
+  if (hist.length > from + 1) { area('ra', maxRa, true, cssv('carb')); area('X', maxX, false, cssv('insulin')); }
+  x.strokeStyle = cssv('fg-dim'); x.globalAlpha = .55; x.lineWidth = 1;
+  x.beginPath(); x.moveTo(xOf(S.t) + .5, 0); x.lineTo(xOf(S.t) + .5, h); x.stroke(); x.globalAlpha = 1;
+  x.font = '9.5px ' + cssv('sans'); x.textAlign = 'right'; x.textBaseline = 'middle';
+  x.fillStyle = cssv('carb'); x.fillText('carbs in', L - 7, mid - 15);
+  x.fillStyle = cssv('insulin'); x.fillText('insulin', L - 7, mid + 15);
+}
+
+/* ================= panels ============================================= */
+let rackCards = [];
+function buildRack() {
+  const box = $('#rack'); rackCards = [];
+  if (!slots.length) { box.innerHTML = '<div class="dim small">No scheduled medication in this regimen.</div>'; return; }
+  box.innerHTML = '';
+  for (const s of slots) {
+    const colour = s.cls === 'oral' ? 'inrange' : (s.cls === 'long' || s.cls === 'inter') ? 'insulin-deep' : 'insulin';
+    const amt = s.mode === 'oral' ? s.amount : s.mode === 'fixed' ? s.units + ' u'
+      : s.mode === 'sliding' ? 'from the scale' : 'carb ratio';
+    const b = mk('button', 'med');
+    b.innerHTML = `<i class="kind" style="background:var(--${colour})"></i>
+      <div class="mname">${s.label}</div><div class="mdose">${amt}</div>
+      <div class="mwhen"><span></span><span class="num"></span></div>`;
+    b.title = s.detail;
+    b.onclick = () => { const i = s.instances.find(z => z.status === 'pending' || z.status === 'due'); if (i) give(s, i, true); };
+    box.appendChild(b);
+    rackCards.push({ s, b, l: b.querySelector('.mwhen span'), r: b.querySelector('.mwhen .num') });
+  }
+}
+function updateRack() {
+  for (const c of rackCards) {
+    const s = c.s;
+    const i = s.instances.find(z => z.status === 'pending' || z.status === 'due') || s.instances[s.instances.length - 1];
+    let klass = '', left = '', right = '';
+    if (i.status === 'due') { klass = 'due'; left = 'take it now'; right = Math.max(0, Math.round(i.t + s.win - S.t)) + ' min left'; }
+    else if (i.status === 'taken') { klass = 'taken'; left = 'given ' + hhmm(clockAt(i.at)); right = s.mode === 'oral' ? 'taken' : i.given + ' u'; }
+    else if (i.status === 'missed') { klass = 'missed'; left = 'missed ' + hhmm(clockAt(i.t)); right = ''; }
+    else {
+      const mins = Math.round(i.t - S.t);
+      left = hhmm(clockAt(i.t));
+      right = mins >= 60 ? 'in ' + Math.floor(mins / 60) + ' h ' + (mins % 60 ? (mins % 60) + 'm' : '') : 'in ' + mins + ' min';
+    }
+    const want = 'med ' + klass;
+    if (c.b.className !== want) c.b.className = want;
+    if (c.l.textContent !== left) c.l.textContent = left;
+    if (c.r.textContent !== right) c.r.textContent = right;
+    c.b.disabled = !s.instances.some(z => z.status === 'pending' || z.status === 'due');
+  }
+}
+function buildExtras() {
+  const box = $('#extras'); box.innerHTML = '';
+  const add = (label, cls, fn, title) => { const b = mk('button', 'act ' + (cls || ''), label); b.onclick = fn; if (title) b.title = title; box.appendChild(b); };
+  add('15 g fast carbs', 'rescue', () => { eatMeal(S, 15, 'fast'); log('Rescue: 15 g of fast carbohydrate.', 'warn'); }, 'The rule of fifteen');
+  add('Glucagon 1 mg', 'rescue', () => { S.rescue.push({ t0: S.t, dose: 1 }); log('Glucagon 1 mg given.', 'bad'); }, 'For a low too deep to treat by mouth');
+  add('Snack, 20 g', null, () => { eatMeal(S, 20, 'mixed'); log('Unplanned 20 g snack.'); });
+  add('Walk 30 min', null, () => { S.exercise.push({ t0: S.t, dur: 30, intensity: 0.4 }); log('Going for a 30 minute walk.'); });
+  add('Hard session 45 min', null, () => { S.exercise.push({ t0: S.t, dur: 45, intensity: 0.85 }); log('Starting a hard 45 minute session.'); });
+
+  const insOpts = Object.keys(INS).map(k => `<option value="${k}">${INS[k].label}</option>`).join('');
+  const oralOpts = Object.keys(ORAL).map(k => `<option value="${k}">${ORAL[k].label}</option>`).join('');
+  const wrap = mk('div', null, `<select id="offDrug" style="max-width:200px">${insOpts}${oralOpts}</select>
+    <input type="number" id="offAmt" value="2" min="0.5" step="0.5" style="width:62px">
+    <button class="act" id="offGive">Give off plan</button>`);
+  wrap.style.cssText = 'display:flex; gap:7px; align-items:center; flex-wrap:wrap';
+  box.appendChild(wrap);
+  $('#offGive').onclick = () => {
+    const d = $('#offDrug').value, u = +$('#offAmt').value || 0;
+    if (INS[d]) { if (u > 0) { S.insDoses.push({ kind: d, units: u, t0: S.t }); log(`Off plan: ${INS[d].label} ${u} u.`, 'warn'); } }
+    else if (ORAL[d]) { S.oralDoses.push({ drug: d, t0: S.t }); log(`Off plan: ${ORAL[d].label}.`, 'warn'); }
+  };
+  const toggle = mk('label', 'check', `<input type="checkbox" ${cfg.autopilot ? 'checked' : ''}><span style="font-size:12.5px">run the rest on autopilot</span>`);
+  toggle.style.cssText = 'align-items:center; margin-left:auto';
+  toggle.querySelector('input').onchange = e => {
+    cfg.autopilot = e.target.checked;
+    log(cfg.autopilot ? 'Autopilot on.' : 'Autopilot off — you are dosing again.', 'warn');
+  };
+  box.appendChild(toggle);
+}
+function buildScaleTable() {
+  $('#scaleTable').innerHTML = `<tr><td>below 70</td><td>treat, hold insulin</td></tr>` +
+    SS_ROWS.map(([a, b, u]) => `<tr data-a="${a}" data-b="${b}"><td>${b > 900 ? a + ' and up' : a + '–' + b}</td><td>${u} u</td></tr>`).join('');
+}
+function renderCalc() {
+  const g = S.sensor, carbs = +$('#cCarb').value || 0, correct = $('#cCorr').checked;
+  const carbU = carbs / cfg.icr * cfg.aggr / 100;
+  const raw = (g - cfg.target) / cfg.isf, onBoard = iob(S);
+  const total = Math.max(0, half(carbU + (correct ? raw - onBoard : 0)));
+  $('#cBg').textContent = Math.round(g);
+  $('#cBg').style.color = cssv(zoneOf(g));
+  $('#calcLines').innerHTML =
+    `<div class="calcline"><span class="dim">${carbs} g ÷ ${cfg.icr} g per unit</span><b>${r1(carbU)} u</b></div>` +
+    (correct ? `<div class="calcline"><span class="dim">(${Math.round(g)} − ${cfg.target}) ÷ ${cfg.isf}</span><b>${r1(raw)} u</b></div>
+      <div class="calcline"><span class="dim">less insulin still on board</span><b>−${r1(onBoard)} u</b></div>` : '')
+    + `<div class="calcline"><span class="dim">rounded to the nearest half unit</span><b>${total} u</b></div>`;
+  $('#cTotal').textContent = total.toFixed(1) + ' u';
+  $('#cTotal').style.color = total > 12 ? cssv('high') : cssv('fg');
+  $('#cGive').onclick = () => {
+    if (total > 0) { S.insDoses.push({ kind: 'lispro', units: total * jitter(cfg.behav.siteVar), t0: S.t });
+      log(`Bolus calculator: ${total} u for ${carbs} g${correct ? ' with correction' : ''}.`); }
+    $('#cCarb').value = 0;
+  };
+  const su = slideDose(g);
+  for (const tr of $('#scaleTable').querySelectorAll('tr[data-a]')) tr.classList.toggle('hit', g >= +tr.dataset.a && g <= +tr.dataset.b);
+  $('#ssGive').textContent = g < 70 ? 'Hold — treat the low first' : `Give scale dose (${su} u)`;
+  $('#ssGive').onclick = () => {
+    if (g < 70) { log('Scale says hold: glucose is already below 70.', 'warn'); return; }
+    if (su > 0) { S.insDoses.push({ kind: 'lispro', units: su, t0: S.t }); log(`Sliding scale: ${su} u at ${Math.round(g)} mg/dL.`); }
+    else log('Sliding scale: nothing due at this reading.');
+  };
+  $('#calcHint').textContent = `carb ratio ${cfg.icr} g/u · correction ${cfg.isf} mg/dL per u · target ${cfg.target}`;
+}
+function renderOnboard() {
+  const h = S.hist[S.hist.length - 1] || {};
+  const onB = iob(S), carbsB = cob(S), ket = S.ketone;
+  const kv = (k, v, sub) => `<div class="kv"><span class="k">${k}</span><span class="v">${v}${sub ? ` <small>${sub}</small>` : ''}</span></div>`;
+  const meter = (frac, colour) => `<div class="meter"><i style="width:${cl(frac * 100, 0, 100)}%; background:var(--${colour})"></i></div>`;
+  const lac = S.lactate || 0;
+  $('#onboard').innerHTML =
+    kv('Insulin on board', r1(onB), 'u') + meter(onB / 14, 'insulin') +
+    kv('Carbohydrate on board', Math.round(carbsB), 'g') + meter(carbsB / 90, 'carb') +
+    kv('Insulin action now', r1(h.X || 0), `mU/L · basal need ${r1(P.xBasal)}`) +
+    kv('Ketones', r1(ket), 'mmol/L') + meter(ket / 3.5, ket > 1.5 ? 'vhigh' : ket > 0.6 ? 'high' : 'inrange') +
+    (lac > 1.8 ? kv('Lactate', r1(lac), 'mmol/L · metformin retained') + meter(lac / 5, lac > 3.5 ? 'vlow' : 'high') : '') +
+    kv('Glucagon defence', P.alpha < 0.12 ? 'absent' : h.cr > 0.05 ? 'firing' : 'quiet',
+      P.alpha < 0.12 ? 'no rescue available' : `${Math.round(P.alpha * 100)}% of normal`);
+}
+function renderCoach() {
+  const h = S.hist[S.hist.length - 1] || {};
+  const g = S.sensor, onB = iob(S), carbsB = cob(S), lo = predictedLow();
+  const bits = [];
+  if (g < 54) bits.push(`<span class="bad">Severe hypoglycaemia.</span> Treat now — fast carbohydrate, or glucagon if swallowing is unsafe.`);
+  else if (g < 70) bits.push(`<span class="bad">Below range.</span> ${onB > 0.5 ? `${r1(onB)} u is still absorbing, so this has further to fall.` : 'Treat with 15 g and recheck in fifteen minutes.'}`);
+  else if (lo && lo.mins < 60) bits.push(`<span class="flag">Heading low.</span> The model puts you under 70 in about ${Math.round(lo.mins)} minutes${carbsB < 10 && onB > 1 ? ' — insulin on board with almost no carbohydrate left to arrive' : ''}.`);
+  else if (g > 250) bits.push(`Well above range. ${h.ket > 1.2 ? `<span class="bad">Ketones ${r1(h.ket)}.</span> This is insulin deficiency, not just a high number.` : 'A correction is reasonable, but check what is already on board first.'}`);
+  else if (g > 180) bits.push('Above range but drifting back. Correcting on top of insulin already working is how stacking starts.');
+  else bits.push('In range.');
+  if (carbsB > 15 && onB < 0.4 && g < 200) bits.push(`${Math.round(carbsB)} g still to arrive and almost nothing to cover it.`);
+  if (onB > 1 && carbsB < 5 && g > 70) bits.push(`Insulin is now ahead of the food: ${r1(onB)} u left, ${Math.round(carbsB)} g of carbohydrate.`);
+  if (h.ex > 0) bits.push('<span class="flag">Exercising.</span> Muscle is taking glucose up without insulin, and will keep doing so for hours.');
+  else if (S.exAfter > 0.12) bits.push('Still insulin-sensitive from earlier activity — the same dose will do more than usual.');
+  if ((S.lactate || 0) > 2.6) bits.push('<span class="bad">Lactate rising.</span> Metformin is being retained by this kidney and should come off.');
+  if (P.alpha < 0.12 && g < 110) bits.push('<span class="flag">No glucagon.</span> Nothing will catch this on the way down.');
+  if (missed) bits.push(`<span class="bad">${missed} missed dose${missed > 1 ? 's' : ''}.</span>`);
+  $('#coach').innerHTML = bits.slice(0, 3).map(b => `<div>${b}</div>`).join('');
+}
+const HYPO_BANDS = [[0.001, 'clean', 'inrange'], [2, 'minimal', 'inrange'], [5, 'on target', 'inrange'], [10, 'too much', 'high'], [20, 'high risk', 'low'], [1e9, 'unsafe', 'vlow']];
+const bandOf = v => HYPO_BANDS.find(b => v < b[0]) || HYPO_BANDS[HYPO_BANDS.length - 1];
+function renderMetrics() {
+  if (!met) return;
+  const m = met;
+  $('#tirbar').innerHTML = [['vlow', m.vlow], ['low', m.low], ['inrange', m.inr], ['high', m.high], ['vhigh', m.vhigh]]
+    .map(([k, v]) => `<i style="width:${v}%; background:var(--${k})"></i>`).join('');
+  $('#tirkey').innerHTML = [['above 250', m.vhigh, 'vhigh'], ['181 to 250', m.high, 'high'], ['70 to 180', m.inr, 'inrange'],
+    ['54 to 69', m.low, 'low'], ['below 54', m.vlow, 'vlow']]
+    .map(([l, v, k]) => `<span class="lab"><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--${k});margin-right:6px"></i>${l}</span><span class="val" style="color:var(--${k})">${v.toFixed(1)}%</span>`).join('');
+  const kv = (k, v, sub) => `<div class="kv"><span class="k">${k}</span><span class="v">${v}${sub ? ` <small>${sub}</small>` : ''}</span></div>`;
+  $('#glyMetrics').innerHTML =
+    kv('Mean glucose', Math.round(m.mean), 'mg/dL') +
+    kv('Estimated A1c', m.gmi.toFixed(1), '% if this held') +
+    kv('Variability', Math.round(m.cv), '% CV · under 36 is stable') +
+    kv('Low index (LBGI)', m.lbgi.toFixed(1), m.lbgi < 1.1 ? 'minimal' : m.lbgi < 2.5 ? 'low' : m.lbgi < 5 ? 'moderate' : 'high') +
+    kv('Risk index (GRI)', Math.round(m.gri), 'lower is better') +
+    (jLog.length ? kv('Decisions made', jLog.length, `net ${jLog.reduce((a, j) => a + j.delta, 0) >= 0 ? '+' : ''}${jLog.reduce((a, j) => a + j.delta, 0)}`) : '');
+  const b = bandOf(m.hypoIx);
+  $('#hypoVal').textContent = m.hypoIx.toFixed(1);
+  $('#hypoVal').style.color = cssv(b[2]);
+  $('#hypoBand').textContent = b[1];
+  $('#hypoBand').style.background = 'color-mix(in srgb, var(--' + b[2] + ') 20%, transparent)';
+  $('#hypoBand').style.color = cssv(b[2]);
+  $('#hypoMeter').style.width = cl(m.hypoIx / 25 * 100, 0, 100) + '%';
+  $('#hypoMeter').style.background = cssv(b[2]);
+  $('#hypoParts').innerHTML = [
+    ['time below 70', (m.low + m.vlow).toFixed(1) + '%', (m.low + m.vlow).toFixed(1)],
+    ['time below 54, weighted ×4', m.vlow.toFixed(1) + '%', (3 * m.vlow).toFixed(1)],
+    ['midnight to 06:00, weighted', m.nocturnalPct.toFixed(1) + '%', (0.8 * m.nocturnalPct).toFixed(1)],
+    ['separate episodes, 3 each', m.events, (3 * m.events).toFixed(1)],
+    ['severe episodes, 12 each', m.severe, (12 * m.severe).toFixed(1)],
+  ].map(([l, raw, pts]) => `<tr><td class="dim">${l}</td><td>${raw}</td><td>+${pts}</td></tr>`).join('');
+}
+function renderLive() {
+  const g = S.sensor, k = zoneOf(g), h = S.hist, n = h.length;
+  $('#bg').textContent = Math.round(g);
+  $('#bg').style.color = cssv(k);
+  $('#zone').textContent = zoneWord[k];
+  $('#zone').style.background = 'color-mix(in srgb, var(--' + k + ') 18%, transparent)';
+  $('#zone').style.color = cssv(k);
+  const rate = n > 21 ? (h[n - 1].s - h[n - 21].s) / 20 : 0;
+  const a = $('#arrow');
+  a.textContent = rate > 2 ? '⇑' : rate > 1 ? '↑' : rate > 0.35 ? '↗' : rate > -0.35 ? '→' : rate > -1 ? '↘' : rate > -2 ? '↓' : '⇓';
+  a.style.color = cssv(Math.abs(rate) > 1.5 ? (rate > 0 ? 'high' : 'low') : 'fg-dim');
+  const lo = predictedLow();
+  $('#trend').innerHTML = `<b>${rate >= 0 ? '+' : ''}${r1(rate)}</b> mg/dL per minute<br>
+    <span class="faint">${lo ? `forecast under 70 in ${Math.round(lo.mins)} min` : 'no low forecast in the next 2½ hours'}</span>`;
+  $('#clk').textContent = hhmm(clockAt(S.t));
+  $('#dayLbl').textContent = cfg.days > 1 ? 'day ' + dayOf(S.t) : 'day 1';
+}
+function renderLog() {
+  $('#log').innerHTML = logRows.slice(0, 90).map(r =>
+    `<div class="entry ${r.kind || ''}"><span class="ts">${hhmm(r.clock)}</span><span class="tx">${r.text}</span></div>`).join('');
+}
+function render() {
+  if (!S) return;
+  if (S.t - lastFc >= 5 || !fc.length) { fc = forecast(); lastFc = S.t; }
+  if (S.t - lastMet >= 15 || !met) { met = metrics(S.hist); lastMet = S.t; }
+  renderLive(); drawCGM(); drawFlux(); renderOnboard(); renderCoach(); renderMetrics(); renderCalc();
+  if (S.t - lastRack >= 1) { updateRack(); lastRack = S.t; }
+  renderLog();
+}
+
+/* ================= report ============================================= */
+function finish() {
+  if (!S || !S.hist.length) return;
+  running = false; speed = 0; syncSpeed();
+  if (junction) { $('#junction').classList.remove('on'); junction = null; }
+  met = metrics(S.hist);
+  const m = met, jNet = jLog.reduce((a, j) => a + j.delta, 0);
+  const sc = cl(score(m, missed) + cl(jNet * 1.5, -12, 8), 0, 100);
+  const grade = sc >= 85 ? 'A' : sc >= 72 ? 'B' : sc >= 58 ? 'C' : sc >= 44 ? 'D' : 'E';
+  const a1cOk = m.gmi < 7.0, hypoOk = m.severe === 0 && m.hypoIx < 5;
+  const ring = sc >= 72 ? 'inrange' : sc >= 50 ? 'high' : 'low';
+  runs.push({ label: currentRegimen().name, gmi: m.gmi, inr: m.inr, tbr: m.low + m.vlow, hypoIx: m.hypoIx, sc });
+  const badge = (ok, yes, no) => `<span class="badge" style="background:color-mix(in srgb, var(--${ok ? 'inrange' : 'low'}) 20%, transparent); color:var(--${ok ? 'inrange' : 'low'})">${ok ? yes : no}</span>`;
+  const cell = (k, v, sub) => `<div class="cell"><dt>${k}</dt><dd>${v}</dd>${sub ? `<div class="tiny faint">${sub}</div>` : ''}</div>`;
+  const eps = m.episodes.length
+    ? `<table class="runs" style="margin-top:6px"><tr><th>Episode</th><th>Started</th><th>Minutes</th><th>Nadir</th></tr>` +
+      m.episodes.map((e, i) => `<tr><td>${e.night ? 'overnight' : 'daytime'} ${i + 1}</td><td>${hhmm(e.start)}</td><td>${e.mins}</td><td style="color:var(--${zoneOf(e.nadir)})">${Math.round(e.nadir)}</td></tr>`).join('') + '</table>'
+    : '<div class="small dim">No episode lasted long enough to count. That is the win condition.</div>';
+  const dec = jLog.length ? `<h3 style="margin-top:26px">Your decisions</h3>
+    <table class="runs" style="margin-top:6px"><tr><th>Time</th><th>Junction</th><th>You chose</th><th>Seconds</th><th></th></tr>` +
+    jLog.map(j => `<tr><td>${hhmm(j.clock)}</td><td style="text-align:left">${j.title}</td>
+      <td style="text-align:left; color:var(--${j.delta > 1 ? 'inrange' : j.delta < 0 ? 'low' : 'high'})">${j.choice}</td>
+      <td>${j.secs}</td><td style="text-align:left; font-family:var(--sans)" class="tiny dim">${j.verdict}</td></tr>`).join('') + '</table>' : '';
+  const cmp = runs.length > 1 ? `<h3 style="margin-top:26px">Compared with your earlier runs</h3>
+    <table class="runs"><tr><th>Regimen</th><th>A1c</th><th>In range</th><th>Below 70</th><th>Hypo index</th><th>Score</th></tr>` +
+    runs.map((r, i) => `<tr class="${i === runs.length - 1 ? 'cur' : ''}"><td>${r.label}</td><td>${r.gmi.toFixed(1)}</td>
+      <td>${r.inr.toFixed(0)}%</td><td>${r.tbr.toFixed(1)}%</td><td>${r.hypoIx.toFixed(1)}</td><td>${r.sc}</td></tr>`).join('') + '</table>' : '';
+
+  $('#reportCard').innerHTML = `
+    <div class="tiny faint">${P.typeName}, ${P.W} kg, eGFR ${Math.round(cfg.px.egfr)} · ${cfg.days === 1 ? '24 hours' : cfg.days + ' days'} · ${currentRegimen().name}</div>
+    <div class="verdict">
+      <div class="ring" style="border:3px solid var(--${ring}); color:var(--${ring})">${grade}</div>
+      <div>
+        <h2>${sc} out of 100</h2>
+        <div class="small dim" style="margin-bottom:9px">45 points for the A1c, 30 for time in range, 25 for staying out of trouble,
+          less 2 for each missed dose${jLog.length ? ', and up to 12 either way for how you handled the junctions' : ''}.</div>
+        ${badge(a1cOk, 'A1c under 7%', 'A1c above 7%')}
+        ${badge(hypoOk, 'no meaningful hypoglycaemia', m.severe ? m.severe + ' severe episode' + (m.severe > 1 ? 's' : '') : 'too much time low')}
+        ${missed ? badge(false, '', missed + ' missed dose' + (missed > 1 ? 's' : '')) : ''}
+        ${jLog.length ? badge(jNet >= 0, jLog.length + ' decisions, net +' + jNet, jLog.length + ' decisions, net ' + jNet) : ''}
+      </div>
+    </div>
+    <dl class="repgrid">
+      ${cell('Mean glucose', Math.round(m.mean), 'mg/dL')}
+      ${cell('Estimated A1c', m.gmi.toFixed(1) + '%', 'target under 7')}
+      ${cell('Time in range', m.inr.toFixed(0) + '%', 'target over 70')}
+      ${cell('Below 70', (m.low + m.vlow).toFixed(1) + '%', 'target under 4')}
+      ${cell('Below 54', m.vlow.toFixed(1) + '%', 'target under 1')}
+      ${cell('Variability', Math.round(m.cv) + '%', 'CV, target under 36')}
+      ${cell('Hypoglycaemia index', m.hypoIx.toFixed(1), bandOf(m.hypoIx)[1])}
+      ${cell('LBGI', m.lbgi.toFixed(1), 'published low-glucose index')}
+      ${cell('GRI', Math.round(m.gri), 'published risk index')}
+      ${cell('Peak ketones', m.peakKet.toFixed(1), 'mmol/L')}
+    </dl>
+    <h3>Hypoglycaemic episodes</h3>${eps}
+    ${dec}${cmp}
+    <div class="row" style="margin-top:26px">
+      <button class="primary" id="again">Run the same plan again</button>
+      <button class="ghost" id="reconf">Change the plan</button>
+      <button class="ghost" id="keeplooking">Keep looking at the trace</button>
+    </div>`;
+  $('#report').classList.add('on');
+  $('#again').onclick = () => { $('#report').classList.remove('on'); start(); };
+  $('#reconf').onclick = () => { $('#report').classList.remove('on'); $('#app').classList.remove('on'); $('#setup').style.display = 'block'; };
+  $('#keeplooking').onclick = () => { $('#report').classList.remove('on'); };
+}
+
+/* ================= controls =========================================== */
+function syncSpeed() {
+  for (const b of $('#speed').querySelectorAll('button')) b.setAttribute('aria-pressed', +b.dataset.s === speed);
+}
+$('#speed').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  speed = +b.dataset.s; syncSpeed();
+  if (speed > 0 && !running && S && S.t < endT) { running = true; frame.last = performance.now(); requestAnimationFrame(frame); }
+};
+$('#win').onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  winH = +b.dataset.w;
+  for (const x of $('#win').querySelectorAll('button')) x.setAttribute('aria-pressed', +x.dataset.w === winH);
+};
+$('#skip').onclick = () => {
+  if (!S || junction) return;
+  const limit = Math.min(endT, S.t + 480);
+  let guard = 0;
+  while (S.t < limit && guard++ < 520) {
+    tick();
+    if (slots.some(s => s.instances.some(i => i.status === 'due'))) break;
+  }
+  fc = forecast(); met = metrics(S.hist); render();
+  if (S.t >= endT) finish();
+};
+$('#finish').onclick = () => finish();
+$('#start').onclick = () => start();
+$('#cCarb').oninput = () => { if (S) renderCalc(); };
+$('#cCorr').onchange = () => { if (S) renderCalc(); };
+window.addEventListener('resize', () => { if (S) { drawCGM(); drawFlux(); } });
+window.addEventListener('keydown', e => {
+  if (!S || $('#setup').style.display !== 'none') return;
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
+  if (junction) {
+    if (junction.phase === 'choose') {
+      const n = parseInt(e.key, 10);
+      if (n >= 1 && n <= junction.def.opts.length) { e.preventDefault(); chooseJunction(n - 1); }
+    } else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); closeJunction(); }
+    return;
+  }
+  if (e.key === ' ') {
+    e.preventDefault(); speed = speed > 0 ? 0 : 60; syncSpeed();
+    if (speed > 0 && !running) { running = true; frame.last = performance.now(); requestAnimationFrame(frame); }
+  }
+});
+})();
+</script>
+</body>
+</html>
