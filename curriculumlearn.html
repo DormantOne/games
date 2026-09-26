@@ -1,0 +1,3181 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Liquid dog</title>
+<meta name="description" content="A liquid time-constant network learns to walk a two-legged planar dog. Evolution, physics and interface in one HTML file.">
+<style>
+/* The palette, the hairline rules and the tabular numerals come from the
+   original static/app.css. This file keeps that identity and adds only what
+   the new instruments need. */
+:root {
+  --paper: #dfe4e0;
+  --paper2: #d6dcd8;
+  --card: #e9ece8;
+  --rule: #b3bcb6;
+  --ink: #1b2422;
+  --soft: #5d6a66;
+  --trace: #1f3b73;
+  --near: #8d99a4;
+  --strike: #c46a12;
+  --warn: #9c3316;
+  --ok: #2f6b4f;
+  --ghost: rgba(31, 59, 115, .17);
+}
+* { box-sizing: border-box; }
+html { color-scheme: light; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 15px/1.55 "Inter", "Segoe UI", system-ui, Helvetica, Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+  padding: 28px 22px 70px;
+  -webkit-text-size-adjust: 100%;
+}
+main { max-width: 1100px; margin: 0 auto; }
+h1 { font-size: 30px; font-weight: 600; letter-spacing: -.015em; margin: 0 0 6px; }
+h2 { font-size: 19px; font-weight: 600; margin: 36px 0 8px; }
+h3 { font-size: 16px; font-weight: 600; margin: 0 0 2px; }
+p { margin: 0 0 8px; }
+.sub { color: var(--soft); margin: 0 0 8px; max-width: 68ch; }
+.muted { color: var(--soft); font-weight: 400; }
+.hint { color: var(--soft); font-size: 13.5px; }
+code { background: var(--card); padding: 1px 5px; border-radius: 2px;
+       font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: .92em; }
+a { color: var(--trace); }
+svg { display: block; width: 100%; height: auto; }
+
+/* ── header ───────────────────────────────────────────────────────────── */
+.top { display: flex; gap: 28px; align-items: flex-start;
+       justify-content: space-between; border-bottom: 1px solid var(--ink);
+       padding-bottom: 20px; }
+.launch { display: flex; flex-direction: column; gap: 8px; flex: 0 0 auto; }
+.engine { color: var(--soft); font-size: 12.5px; margin: 8px 0 0; }
+.engine b { color: var(--ink); font-weight: 600; }
+
+button {
+  font: inherit; font-weight: 500; border: 1px solid var(--ink);
+  border-radius: 2px; padding: 9px 20px; cursor: pointer; white-space: nowrap;
+  background: var(--paper); color: var(--ink);
+}
+button.primary { background: var(--ink); color: var(--paper); }
+button.primary:disabled { background: var(--near); border-color: var(--near); }
+button.ghost { background: transparent; }
+button.small { padding: 5px 11px; font-size: 13px; }
+button:disabled { opacity: .45; cursor: default; }
+button:focus-visible, input:focus-visible, select:focus-visible,
+summary:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid var(--trace); outline-offset: 2px;
+}
+button.copied { background: var(--ok); border-color: var(--ok); color: #fff; }
+
+/* ── the stage: the one place this page raises its voice ──────────────── */
+.stage { margin: 22px 0 0; background: var(--paper2);
+         border-top: 1px solid var(--ink); border-bottom: 1px solid var(--rule);
+         position: relative; }
+.stage svg { width: 100%; }
+.stagetag { position: absolute; top: 10px; left: 14px; font-size: 12.5px;
+            color: var(--soft); pointer-events: none; }
+.stagetag b { color: var(--ink); font-weight: 600; }
+.stagerow { display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+            margin: 10px 0 0; font-size: 13px; color: var(--soft); }
+.stagerow label { flex-direction: row; align-items: center; gap: 6px; }
+.grow { flex: 1 1 auto; }
+
+/* ── status ───────────────────────────────────────────────────────────── */
+.status { display: flex; flex-wrap: wrap; gap: 0 34px; align-items: baseline;
+          margin: 22px 0 6px; }
+.stat { display: flex; flex-direction: column; }
+.stat span { color: var(--soft); font-size: 12.5px; }
+.stat b { font-size: 21px; font-weight: 600; }
+.bar { flex: 1 0 100%; height: 3px; background: var(--rule); margin-top: 14px;
+       position: relative; }
+.bar i { display: block; height: 100%; width: 0; background: var(--trace);
+         transition: width .4s ease; }
+
+/* ── panels and settings ──────────────────────────────────────────────── */
+.panel { margin: 22px 0 6px; border-top: 1px solid var(--rule);
+         border-bottom: 1px solid var(--rule); padding: 12px 0; }
+.panel summary { cursor: pointer; font-weight: 500; }
+.panel[open] summary { margin-bottom: 4px; }
+.grid { display: grid; gap: 18px 26px; margin-top: 18px;
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+label { display: flex; flex-direction: column; gap: 5px; font-size: 13.5px;
+        color: var(--soft); }
+input, select { font: inherit; font-size: 14.5px; color: var(--ink);
+                background: var(--card); border: 1px solid var(--rule);
+                border-radius: 2px; padding: 7px 9px; }
+input[type=range] { padding: 0; background: none; border: 0; }
+label small { color: var(--soft); font-size: 12.5px; line-height: 1.4; }
+
+/* ── charts ───────────────────────────────────────────────────────────── */
+.legend { display: flex; gap: 18px; align-items: center; color: var(--soft);
+          font-size: 13px; margin: 4px 0 0; flex-wrap: wrap; }
+.k { width: 15px; height: 3px; display: inline-block; margin-right: 6px;
+     vertical-align: 2px; }
+.k.speed { background: var(--trace); }
+.k.foot { background: var(--strike); }
+.k.div { background: var(--ok); }
+.k.gate { background: var(--rule); height: 12px; width: 1px; }
+.chart-title { font-size: 13px; color: var(--soft); margin: 18px 0 6px; }
+.two { display: grid; gap: 30px; grid-template-columns: 1.25fr 1fr; align-items: start; }
+.two.even { grid-template-columns: 1fr 1fr; }
+
+/* ── pools ────────────────────────────────────────────────────────────── */
+.pools { display: grid; gap: 16px; margin-top: 14px;
+         grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); }
+.pool { background: var(--card); border: 1px solid var(--rule); padding: 14px 15px; }
+.pool.collapsed { border-color: var(--warn); }
+.pool .blurb { color: var(--soft); font-size: 12.5px; margin: 0 0 10px; }
+.meter { height: 4px; background: var(--rule); margin: 8px 0 4px; position: relative; }
+.meter i { display: block; height: 100%; background: var(--ok); }
+.pool.collapsed .meter i { background: var(--warn); }
+.meter u { position: absolute; top: -3px; width: 1px; height: 10px; background: var(--ink); }
+.pool .div { color: var(--soft); font-size: 12.5px; }
+.pool ul { list-style: none; margin: 10px 0 0; padding: 0; font-size: 13px; }
+.pool li { display: flex; gap: 8px; padding: 3px 0; border-top: 1px solid var(--rule);
+           align-items: center; }
+.pool li b { font-weight: 600; min-width: 58px; }
+.pool li .fossil { color: var(--strike); font-size: 11px; letter-spacing: .04em; }
+.pool li .desc { color: var(--soft); font-size: 11.5px; margin-left: auto; }
+
+/* ── tables ───────────────────────────────────────────────────────────── */
+table { border-collapse: collapse; width: 100%; font-size: 13px; margin-top: 14px; }
+th, td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--rule); }
+th:first-child, td:first-child { text-align: left; }
+th { color: var(--soft); font-weight: 500; }
+td.spark { letter-spacing: 1px; color: var(--trace); text-align: left;
+           font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+
+.row { display: flex; align-items: baseline; justify-content: space-between;
+       gap: 16px; flex-wrap: wrap; }
+.controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.controls input { width: 94px; }
+.readout { display: flex; flex-wrap: wrap; gap: 0 28px; color: var(--soft);
+           margin: 12px 0 6px; font-size: 14px; }
+.readout b { color: var(--ink); font-weight: 600; }
+
+pre.report { background: var(--card); border: 1px solid var(--rule); padding: 12px;
+             overflow: auto; max-height: 420px; font-size: 12px; line-height: 1.45;
+             font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+             white-space: pre; margin: 12px 0 0; }
+
+footer { margin-top: 48px; border-top: 1px solid var(--rule); padding-top: 14px;
+         color: var(--soft); font-size: 13.5px; }
+footer p { max-width: 74ch; }
+
+@media (prefers-reduced-motion: reduce) { .bar i { transition: none; } }
+@media (max-width: 880px) {
+  .two, .two.even { grid-template-columns: 1fr; gap: 12px; }
+}
+@media (max-width: 620px) {
+  body { padding: 20px 14px 56px; }
+  .top { flex-direction: column; }
+  .launch { flex-direction: row; width: 100%; }
+  .launch button { flex: 1; padding: 9px 8px; }
+  .status { gap: 0 22px; }
+  .stat b { font-size: 18px; }
+}
+</style>
+</head>
+<body>
+<main>
+
+  <header class="top">
+    <div>
+      <h1>Liquid dog</h1>
+      <p class="sub">A liquid time-constant network learns to walk a two-legged
+        planar dog. No gradients, no gait template — 126 genes, three gates in a
+        repeating curriculum, and three champion pools that value being different
+        as much as being good.</p>
+      <p class="engine" id="engine">Starting the engine…</p>
+    </div>
+    <div class="launch">
+      <button id="go" class="primary">Start training</button>
+      <button id="halt" class="ghost" disabled>Stop</button>
+      <button id="copy" class="ghost">Copy report</button>
+    </div>
+  </header>
+
+  <div class="stage">
+    <svg id="stage" viewBox="0 0 1100 320" aria-label="Side view of the walker"></svg>
+    <p class="stagetag" id="stagetag"></p>
+  </div>
+  <div class="stagerow">
+    <label>Showing
+      <select id="source"><option value="untrained">an untrained controller</option></select>
+    </label>
+    <label>Starting pose
+      <input id="poseseed" type="number" value="4242" step="1" style="width:88px">
+    </label>
+    <button id="play" class="ghost small">Pause</button>
+    <label>Speed
+      <input id="speed" type="range" min="0.25" max="3" step="0.25" value="1" style="width:110px">
+      <span id="speedlabel">real time</span>
+    </label>
+    <span class="grow"></span>
+    <span>Pale outlines are the same dog a fifth of a second apart, so a still
+      shows the stride.</span>
+  </div>
+  <div class="readout" id="readout"></div>
+
+  <section class="status" id="status">
+    <div class="stat"><span>cycle</span><b id="s-cycle">—</b></div>
+    <div class="stat"><span>gate</span><b id="s-gate">idle</b></div>
+    <div class="stat"><span>generation</span><b id="s-gen">0</b></div>
+    <div class="stat"><span>competitors</span><b id="s-pop">—</b></div>
+    <div class="stat"><span>best speed</span><b id="s-speed">0.00 m/s</b></div>
+    <div class="stat"><span>generations</span><b id="s-rate">—</b></div>
+    <div class="stat"><span>elapsed</span><b id="s-min">0.0 min</b></div>
+    <div class="bar"><i id="s-prog"></i></div>
+    <p class="hint" id="s-hint">Press start. Everything below fills in as it runs.</p>
+  </section>
+
+  <details class="panel" id="settings">
+    <summary>Settings <span class="muted">— sensible defaults already chosen</span></summary>
+    <div class="grid">
+      <label>Body
+        <select name="morphology">
+          <option value="biped">biped</option>
+          <option value="quadruped">quadruped</option>
+        </select>
+        <small>Two legs reads clearly in 2-D; four overlap in the sagittal plane.
+          Two is also the harder problem — the four-legged version reaches
+          0.84 m/s, the two-legged one is still stuck near zero.</small>
+      </label>
+      <label>Threads
+        <select id="threads"></select>
+        <small>Every dog is independent, so the population splits across cores.
+          Changing this restarts the engine.</small>
+      </label>
+      <label>Curriculum cycles
+        <input type="number" name="cycles" min="1" max="12" value="3">
+        <small>Stand, footfalls, distance — then round again. Revisits cost a
+          generation or two and pull back reliability the distance gate traded
+          away.</small>
+      </label>
+      <label>Wide population
+        <input type="number" name="wide_population" min="40" max="2000" step="20" value="320">
+        <small>The searching phase. More samples find "stand and step" fast.</small>
+      </label>
+      <label>Narrow population
+        <input type="number" name="narrow_population" min="20" max="1000" step="10" value="140">
+        <small>The refining phase. Tuning a gait wants generations, not samples.</small>
+      </label>
+      <label>Telescope after cycle
+        <input type="number" name="telescope_after" min="1" max="8" value="1">
+      </label>
+      <label>Starting poses per test
+        <input type="number" name="trials" min="1" max="5" value="2">
+        <small>1 is fast but breeds gaits that only start from one pose. 2 is the
+          cheapest honest setting.</small>
+      </label>
+      <label>Survivor share
+        <input type="number" name="elite_frac" min="0.05" max="0.6" step="0.05" value="0.2">
+      </label>
+      <label>Children drawn from pools
+        <input type="number" name="pool_seed_frac" min="0" max="0.5" step="0.05" value="0.1">
+        <small>How much of each generation is bred from archived champions,
+          including fossils.</small>
+      </label>
+      <label>Mutation size
+        <input type="number" name="sigma" min="0.02" max="0.6" step="0.02" value="0.14">
+      </label>
+      <label>Mutation rate
+        <input type="number" name="mutation_rate" min="0.02" max="1" step="0.02" value="0.18">
+      </label>
+      <label>Crossover chance
+        <input type="number" name="crossover_prob" min="0" max="1" step="0.05" value="0.25">
+      </label>
+      <label>Interneurons
+        <input type="number" name="interneurons" min="2" max="24" value="6">
+        <small>Hidden liquid cells. The motor neurons are the output, so this is
+          the whole rest of the brain.</small>
+      </label>
+      <label>Champions per pool
+        <input type="number" name="pool_size" min="3" max="20" value="6">
+      </label>
+      <label>Behaviour gap
+        <input type="number" name="min_gap" min="0.02" max="0.5" step="0.02" value="0.1">
+        <small>How far apart two dogs must behave to count as different.</small>
+      </label>
+      <label>Diversity target
+        <input type="number" name="diversity_target" min="0.02" max="0.6" step="0.02" value="0.18">
+        <small>Below this a pool has collapsed, and two pools at random start
+          lowering their standards until something different gets in.</small>
+      </label>
+      <label>First cycle budget
+        <input type="text" name="first_cycle_gens" value="20, 30, 100">
+        <small>Generations for stand, footfalls, distance. A gate also leaves
+          early the moment every survivor clears it.</small>
+      </label>
+      <label>Later cycle budget
+        <input type="text" name="later_cycle_gens" value="6, 10, 150">
+      </label>
+      <label>Seed
+        <input type="number" name="seed" min="0" max="99999" value="1">
+      </label>
+      <label>Wiring seed
+        <input type="number" name="wiring_seed" min="0" max="99999" value="30">
+        <small>Fixes which synapses exist. Evolution tunes their strengths and
+          never the topology.</small>
+      </label>
+    </div>
+  </details>
+
+  <section>
+    <h2>Progress</h2>
+    <svg id="chart" viewBox="0 0 1100 260" aria-label="Training progress"></svg>
+    <p class="legend">
+      <span><span class="k speed"></span>best speed, m/s (left scale)</span>
+      <span><span class="k foot"></span>footfall score of the leader (right scale)</span>
+      <span><span class="k div"></span>mean pool diversity (right scale)</span>
+      <span><span class="k gate"></span>gate change</span>
+    </p>
+  </section>
+
+  <section class="two">
+    <div>
+      <h2>The brain</h2>
+      <p class="sub">Every cell is a leaky ODE whose time constant is gated by its
+        own input, so it can be sluggish one moment and fast the next. There is no
+        clock input and no phase input — if a rhythm appears, it came from the
+        network's own evolved time constants. Each row is scaled to its own range.
+        A period is only reported once a cell's signal has decorrelated and come
+        back — a cell that merely drifts gets a dash, because smooth is not
+        rhythmic.</p>
+      <svg id="brain" viewBox="0 0 700 260" aria-label="Neuron state through the episode"></svg>
+    </div>
+    <div>
+      <h2>Footfalls</h2>
+      <p class="sub" id="gaitlabel">A bar means that foot is carrying weight.</p>
+      <svg id="gait" viewBox="0 0 520 200" aria-label="Footfall chart"></svg>
+    </div>
+  </section>
+
+  <section>
+    <h2>Champion pools</h2>
+    <p class="sub">Admission is half how good a dog is and half how differently it
+      moves — a quarter and three quarters in <i>strange</i>. Fossils are frozen at
+      the end of each cycle and can never be evicted, however thoroughly they are
+      later beaten, because the thing that beat them may turn out to be a dead
+      end.</p>
+    <div id="pools" class="pools"></div>
+    <p class="hint" id="relax">—</p>
+  </section>
+
+  <section class="two">
+    <div>
+      <h2>Behaviour space</h2>
+      <svg id="bspace" viewBox="0 0 460 380" aria-label="Champions in behaviour space"></svg>
+    </div>
+    <div>
+      <p class="sub">Difference is measured in what a dog <i>does</i>, not in its
+        genes. Two genomes can differ in 200 places and produce the same gait, and
+        two near-identical genomes can produce a walk and a hop — so the pools
+        compare six numbers describing cadence, duty factor, alternation, ride
+        height, speed and gentleness. This is two of those six at a time. When the
+        cloud shrinks to a knot, that is a collapse, and two pools start lowering
+        their standards until something genuinely different gets in.</p>
+      <div class="controls">
+        <label>Across <select id="bx"></select></label>
+        <label>Up <select id="by"></select></label>
+      </div>
+      <p class="legend">
+        <span><span class="k" style="background:var(--trace)"></span>fast</span>
+        <span><span class="k" style="background:var(--ok)"></span>sturdy</span>
+        <span><span class="k" style="background:var(--strike)"></span>strange</span>
+        <span>hollow ring = fossil</span>
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="row">
+      <h2>Does it work from a cold start?</h2>
+      <div class="controls">
+        <button id="auditbtn" class="ghost">Audit all champions</button>
+      </div>
+    </div>
+    <p class="sub">One run from one pose is one sample. This re-runs every
+      champion from twelve fresh starting poses, which is the number that tells
+      you whether you have a gait or a lucky launch.</p>
+    <div id="audit"></div>
+  </section>
+
+  <details class="panel" id="reportbox">
+    <summary>Report and saved runs <span class="muted">— the thing to paste back</span></summary>
+    <div class="controls" style="margin:14px 0 0">
+      <button id="savebtn" class="ghost small">Save champions (JSON)</button>
+      <button id="csvbtn" class="ghost small">Save history (CSV)</button>
+      <label style="flex-direction:row;align-items:center;gap:6px">Load champions
+        <input id="loadinput" type="file" accept=".json,application/json">
+      </label>
+    </div>
+    <p class="hint" id="loadmsg"></p>
+    <pre class="report" id="report">Nothing has been trained yet.</pre>
+  </details>
+
+  <footer>
+    <p>One file, no install: the physics, the network, the evolution and this page
+      are all in it, and it runs from a local copy with no server. Everything the
+      dog is told about what "good" means is in the three gate objects near the
+      top of the engine; the pools and the cycling curriculum follow it.</p>
+    <p>A planar dog is much easier than a three-dimensional one: no roll, no yaw,
+      no lateral balance. Position-based dynamics is stable and fast but not
+      torque-accurate, and the muscles are compliant distance constraints rather
+      than motors with real limits. Nothing here transfers to hardware. The ground
+      is flat and uniform, and one run is one sample — promotion times vary a lot
+      with the seed.</p>
+  </footer>
+</main>
+
+<script id="engine-src">
+/* ===========================================================================
+   liquid dog — engine
+   A port of dogwalker/{body,ltc,gym}.py to plain JavaScript.
+
+   The Python version batches the whole population into (n_points, batch, 2)
+   numpy arrays because a loop over 320 dogs in Python would be hopeless. Here
+   the opposite is true: one dog at a time in a tight typed-array loop is both
+   faster and simpler, and it lets a dog that has already fallen stop being
+   simulated, which the batched version cannot do. Every number below is
+   otherwise the same arithmetic in the same order.
+
+   This file runs unchanged in a worker, on the main thread, and in node.
+   =========================================================================== */
+(function (root) {
+  'use strict';
+
+  // ── geometry, in metres and kilograms ────────────────────────────────────
+  var L_TORSO = 0.50, H_REST = 0.42, L_THIGH = 0.22, L_SHANK = 0.22;
+  var D2R = Math.PI / 180;
+  var HIP_LO = 45.0 * D2R, HIP_HI = 115.0 * D2R;
+  var KNEE_LO = 60.0 * D2R, KNEE_HI = 168.0 * D2R;
+  var HIP_REST = 74.0 * D2R, KNEE_REST = 145.0 * D2R;
+
+  var SHOULDER = 0, HIP = 1, HEAD = 2, TAIL = 3;
+  var TORSO_POINTS = [SHOULDER, HIP, HEAD];
+
+  var GRAVITY = -9.81, SUBSTEP_HZ = 400.0, SOLVER_ITERS = 4;
+  var VEL_DAMP = 0.6, VEL_CLAMP = 25.0;
+  var CONTACT_EPS = 0.0;
+
+  var CONTROL_HZ = 50.0;
+  var SUBSTEPS_PER_TICK = Math.round(SUBSTEP_HZ / CONTROL_HZ);
+
+  // ── what "hurt yourself", "awake" and "a footfall" mean ──────────────────
+  var IMPACT_LIMIT = 3.0, WOBBLE_LIMIT = 2.5, TRAVEL_TARGET = 0.9;
+  var STEP_SAT = 1.2, DUTY_LO = 0.20, DUTY_HI = 0.90, FOOTFALL_PASS = 0.72;
+  var MIN_STANCE_S = 0.10, MIN_AIR_S = 0.06;
+  var TAU_MIN = 0.03, TAU_MAX = 2.0;
+  var FALL_PITCH = 60.0 * D2R;
+
+  var DESCRIPTOR_NAMES = ['cadence', 'duty', 'alternation', 'ride height',
+                          'speed', 'gentleness'];
+
+  // ── random numbers ───────────────────────────────────────────────────────
+  // splitmix32: one multiply-xor-shift chain, 2^32 period, no state to carry
+  // between calls but the cursor. Good enough for mutation noise and start
+  // poses, and cheap enough to make a fresh stream per dog.
+  function mix32(a) {
+    a = (a + 0x9e3779b9) | 0;
+    var z = a;
+    z = Math.imul(z ^ (z >>> 16), 0x21f0aaad);
+    z = Math.imul(z ^ (z >>> 15), 0x735a2d97);
+    return (z ^ (z >>> 15)) >>> 0;
+  }
+
+  function Rng(seed) {
+    this.s = (seed | 0) >>> 0;
+    this.spare = NaN;
+  }
+  Rng.prototype.u32 = function () {
+    this.s = (this.s + 0x9e3779b9) >>> 0;
+    var z = this.s;
+    z = Math.imul(z ^ (z >>> 16), 0x21f0aaad);
+    z = Math.imul(z ^ (z >>> 15), 0x735a2d97);
+    return (z ^ (z >>> 15)) >>> 0;
+  };
+  /** uniform in [0, 1) with 53 bits of mantissa */
+  Rng.prototype.random = function () {
+    var hi = this.u32() >>> 5, lo = this.u32() >>> 6;
+    return (hi * 67108864 + lo) / 9007199254740992;
+  };
+  Rng.prototype.uniform = function (a, b) { return a + (b - a) * this.random(); };
+  Rng.prototype.int = function (n) { return (this.u32() % n) >>> 0; };
+  /** Marsaglia polar, keeping the second deviate */
+  Rng.prototype.normal = function (mu, sd) {
+    if (this.spare === this.spare) { var v = this.spare; this.spare = NaN; return mu + sd * v; }
+    var x, y, r;
+    do { x = 2 * this.random() - 1; y = 2 * this.random() - 1; r = x * x + y * y; }
+    while (r >= 1 || r === 0);
+    var f = Math.sqrt(-2 * Math.log(r) / r);
+    this.spare = y * f;
+    return mu + sd * x * f;
+  };
+  /** a stream that depends on both numbers, so worker chunking cannot move it */
+  function seedFor(a, b) { return mix32(mix32(a | 0) ^ Math.imul(b + 1, 0x9e3779b1)); }
+
+  // ── morphology ───────────────────────────────────────────────────────────
+  function rot(vx, vy, ang) {
+    var c = Math.cos(ang), s = Math.sin(ang);
+    return [c * vx - s * vy, s * vx + c * vy];
+  }
+
+  function Morphology(name, legs, legNames) {
+    this.name = name;
+    this.legs = legs;                    // [attach, opposite torso point, side]
+    this.legNames = legNames;
+    this.nLegs = legs.length;
+    this.nPoints = 4 + 2 * this.nLegs;
+    this.nActuators = 2 * this.nLegs;
+    this.nSensors = 6 + 3 * this.nLegs;
+    this.feet = [];
+    for (var k = 0; k < this.nLegs; k++) this.feet.push(this.foot(k));
+    // a merged limb carries the pair's share, so biped legs are heavier
+    var leg = this.nLegs === 2 ? 0.50 : 0.35;
+    this.mass = [3.0, 3.0, 1.2, 0.4];
+    this.friction = [0.5, 0.5, 0.5, 0.4];
+    for (var j = 0; j < this.nLegs; j++) {
+      this.mass.push(leg, leg * 0.7);
+      this.friction.push(0.6, 1.2);
+    }
+  }
+  Morphology.prototype.knee = function (k) { return 4 + 2 * k; };
+  Morphology.prototype.foot = function (k) { return 5 + 2 * k; };
+  Morphology.prototype.restPose = function (hipAng, kneeAng) {
+    if (hipAng === undefined) hipAng = HIP_REST;
+    if (kneeAng === undefined) kneeAng = KNEE_REST;
+    var p = new Float64Array(this.nPoints * 2);
+    p[2 * SHOULDER] = 0.5 * L_TORSO; p[2 * SHOULDER + 1] = H_REST;
+    p[2 * HIP] = -0.5 * L_TORSO;     p[2 * HIP + 1] = H_REST;
+    p[2 * HEAD] = p[2 * SHOULDER] + 0.17; p[2 * HEAD + 1] = p[2 * SHOULDER + 1] + 0.13;
+    p[2 * TAIL] = p[2 * HIP] - 0.17;      p[2 * TAIL + 1] = p[2 * HIP + 1] + 0.08;
+    for (var k = 0; k < this.nLegs; k++) {
+      var att = this.legs[k][0], opp = this.legs[k][1], side = this.legs[k][2];
+      var ux = p[2 * opp] - p[2 * att], uy = p[2 * opp + 1] - p[2 * att + 1];
+      var n = Math.sqrt(ux * ux + uy * uy);
+      ux /= n; uy /= n;
+      var th = rot(ux, uy, side * hipAng);
+      var kn = this.knee(k), ft = this.foot(k);
+      p[2 * kn] = p[2 * att] + L_THIGH * th[0];
+      p[2 * kn + 1] = p[2 * att + 1] + L_THIGH * th[1];
+      var sh = rot(-th[0], -th[1], -side * kneeAng);
+      p[2 * ft] = p[2 * kn] + L_SHANK * sh[0];
+      p[2 * ft + 1] = p[2 * kn + 1] + L_SHANK * sh[1];
+    }
+    return p;
+  };
+
+  var BIPED = new Morphology('biped',
+    [[SHOULDER, HIP, +1], [HIP, SHOULDER, -1]], ['front', 'rear']);
+  var QUADRUPED = new Morphology('quadruped',
+    [[SHOULDER, HIP, +1], [SHOULDER, HIP, +1], [HIP, SHOULDER, -1], [HIP, SHOULDER, -1]],
+    ['front-left', 'front-right', 'rear-left', 'rear-right']);
+  var MORPHOLOGIES = { biped: BIPED, quadruped: QUADRUPED };
+
+  function lawOfCosines(a, b, ang) {
+    return Math.sqrt(a * a + b * b - 2.0 * a * b * Math.cos(ang));
+  }
+
+  // ── the constraint topology, built once per morphology ───────────────────
+  function Skeleton(morph) {
+    var p0 = morph.restPose();
+    var ia = [], ib = [], rest = [], stiff = [];
+    function bone(i, j, k) {
+      ia.push(i); ib.push(j);
+      var dx = p0[2 * i] - p0[2 * j], dy = p0[2 * i + 1] - p0[2 * j + 1];
+      rest.push(Math.sqrt(dx * dx + dy * dy)); stiff.push(k);
+    }
+    bone(SHOULDER, HIP, 1.0);                       // spine
+    bone(SHOULDER, HEAD, 1.0);
+    bone(HIP, HEAD, 0.55);                          // holds the neck angle
+    bone(HIP, TAIL, 1.0);
+    bone(SHOULDER, TAIL, 0.25);                     // floppy tail
+    var k;
+    for (k = 0; k < morph.nLegs; k++) {
+      bone(morph.legs[k][0], morph.knee(k), 1.0);   // thigh
+      bone(morph.knee(k), morph.foot(k), 1.0);      // shank
+    }
+    this.actStart = ia.length;
+    for (k = 0; k < morph.nLegs; k++) {             // hip swing
+      ia.push(morph.legs[k][1]); ib.push(morph.knee(k));
+      rest.push(lawOfCosines(L_TORSO, L_THIGH, HIP_REST)); stiff.push(0.35);
+    }
+    for (k = 0; k < morph.nLegs; k++) {             // knee flexion
+      ia.push(morph.legs[k][0]); ib.push(morph.foot(k));
+      rest.push(lawOfCosines(L_THIGH, L_SHANK, KNEE_REST)); stiff.push(0.50);
+    }
+
+    this.morph = morph;
+    this.nCons = ia.length;
+    this.ia = Int32Array.from(ia);
+    this.ib = Int32Array.from(ib);
+    this.rest0 = Float64Array.from(rest);
+    this.stiff = Float64Array.from(stiff);
+
+    // How much of a constraint's correction each endpoint takes: by inverse
+    // mass, then divided by how many constraints touch that point, which is
+    // what keeps a simultaneous (Jacobi) solve from overshooting.
+    var count = new Int32Array(morph.nPoints);
+    for (var c = 0; c < this.nCons; c++) { count[this.ia[c]]++; count[this.ib[c]]++; }
+    this.scatA = new Float64Array(this.nCons);
+    this.scatB = new Float64Array(this.nCons);
+    for (c = 0; c < this.nCons; c++) {
+      var a = this.ia[c], b = this.ib[c];
+      var wa = 1.0 / morph.mass[a], wb = 1.0 / morph.mass[b];
+      var denom = wa + wb;
+      this.scatA[c] = wa / denom / Math.max(count[a], 1);
+      this.scatB[c] = -wb / denom / Math.max(count[b], 1);
+    }
+    this.bones = [];                                // for drawing
+    var far = {};
+    for (k = 0; k < morph.nLegs; k++) {
+      if (k % 2 === 1) { far[morph.knee(k)] = 1; far[morph.foot(k)] = 1; }
+    }
+    for (c = 0; c < this.actStart; c++) {
+      var i = this.ia[c], j = this.ib[c];
+      this.bones.push([i, j, morph.nLegs === 2 || (!far[i] && !far[j])]);
+    }
+  }
+
+  var _skeletons = {};
+  function skeleton(morph) {
+    if (!_skeletons[morph.name]) _skeletons[morph.name] = new Skeleton(morph);
+    return _skeletons[morph.name];
+  }
+
+  // ── the liquid network's wiring ──────────────────────────────────────────
+  // Sparse and fixed. Evolution tunes synapse strengths, time constants and
+  // reversal potentials, never the topology.
+  function buildWiring(nIn, nInter, nMotor, seed, sensorDensity, recDensity) {
+    if (sensorDensity === undefined) sensorDensity = 0.45;
+    if (recDensity === undefined) recDensity = 0.40;
+    var n = nInter + nMotor;
+    var rng = new Rng(mix32(seed | 0));
+    var mIn = new Uint8Array(n * nIn), mRec = new Uint8Array(n * n);
+    var i, j;
+    for (i = 0; i < n; i++) for (j = 0; j < nIn; j++) mIn[i * nIn + j] = rng.random() < sensorDensity ? 1 : 0;
+    for (i = 0; i < n; i++) for (j = 0; j < n; j++) mRec[i * n + j] = rng.random() < recDensity ? 1 : 0;
+    for (i = 0; i < n; i++) mRec[i * n + i] = 0;    // self-decay is what tau is for
+    for (i = 0; i < n; i++) {                       // no cell left without afferents
+      for (;;) {
+        var deg = 0;
+        for (j = 0; j < nIn; j++) deg += mIn[i * nIn + j];
+        for (j = 0; j < n; j++) deg += mRec[i * n + j];
+        if (deg >= 2) break;
+        if (rng.random() < 0.5) mIn[i * nIn + rng.int(nIn)] = 1;
+        else { j = rng.int(n); if (j !== i) mRec[i * n + j] = 1; }
+      }
+    }
+    var inRows = [], inCols = [], recRows = [], recCols = [];
+    for (i = 0; i < n; i++) for (j = 0; j < nIn; j++) if (mIn[i * nIn + j]) { inRows.push(i); inCols.push(j); }
+    for (i = 0; i < n; i++) for (j = 0; j < n; j++) if (mRec[i * n + j]) { recRows.push(i); recCols.push(j); }
+
+    var w = {
+      nIn: nIn, nInter: nInter, nMotor: nMotor, n: n, seed: seed,
+      inRows: Int32Array.from(inRows), inCols: Int32Array.from(inCols),
+      recRows: Int32Array.from(recRows), recCols: Int32Array.from(recCols),
+      nSynIn: inRows.length, nSynRec: recRows.length
+    };
+    w.genomeSize = w.nSynIn + w.nSynRec + 3 * n + 2 * nMotor;
+    w.describe = nIn + ' sensors \u2192 ' + nInter + ' interneurons + ' + nMotor +
+      ' motor neurons | ' + w.nSynIn + ' sensory synapses, ' + w.nSynRec +
+      ' recurrent synapses | ' + w.genomeSize + ' genes';
+    return w;
+  }
+
+  // ── genomes ──────────────────────────────────────────────────────────────
+  function randomGenomes(w, count, rng) {
+    var G = w.genomeSize, out = new Float64Array(count * G), i, j, o;
+    for (i = 0; i < count; i++) {
+      o = i * G;
+      for (j = 0; j < w.nSynIn; j++) out[o++] = rng.normal(0.0, 0.7);
+      for (j = 0; j < w.nSynRec; j++) out[o++] = rng.normal(0.0, 0.7);
+      for (j = 0; j < w.n; j++) out[o++] = rng.normal(0.0, 0.4);            // bias
+      for (j = 0; j < w.n; j++) out[o++] = rng.uniform(Math.log(0.06), Math.log(0.7));
+      for (j = 0; j < w.n; j++) out[o++] = rng.normal(0.0, 0.9);            // A
+      for (j = 0; j < w.nMotor; j++) out[o++] = rng.normal(1.0, 0.3);       // gain
+      for (j = 0; j < w.nMotor; j++) out[o++] = rng.normal(0.0, 0.2);       // offset
+    }
+    return out;
+  }
+
+  /** sparse Gaussian mutation, in place, with the occasional larger kick */
+  function mutateRow(genes, off, G, rng, rate, sigma, joltProb) {
+    if (joltProb === undefined) joltProb = 0.08;
+    var s = sigma * (rng.random() < joltProb ? 5.0 : 1.0);
+    var any = false, j;
+    for (j = 0; j < G; j++) {
+      if (rng.random() < rate) { genes[off + j] += rng.normal(0.0, s); any = true; }
+    }
+    if (!any) genes[off + rng.int(G)] += rng.normal(0.0, s);
+  }
+
+  function crossoverInto(dst, dOff, a, aOff, b, bOff, G, rng) {
+    for (var j = 0; j < G; j++) dst[dOff + j] = rng.random() < 0.5 ? a[aOff + j] : b[bOff + j];
+  }
+
+  // ── metric layout ────────────────────────────────────────────────────────
+  // One flat row per dog, so a worker can hand a whole chunk back as one
+  // transferable buffer.
+  var M = {
+    survive: 0, travel: 1, impact: 2, wobble: 3, stepRate: 4, stepTerm: 5,
+    regularity: 6, duty: 7, dutyMean: 8, spread: 9, distance: 10, speed: 11,
+    effort: 12
+  };
+  var N_METRICS = 13;
+  var METRIC_NAMES = ['survive', 'travel', 'impact', 'wobble', 'step_rate',
+    'step_term', 'regularity', 'duty', 'duty_mean', 'spread', 'distance',
+    'speed', 'effort'];
+
+  function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
+
+  // ── derived quantities, exactly the Rollout properties ───────────────────
+  function impactNorm(m, o) {
+    return Math.max(m[o + M.impact] / IMPACT_LIMIT, m[o + M.wobble] / WOBBLE_LIMIT);
+  }
+  function slam(m, o) { return Math.max(0.0, impactNorm(m, o) - 0.5); }
+  function liveliness(m, o) { return Math.min(1.0, m[o + M.travel] / TRAVEL_TARGET); }
+  function footfallScore(m, o) {
+    return m[o + M.stepTerm] * (0.45 + 0.25 * m[o + M.regularity]
+      + 0.15 * m[o + M.duty] + 0.15 * m[o + M.spread]);
+  }
+  function sturdiness(m, o) {
+    return m[o + M.survive] - 0.5 * slam(m, o) + 0.3 * liveliness(m, o);
+  }
+  function descriptor(m, o, out, oo) {
+    out[oo + 0] = clamp(m[o + M.stepRate] / 4.0, 0, 1);
+    out[oo + 1] = clamp(m[o + M.dutyMean], 0, 1);
+    out[oo + 2] = clamp(m[o + M.spread], 0, 1);
+    out[oo + 3] = clamp(m[o + M.travel] / 3.0, 0, 1);
+    out[oo + 4] = clamp(m[o + M.speed] / 1.2, -1, 1) * 0.5 + 0.5;
+    out[oo + 5] = clamp(1.0 - impactNorm(m, o), 0, 1);
+    return out;
+  }
+
+  // ── the gates ────────────────────────────────────────────────────────────
+  // Everything the dog is told about what "good" means. Gate 1 never mentions
+  // distance; gate 2 never mentions a gait pattern; no gate mentions a phase,
+  // a period, a target speed or a reference trajectory.
+  var GATES = [
+    {
+      name: 'stand', blurb: 'upright, awake, no slamming', seconds: 5.0,
+      // Surviving the whole episode is worth exactly 1.0 and not a point more,
+      // so among dogs that can stand, selection is driven only by liveliness
+      // and gentleness -- and diversity survives into the next gate.
+      score: function (m, o) {
+        return m[o + M.survive] + 0.60 * liveliness(m, o) - 0.50 * slam(m, o);
+      },
+      passed: function (m, o) {
+        return m[o + M.survive] >= 0.999 && liveliness(m, o) >= 1.0
+          && impactNorm(m, o) <= 1.25;
+      }
+    },
+    {
+      name: 'footfalls', blurb: 'distinct repeating footfalls', seconds: 7.0,
+      // Rhythm is rewarded but no particular rhythm.
+      score: function (m, o) {
+        var alive = m[o + M.survive] >= 0.999 ? 1.0 : 0.15 * m[o + M.survive];
+        return alive * footfallScore(m, o) - 0.35 * slam(m, o);
+      },
+      passed: function (m, o) {
+        return m[o + M.survive] >= 0.999 && footfallScore(m, o) >= FOOTFALL_PASS
+          && impactNorm(m, o) <= 1.25;
+      }
+    },
+    {
+      name: 'distance', blurb: 'cover ground, keep the gait', seconds: 9.0,
+      // Both earlier gates return as multiplicative constraints, so falling
+      // over or dissolving into a rhythmless scrabble costs most of the
+      // reward instead of being quietly forgiven.
+      score: function (m, o) {
+        var alive = m[o + M.survive] >= 0.999 ? 1.0 : 0.10 * m[o + M.survive];
+        var gait = clamp(footfallScore(m, o) / FOOTFALL_PASS, 0.25, 1.0);
+        var safe = clamp(1.6 - impactNorm(m, o), 0.25, 1.0);
+        return alive * gait * safe * m[o + M.speed] - 0.05 * m[o + M.effort];
+      },
+      passed: function (m, o) {
+        return m[o + M.survive] >= 0.999 && m[o + M.speed] >= 0.6
+          && footfallScore(m, o) >= FOOTFALL_PASS;
+      }
+    }
+  ];
+  var OBJECTIVE = GATES[GATES.length - 1];
+
+  // ── one dog, simulated ───────────────────────────────────────────────────
+  // All scratch is allocated once and reused for every dog in the chunk.
+  function Sim(morph, wiring) {
+    this.m = morph;
+    this.w = wiring;
+    this.skel = skeleton(morph);
+    var P = morph.nPoints, nc = this.skel.nCons, n = wiring.n, nL = morph.nLegs;
+
+    this.pos = new Float64Array(P * 2);
+    this.vel = new Float64Array(P * 2);
+    this.start = new Float64Array(P * 2);
+    this.pred = new Float64Array(P * 2);
+    this.dp = new Float64Array(P * 2);
+    this.rest = new Float64Array(nc);
+
+    this.x = new Float64Array(n);
+    this.pre = new Float64Array(n);
+    this.drive = new Float64Array(n);
+    this.bias = new Float64Array(n);
+    this.invTau = new Float64Array(n);
+    this.A = new Float64Array(n);
+    this.gain = new Float64Array(wiring.nMotor);
+    this.offset = new Float64Array(wiring.nMotor);
+    this.wIn = new Float64Array(wiring.nSynIn);
+    this.wRec = new Float64Array(wiring.nSynRec);
+
+    this.u = new Float64Array(morph.nSensors);
+    this.act = new Float64Array(morph.nActuators);
+    this.prevU = new Float64Array(morph.nActuators);
+    this.hip = new Float64Array(nL);
+    this.knee = new Float64Array(nL);
+    this.prevHip = new Float64Array(nL);
+    this.prevKnee = new Float64Array(nL);
+    this.contact = new Uint8Array(nL);
+    this.isFoot = new Uint8Array(P);
+    for (var q = 0; q < morph.feet.length; q++) this.isFoot[morph.feet[q]] = 1;
+
+    // footfall bookkeeping, per leg
+    this.inC = new Uint8Array(nL);
+    this.stanceRun = new Float64Array(nL);
+    this.airBefore = new Float64Array(nL);
+    this.onsetT = new Float64Array(nL);
+    this.clean = new Float64Array(nL);
+    this.last = new Float64Array(nL);
+    this.nInt = new Float64Array(nL);
+    this.s1 = new Float64Array(nL);
+    this.s2 = new Float64Array(nL);
+    this.downTicks = new Float64Array(nL);
+    this.tdImpact = 0;
+  }
+
+  /** the starting pose: small jitter on hip, knee, ride height and drift */
+  Sim.prototype.setPose = function (poseSeed, index, jitter) {
+    if (jitter === undefined) jitter = 1.0;
+    var rng = new Rng(seedFor(poseSeed, index));
+    var hip = HIP_REST + rng.normal(0, 4.0 * D2R * jitter);
+    var knee = KNEE_REST + rng.normal(0, 4.0 * D2R * jitter);
+    var yoff = rng.uniform(0.0, 0.02 * jitter);
+    var vx = rng.normal(0, 0.05 * jitter);
+    var p = this.m.restPose(hip, knee);
+    for (var i = 0; i < this.m.nPoints; i++) {
+      this.pos[2 * i] = p[2 * i];
+      this.pos[2 * i + 1] = p[2 * i + 1] + yoff;
+      this.vel[2 * i] = vx;
+      this.vel[2 * i + 1] = 0.0;
+    }
+    return this;
+  };
+
+  /** used by the test harness, to start from a state dumped out of numpy */
+  Sim.prototype.setState = function (pos, vel) {
+    this.pos.set(pos); this.vel.set(vel);
+    return this;
+  };
+
+  Sim.prototype.loadGenes = function (genes, off) {
+    var w = this.w, n = w.n, o = off, j;
+    for (j = 0; j < w.nSynIn; j++) this.wIn[j] = genes[o + j];
+    o += w.nSynIn;
+    for (j = 0; j < w.nSynRec; j++) this.wRec[j] = genes[o + j];
+    o += w.nSynRec;
+    for (j = 0; j < n; j++) this.bias[j] = genes[o + j];
+    o += n;
+    var lmin = Math.log(TAU_MIN), lmax = Math.log(TAU_MAX);
+    for (j = 0; j < n; j++) this.invTau[j] = 1.0 / Math.exp(clamp(genes[o + j], lmin, lmax));
+    o += n;
+    for (j = 0; j < n; j++) this.A[j] = clamp(genes[o + j], -2.0, 2.0);
+    o += n;
+    for (j = 0; j < w.nMotor; j++) this.gain[j] = genes[o + j];
+    o += w.nMotor;
+    for (j = 0; j < w.nMotor; j++) this.offset[j] = genes[o + j];
+    for (j = 0; j < n; j++) this.x[j] = 0.0;
+    return this;
+  };
+
+  /** dx/dt = -x/tau + f(x, I) * (A - x), by the fused implicit Euler step */
+  Sim.prototype.brainStep = function (dt, unfolds) {
+    var w = this.w, n = w.n, h = dt / unfolds;
+    var x = this.x, pre = this.pre, drive = this.drive, i, k;
+    for (i = 0; i < n; i++) drive[i] = this.bias[i];
+    for (k = 0; k < w.nSynIn; k++) drive[w.inRows[k]] += this.wIn[k] * this.u[w.inCols[k]];
+    for (var s = 0; s < unfolds; s++) {
+      for (i = 0; i < n; i++) pre[i] = drive[i];
+      for (k = 0; k < w.nSynRec; k++) pre[w.recRows[k]] += this.wRec[k] * x[w.recCols[k]];
+      for (i = 0; i < n; i++) {
+        var p = pre[i];
+        var f = 1.0 / (1.0 + Math.exp(-(p < -30 ? -30 : (p > 30 ? 30 : p))));
+        x[i] = (x[i] + h * f * this.A[i]) / (1.0 + h * (this.invTau[i] + f));
+      }
+    }
+    for (i = 0; i < n; i++) x[i] = clamp(x[i], -8.0, 8.0);
+    var nm = w.nMotor, base = w.nInter;
+    for (i = 0; i < nm; i++) this.act[i] = Math.tanh(this.gain[i] * x[base + i] + this.offset[i]);
+  };
+
+  /** target angles become rest lengths, by the law of cosines */
+  Sim.prototype.setTargets = function () {
+    var nL = this.m.nLegs, s = this.skel.actStart, i;
+    for (i = 0; i < nL; i++) {
+      var uh = clamp(this.act[i], -1.0, 1.0);
+      var ang = 0.5 * (HIP_LO + HIP_HI) + 0.5 * (HIP_HI - HIP_LO) * uh;
+      this.rest[s + i] = lawOfCosines(L_TORSO, L_THIGH, ang);
+    }
+    for (i = 0; i < nL; i++) {
+      var uk = clamp(this.act[nL + i], -1.0, 1.0);
+      var ka = 0.5 * (KNEE_LO + KNEE_HI) + 0.5 * (KNEE_HI - KNEE_LO) * uk;
+      this.rest[s + nL + i] = lawOfCosines(L_THIGH, L_SHANK, ka);
+    }
+  };
+
+  Sim.prototype.substep = function () {
+    var P = this.m.nPoints, nc = this.skel.nCons;
+    var pos = this.pos, vel = this.vel, start = this.start, pred = this.pred, dp = this.dp;
+    var ia = this.skel.ia, ib = this.skel.ib, stiff = this.skel.stiff;
+    var scatA = this.skel.scatA, scatB = this.skel.scatB, rest = this.rest;
+    var dt = 1.0 / SUBSTEP_HZ, damp = 1.0 - VEL_DAMP * dt;
+    var i, c, it;
+
+    for (i = 0; i < P; i++) {
+      var vx = vel[2 * i] * damp;
+      var vy = (vel[2 * i + 1] + GRAVITY * dt) * damp;
+      vel[2 * i] = clamp(vx, -VEL_CLAMP, VEL_CLAMP);
+      vel[2 * i + 1] = clamp(vy, -VEL_CLAMP, VEL_CLAMP);
+      start[2 * i] = pos[2 * i]; start[2 * i + 1] = pos[2 * i + 1];
+      pred[2 * i] = pos[2 * i] + vel[2 * i] * dt;
+      pred[2 * i + 1] = pos[2 * i + 1] + vel[2 * i + 1] * dt;
+    }
+
+    // Jacobi: every correction is computed from the same predicted positions
+    // and they are applied together, which is what the scatter weights are
+    // scaled for.
+    for (it = 0; it < SOLVER_ITERS; it++) {
+      for (i = 0; i < 2 * P; i++) dp[i] = 0.0;
+      for (c = 0; c < nc; c++) {
+        var a = ia[c], b = ib[c];
+        var dx = pred[2 * b] - pred[2 * a], dy = pred[2 * b + 1] - pred[2 * a + 1];
+        var len = Math.sqrt(dx * dx + dy * dy) + 1e-9;
+        var f = stiff[c] * (len - rest[c]) / len;
+        var cx = f * dx, cy = f * dy, sa = scatA[c], sb = scatB[c];
+        dp[2 * a] += sa * cx; dp[2 * a + 1] += sa * cy;
+        dp[2 * b] += sb * cx; dp[2 * b + 1] += sb * cy;
+      }
+      for (i = 0; i < 2 * P; i++) pred[i] += dp[i];
+    }
+
+    // Ground. PBD friction is proportional to penetration, so a planted foot
+    // that barely sinks in has almost no tangential grip. That is the honest
+    // behaviour of this solver and the README measures its consequences.
+    var isFoot = this.isFoot;
+    for (i = 0; i < P; i++) {
+      var pen = -pred[2 * i + 1];
+      if (pen > 0.0) {
+        var wasAir = !(start[2 * i + 1] < 1e-4);
+        pred[2 * i + 1] = 0.0;
+        var slide = pred[2 * i] - start[2 * i];
+        var budget = this.m.friction[i] * (pen + CONTACT_EPS);
+        pred[2 * i] -= clamp(slide, -budget, budget);
+        if (wasAir && isFoot[i]) {
+          var landing = Math.abs((start[2 * i + 1] - pred[2 * i + 1]) * SUBSTEP_HZ);
+          if (landing > this.tdImpact) this.tdImpact = landing;
+        }
+      }
+    }
+
+    for (i = 0; i < 2 * P; i++) {
+      vel[i] = clamp((pred[i] - start[i]) * SUBSTEP_HZ, -VEL_CLAMP, VEL_CLAMP);
+      pos[i] = pred[i];
+    }
+  };
+
+  Sim.prototype.pitch = function () {
+    return Math.atan2(this.pos[2 * SHOULDER + 1] - this.pos[2 * HIP + 1],
+                      this.pos[2 * SHOULDER] - this.pos[2 * HIP]);
+  };
+  Sim.prototype.height = function () {
+    return 0.5 * (this.pos[2 * SHOULDER + 1] + this.pos[2 * HIP + 1]);
+  };
+  Sim.prototype.torsoX = function () {
+    return 0.5 * (this.pos[2 * SHOULDER] + this.pos[2 * HIP]);
+  };
+
+  function jointAngle(p, a, v, b) {
+    var ux = p[2 * a] - p[2 * v], uy = p[2 * a + 1] - p[2 * v + 1];
+    var wx = p[2 * b] - p[2 * v], wy = p[2 * b + 1] - p[2 * v + 1];
+    var nu = Math.sqrt(ux * ux + uy * uy) + 1e-9;
+    var nw = Math.sqrt(wx * wx + wy * wy) + 1e-9;
+    return Math.acos(clamp((ux * wx + uy * wy) / (nu * nw), -1.0, 1.0));
+  }
+
+  Sim.prototype.angles = function (hipOut, kneeOut) {
+    for (var k = 0; k < this.m.nLegs; k++) {
+      var att = this.m.legs[k][0], opp = this.m.legs[k][1];
+      var kn = this.m.knee(k), ft = this.m.foot(k);
+      hipOut[k] = jointAngle(this.pos, opp, att, kn);
+      kneeOut[k] = jointAngle(this.pos, att, kn, ft);
+    }
+  };
+
+  Sim.prototype.fallen = function () {
+    var i;
+    for (i = 0; i < TORSO_POINTS.length; i++) {
+      if (this.pos[2 * TORSO_POINTS[i] + 1] < 0.08) return true;
+    }
+    if (Math.abs(this.pitch()) > FALL_PITCH) return true;
+    if (this.height() < 0.55 * H_REST) return true;
+    for (i = 0; i < 2 * this.m.nPoints; i++) if (!isFinite(this.pos[i])) return true;
+    return false;
+  };
+
+  /** proprioception only: no clock, no phase, no target */
+  Sim.prototype.sense = function (prevPitch, dt, pitch) {
+    var u = this.u, m = this.m, nL = m.nLegs, k;
+    var rate = (pitch - prevPitch) / dt;
+    var vx = 0.5 * (this.vel[2 * SHOULDER] + this.vel[2 * HIP]);
+    var vy = 0.5 * (this.vel[2 * SHOULDER + 1] + this.vel[2 * HIP + 1]);
+    u[0] = Math.sin(pitch);
+    u[1] = Math.cos(pitch);
+    u[2] = clamp(rate / 5.0, -3.0, 3.0);
+    u[3] = 2.0 * (this.height() / H_REST - 1.0);
+    u[4] = clamp(vx / 2.0, -3.0, 3.0);
+    u[5] = clamp(vy / 2.0, -3.0, 3.0);
+    this.angles(this.hip, this.knee);
+    for (k = 0; k < nL; k++) {
+      u[6 + k] = this.pos[2 * m.foot(k) + 1] < 0.015 ? 1.0 : 0.0;
+      u[6 + nL + k] = 2.0 * (this.hip[k] - HIP_LO) / (HIP_HI - HIP_LO) - 1.0;
+      u[6 + 2 * nL + k] = 2.0 * (this.knee[k] - KNEE_LO) / (KNEE_HI - KNEE_LO) - 1.0;
+    }
+    return rate;
+  };
+
+  /**
+   * One episode. Writes N_METRICS numbers at out[outOff].
+   * `rec`, if given, collects frames / contacts / neuron traces for drawing.
+   */
+  Sim.prototype.run = function (genes, gOff, seconds, out, outOff, rec) {
+    var m = this.m, nL = m.nLegs, P = m.nPoints;
+    var ticks = Math.round(seconds * CONTROL_HZ), dt = 1.0 / CONTROL_HZ;
+    var minStance = Math.max(1, Math.round(MIN_STANCE_S / dt));
+    var minAir = Math.max(1, Math.round(MIN_AIR_S / dt));
+    var i, k, t;
+
+    this.loadGenes(genes, gOff);
+    for (i = 0; i < this.skel.nCons; i++) this.rest[i] = this.skel.rest0[i];
+    for (i = 0; i < m.nActuators; i++) this.prevU[i] = 0.0;
+    this.tdImpact = 0;
+    for (k = 0; k < nL; k++) {
+      this.clean[k] = 0; this.last[k] = -1; this.nInt[k] = 0;
+      this.s1[k] = 0; this.s2[k] = 0; this.downTicks[k] = 0;
+      this.stanceRun[k] = 1; this.airBefore[k] = 1e6; this.onsetT[k] = 0;
+    }
+
+    var prevPitch = this.pitch();
+    this.angles(this.prevHip, this.prevKnee);
+    var alive = true, tAlive = 0.0;
+    var x0 = this.torsoX(), xLast = x0;
+    var impact = 0.0, wob2 = 0.0, travel = 0.0, effort = 0.0;
+    var spreadTicks = 0.0, liveTicks = 0;
+
+    for (t = 0; t < ticks; t++) {
+      var pitch = this.pitch();
+      var rate = this.sense(prevPitch, dt, pitch);
+      prevPitch = pitch;
+      this.brainStep(dt, 2);
+      this.setTargets();
+      for (i = 0; i < SUBSTEPS_PER_TICK; i++) this.substep();
+
+      this.angles(this.hip, this.knee);
+      var mh = 0, mk = 0;
+      for (k = 0; k < nL; k++) {
+        mh += Math.abs(this.hip[k] - this.prevHip[k]);
+        mk += Math.abs(this.knee[k] - this.prevKnee[k]);
+        this.prevHip[k] = this.hip[k]; this.prevKnee[k] = this.knee[k];
+      }
+      var moved = 0.5 * (mh / nL + mk / nL);
+
+      if (alive && this.fallen()) alive = false;
+      if (alive) {
+        tAlive += dt; liveTicks++;
+        travel += moved / dt;
+        var de = 0;
+        for (i = 0; i < m.nActuators; i++) de += Math.abs(this.act[i] - this.prevU[i]);
+        effort += de / m.nActuators;
+        wob2 += rate * rate;
+        if (this.tdImpact > impact) impact = this.tdImpact;
+        xLast = this.torsoX();
+      }
+      for (i = 0; i < m.nActuators; i++) this.prevU[i] = this.act[i];
+
+      // contacts for this tick, and everything measured off them
+      var down = 0;
+      for (k = 0; k < nL; k++) {
+        var c = (alive && this.pos[2 * m.foot(k) + 1] < 0.015) ? 1 : 0;
+        this.contact[k] = c;
+        this.downTicks[k] += c;
+        down += c;
+      }
+      if (down > 0 && down < nL) spreadTicks++;
+
+      if (t === 0) {
+        for (k = 0; k < nL; k++) this.inC[k] = this.contact[k];
+      } else {
+        for (k = 0; k < nL; k++) {
+          var cc = this.contact[k], was = this.inC[k];
+          var rise = cc && !was, fall = !cc && was;
+          if (fall && this.stanceRun[k] >= minStance && this.airBefore[k] >= minAir) {
+            if (this.last[k] >= 0) {
+              var gap = this.onsetT[k] - this.last[k];
+              this.nInt[k] += 1; this.s1[k] += gap; this.s2[k] += gap * gap;
+            }
+            this.last[k] = this.onsetT[k];
+            this.clean[k] += 1;
+          }
+          if (rise) { this.airBefore[k] = this.stanceRun[k]; this.onsetT[k] = t; }
+          this.stanceRun[k] = (rise || fall) ? 1 : this.stanceRun[k] + 1;
+          this.inC[k] = cc;
+        }
+      }
+
+      if (rec) {
+        for (i = 0; i < 2 * P; i++) rec.frames.push(this.pos[i]);
+        for (k = 0; k < nL; k++) rec.contacts.push(this.contact[k]);
+        for (i = 0; i < this.w.n; i++) rec.neurons.push(this.x[i]);
+        for (i = 0; i < m.nActuators; i++) rec.motors.push(this.act[i]);
+        rec.ticks++;
+      }
+
+      if (!alive) break;      // nothing after this point can change a number
+    }
+
+    var live = Math.max(liveTicks, 1.0);            // in ticks
+    var secsAlive = live / CONTROL_HZ;
+    var rateSum = 0, termSum = 0, regSum = 0, dutySum = 0, dutyMeanSum = 0;
+    for (k = 0; k < nL; k++) {
+      var r = this.clean[k] / secsAlive;
+      rateSum += r;
+      termSum += Math.min(1.0, r / STEP_SAT);
+      if (this.nInt[k] >= 3) {
+        var mean = this.s1[k] / this.nInt[k];
+        var varc = Math.max(this.s2[k] / this.nInt[k] - mean * mean, 0.0);
+        var cv = Math.sqrt(varc) / Math.max(mean, 1e-6);
+        regSum += 1.0 - clamp(cv, 0.0, 1.0);
+      }
+      var frac = this.downTicks[k] / live;
+      dutySum += (frac > DUTY_LO && frac < DUTY_HI) ? 1 : 0;
+      dutyMeanSum += frac;
+    }
+
+    var o = outOff;
+    out[o + M.survive] = tAlive / seconds;
+    out[o + M.travel] = travel / live;
+    out[o + M.impact] = impact;
+    out[o + M.wobble] = Math.sqrt(wob2 / live);
+    out[o + M.stepRate] = rateSum / nL;
+    out[o + M.stepTerm] = termSum / nL;
+    out[o + M.regularity] = regSum / nL;
+    out[o + M.duty] = dutySum / nL;
+    out[o + M.dutyMean] = dutyMeanSum / nL;
+    out[o + M.spread] = spreadTicks / live;
+    out[o + M.distance] = xLast - x0;
+    out[o + M.speed] = (xLast - x0) / seconds;
+    out[o + M.effort] = effort / live;
+    return out;
+  };
+
+  /** evaluate a chunk of the population: the only thing a worker does */
+  function evaluate(sim, genes, count, indexOffset, seconds, poseSeed, out) {
+    var G = sim.w.genomeSize;
+    if (!out) out = new Float64Array(count * N_METRICS);
+    for (var i = 0; i < count; i++) {
+      sim.setPose(poseSeed, indexOffset + i);
+      sim.run(genes, i * G, seconds, out, i * N_METRICS, null);
+    }
+    return out;
+  }
+
+  root.LD = {
+    // constants
+    D2R: D2R, L_TORSO: L_TORSO, H_REST: H_REST, L_THIGH: L_THIGH, L_SHANK: L_SHANK,
+    HIP_LO: HIP_LO, HIP_HI: HIP_HI, KNEE_LO: KNEE_LO, KNEE_HI: KNEE_HI,
+    HIP_REST: HIP_REST, KNEE_REST: KNEE_REST, GRAVITY: GRAVITY,
+    SUBSTEP_HZ: SUBSTEP_HZ, SOLVER_ITERS: SOLVER_ITERS, VEL_DAMP: VEL_DAMP,
+    VEL_CLAMP: VEL_CLAMP, CONTACT_EPS: CONTACT_EPS, CONTROL_HZ: CONTROL_HZ,
+    SUBSTEPS_PER_TICK: SUBSTEPS_PER_TICK, FOOTFALL_PASS: FOOTFALL_PASS,
+    IMPACT_LIMIT: IMPACT_LIMIT, WOBBLE_LIMIT: WOBBLE_LIMIT,
+    TRAVEL_TARGET: TRAVEL_TARGET, STEP_SAT: STEP_SAT,
+    SHOULDER: SHOULDER, HIP: HIP, HEAD: HEAD, TAIL: TAIL,
+    DESCRIPTOR_NAMES: DESCRIPTOR_NAMES, METRIC_NAMES: METRIC_NAMES,
+    M: M, N_METRICS: N_METRICS, GATES: GATES, OBJECTIVE: OBJECTIVE,
+    MORPHOLOGIES: MORPHOLOGIES, BIPED: BIPED, QUADRUPED: QUADRUPED,
+    // types and helpers
+    Rng: Rng, mix32: mix32, seedFor: seedFor, clamp: clamp,
+    Morphology: Morphology, Skeleton: Skeleton, skeleton: skeleton,
+    buildWiring: buildWiring, randomGenomes: randomGenomes,
+    mutateRow: mutateRow, crossoverInto: crossoverInto,
+    lawOfCosines: lawOfCosines, jointAngle: jointAngle,
+    Sim: Sim, evaluate: evaluate,
+    impactNorm: impactNorm, slam: slam, liveliness: liveliness,
+    footfallScore: footfallScore, sturdiness: sturdiness, descriptor: descriptor
+  };
+})(typeof self !== 'undefined' ? self : globalThis);
+</script>
+<script>
+/* ===========================================================================
+   liquid dog — pools and trainer
+   A port of dogwalker/{pools,train}.py. Runs on the main thread; the only
+   thing it hands off is the population evaluation, which is where all the
+   time goes.
+   =========================================================================== */
+(function (root) {
+  'use strict';
+  var LD = root.LD;
+
+  /** Python's round(), which goes to even on a tie. Keeps elite counts equal. */
+  function pyRound(v) {
+    var f = Math.floor(v), d = v - f;
+    if (d > 0.5) return f + 1;
+    if (d < 0.5) return f;
+    return (f % 2 === 0) ? f : f + 1;
+  }
+
+  var DEFAULTS = {
+    morphology: 'biped',
+    cycles: 3,
+    wide_population: 320,
+    narrow_population: 140,
+    telescope_after: 1,          // cycle at which the population narrows
+    elite_frac: 0.20,
+    pool_seed_frac: 0.10,        // children drawn from the champion pools
+    trials: 2,                   // starting poses per individual per generation
+    crossover_prob: 0.25,
+    mutation_rate: 0.18,
+    sigma: 0.14,
+    interneurons: 6,
+    pool_size: 6,
+    min_gap: 0.10,
+    diversity_target: 0.18,
+    first_cycle_gens: [20, 30, 100],
+    later_cycle_gens: [6, 10, 150],
+    seed: 1,
+    // numpy's seed 7 happened to draw 53 sensory and 35 recurrent synapses.
+    // This generator's seed 7 draws a much sparser recurrent matrix, which is
+    // a smaller brain for no good reason, so the default here is the seed that
+    // reproduces the original's shape: 126 genes.
+    wiring_seed: 30
+  };
+
+  function totalGens(s) {
+    var a = s.first_cycle_gens.reduce(function (x, y) { return x + y; }, 0);
+    var b = s.later_cycle_gens.reduce(function (x, y) { return x + y; }, 0);
+    return a + (s.cycles - 1) * b;
+  }
+
+  // ── champion pools ───────────────────────────────────────────────────────
+  var KINDS = ['fast', 'sturdy', 'strange'];
+  var KIND_BLURB = {
+    fast: 'ranks on the objective, diversity breaks ties',
+    sturdy: 'ranks on staying upright and landing gently',
+    strange: 'ranks on novelty first'
+  };
+
+  function dist(a, b) {
+    var s = 0;
+    for (var i = 0; i < a.length; i++) { var d = a[i] - b[i]; s += d * d; }
+    return Math.sqrt(s);
+  }
+
+  function Pool(kind, size, fossilSlots, minGap, diversityTarget) {
+    this.kind = kind;
+    this.size = size;
+    this.fossilSlots = fossilSlots;
+    this.minGap = minGap;
+    this.diversityTarget = diversityTarget;
+    this.members = [];
+    this.bar = 0.0;
+    this.barDrops = 0;
+    this.admits = 0;
+  }
+  Pool.prototype.merit = function (m) {
+    return this.kind === 'sturdy' ? m.sturdiness : m.score;
+  };
+  /** mean pairwise behaviour distance; 0 means everyone is the same dog */
+  Pool.prototype.diversity = function () {
+    var n = this.members.length;
+    if (n < 2) return 0.0;
+    var s = 0, c = 0;
+    for (var i = 0; i < n; i++) {
+      for (var j = i + 1; j < n; j++) { s += dist(this.members[i].descriptor, this.members[j].descriptor); c++; }
+    }
+    return s / c;
+  };
+  Pool.prototype.collapsed = function () {
+    return this.members.length >= 3 && this.diversity() < this.diversityTarget;
+  };
+  Pool.prototype.novelty = function (d) {
+    if (!this.members.length) return 1.0;
+    var best = Infinity;
+    for (var i = 0; i < this.members.length; i++) {
+      var v = dist(this.members[i].descriptor, d);
+      if (v < best) best = v;
+    }
+    return best;
+  };
+  Pool.prototype.best = function () {
+    var b = null, bv = -Infinity;
+    for (var i = 0; i < this.members.length; i++) {
+      var v = this.merit(this.members[i]);
+      if (v > bv) { bv = v; b = this.members[i]; }
+    }
+    return b;
+  };
+  Pool.prototype._resetBar = function () {
+    if (this.barDrops) this.barDrops = 0;
+    if (this.members.length) {
+      var self = this;
+      var merits = this.members.map(function (m) { return self.merit(m); }).sort(function (a, b) { return a - b; });
+      this.bar = merits[Math.floor(merits.length / 3)];   // back to the lower third
+    }
+  };
+  /** drop the standard a notch to let something different in */
+  Pool.prototype.lowerBar = function () {
+    this.barDrops += 1;
+    this.bar = this.bar > 0 ? this.bar * 0.8 - 0.02 : this.bar - 0.02;
+  };
+
+  /** try to admit; returns what happened, for the log */
+  Pool.prototype.offer = function (cand) {
+    var merit = this.merit(cand);
+    var nov = this.novelty(cand.descriptor);
+    var i, self = this;
+
+    if (merit < this.bar && this.kind !== 'strange') return '';
+    if (this.members.length < this.size) {
+      this.members.push(cand); this.admits++; this._resetBar();
+      return 'admitted';
+    }
+
+    // Full. Something has to go, and fossils never do.
+    var evictable = this.members.filter(function (m) { return !m.fossil; });
+    if (!evictable.length) return '';
+
+    if (nov < this.minGap) {
+      // near-duplicate of something already here: only a straight improvement
+      // on its nearest neighbour gets in, and it replaces it
+      var near = this.members[0], nd = Infinity;
+      for (i = 0; i < this.members.length; i++) {
+        var d = dist(this.members[i].descriptor, cand.descriptor);
+        if (d < nd) { nd = d; near = this.members[i]; }
+      }
+      if (near.fossil || merit <= this.merit(near)) return '';
+      this.members[this.members.indexOf(near)] = cand;
+      this.admits++; this._resetBar();
+      return 'replaced a near-twin';
+    }
+
+    // Genuinely different: compete on the blend. Being different counts as
+    // much as being good -- that is what the 0.5/0.5 is.
+    var w = this.kind === 'strange' ? 0.25 : 0.5;
+    var merits = this.members.map(function (m) { return self.merit(m); });
+    var lo = Math.min.apply(null, merits), hi = Math.max.apply(null, merits);
+    var span = (hi - lo) || 1.0;
+    var scale = Math.max(this.minGap * 4, 1e-6);
+    function blend(m, novelty) {
+      return w * (self.merit(m) - lo) / span + (1.0 - w) * novelty;
+    }
+    var candBlend = blend(cand, Math.min(1.0, nov / scale));
+    var worst = null, worstBlend = 1e9;
+    for (i = 0; i < evictable.length; i++) {
+      var m = evictable[i], ownNov = Infinity;
+      for (var j = 0; j < this.members.length; j++) {
+        if (this.members[j] === m) continue;
+        var dd = dist(this.members[j].descriptor, m.descriptor);
+        if (dd < ownNov) ownNov = dd;
+      }
+      if (ownNov === Infinity) ownNov = 1.0;
+      var b = blend(m, Math.min(1.0, ownNov / scale));
+      if (b < worstBlend) { worst = m; worstBlend = b; }
+    }
+    if (worst && candBlend > worstBlend) {
+      this.members[this.members.indexOf(worst)] = cand;
+      this.admits++; this._resetBar();
+      return 'displaced the least distinctive';
+    }
+    return '';
+  };
+
+  /** freeze the current best so it survives whatever comes next */
+  Pool.prototype.fossilise = function (cycle) {
+    var b = this.best();
+    if (!b) return null;
+    var nFossils = 0, i;
+    for (i = 0; i < this.members.length; i++) if (this.members[i].fossil) nFossils++;
+    if (nFossils >= this.fossilSlots) return null;
+    var clone = {
+      genes: b.genes.slice(), descriptor: b.descriptor.slice(), score: b.score,
+      sturdiness: b.sturdiness, speed: b.speed, footfall: b.footfall,
+      gen: b.gen, cycle: cycle, fossil: true
+    };
+    if (this.members.length >= this.size) {
+      var worst = null, wv = Infinity;
+      for (i = 0; i < this.members.length; i++) {
+        var m = this.members[i];
+        if (m.fossil) continue;
+        var v = this.merit(m);
+        if (v < wv) { wv = v; worst = m; }
+      }
+      if (!worst) return null;
+      this.members[this.members.indexOf(worst)] = clone;
+    } else {
+      this.members.push(clone);
+    }
+    return clone;
+  };
+
+  Pool.prototype.report = function () {
+    var self = this;
+    return {
+      kind: this.kind, blurb: KIND_BLURB[this.kind],
+      diversity: this.diversity(), target: this.diversityTarget,
+      collapsed: this.collapsed(), bar: this.bar, bar_drops: this.barDrops,
+      admits: this.admits,
+      members: this.members.slice().sort(function (a, b) {
+        return self.merit(b) - self.merit(a);
+      }).map(function (m) {
+        return {
+          score: m.score, speed: m.speed, footfall: m.footfall,
+          sturdiness: m.sturdiness, gen: m.gen, cycle: m.cycle,
+          fossil: m.fossil, descriptor: Array.prototype.slice.call(m.descriptor),
+          genes: m.genes
+        };
+      })
+    };
+  };
+
+  function PoolSet(size, seed, minGap, diversityTarget) {
+    this.pools = {};
+    for (var i = 0; i < KINDS.length; i++) {
+      this.pools[KINDS[i]] = new Pool(KINDS[i], size, 3, minGap, diversityTarget);
+    }
+    this.rng = new LD.Rng(LD.mix32(seed | 0));
+    this.relaxations = 0;
+    this.events = [];
+  }
+  PoolSet.prototype._note = function (msg) {
+    this.events.push(msg);
+    if (this.events.length > 40) this.events.splice(0, this.events.length - 40);
+  };
+  PoolSet.prototype.offer = function (cand) {
+    for (var i = 0; i < KINDS.length; i++) {
+      var p = this.pools[KINDS[i]];
+      var what = p.offer(cand);
+      if (what) {
+        this._note('gen ' + cand.gen + ': ' + p.kind + ' pool ' + what +
+          ' (speed ' + cand.speed.toFixed(2) + ', score ' + cand.score.toFixed(3) + ')');
+      }
+    }
+  };
+  /** once per generation: if diversity has collapsed, lower two bars */
+  PoolSet.prototype.maintain = function (gen) {
+    var collapsed = [], i;
+    for (i = 0; i < KINDS.length; i++) if (this.pools[KINDS[i]].collapsed()) collapsed.push(KINDS[i]);
+    if (!collapsed.length) return;
+    var bag = KINDS.slice();                 // two of three, at random
+    for (i = bag.length - 1; i > 0; i--) {
+      var j = this.rng.int(i + 1), t = bag[i]; bag[i] = bag[j]; bag[j] = t;
+    }
+    var picks = bag.slice(0, 2);
+    for (i = 0; i < 2; i++) this.pools[picks[i]].lowerBar();
+    this.relaxations++;
+    this._note('gen ' + gen + ': diversity collapsed in ' + collapsed.join(', ') +
+      ' - lowered the ' + picks[0] + ' and ' + picks[1] + ' bars (relaxation #' +
+      this.relaxations + ')');
+  };
+  PoolSet.prototype.fossilise = function (cycle) {
+    for (var i = 0; i < KINDS.length; i++) {
+      var p = this.pools[KINDS[i]];
+      if (p.fossilise(cycle)) this._note('cycle ' + cycle + ': fossilised the ' + p.kind + " pool's best");
+    }
+  };
+  /** genomes to inject back into the population, spread across pools */
+  PoolSet.prototype.seeds = function (count) {
+    var everyone = [], i, k;
+    for (k = 0; k < KINDS.length; k++) {
+      var ms = this.pools[KINDS[k]].members;
+      for (i = 0; i < ms.length; i++) everyone.push(ms[i]);
+    }
+    if (!everyone.length) return [];
+    var want = Math.min(count, everyone.length);
+    var idx = [];
+    for (i = 0; i < everyone.length; i++) idx.push(i);
+    for (i = idx.length - 1; i > 0; i--) {
+      var j = this.rng.int(i + 1), t = idx[i]; idx[i] = idx[j]; idx[j] = t;
+    }
+    var out = [];
+    for (i = 0; i < want; i++) out.push(everyone[idx[i]].genes);
+    return out;
+  };
+  PoolSet.prototype.champions = function () {
+    var seen = {}, out = [], i, k;
+    for (k = 0; k < KINDS.length; k++) {
+      var ms = this.pools[KINDS[k]].members.slice().sort(function (a, b) { return b.score - a.score; });
+      for (i = 0; i < ms.length; i++) {
+        var key = Array.prototype.map.call(ms[i].descriptor, function (v) {
+          return Math.round(v * 1000) / 1000;
+        }).join(',');
+        if (!(key in seen)) { seen[key] = 1; out.push(ms[i]); }
+      }
+    }
+    return out.sort(function (a, b) { return b.score - a.score; });
+  };
+  PoolSet.prototype.report = function () {
+    var out = { pools: [], relaxations: this.relaxations, events: this.events.slice(-12).reverse() };
+    for (var i = 0; i < KINDS.length; i++) out.pools.push(this.pools[KINDS[i]].report());
+    return out;
+  };
+
+  // ── the trainer ──────────────────────────────────────────────────────────
+  // Curriculum order is never altered -- stand, then footfalls, then distance
+  // -- because the gates are ordered by learnability, not importance. What
+  // repeats is the whole cycle.
+  function Trainer(settings, evaluator) {
+    var s = {};
+    for (var k in DEFAULTS) s[k] = (settings && k in settings) ? settings[k] : DEFAULTS[k];
+    this.s = s;
+    this.ev = evaluator;
+    this.morph = LD.MORPHOLOGIES[s.morphology] || LD.BIPED;
+    this.rng = new LD.Rng(LD.mix32(s.seed | 0));
+    this.wiring = LD.buildWiring(this.morph.nSensors, s.interneurons,
+                                 this.morph.nActuators, s.wiring_seed);
+    this.G = this.wiring.genomeSize;
+    this.n = s.wide_population;
+    this.pop = LD.randomGenomes(this.wiring, this.n, this.rng);
+    this.pools = new PoolSet(s.pool_size, s.seed, s.min_gap, s.diversity_target);
+    this.history = [];
+    this.gen = 0;
+    this.cycle = 1;
+    this.gateIndex = 0;
+    this.gateGen = 0;
+    this.sigma = s.sigma;
+    this.bestCohort = -1e9;
+    this.stale = 0;
+    this.done = false;
+    this.started = Date.now();
+    this.elapsed = 0;                  // milliseconds of actual training
+    this.notes = [];
+    this.leader = null;                // genome of the current gate leader
+    this.totalGens = totalGens(s);
+    this.sim = new LD.Sim(this.morph, this.wiring);   // for recording only
+  }
+
+  Trainer.prototype.gate = function () { return LD.GATES[this.gateIndex]; };
+  Trainer.prototype.budget = function () {
+    var b = this.cycle === 1 ? this.s.first_cycle_gens : this.s.later_cycle_gens;
+    return b[this.gateIndex] | 0;
+  };
+  Trainer.prototype.targetPopulation = function () {
+    return this.cycle <= this.s.telescope_after ? this.s.wide_population : this.s.narrow_population;
+  };
+  Trainer.prototype._note = function (msg) {
+    this.notes.push(msg);
+    if (this.notes.length > 30) this.notes.splice(0, this.notes.length - 30);
+  };
+
+  Trainer.prototype._resize = function () {
+    var want = this.targetPopulation(), have = this.n, G = this.G;
+    if (want === have) return;
+    if (want < have) {
+      this.pop = this.pop.slice(0, want * G);        // stored elites-first
+    } else {
+      var next = new Float64Array(want * G);
+      next.set(this.pop.subarray(0, have * G));
+      for (var i = have; i < want; i++) {
+        var src = this.rng.int(have);
+        next.set(this.pop.subarray(src * G, src * G + G), i * G);
+        LD.mutateRow(next, i * G, G, this.rng, this.s.mutation_rate, this.sigma);
+      }
+      this.pop = next;
+    }
+    this.n = want;
+    this._note('population ' + have + ' \u2192 ' + want + ' entering cycle ' + this.cycle);
+  };
+
+  /** one generation. async only because the evaluation is farmed out. */
+  Trainer.prototype.step = async function () {
+    var s = this.s, G = this.G, i, k;
+    var t0 = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+    this._resize();
+    var n = this.n;
+    var nElite = Math.max(2, pyRound(n * s.elite_frac));
+    var gate = this.gate();
+
+    var scores = new Float64Array(n);
+    var passes = new Uint8Array(n);
+    passes.fill(1);
+    var last = null;
+    for (k = 0; k < s.trials; k++) {
+      var m = await this.ev.evaluate(this.pop, n, gate.seconds, (s.seed + this.gen) * 7919 + k);
+      for (i = 0; i < n; i++) {
+        var o = i * LD.N_METRICS;
+        scores[i] += gate.score(m, o);
+        if (!gate.passed(m, o)) passes[i] = 0;
+      }
+      last = m;
+    }
+    for (i = 0; i < n; i++) {
+      scores[i] /= s.trials;
+      if (!isFinite(scores[i])) scores[i] = -1e9;     // a blown-up dog sorts last
+    }
+
+    var order = new Int32Array(n);
+    for (i = 0; i < n; i++) order[i] = i;
+    var ord = Array.prototype.slice.call(order);
+    ord.sort(function (a, b) { return scores[b] - scores[a]; });
+    var top = ord[0];
+
+    // Champions are always judged on the real objective, whatever gate is
+    // currently active, otherwise the pools fill with dogs that were merely
+    // good at standing.
+    var nObj = Math.max(4, Math.floor(nElite / 4));
+    nObj = Math.min(nObj, n);
+    var objGenes = new Float64Array(nObj * G);
+    for (i = 0; i < nObj; i++) objGenes.set(this.pop.subarray(ord[i] * G, ord[i] * G + G), i * G);
+    var om = await this.ev.evaluate(objGenes, nObj, LD.OBJECTIVE.seconds, (s.seed + this.gen) * 31);
+
+    var bestSpeed = -Infinity;
+    for (i = 0; i < nObj; i++) {
+      var oo = i * LD.N_METRICS;
+      var d = LD.descriptor(om, oo, new Float64Array(6), 0);
+      if (om[oo + LD.M.speed] > bestSpeed) bestSpeed = om[oo + LD.M.speed];
+      this.pools.offer({
+        genes: this.pop.slice(ord[i] * G, ord[i] * G + G),
+        descriptor: d,
+        score: LD.OBJECTIVE.score(om, oo),
+        sturdiness: LD.sturdiness(om, oo),
+        speed: om[oo + LD.M.speed],
+        footfall: LD.footfallScore(om, oo),
+        gen: this.gen, cycle: this.cycle, fossil: false
+      });
+    }
+    this.pools.maintain(this.gen);
+
+    var div = 0;
+    for (i = 0; i < KINDS.length; i++) div += this.pools.pools[KINDS[i]].diversity();
+    div /= KINDS.length;
+
+    var cohort = 0;
+    for (i = 0; i < nElite; i++) cohort += scores[ord[i]];
+    cohort /= nElite;
+
+    var tOff = top * LD.N_METRICS;
+    var tick = {
+      gen: this.gen, cycle: this.cycle, gate: gate.name, population: n,
+      best: scores[top], cohort: cohort, passing: 0, speed: bestSpeed,
+      footfall: LD.footfallScore(last, tOff), survive: last[tOff + LD.M.survive],
+      impact: last[tOff + LD.M.impact], diversity: div, sigma: this.sigma
+    };
+    for (i = 0; i < n; i++) tick.passing += passes[i];
+    this.history.push(tick);
+
+    if (cohort > this.bestCohort + 1e-4) {
+      this.bestCohort = cohort; this.stale = 0;
+      this.sigma = Math.max(s.sigma, this.sigma * 0.8);
+    } else {
+      this.stale++;
+      if (this.stale >= 15) {
+        this.sigma = Math.min(s.sigma * 2.5, this.sigma * 1.25);
+        this.stale = 0;
+      }
+    }
+
+    var promote = true;
+    for (i = 0; i < nElite; i++) if (!passes[ord[i]]) { promote = false; break; }
+
+    this.leader = this.pop.slice(top * G, top * G + G);
+    this.leaderGate = gate;
+
+    this.gen++;
+    this.gateGen++;
+    var spent = this.gateGen >= this.budget();
+
+    // breed: elites untouched, then children of elites, then pool seeds
+    var nSeed = pyRound(n * s.pool_seed_frac);
+    var seeds = this.pools.seeds(nSeed);
+    var nKids = n - nElite - seeds.length;
+    if (nKids < 0) { seeds = seeds.slice(0, Math.max(0, n - nElite)); nKids = 0; }
+    var next = new Float64Array(n * G);
+    for (i = 0; i < nElite; i++) next.set(this.pop.subarray(ord[i] * G, ord[i] * G + G), i * G);
+    var eliteBase = next.slice(0, nElite * G);       // the untouched parents
+    var w = nElite * G;
+    for (i = 0; i < nKids; i++) {
+      var a = this.rng.int(nElite);
+      if (this.rng.random() < s.crossover_prob) {
+        var b = this.rng.int(nElite);
+        LD.crossoverInto(next, w, eliteBase, a * G, eliteBase, b * G, G, this.rng);
+      } else {
+        next.set(eliteBase.subarray(a * G, a * G + G), w);
+      }
+      LD.mutateRow(next, w, G, this.rng, s.mutation_rate, this.sigma);
+      w += G;
+    }
+    for (i = 0; i < seeds.length; i++) {
+      next.set(seeds[i], w);
+      LD.mutateRow(next, w, G, this.rng, s.mutation_rate, this.sigma);
+      w += G;
+    }
+    this.pop = next;
+
+    if (promote || spent) {
+      this._note('gen ' + this.gen + ": leaving '" + gate.name + "' after " +
+        this.gateGen + ' gens (' + (promote ? 'cohort cleared it' : 'budget spent') + ')');
+      this.gateGen = 0;
+      this.gateIndex++;
+      this.bestCohort = -1e9;
+      this.sigma = s.sigma;
+      if (this.gateIndex >= LD.GATES.length) {
+        this.pools.fossilise(this.cycle);
+        this.gateIndex = 0;
+        this.cycle++;
+        if (this.cycle > s.cycles) {
+          this.done = true;
+          this._note('finished all cycles');
+        }
+      }
+    }
+    this.elapsed += (typeof performance !== 'undefined' ? performance.now() : Date.now()) - t0;
+    return tick;
+  };
+
+  /** re-run one genome with everything recorded, for the stage and the traces */
+  Trainer.prototype.record = function (genes, seconds, poseSeed, index) {
+    var rec = { frames: [], contacts: [], neurons: [], motors: [], ticks: 0 };
+    var out = new Float64Array(LD.N_METRICS);
+    this.sim.setPose(poseSeed, index === undefined ? 0 : index);
+    this.sim.run(genes, 0, seconds, out, 0, rec);
+    return {
+      frames: rec.frames, contacts: rec.contacts, neurons: rec.neurons,
+      motors: rec.motors, ticks: rec.ticks, metrics: out,
+      nPoints: this.morph.nPoints, nLegs: this.morph.nLegs,
+      nNeurons: this.wiring.n, nInter: this.wiring.nInter,
+      bones: LD.skeleton(this.morph).bones, feet: this.morph.feet,
+      legNames: this.morph.legNames, dt: 1 / LD.CONTROL_HZ,
+      seconds: seconds, tau: this.tauOf(genes)
+    };
+  };
+
+  /** the evolved time constants, in seconds — the thing that holds the rhythm */
+  Trainer.prototype.tauOf = function (genes) {
+    var w = this.wiring, o = w.nSynIn + w.nSynRec + w.n, out = [];
+    for (var i = 0; i < w.n; i++) {
+      out.push(Math.exp(LD.clamp(genes[o + i], Math.log(0.03), Math.log(2.0))));
+    }
+    return out;
+  };
+
+  Trainer.prototype.minutes = function () { return this.elapsed / 60000; };
+
+  Trainer.prototype.status = function () {
+    var h = this.history, bestSpeed = 0;
+    for (var i = 0; i < h.length; i++) if (h[i].speed > bestSpeed) bestSpeed = h[i].speed;
+    return {
+      generation: this.gen, cycles: this.s.cycles,
+      cycle: Math.min(this.cycle, this.s.cycles),
+      gate: this.gate().name, gate_blurb: this.gate().blurb,
+      gate_gen: this.gateGen, gate_budget: this.budget(),
+      population: this.n, total_gens: this.totalGens,
+      done: this.done, minutes: this.minutes(),
+      genes: this.wiring.genomeSize, wiring: this.wiring.describe,
+      morphology: this.morph.name, best_speed: bestSpeed,
+      history: h, pools: this.pools.report(),
+      notes: this.notes.slice(-8).reverse()
+    };
+  };
+
+  // ── the plain-text report, in the same shape as the Flask build's ────────
+  function reportText(tr, extra) {
+    var st = tr.status(), s = tr.s, L = [];
+    L.push('LIQUID DOG RUN REPORT');
+    L.push(st.morphology + ' | ' + st.wiring);
+    L.push('cycle ' + st.cycle + '/' + st.cycles + ", gate '" + st.gate + "', generation " +
+      st.generation + ' of ~' + st.total_gens + ', population ' + st.population +
+      ', ' + st.minutes.toFixed(1) + ' min');
+    if (extra) L.push(extra);
+    L.push('');
+    L.push('SETTINGS');
+    Object.keys(s).sort().forEach(function (k) {
+      var v = s[k];
+      L.push('  ' + k + ' = ' + (Array.isArray(v) ? '(' + v.join(', ') + ')' : v));
+    });
+    L.push('');
+    L.push('PROGRESS (every 10th generation)');
+    L.push('  cycle  gen  gate        pop   best   pass   speed  footfall  diversity');
+    for (var i = 0; i < st.history.length; i += 10) {
+      var t = st.history[i];
+      L.push('  ' + String(t.cycle).padStart(5) + '  ' + String(t.gen).padStart(4) + ' ' +
+        t.gate.padEnd(11) + ' ' + String(t.population).padStart(4) + ' ' +
+        t.best.toFixed(3).padStart(6) + ' ' + String(t.passing).padStart(6) + ' ' +
+        t.speed.toFixed(3).padStart(7) + ' ' + t.footfall.toFixed(3).padStart(9) + ' ' +
+        t.diversity.toFixed(3).padStart(10));
+    }
+    L.push('');
+    L.push('CHAMPION POOLS   (descriptor: ' + LD.DESCRIPTOR_NAMES.join(', ') + ')');
+    st.pools.pools.forEach(function (p) {
+      L.push('  [' + p.kind + '] ' + p.blurb);
+      L.push('    diversity ' + p.diversity.toFixed(3) + ' (target ' + p.target + '), bar ' +
+        (p.bar >= 0 ? '+' : '') + p.bar.toFixed(3) + ', lowered ' + p.bar_drops + 'x, ' +
+        p.admits + ' admissions' + (p.collapsed ? '  COLLAPSED' : ''));
+      p.members.forEach(function (m) {
+        L.push('    ' + (m.fossil ? 'FOSSIL' : '      ') +
+          ' score ' + (m.score >= 0 ? '+' : '') + m.score.toFixed(3) +
+          ' speed ' + (m.speed >= 0 ? '+' : '') + m.speed.toFixed(3) +
+          ' foot ' + m.footfall.toFixed(2) +
+          ' sturdy ' + (m.sturdiness >= 0 ? '+' : '') + m.sturdiness.toFixed(3) +
+          ' c' + m.cycle + 'g' + m.gen +
+          ' desc [' + m.descriptor.map(function (v) { return (Math.round(v * 1000) / 1000); }).join(', ') + ']');
+      });
+    });
+    L.push('  diversity relaxations so far: ' + st.pools.relaxations);
+    L.push('');
+    L.push('RECENT EVENTS');
+    st.pools.events.slice(0, 10).forEach(function (e) { L.push('  ' + e); });
+    st.notes.forEach(function (nn) { L.push('  ' + nn); });
+    return L.join('\n');
+  }
+
+  root.LDT = {
+    DEFAULTS: DEFAULTS, KINDS: KINDS, KIND_BLURB: KIND_BLURB,
+    totalGens: totalGens, Pool: Pool, PoolSet: PoolSet, Trainer: Trainer,
+    reportText: reportText, pyRound: pyRound
+  };
+})(typeof self !== 'undefined' ? self : globalThis);
+</script>
+<script>
+/* ===========================================================================
+   liquid dog — where the time goes
+   Evaluating the population is ~99% of the work and every dog is independent,
+   so it splits across as many threads as the machine will give us. Workers are
+   built from a blob of this page's own engine source, which means one file
+   still works from a file:// URL. Where that is blocked (a strict CSP, some
+   sandboxes) it falls back to running on the main thread in small slices, so
+   the page stays responsive instead of freezing for a second at a time.
+   =========================================================================== */
+(function (root) {
+  'use strict';
+  var LD = root.LD;
+
+  var WORKER_GLUE = [
+    'var sim = null;',
+    'self.onmessage = function (e) {',
+    '  var d = e.data;',
+    '  if (d.type === "init") {',
+    '    var morph = LD.MORPHOLOGIES[d.morph];',
+    '    sim = new LD.Sim(morph, d.wiring);',
+    '    self.postMessage({ type: "ready" });',
+    '    return;',
+    '  }',
+    '  if (d.type === "eval") {',
+    '    var genes = new Float64Array(d.genes);',
+    '    var out = new Float64Array(d.count * LD.N_METRICS);',
+    '    LD.evaluate(sim, genes, d.count, d.indexOffset, d.seconds, d.poseSeed, out);',
+    '    self.postMessage({ type: "done", job: d.job, metrics: out.buffer }, [out.buffer]);',
+    '  }',
+    '};'
+  ].join('\n');
+
+  // A yield the browser will still service in a background tab. setTimeout is
+  // clamped to about a second once a tab is hidden and requestAnimationFrame
+  // stops altogether, either of which would stall a long run the moment
+  // someone switches tabs; MessageChannel is not throttled.
+  var yieldMacro;
+  (function () {
+    if (typeof MessageChannel === 'function') {
+      var mc = new MessageChannel(), q = [];
+      mc.port1.onmessage = function () { var f = q.shift(); if (f) f(); };
+      yieldMacro = function () {
+        return new Promise(function (r) { q.push(r); mc.port2.postMessage(0); });
+      };
+    } else {
+      yieldMacro = function () { return new Promise(function (r) { setTimeout(r, 0); }); };
+    }
+  })();
+
+  function Evaluator() {
+    this.mode = 'main';
+    this.threads = 1;
+    this.workers = [];
+    this.job = 0;
+    this.pending = {};
+    this.dogSeconds = 0;
+    this.evalMs = 0;
+    this.sim = null;
+    this.wiring = null;
+    this.morphName = 'biped';
+  }
+
+  /** try for workers; fall back quietly. `want` 1 forces single-threaded. */
+  Evaluator.prototype.init = async function (morphName, wiring, want, engineSource) {
+    this.terminate();
+    this.morphName = morphName;
+    this.wiring = wiring;
+    this.sim = new LD.Sim(LD.MORPHOLOGIES[morphName], wiring);
+
+    var hw = 1;
+    try { hw = navigator.hardwareConcurrency || 2; } catch (e) { hw = 2; }
+    var n = want || Math.max(1, Math.min(12, hw));
+    this.want = n;
+    this.hw = hw;
+    this.why = null;
+    if (n <= 1 || !engineSource || typeof Worker === 'undefined' || typeof Blob === 'undefined') {
+      this.mode = 'main'; this.threads = 1;
+      if (n > 1) this.why = 'this browser has no Worker or Blob support';
+      return this.mode;
+    }
+
+    var url = null;
+    try {
+      var blob = new Blob([engineSource + '\n' + WORKER_GLUE], { type: 'text/javascript' });
+      url = URL.createObjectURL(blob);
+    } catch (e) {
+      this.mode = 'main'; this.threads = 1;
+      return this.mode;
+    }
+
+    var self_ = this;
+    var plain = {
+      nIn: wiring.nIn, nInter: wiring.nInter, nMotor: wiring.nMotor, n: wiring.n,
+      inRows: wiring.inRows, inCols: wiring.inCols,
+      recRows: wiring.recRows, recCols: wiring.recCols,
+      nSynIn: wiring.nSynIn, nSynRec: wiring.nSynRec,
+      genomeSize: wiring.genomeSize
+    };
+
+    try {
+      var made = [];
+      for (var i = 0; i < n; i++) {
+        var w = new Worker(url);
+        w.onmessage = function (e) {
+          var d = e.data;
+          if (d.type === 'done') {
+            var p = self_.pending[d.job];
+            if (p) { delete self_.pending[d.job]; p(new Float64Array(d.metrics)); }
+          }
+        };
+        made.push(w);
+      }
+      // a worker that cannot start reports it on the first handshake
+      await Promise.all(made.map(function (w) {
+        return new Promise(function (res, rej) {
+          var to = setTimeout(function () { rej(new Error('worker handshake timed out')); }, 8000);
+          w.addEventListener('message', function once(e) {
+            if (e.data && e.data.type === 'ready') {
+              clearTimeout(to); w.removeEventListener('message', once); res();
+            }
+          });
+          w.addEventListener('error', function (ev) { clearTimeout(to); rej(new Error(ev.message || 'worker failed')); });
+          w.postMessage({ type: 'init', morph: morphName, wiring: plain });
+        });
+      }));
+      this.workers = made;
+      this.mode = 'workers';
+      this.threads = made.length;
+    } catch (e) {
+      this.workers.forEach(function (w) { try { w.terminate(); } catch (x) {} });
+      this.workers = [];
+      this.mode = 'main';
+      this.threads = 1;
+      this.why = e && e.message ? e.message : String(e);
+    }
+    try { URL.revokeObjectURL(url); } catch (e) {}
+    return this.mode;
+  };
+
+  Evaluator.prototype.terminate = function () {
+    this.workers.forEach(function (w) { try { w.terminate(); } catch (e) {} });
+    this.workers = [];
+    this.pending = {};
+    this.mode = 'main';
+    this.threads = 1;
+  };
+
+  /** metrics for `count` genomes, N_METRICS numbers each */
+  Evaluator.prototype.evaluate = async function (genes, count, seconds, poseSeed) {
+    var t0 = performance.now();
+    var out;
+    if (this.mode === 'workers' && count >= this.threads * 2) out = await this._farm(genes, count, seconds, poseSeed);
+    else out = await this._local(genes, count, seconds, poseSeed);
+    this.evalMs += performance.now() - t0;
+    this.dogSeconds += count * seconds;
+    return out;
+  };
+
+  Evaluator.prototype._farm = function (genes, count, seconds, poseSeed) {
+    var G = this.wiring.genomeSize, T = this.workers.length, self_ = this;
+    var base = Math.floor(count / T), extra = count % T;
+    var jobs = [], at = 0;
+    for (var i = 0; i < T; i++) {
+      var take = base + (i < extra ? 1 : 0);
+      if (!take) continue;
+      var chunk = genes.slice(at * G, (at + take) * G);
+      var job = ++this.job;
+      var offset = at;
+      jobs.push(new Promise(function (res) {
+        self_.pending[job] = res;
+      }).then((function (off, cnt) {
+        return function (m) { return { off: off, count: cnt, m: m }; };
+      })(offset, take)));
+      this.workers[i].postMessage({
+        type: 'eval', genes: chunk.buffer, count: take, indexOffset: at,
+        seconds: seconds, poseSeed: poseSeed, job: job
+      }, [chunk.buffer]);
+      at += take;
+    }
+    return Promise.all(jobs).then(function (parts) {
+      var out = new Float64Array(count * LD.N_METRICS);
+      parts.forEach(function (p) { out.set(p.m, p.off * LD.N_METRICS); });
+      return out;
+    });
+  };
+
+  /** main thread, in slices, so the page keeps drawing */
+  Evaluator.prototype._local = async function (genes, count, seconds, poseSeed) {
+    var G = this.wiring.genomeSize;
+    var out = new Float64Array(count * LD.N_METRICS);
+    // ~24 dog-seconds per slice keeps a frame budget of roughly 8 ms
+    var per = Math.max(2, Math.min(count, Math.round(24 / Math.max(seconds, 1))));
+    for (var i = 0; i < count; i += per) {
+      var take = Math.min(per, count - i);
+      for (var j = 0; j < take; j++) {
+        this.sim.setPose(poseSeed, i + j);
+        this.sim.run(genes, (i + j) * G, seconds, out, (i + j) * LD.N_METRICS, null);
+      }
+      if (i + take < count) await yieldMacro();
+    }
+    return out;
+  };
+
+  Evaluator.prototype.throughput = function () {
+    return this.evalMs > 0 ? this.dogSeconds / (this.evalMs / 1000) : 0;
+  };
+
+  root.LDE = { Evaluator: Evaluator, yieldMacro: yieldMacro, WORKER_GLUE: WORKER_GLUE };
+})(typeof self !== 'undefined' ? self : globalThis);
+</script>
+<script>
+/* ===========================================================================
+   liquid dog — the page
+   =========================================================================== */
+(function () {
+  'use strict';
+  var LD = window.LD, LDT = window.LDT, LDE = window.LDE;
+  var NS = 'http://www.w3.org/2000/svg';
+  var $ = function (id) { return document.getElementById(id); };
+  function el(name, attrs) {
+    var e = document.createElementNS(NS, name);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+  function txt(parent, s, x, y, opts) {
+    var a = { x: x, y: y, fill: 'var(--soft)', 'font-size': 12 };
+    for (var k in (opts || {})) a[k] = opts[k];
+    var t = el('text', a);
+    t.textContent = s;
+    parent.appendChild(t);
+    return t;
+  }
+  function fmt(v, n) { return (v === undefined || v === null || !isFinite(v)) ? '\u2014' : v.toFixed(n); }
+
+  var S = {
+    trainer: null,
+    ev: new LDE.Evaluator(),
+    running: false,
+    booting: false,
+    stopRequested: false,
+    source: 'leader',            // what the stage is showing
+    stage: { rec: null, pending: null, pendingLabel: '', label: '', frame: 0, playing: true },
+    acc: 0, lastT: 0,
+    speedMul: 1,
+    dirty: true,
+    lastRender: 0,
+    genTimes: [],
+    error: null,
+    audit: null,
+    bspace: { x: 4, y: 0 }
+  };
+
+  // ── settings ─────────────────────────────────────────────────────────────
+  function readSettings() {
+    var out = {};
+    document.querySelectorAll('#settings [name]').forEach(function (f) {
+      var v = String(f.value).trim();
+      if (/_gens$/.test(f.name)) {
+        var nums = v.split(/[,\s]+/).filter(Boolean).map(Number);
+        if (nums.length === 3 && nums.every(function (n) { return isFinite(n) && n >= 0; })) out[f.name] = nums;
+      } else if (f.type === 'number') {
+        if (v !== '' && isFinite(+v)) out[f.name] = +v;
+      } else {
+        out[f.name] = v;
+      }
+    });
+    return out;
+  }
+
+  function fillSettings() {
+    var d = LDT.DEFAULTS;
+    document.querySelectorAll('#settings [name]').forEach(function (f) {
+      var v = d[f.name];
+      if (v === undefined) return;
+      f.value = Array.isArray(v) ? v.join(', ') : v;
+    });
+  }
+
+  // ── boot: a trainer exists from the start, so the stage has a dog ────────
+  async function boot(settings, threads) {
+    S.booting = true;
+    S.error = null;
+    S.ev.terminate();
+    var src = null;
+    var tag = document.getElementById('engine-src');
+    if (tag) src = tag.textContent;
+    S.trainer = new LDT.Trainer(settings, S.ev);
+    var mode = await S.ev.init(S.trainer.morph.name, S.trainer.wiring, threads, src);
+    S.booting = false;
+    renderEngineLine(mode);
+    return S.trainer;
+  }
+
+  function renderEngineLine(mode) {
+    var tr = S.trainer;
+    var bits = [];
+    bits.push('Runs entirely in this page \u2014 no server, no install.');
+    if (S.ev.mode === 'workers') {
+      bits.push('<b>' + S.ev.threads + (S.ev.threads === 1 ? ' thread</b>' : ' threads</b>'));
+    } else if (S.ev.why) {
+      bits.push('<b>1 thread</b> (workers unavailable: ' + S.ev.why + ')');
+    } else if (S.ev.hw <= 1) {
+      bits.push('<b>1 thread</b> (this machine reports one core)');
+    } else {
+      bits.push('<b>1 thread</b> (by choice)');
+    }
+    bits.push(tr.morph.name + ', ' + tr.wiring.describe);
+    $('engine').innerHTML = bits.join(' &middot; ');
+  }
+
+  /** an untrained dog, so the stage is never empty */
+  function showUntrained() {
+    var tr = S.trainer;
+    var g = tr.pop.slice(0, tr.G);
+    var rec = tr.record(g, LD.OBJECTIVE.seconds, poseSeed(), 0);
+    setStage(rec, 'generation 0, untrained', true);
+    renderBrain(rec);
+    renderGait(rec);
+    renderReadout(rec);
+  }
+
+  function poseSeed() {
+    var v = +$('poseseed').value;
+    return isFinite(v) ? (v | 0) : 4242;
+  }
+
+  // ── the training loop ────────────────────────────────────────────────────
+  async function start() {
+    if (S.running || S.booting) return;
+    $('go').disabled = true;
+    $('s-hint').textContent = 'Starting up \u2014 building the first population.';
+    var threads = +$('threads').value || 0;
+    try {
+      await boot(readSettings(), threads);
+    } catch (e) {
+      S.error = String(e && e.message || e);
+      $('go').disabled = false;
+      render();
+      return;
+    }
+    S.audit = null;
+    $('audit').replaceChildren();
+    S.genTimes = [];
+    S.running = true;
+    S.stopRequested = false;
+    S.source = 'leader';
+    $('source').value = 'leader';
+    $('halt').disabled = false;
+    showUntrained();
+    loop();
+  }
+
+  async function loop() {
+    var tr = S.trainer;
+    while (S.running && !S.stopRequested && !tr.done) {
+      var t0 = performance.now();
+      try {
+        await tr.step();
+      } catch (e) {
+        S.error = String(e && e.stack || e);
+        break;
+      }
+      S.genTimes.push(performance.now() - t0);
+      if (S.genTimes.length > 20) S.genTimes.shift();
+
+      // The gate leader, re-run with everything recorded. One dog for one
+      // episode, so a few milliseconds against a whole generation.
+      if (S.source === 'leader' && tr.leader) {
+        var rec = tr.record(tr.leader, tr.leaderGate.seconds, poseSeed(), 0);
+        var label = 'gate leader \u2014 ' + tr.leaderGate.name + ', generation ' + (tr.gen - 1);
+        queueStage(rec, label);
+      }
+      S.dirty = true;
+      render();
+      await LDE.yieldMacro();
+    }
+    S.running = false;
+    $('go').disabled = false;
+    $('halt').disabled = true;
+    S.dirty = true;
+    render();
+  }
+
+  // ── the stage ────────────────────────────────────────────────────────────
+  /** swap at the end of the current episode, so you always see a whole one */
+  function queueStage(rec, label) {
+    if (!S.stage.rec) { setStage(rec, label, true); return; }
+    S.stage.pending = rec;
+    S.stage.pendingLabel = label;
+  }
+  function setStage(rec, label, resetFrame) {
+    S.stage.rec = rec;
+    S.stage.label = label;
+    S.stage.pending = null;
+    if (resetFrame) S.stage.frame = 0;
+    if (S.stage.frame >= rec.ticks) S.stage.frame = 0;
+    drawStage();
+  }
+
+  /* The stage is sized from the element, not from a fixed viewBox, so a phone
+     gets a dog rather than a squashed strip. User units are CSS pixels; the
+     height follows how tall a standing dog actually is at the chosen scale,
+     and the visible width in metres shrinks on narrow screens instead of the
+     dog shrinking. */
+  var SC = 300, GY = 258, VW = 1100, VH = 330, DOG_X = 300;
+
+  function measureStage(svg) {
+    var cw = Math.round(svg.getBoundingClientRect().width);
+    VW = Math.max(300, cw || 1100);
+    var metres = VW < 480 ? 1.9 : (VW < 760 ? 2.7 : 3.7);
+    SC = VW / metres;
+    var dogPx = 0.75 * SC;                     // a standing dog, head included
+    VH = Math.round(dogPx + 46 + 56);          // air above, ruler below
+    GY = VH - 56;
+    DOG_X = Math.round(VW * 0.27);             // room behind for the ghosts
+  }
+
+  function drawStage() {
+    var svg = $('stage');
+    var rec = S.stage.rec;
+    svg.replaceChildren();
+    measureStage(svg);
+    svg.setAttribute('viewBox', '0 0 ' + VW + ' ' + VH);
+    if (!rec || !rec.ticks) return;
+    var k = Math.min(S.stage.frame, rec.ticks - 1);
+    var P = rec.nPoints, F = rec.frames;
+    var base = k * P * 2;
+    var camX = F[base + 2 * LD.SHOULDER] * 0.5 + F[base + 2 * LD.HIP] * 0.5;
+    var cam = camX - DOG_X / SC;
+    function X(v) { return (v - cam) * SC; }
+    function Y(v) { return GY - v * SC; }
+
+    // ground, with a quarter-metre ruler
+    var g = '';
+    var m0 = Math.floor(cam * 4) / 4 - 0.5;
+    for (var m = m0; m < cam + VW / SC + 0.5; m += 0.25) {
+      var big = Math.abs(m - Math.round(m)) < 1e-6;
+      g += 'M' + X(m).toFixed(1) + ' ' + GY + 'V' + (GY + (big ? 15 : 7));
+      if (big) txt(svg, Math.round(m) + ' m', X(m), GY + 30, { 'text-anchor': 'middle', 'font-size': 11.5 });
+    }
+    svg.appendChild(el('path', { d: g, stroke: 'var(--near)', 'stroke-width': 1, fill: 'none' }));
+    svg.appendChild(el('line', { x1: 0, y1: GY, x2: VW, y2: GY, stroke: 'var(--ink)', 'stroke-width': 1.5 }));
+
+    // Chronophotography: the same dog every fifth of a second for the last
+    // second and a half. Stride length and duty factor are readable off a
+    // still, which is the point.
+    var ghost = '';
+    for (var j = k - 60; j < k; j += 10) {
+      if (j < 0) continue;
+      var b = j * P * 2;
+      for (var q = 0; q < rec.bones.length; q++) {
+        var bo = rec.bones[q];
+        if (!bo[2]) continue;
+        ghost += 'M' + X(F[b + 2 * bo[0]]).toFixed(1) + ' ' + Y(F[b + 2 * bo[0] + 1]).toFixed(1) +
+                 'L' + X(F[b + 2 * bo[1]]).toFixed(1) + ' ' + Y(F[b + 2 * bo[1] + 1]).toFixed(1);
+      }
+    }
+    if (ghost) svg.appendChild(el('path', { d: ghost, stroke: 'var(--ghost)', 'stroke-width': 3, fill: 'none', 'stroke-linecap': 'round' }));
+
+    // the torso's path so far
+    var trail = '';
+    for (var t = Math.max(0, k - 140); t <= k; t++) {
+      var tb = t * P * 2;
+      var cx = 0.5 * (F[tb + 2 * LD.SHOULDER] + F[tb + 2 * LD.HIP]);
+      var cy = 0.5 * (F[tb + 2 * LD.SHOULDER + 1] + F[tb + 2 * LD.HIP + 1]);
+      trail += (trail ? 'L' : 'M') + X(cx).toFixed(1) + ' ' + Y(cy).toFixed(1);
+    }
+    svg.appendChild(el('path', { d: trail, fill: 'none', stroke: 'var(--near)', 'stroke-width': 1, 'stroke-dasharray': '1 3' }));
+
+    // the dog: far limbs behind, near limbs in front
+    var far = '', near = '';
+    for (var c = 0; c < rec.bones.length; c++) {
+      var bn = rec.bones[c];
+      var seg = 'M' + X(F[base + 2 * bn[0]]).toFixed(1) + ' ' + Y(F[base + 2 * bn[0] + 1]).toFixed(1) +
+                'L' + X(F[base + 2 * bn[1]]).toFixed(1) + ' ' + Y(F[base + 2 * bn[1] + 1]).toFixed(1);
+      if (bn[2]) near += seg; else far += seg;
+    }
+    if (far) svg.appendChild(el('path', { d: far, stroke: 'var(--near)', 'stroke-width': 3, fill: 'none', 'stroke-linecap': 'round' }));
+    svg.appendChild(el('path', { d: near, stroke: 'var(--trace)', 'stroke-width': 4.5, fill: 'none', 'stroke-linecap': 'round' }));
+
+    for (var f = 0; f < rec.feet.length; f++) {
+      var pi = rec.feet[f];
+      var down = rec.contacts[k * rec.nLegs + f];
+      svg.appendChild(el('circle', {
+        cx: X(F[base + 2 * pi]).toFixed(1), cy: Y(F[base + 2 * pi + 1]).toFixed(1),
+        r: down ? 6 : 4.5, fill: down ? 'var(--strike)' : 'var(--card)',
+        stroke: 'var(--trace)', 'stroke-width': 2
+      }));
+    }
+    svg.appendChild(el('circle', {
+      cx: X(F[base + 2 * LD.HEAD]).toFixed(1), cy: Y(F[base + 2 * LD.HEAD + 1]).toFixed(1),
+      r: 9, fill: 'var(--trace)'
+    }));
+
+    var secs = (k * rec.dt);
+    $('stagetag').innerHTML = '<b>' + S.stage.label + '</b> &middot; ' +
+      secs.toFixed(1) + ' / ' + rec.seconds.toFixed(0) + ' s &middot; ' +
+      fmt(rec.metrics[LD.M.speed], 2) + ' m/s';
+
+    var head = $('playhead');
+    if (head && rec.ticks > 1) {
+      var xx = tickX(GAIT_L, GAIT_W, k, rec.ticks);
+      head.setAttribute('x1', xx); head.setAttribute('x2', xx);
+    }
+    var head2 = $('brainhead');
+    if (head2 && rec.ticks > 1) {
+      var x2 = tickX(BRAIN_L, BRAIN_W, k, rec.ticks);
+      head2.setAttribute('x1', x2); head2.setAttribute('x2', x2);
+    }
+  }
+
+  function animate(now) {
+    var st = S.stage;
+    if (st.rec && st.playing && st.rec.ticks > 1) {
+      if (!S.lastT) S.lastT = now;
+      S.acc += (now - S.lastT) * S.speedMul;
+      var ms = st.rec.dt * 1000;
+      var drew = false;
+      while (S.acc > ms) {
+        S.acc -= ms;
+        st.frame++;
+        if (st.frame >= st.rec.ticks) {
+          st.frame = 0;
+          if (st.pending) {
+            var r = st.pending, l = st.pendingLabel;
+            st.pending = null;
+            setStage(r, l, true);
+            renderBrain(r);
+            renderGait(r);
+            renderReadout(r);
+          }
+        }
+        drew = true;
+      }
+      if (drew) drawStage();
+    } else {
+      S.acc = 0;
+    }
+    S.lastT = now;
+    requestAnimationFrame(animate);
+  }
+
+  // ── readout under the stage ──────────────────────────────────────────────
+  function renderReadout(rec) {
+    var m = rec.metrics;
+    $('readout').innerHTML = [
+      ['speed', fmt(m[LD.M.speed], 2) + ' m/s'],
+      ['distance', fmt(m[LD.M.distance], 2) + ' m'],
+      ['footfall score', fmt(LD.footfallScore(m, 0), 2)],
+      ['cadence', fmt(m[LD.M.stepRate], 2) + ' /s per foot'],
+      ['duty factor', fmt(m[LD.M.dutyMean], 2)],
+      ['worst landing', fmt(m[LD.M.impact], 2) + ' m/s'],
+      ['upright', Math.round(m[LD.M.survive] * 100) + '% of the episode']
+    ].map(function (p) { return '<span>' + p[0] + ' <b>' + p[1] + '</b></span>'; }).join('');
+  }
+
+  // ── status ───────────────────────────────────────────────────────────────
+  function render() {
+    if (document.hidden) return;
+    var now = performance.now();
+    if (now - S.lastRender < 220 && !S.dirty) return;
+    S.lastRender = now;
+    S.dirty = false;
+
+    var tr = S.trainer;
+    if (!tr) return;
+    var st = tr.status();
+    $('s-cycle').textContent = st.cycle + ' / ' + st.cycles;
+    $('s-gate').textContent = st.generation ? st.gate : 'idle';
+    $('s-gen').textContent = st.generation;
+    $('s-pop').textContent = st.population;
+    $('s-speed').textContent = fmt(st.best_speed, 2) + ' m/s';
+    $('s-min').textContent = fmt(st.minutes, 1) + ' min';
+    var gpm = 0;
+    if (S.genTimes.length) {
+      var mean = S.genTimes.reduce(function (a, b) { return a + b; }, 0) / S.genTimes.length;
+      gpm = 60000 / mean;
+    }
+    $('s-rate').textContent = gpm ? fmt(gpm, 1) + ' /min' : '\u2014';
+    var frac = Math.min(1, st.generation / Math.max(1, st.total_gens));
+    $('s-prog').style.width = (frac * 100).toFixed(1) + '%';
+
+    var hint;
+    if (S.error) hint = 'Stopped on an error: ' + S.error;
+    else if (S.booting) hint = 'Building the population\u2026';
+    else if (st.done) hint = 'Finished all ' + st.cycles + ' cycles. Load a champion below, or copy the report.';
+    else if (S.running) {
+      hint = st.gate_blurb + ' \u2014 generation ' + st.gate_gen + ' of up to ' +
+        st.gate_budget + ' on this gate. ' + fmt(S.ev.throughput(), 0) + ' dog-seconds simulated per second.';
+    } else if (st.generation) {
+      hint = 'Stopped at generation ' + st.generation + '. Champions are kept \u2014 start again to begin a fresh run.';
+    } else {
+      hint = 'The dog above is an untrained controller from the starting population. Press start.';
+    }
+    $('s-hint').textContent = hint;
+    $('go').disabled = S.running || S.booting;
+    $('halt').disabled = !S.running;
+
+    drawChart(st.history);
+    renderPools(st.pools);
+    renderBehaviour(st.pools);
+    fillSources(st.pools);
+    if ($('reportbox').open) $('report').textContent = LDT.reportText(tr, buildNote());
+  }
+
+  function buildNote() {
+    return 'browser build, ' + (S.ev.mode === 'workers' ? S.ev.threads + ' threads' : '1 thread') +
+      ', ' + fmt(S.ev.throughput(), 0) + ' dog-seconds/s';
+  }
+
+  // ── progress chart ───────────────────────────────────────────────────────
+  function drawChart(h) {
+    var svg = $('chart');
+    svg.replaceChildren();
+    var W = 1100, H = 260, L = 52, R = 46, T = 22, B = 30;
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    if (!h || h.length < 2) {
+      txt(svg, 'Nothing yet. The chart fills in one point per generation.', L, H / 2, { 'font-size': 13 });
+      return;
+    }
+    var x = function (i) { return L + (W - L - R) * i / (h.length - 1); };
+    /* A biped that never gets past 0.05 m/s against a fixed 0.4 axis is a flat
+       line on the floor, which hides the only thing the trace is for. Coarse
+       steps so the axis is readable and changes rarely, not on every point. */
+    var peak = 0;
+    for (var i = 0; i < h.length; i++) if (h[i].speed > peak) peak = h[i].speed;
+    var STEPS = [0.05, 0.1, 0.15, 0.2, 0.3, 0.5, 0.75, 1, 1.5, 2, 3, 5];
+    var maxSpeed = STEPS[STEPS.length - 1];
+    for (var si = 0; si < STEPS.length; si++) {
+      if (STEPS[si] >= peak * 1.12) { maxSpeed = STEPS[si]; break; }
+    }
+    var ys = function (v) { return H - B - (H - B - T) * Math.min(1, Math.max(0, v / maxSpeed)); };
+    var y01 = function (v) { return H - B - (H - B - T) * Math.min(1, Math.max(0, v)); };
+
+    // gate changes, with the name of each stretch
+    var marks = [0];
+    for (i = 1; i < h.length; i++) if (h[i].gate !== h[i - 1].gate || h[i].cycle !== h[i - 1].cycle) marks.push(i);
+    marks.forEach(function (i2, mi) {
+      if (i2 > 0) {
+        svg.appendChild(el('line', {
+          x1: x(i2), y1: T - 8, x2: x(i2), y2: H - B,
+          stroke: 'var(--rule)', 'stroke-width': h[i2].cycle !== h[i2 - 1].cycle ? 1.6 : 1
+        }));
+      }
+      var end = mi + 1 < marks.length ? marks[mi + 1] : h.length;
+      if (end - i2 > 6) {
+        txt(svg, (h[i2].cycle > 1 && (i2 === 0 || h[i2].cycle !== h[i2 - 1].cycle) ? 'cycle ' + h[i2].cycle + ' \u00b7 ' : '') + h[i2].gate,
+          x(i2) + 5, T - 8, { 'font-size': 11.5 });
+      }
+    });
+
+    function line(get, stroke, width) {
+      var d = '';
+      for (var i3 = 0; i3 < h.length; i3++) d += (i3 ? 'L' : 'M') + x(i3).toFixed(1) + ' ' + get(h[i3]).toFixed(1);
+      svg.appendChild(el('path', { d: d, fill: 'none', stroke: stroke, 'stroke-width': width }));
+    }
+    // grid
+    [0, 0.5, 1].forEach(function (v) {
+      svg.appendChild(el('line', { x1: L, y1: y01(v), x2: W - R, y2: y01(v), stroke: 'var(--rule)', 'stroke-width': v === 0 ? 0 : 0.6, 'stroke-dasharray': '2 4' }));
+      txt(svg, v.toFixed(1), W - R + 6, y01(v) + 4, { 'font-size': 11.5 });
+    });
+    svg.appendChild(el('line', { x1: L, y1: H - B, x2: W - R, y2: H - B, stroke: 'var(--ink)', 'stroke-width': 1 }));
+
+    line(function (t) { return y01(t.diversity); }, 'var(--ok)', 1.4);
+    line(function (t) { return y01(t.footfall); }, 'var(--strike)', 1.6);
+    line(function (t) { return ys(t.speed); }, 'var(--trace)', 2.2);
+
+    txt(svg, fmt(maxSpeed, 2), L - 6, T + 4, { 'text-anchor': 'end', 'font-size': 11.5, fill: 'var(--trace)' });
+    txt(svg, '0', L - 6, H - B + 4, { 'text-anchor': 'end', 'font-size': 11.5 });
+    txt(svg, 'm/s', L - 6, T - 8, { 'text-anchor': 'end', 'font-size': 11, fill: 'var(--trace)' });
+    txt(svg, 'gen ' + h[0].gen, L, H - 8, { 'font-size': 11.5 });
+    txt(svg, 'gen ' + h[h.length - 1].gen, W - R, H - 8, { 'text-anchor': 'end', 'font-size': 11.5 });
+  }
+
+  // ── the brain ────────────────────────────────────────────────────────────
+  var BRAIN_L = 128, BRAIN_W = 458;
+
+  /* A seconds axis for a recording of `dur` seconds across `w` pixels.
+     A dog can fall in a fifth of a second, so `dur` may be well under 1 s and
+     must never reach a division; whole-second ticks are drawn where they fit
+     and the true end is always labelled. */
+  function timeAxis(svg, x0, w, dur, ay) {
+    svg.appendChild(el('line', { x1: x0, y1: ay, x2: x0 + w, y2: ay, stroke: 'var(--rule)' }));
+    var at = function (sec) { return x0 + (dur > 0 ? w * sec / dur : 0); };
+    var whole = Math.min(30, Math.floor(dur + 1e-9));
+    for (var s = 0; s <= whole; s++) {
+      var xx = at(s);
+      svg.appendChild(el('line', { x1: xx, y1: ay, x2: xx, y2: ay + 5, stroke: 'var(--rule)' }));
+      // the last whole second doubles as the end label when it lands there
+      var isEnd = (s === whole && dur - whole < 0.12);
+      txt(svg, isEnd ? s + ' s' : String(s), xx, ay + 17, { 'text-anchor': 'middle', 'font-size': 11 });
+    }
+    if (dur - whole >= 0.12) {
+      txt(svg, (dur < 1 ? dur.toFixed(2) : dur.toFixed(1)) + ' s', x0 + w, ay + 17,
+        { 'text-anchor': 'end', 'font-size': 11 });
+    }
+  }
+
+  /** x for tick t of a recording, safe when there is only one tick */
+  function tickX(x0, w, t, ticks) {
+    return x0 + (ticks > 1 ? w * t / (ticks - 1) : 0);
+  }
+
+  /* Dominant period by autocorrelation, or 0 for "no rhythm here".
+     Two things have to be right or this lies. A cell that merely drifts to a
+     new value is strongly autocorrelated at every short lag, so taking the
+     first peak outright reports the smallest lag for every cell, whether it
+     oscillates or not — it measures smoothness. So: detrend first, to throw
+     away slow drift, then refuse to look for a peak until the correlation has
+     gone negative at least once. Only something that actually comes back the
+     other way can have a period. */
+  function periodOf(series, dt) {
+    var n = series.length, i;
+    if (n < 60) return 0;
+    // least-squares line, then subtract it
+    var sx = 0, sy = 0, sxx = 0, sxy = 0;
+    for (i = 0; i < n; i++) { sx += i; sy += series[i]; sxx += i * i; sxy += i * series[i]; }
+    var den = n * sxx - sx * sx;
+    var slope = den !== 0 ? (n * sxy - sx * sy) / den : 0;
+    var icpt = (sy - slope * sx) / n;
+    var a = new Float64Array(n), v0 = 0;
+    for (i = 0; i < n; i++) { a[i] = series[i] - (icpt + slope * i); v0 += a[i] * a[i]; }
+    if (v0 < 1e-12) return 0;                      // dead flat, or a pure ramp
+
+    var maxLag = Math.min(n - 20, Math.round(3.0 / dt));
+    if (maxLag < 4) return 0;
+    var crossed = false, prev = 1, rising = false;
+    for (var lag = 1; lag <= maxLag; lag++) {
+      var s = 0, m = n - lag;
+      for (i = 0; i < m; i++) s += a[i] * a[i + lag];
+      var r = s / v0;
+      if (!crossed) { if (r < 0) crossed = true; prev = r; continue; }
+      if (r > prev) rising = true;
+      else if (rising) return prev > 0.2 ? (lag - 1) * dt : 0;   // first peak past the crossing
+      prev = r;
+    }
+    return 0;
+  }
+
+  function renderBrain(rec) {
+    var svg = $('brain');
+    svg.replaceChildren();
+    if (!rec || !rec.ticks) return;
+    var n = rec.nNeurons, ticks = rec.ticks, dt = rec.dt;
+    var rowH = 20, gap = 3, top = 16;
+    var H = top + n * (rowH + gap) + 34;
+    var W = BRAIN_L + BRAIN_W + 118;
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+
+    txt(svg, 'cell', 0, 10, { 'font-size': 11 });
+    txt(svg, 'tau', 86, 10, { 'font-size': 11, 'text-anchor': 'end' });
+    txt(svg, 'state through the episode', BRAIN_L, 10, { 'font-size': 11 });
+    txt(svg, 'period', W, 10, { 'font-size': 11, 'text-anchor': 'end' });
+
+    var series = new Float64Array(ticks);
+    for (var i = 0; i < n; i++) {
+      var y = top + i * (rowH + gap);
+      var isMotor = i >= rec.nInter;
+      var lo = Infinity, hi = -Infinity, t;
+      for (t = 0; t < ticks; t++) {
+        var v = rec.neurons[t * n + i];
+        series[t] = v;
+        if (v < lo) lo = v;
+        if (v > hi) hi = v;
+      }
+      var span = Math.max(hi - lo, 1e-6);
+      var mid = 0.5 * (hi + lo);
+      var yy = function (v) { return y + rowH * (0.5 - 0.92 * (v - mid) / span); };
+
+      txt(svg, (isMotor ? 'motor ' + (i - rec.nInter) : 'inter ' + i), 0, y + rowH * 0.5 + 4,
+        { 'font-size': 11.5, fill: isMotor ? 'var(--ink)' : 'var(--soft)' });
+      txt(svg, rec.tau[i].toFixed(2) + ' s', 86, y + rowH * 0.5 + 4, { 'font-size': 11.5, 'text-anchor': 'end' });
+
+      svg.appendChild(el('line', {
+        x1: BRAIN_L, y1: y + rowH * 0.5, x2: BRAIN_L + BRAIN_W, y2: y + rowH * 0.5,
+        stroke: 'var(--rule)', 'stroke-width': 0.6, 'stroke-dasharray': '2 4'
+      }));
+      var d = '';
+      var step = Math.max(1, Math.floor(ticks / BRAIN_W));
+      for (t = 0; t < ticks; t += step) {
+        d += (d ? 'L' : 'M') + tickX(BRAIN_L, BRAIN_W, t, ticks).toFixed(1) + ' ' + yy(series[t]).toFixed(1);
+      }
+      svg.appendChild(el('path', {
+        d: d, fill: 'none', stroke: isMotor ? 'var(--trace)' : 'var(--near)',
+        'stroke-width': isMotor ? 1.5 : 1
+      }));
+      var per = periodOf(series, dt);
+      txt(svg, per ? per.toFixed(2) + ' s' : '\u2014', W, y + rowH * 0.5 + 4,
+        { 'font-size': 11.5, 'text-anchor': 'end', fill: per ? 'var(--strike)' : 'var(--soft)' });
+      txt(svg, span.toFixed(2), BRAIN_L - 6, y + rowH * 0.5 + 4, { 'font-size': 10, 'text-anchor': 'end', fill: 'var(--rule)' });
+    }
+
+    var ay = top + n * (rowH + gap) + 4;
+    timeAxis(svg, BRAIN_L, BRAIN_W, ticks * dt, ay);
+    svg.appendChild(el('line', {
+      id: 'brainhead', x1: BRAIN_L, y1: top - 4, x2: BRAIN_L, y2: ay,
+      stroke: 'var(--ink)', 'stroke-width': 1
+    }));
+  }
+
+  // ── footfalls and motor output ───────────────────────────────────────────
+  var GAIT_L = 96, GAIT_W = 400;
+
+  function renderGait(rec) {
+    var svg = $('gait');
+    svg.replaceChildren();
+    if (!rec || !rec.ticks) return;
+    var n = rec.ticks, nL = rec.nLegs, H = 24, GAPY = 9, W = GAIT_L + GAIT_W + 10;
+    var y = 8;
+    for (var r = 0; r < nL; r++) {
+      y = 8 + r * (H + GAPY);
+      txt(svg, rec.legNames[r], 0, y + 16, { 'font-size': 12.5 });
+      svg.appendChild(el('rect', { x: GAIT_L, y: y, width: GAIT_W, height: H, fill: 'none', stroke: 'var(--rule)' }));
+      var run = -1;
+      for (var k = 0; k <= n; k++) {
+        var on = k < n && rec.contacts[k * nL + r];
+        if (on && run < 0) run = k;
+        if (!on && run >= 0) {
+          svg.appendChild(el('rect', {
+            x: (GAIT_L + GAIT_W * run / n).toFixed(1), y: y + 2,
+            width: Math.max(1.2, GAIT_W * (k - run) / n).toFixed(1), height: H - 4,
+            fill: 'var(--strike)'
+          }));
+          run = -1;
+        }
+      }
+    }
+    // motor output, the signal that produced those footfalls
+    var my = y + H + 16;
+    var mh = 46;
+    txt(svg, 'motor output', 0, my + mh * 0.5 + 4, { 'font-size': 12.5 });
+    svg.appendChild(el('rect', { x: GAIT_L, y: my, width: GAIT_W, height: mh, fill: 'none', stroke: 'var(--rule)' }));
+    svg.appendChild(el('line', {
+      x1: GAIT_L, y1: my + mh * 0.5, x2: GAIT_L + GAIT_W, y2: my + mh * 0.5,
+      stroke: 'var(--rule)', 'stroke-width': 0.6, 'stroke-dasharray': '2 4'
+    }));
+    var nA = rec.motors.length / rec.ticks;
+    var step = Math.max(1, Math.floor(rec.ticks / GAIT_W));
+    for (var a = 0; a < nA; a++) {
+      var d = '';
+      for (var t = 0; t < rec.ticks; t += step) {
+        var v = rec.motors[t * nA + a];
+        d += (d ? 'L' : 'M') + tickX(GAIT_L, GAIT_W, t, rec.ticks).toFixed(1) + ' ' +
+             (my + mh * (0.5 - 0.46 * v)).toFixed(1);
+      }
+      svg.appendChild(el('path', {
+        d: d, fill: 'none', stroke: a < nL ? 'var(--trace)' : 'var(--near)',
+        'stroke-width': 1.2, opacity: 0.85
+      }));
+    }
+    var ay = my + mh + 4;
+    timeAxis(svg, GAIT_L, GAIT_W, rec.ticks * rec.dt, ay);
+    svg.appendChild(el('line', {
+      id: 'playhead', x1: GAIT_L, y1: 2, x2: GAIT_L, y2: ay, stroke: 'var(--ink)', 'stroke-width': 1
+    }));
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + (ay + 26));
+    $('gaitlabel').textContent = 'A bar means that foot is carrying weight. ' +
+      'Hip signals are dark, knee signals light.';
+  }
+
+  // ── pools ────────────────────────────────────────────────────────────────
+  function renderPools(p) {
+    if (!p) return;
+    var wrap = $('pools');
+    wrap.replaceChildren();
+    p.pools.forEach(function (pool) {
+      var card = document.createElement('div');
+      card.className = 'pool' + (pool.collapsed ? ' collapsed' : '');
+      var denom = Math.max(pool.target * 2, 1e-6);
+      var frac = Math.min(1, pool.diversity / denom);
+      card.innerHTML = '<h3>' + pool.kind + '</h3>' +
+        '<p class="blurb">' + pool.blurb + '</p>' +
+        '<div class="meter"><i style="width:' + (frac * 100).toFixed(1) + '%"></i>' +
+        '<u style="left:' + ((pool.target / denom) * 100).toFixed(1) + '%"></u></div>' +
+        '<div class="div">diversity ' + pool.diversity.toFixed(3) + ' (target ' + pool.target + ')' +
+        (pool.collapsed ? ' \u2014 collapsed, standards dropping' : '') +
+        ' \u00b7 bar ' + (pool.bar >= 0 ? '+' : '') + pool.bar.toFixed(2) +
+        (pool.bar_drops ? ' lowered ' + pool.bar_drops + '\u00d7' : '') +
+        ' \u00b7 ' + pool.admits + ' admissions</div>';
+      var ul = document.createElement('ul');
+      pool.members.forEach(function (m) {
+        var li = document.createElement('li');
+        li.innerHTML = '<b>' + m.speed.toFixed(2) + ' m/s</b>' +
+          '<span>foot ' + m.footfall.toFixed(2) + '</span>' +
+          (m.fossil ? '<span class="fossil">FOSSIL</span>' : '') +
+          '<span class="desc">c' + m.cycle + ' g' + m.gen + '</span>';
+        li.title = LD.DESCRIPTOR_NAMES.map(function (nn, i) {
+          return nn + ' ' + m.descriptor[i].toFixed(3);
+        }).join(', ');
+        ul.appendChild(li);
+      });
+      if (!pool.members.length) {
+        var empty = document.createElement('p');
+        empty.className = 'blurb';
+        empty.textContent = 'Empty until the first elites are measured on the objective.';
+        card.appendChild(empty);
+      }
+      card.appendChild(ul);
+      wrap.appendChild(card);
+    });
+    var ev = p.events && p.events.length ? p.events[0] : '\u2014';
+    $('relax').textContent = 'Diversity relaxations: ' + p.relaxations + '. Latest: ' + ev;
+  }
+
+  // ── behaviour space ──────────────────────────────────────────────────────
+  var POOL_COLOUR = { fast: 'var(--trace)', sturdy: 'var(--ok)', strange: 'var(--strike)' };
+
+  /* The axes are the normalised descriptor space the pools themselves measure
+     distance in, so 0..1 is the honest frame — but a biped stuck at 0.05 m/s
+     puts every dog on one vertical line and the panel shows nothing. So the
+     view is windowed onto the cloud, with a floor on how far it will zoom.
+     The floor is the point: autoscaling without one would stretch a collapsed
+     pool back out to fill the box and make a collapse look like diversity,
+     which is exactly the reading this panel exists to give. */
+  var BSPACE_MINSPAN = 0.25;
+
+  function bspaceWindow(vals) {
+    if (!vals.length) return [0, 1];
+    var lo = Infinity, hi = -Infinity;
+    for (var i = 0; i < vals.length; i++) {
+      if (vals[i] < lo) lo = vals[i];
+      if (vals[i] > hi) hi = vals[i];
+    }
+    var span = Math.max(hi - lo, BSPACE_MINSPAN) * 1.18;
+    if (span >= 1) return [0, 1];
+    var mid = 0.5 * (hi + lo);
+    var a = mid - span / 2;
+    if (a < 0) a = 0;
+    if (a + span > 1) a = 1 - span;
+    return [a, a + span];
+  }
+
+  function renderBehaviour(p) {
+    var svg = $('bspace');
+    svg.replaceChildren();
+    var W = 460, H = 380, L = 44, R = 14, T = 14, B = 42;
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    var xi = S.bspace.x, yi = S.bspace.y;
+
+    var xv = [], yv = [];
+    if (p) p.pools.forEach(function (pool) {
+      pool.members.forEach(function (m) {
+        xv.push(LD.clamp(m.descriptor[xi], 0, 1));
+        yv.push(LD.clamp(m.descriptor[yi], 0, 1));
+      });
+    });
+    var wx = bspaceWindow(xv), wy = bspaceWindow(yv);
+
+    function FX(f) { return L + (W - L - R) * f; }
+    function FY(f) { return H - B - (H - B - T) * f; }
+    function X(v) { return FX((v - wx[0]) / (wx[1] - wx[0])); }
+    function Y(v) { return FY((v - wy[0]) / (wy[1] - wy[0])); }
+
+    [0, 0.25, 0.5, 0.75, 1].forEach(function (f) {
+      svg.appendChild(el('line', { x1: FX(f), y1: T, x2: FX(f), y2: H - B, stroke: 'var(--rule)', 'stroke-width': 0.5, 'stroke-dasharray': '2 4' }));
+      svg.appendChild(el('line', { x1: L, y1: FY(f), x2: W - R, y2: FY(f), stroke: 'var(--rule)', 'stroke-width': 0.5, 'stroke-dasharray': '2 4' }));
+    });
+    svg.appendChild(el('rect', { x: L, y: T, width: W - L - R, height: H - B - T, fill: 'none', stroke: 'var(--ink)', 'stroke-width': 1 }));
+    [0, 0.5, 1].forEach(function (f) {
+      txt(svg, (wx[0] + f * (wx[1] - wx[0])).toFixed(2), FX(f), H - B + 15, { 'text-anchor': 'middle', 'font-size': 11 });
+      txt(svg, (wy[0] + f * (wy[1] - wy[0])).toFixed(2), L - 6, FY(f) + 4, { 'text-anchor': 'end', 'font-size': 11 });
+    });
+    txt(svg, LD.DESCRIPTOR_NAMES[xi], (L + W - R) / 2, H - B + 32, { 'text-anchor': 'middle', 'font-size': 12 });
+    var yl = txt(svg, LD.DESCRIPTOR_NAMES[yi], 0, 0, { 'text-anchor': 'middle', 'font-size': 12 });
+    yl.setAttribute('transform', 'translate(12,' + ((T + H - B) / 2) + ') rotate(-90)');
+
+    if (!p) return;
+    var any = false;
+    p.pools.forEach(function (pool) {
+      pool.members.forEach(function (m) {
+        any = true;
+        var cx = X(LD.clamp(m.descriptor[xi], 0, 1)), cy = Y(LD.clamp(m.descriptor[yi], 0, 1));
+        var col = POOL_COLOUR[pool.kind];
+        if (m.fossil) {
+          svg.appendChild(el('circle', { cx: cx.toFixed(1), cy: cy.toFixed(1), r: 6, fill: 'none', stroke: col, 'stroke-width': 1.6 }));
+          svg.appendChild(el('circle', { cx: cx.toFixed(1), cy: cy.toFixed(1), r: 1.6, fill: col }));
+        } else {
+          svg.appendChild(el('circle', { cx: cx.toFixed(1), cy: cy.toFixed(1), r: 4, fill: col, opacity: 0.85 }));
+        }
+      });
+    });
+    if (!any) txt(svg, 'Champions appear here as they are admitted.', L + 12, T + 24, { 'font-size': 12 });
+    else if (wx[1] - wx[0] < 0.999 || wy[1] - wy[0] < 0.999) {
+      txt(svg, 'zoomed \u2014 each axis runs 0 to 1', W - R - 8, T + 14,
+        { 'font-size': 10.5, 'text-anchor': 'end', fill: 'var(--near)' });
+    }
+  }
+
+  // ── champion selection ───────────────────────────────────────────────────
+  function fillSources(p) {
+    var sel = $('source');
+    var n = p ? p.pools.reduce(function (a, x) { return a + x.members.length; }, 0) : 0;
+    var want = Math.max(0, Math.min(8, n));
+    if (sel._n === want) return;
+    sel._n = want;
+    var keep = sel.value;
+    sel.replaceChildren();
+    var o = document.createElement('option');
+    o.value = 'leader'; o.textContent = 'the current gate leader';
+    sel.appendChild(o);
+    for (var i = 1; i <= want; i++) {
+      var oo = document.createElement('option');
+      oo.value = String(i);
+      oo.textContent = 'champion ' + i;
+      sel.appendChild(oo);
+    }
+    var un = document.createElement('option');
+    un.value = 'untrained'; un.textContent = 'an untrained controller';
+    sel.appendChild(un);
+    if (Array.prototype.some.call(sel.options, function (x) { return x.value === keep; })) sel.value = keep;
+  }
+
+  function loadSource() {
+    var tr = S.trainer;
+    if (!tr) return;
+    var v = $('source').value;
+    S.source = v;
+    if (v === 'leader') {
+      if (tr.leader) {
+        setStage(tr.record(tr.leader, tr.leaderGate.seconds, poseSeed(), 0),
+          'gate leader \u2014 ' + tr.leaderGate.name + ', generation ' + Math.max(0, tr.gen - 1), true);
+      } else { showUntrained(); return; }
+    } else if (v === 'untrained') {
+      showUntrained();
+      return;
+    } else {
+      var champs = tr.pools.champions();
+      if (!champs.length) { showUntrained(); return; }
+      var c = champs[Math.min(+v - 1, champs.length - 1)];
+      setStage(tr.record(c.genes, LD.OBJECTIVE.seconds, poseSeed(), 0),
+        'champion ' + v + (c.fossil ? ' (fossil)' : '') + ' \u2014 cycle ' + c.cycle + ', generation ' + c.gen, true);
+    }
+    renderBrain(S.stage.rec);
+    renderGait(S.stage.rec);
+    renderReadout(S.stage.rec);
+  }
+
+  // ── audit ────────────────────────────────────────────────────────────────
+  async function runAudit() {
+    var tr = S.trainer;
+    if (!tr) return;
+    var btn = $('auditbtn');
+    var champs = tr.pools.champions().slice(0, 8);
+    var box = $('audit');
+    box.replaceChildren();
+    if (!champs.length) {
+      box.textContent = 'No champions yet. Champions are admitted once the first elites are measured on the objective.';
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Auditing\u2026';
+    var seeds = 12, bar = 0.4, G = tr.G;
+    var genes = new Float64Array(champs.length * G);
+    champs.forEach(function (c, i) { genes.set(c.genes, i * G); });
+    var spd = [], up = [];
+    for (var i = 0; i < champs.length; i++) { spd.push([]); up.push([]); }
+    for (var j = 0; j < seeds; j++) {
+      var m = await S.ev.evaluate(genes, champs.length, LD.OBJECTIVE.seconds, 1000 + 137 * j);
+      for (i = 0; i < champs.length; i++) {
+        spd[i].push(m[i * LD.N_METRICS + LD.M.speed]);
+        up[i].push(m[i * LD.N_METRICS + LD.M.survive]);
+      }
+      await LDE.yieldMacro();
+    }
+    btn.disabled = false;
+    btn.textContent = 'Audit all champions';
+
+    var p = document.createElement('p');
+    p.className = 'chart-title';
+    p.textContent = 'Each champion from ' + seeds + ' fresh starting poses. "Works" is how often ' +
+      'the gait starts at all (over ' + bar + ' m/s).';
+    box.appendChild(p);
+    var tb = document.createElement('table');
+    tb.innerHTML = '<thead><tr><th>champion</th><th>works</th><th>median</th><th>best</th>' +
+      '<th>worst</th><th>upright</th><th>per pose</th></tr></thead>';
+    var body = document.createElement('tbody');
+    champs.forEach(function (c, i) {
+      var v = spd[i].slice().sort(function (a, b) { return a - b; });
+      var med = v.length % 2 ? v[(v.length - 1) / 2] : 0.5 * (v[v.length / 2 - 1] + v[v.length / 2]);
+      var works = spd[i].filter(function (x) { return x > bar; }).length / seeds;
+      var upm = up[i].reduce(function (a, b) { return a + b; }, 0) / seeds;
+      var spark = spd[i].map(function (x) { return x > bar ? '\u2588' : (x > bar / 2 ? '\u2592' : '\u00b7'); }).join('');
+      var tr2 = document.createElement('tr');
+      tr2.innerHTML = '<td>' + (i + 1) + (c.fossil ? ' (fossil)' : '') + '</td>' +
+        '<td>' + Math.round(works * 100) + '%</td>' +
+        '<td>' + med.toFixed(2) + '</td><td>' + v[v.length - 1].toFixed(2) + '</td>' +
+        '<td>' + v[0].toFixed(2) + '</td><td>' + Math.round(upm * 100) + '%</td>' +
+        '<td class="spark">' + spark + '</td>';
+      body.appendChild(tr2);
+    });
+    tb.appendChild(body);
+    box.appendChild(tb);
+  }
+
+  // ── report, save, load ───────────────────────────────────────────────────
+  async function copyReport() {
+    var b = $('copy');
+    if (!S.trainer) return;
+    var text = LDT.reportText(S.trainer, buildNote());
+    var ok = false;
+    try { await navigator.clipboard.writeText(text); ok = true; } catch (e) { ok = false; }
+    if (!ok) {
+      var ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { ok = document.execCommand('copy'); } catch (e2) { ok = false; }
+      ta.remove();
+    }
+    b.textContent = ok ? 'Copied' : 'Copy failed \u2014 see the panel below';
+    b.classList.toggle('copied', ok);
+    if (!ok) { $('reportbox').open = true; $('report').textContent = text; }
+    setTimeout(function () { b.textContent = 'Copy report'; b.classList.remove('copied'); }, 2600);
+  }
+
+  function download(name, text, mime) {
+    var blob = new Blob([text], { type: mime || 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+  }
+
+  function saveChampions() {
+    var tr = S.trainer;
+    if (!tr) return;
+    var w = tr.wiring;
+    var rep = tr.pools.report();
+    var payload = {
+      build: 'browser',
+      settings: tr.s,
+      generations: tr.gen,
+      minutes: tr.minutes(),
+      wiring: {
+        n_in: w.nIn, n_inter: w.nInter, n_motor: w.nMotor, seed: tr.s.wiring_seed,
+        description: w.describe,
+        in_rows: Array.from(w.inRows), in_cols: Array.from(w.inCols),
+        rec_rows: Array.from(w.recRows), rec_cols: Array.from(w.recCols)
+      },
+      pools: rep.pools.map(function (p) {
+        return {
+          kind: p.kind, diversity: p.diversity, collapsed: p.collapsed,
+          bar: p.bar, bar_drops: p.bar_drops, admits: p.admits,
+          members: p.members.map(function (m) {
+            return {
+              score: m.score, speed: m.speed, footfall: m.footfall,
+              sturdiness: m.sturdiness, gen: m.gen, cycle: m.cycle,
+              fossil: m.fossil, descriptor: m.descriptor
+            };
+          })
+        };
+      }),
+      champions: tr.pools.champions().map(function (m) {
+        return {
+          score: m.score, speed: m.speed, footfall: m.footfall,
+          sturdiness: m.sturdiness, gen: m.gen, cycle: m.cycle, fossil: m.fossil,
+          descriptor: Array.prototype.slice.call(m.descriptor),
+          genes: Array.prototype.slice.call(m.genes)
+        };
+      })
+    };
+    download('champions.json', JSON.stringify(payload, null, 1));
+  }
+
+  function saveHistory() {
+    var tr = S.trainer;
+    if (!tr || !tr.history.length) return;
+    var cols = Object.keys(tr.history[0]);
+    var lines = [cols.join(',')];
+    tr.history.forEach(function (t) {
+      lines.push(cols.map(function (c) {
+        var v = t[c];
+        return typeof v === 'number' ? v.toFixed(4) : String(v);
+      }).join(','));
+    });
+    download('history.csv', lines.join('\n') + '\n', 'text/csv');
+  }
+
+  function loadChampions(file) {
+    var fr = new FileReader();
+    fr.onload = function () {
+      var msg = $('loadmsg');
+      var data;
+      try { data = JSON.parse(String(fr.result)); } catch (e) { msg.textContent = 'That file is not JSON.'; return; }
+      var tr = S.trainer;
+      if (!tr) { msg.textContent = 'Nothing to load into yet.'; return; }
+      var champs = data.champions || [];
+      if (!champs.length) { msg.textContent = 'No champions in that file.'; return; }
+      var G = tr.G;
+      var wrong = champs.filter(function (c) { return !c.genes || c.genes.length !== G; }).length;
+      if (wrong === champs.length) {
+        msg.textContent = 'Those genomes are ' + (champs[0].genes || []).length + ' genes and this brain takes ' +
+          G + '. A genome only means anything against the wiring it evolved in \u2014 set the same morphology, ' +
+          'interneurons and wiring seed, then load again.';
+        return;
+      }
+      var loaded = 0;
+      champs.forEach(function (c) {
+        if (!c.genes || c.genes.length !== G) return;
+        var m = {
+          genes: Float64Array.from(c.genes),
+          descriptor: Float64Array.from(c.descriptor || [0, 0, 0, 0, 0, 0]),
+          score: c.score || 0, sturdiness: c.sturdiness || 0, speed: c.speed || 0,
+          footfall: c.footfall || 0, gen: c.gen || 0, cycle: c.cycle || 1,
+          fossil: !!c.fossil
+        };
+        tr.pools.offer(m);
+        loaded++;
+      });
+      msg.textContent = 'Loaded ' + loaded + ' champion' + (loaded === 1 ? '' : 's') +
+        ' into the pools' + (wrong ? ' (' + wrong + ' skipped, wrong genome length)' : '') +
+        '. Pick one above to watch it.';
+      S.dirty = true;
+      render();
+    };
+    fr.readAsText(file);
+  }
+
+  // ── wiring up ────────────────────────────────────────────────────────────
+  function init() {
+    fillSettings();
+    var hw = 1;
+    try { hw = navigator.hardwareConcurrency || 2; } catch (e) { hw = 2; }
+    var ts = $('threads');
+    for (var i = 1; i <= Math.max(2, Math.min(12, hw)); i++) {
+      var o = document.createElement('option');
+      o.value = String(i);
+      o.textContent = i === 1 ? '1 thread' : i + ' threads';
+      ts.appendChild(o);
+    }
+    ts.value = String(Math.max(1, Math.min(12, hw)));
+
+    var xsel = $('bx'), ysel = $('by');
+    LD.DESCRIPTOR_NAMES.forEach(function (n, i) {
+      [xsel, ysel].forEach(function (sel) {
+        var o2 = document.createElement('option');
+        o2.value = String(i); o2.textContent = n;
+        sel.appendChild(o2);
+      });
+    });
+    xsel.value = '4'; ysel.value = '0';
+    xsel.addEventListener('change', function () { S.bspace.x = +xsel.value; S.dirty = true; render(); });
+    ysel.addEventListener('change', function () { S.bspace.y = +ysel.value; S.dirty = true; render(); });
+
+    $('go').addEventListener('click', start);
+    $('halt').addEventListener('click', function () {
+      S.stopRequested = true;
+      $('halt').disabled = true;
+      $('s-hint').textContent = 'Stopping after this generation. Champions are kept.';
+    });
+    $('copy').addEventListener('click', copyReport);
+    $('play').addEventListener('click', function () {
+      S.stage.playing = !S.stage.playing;
+      $('play').textContent = S.stage.playing ? 'Pause' : 'Play';
+    });
+    $('source').addEventListener('change', loadSource);
+    $('poseseed').addEventListener('change', loadSource);
+    $('auditbtn').addEventListener('click', runAudit);
+    $('savebtn').addEventListener('click', saveChampions);
+    $('csvbtn').addEventListener('click', saveHistory);
+    $('loadinput').addEventListener('change', function (e) {
+      if (e.target.files && e.target.files[0]) loadChampions(e.target.files[0]);
+    });
+    $('speed').addEventListener('input', function (e) {
+      S.speedMul = +e.target.value;
+      $('speedlabel').textContent = S.speedMul === 1 ? 'real time' : S.speedMul.toFixed(1) + '\u00d7';
+    });
+    $('reportbox').addEventListener('toggle', function () {
+      if ($('reportbox').open && S.trainer) $('report').textContent = LDT.reportText(S.trainer, buildNote());
+    });
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) { S.dirty = true; render(); }
+    });
+    // the stage and the charts are sized from their elements, so a rotation or
+    // a window drag has to redraw them
+    var resizeT = null;
+    window.addEventListener('resize', function () {
+      if (resizeT) clearTimeout(resizeT);
+      resizeT = setTimeout(function () {
+        resizeT = null;
+        drawStage();
+        S.dirty = true;
+        render();
+      }, 120);
+    });
+
+    // Changing the body or the brain changes the untrained dog on the stage,
+    // so show that straight away rather than waiting for a run.
+    var rebuild = null;
+    document.querySelectorAll('#settings [name=morphology], #settings [name=interneurons], ' +
+      '#settings [name=wiring_seed], #settings [name=seed]').forEach(function (f) {
+      f.addEventListener('change', function () {
+        if (S.running || S.booting) return;
+        clearTimeout(rebuild);
+        rebuild = setTimeout(async function () {
+          await boot(readSettings(), +$('threads').value || 0);
+          showUntrained();
+          S.dirty = true;
+          render();
+        }, 60);
+      });
+    });
+
+    boot(readSettings(), +$('threads').value || 0).then(function () {
+      showUntrained();
+      S.dirty = true;
+      render();
+      requestAnimationFrame(function (t) { S.lastT = t; animate(t); });
+    });
+  }
+
+  // a handle for the console: LDUI.state.trainer, LDUI.state.ev.mode, LDUI.render()
+  window.LDUI = { state: S, render: function () { S.dirty = true; render(); } };
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>
+</body>
+</html>
