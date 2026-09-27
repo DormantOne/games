@@ -1,0 +1,303 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ternary XOR — auditable discrete credit flow</title>
+<style>
+:root{--ink:#eaf2ff;--muted:#9fb1c7;--bg:#08111d;--panel:#0e1a29;--panel2:#111f31;--line:#24354a;--cyan:#52d3d8;--lime:#a9e34b;--amber:#ffcb6b;--red:#ff7b86;--blue:#6ea8fe;--shadow:0 18px 50px rgba(0,0,0,.28)}
+*{box-sizing:border-box}html{color-scheme:dark}body{margin:0;background:radial-gradient(circle at 15% -10%,#12314a 0,transparent 38%),var(--bg);color:var(--ink);font:15px/1.55 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}button{font:inherit}.wrap{width:min(1220px,calc(100% - 32px));margin:auto}.hero{padding:48px 0 24px}.eyebrow{color:var(--cyan);font:700 12px/1.2 ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.14em;text-transform:uppercase}.hero h1{max-width:890px;margin:10px 0 12px;font-size:clamp(34px,5vw,64px);line-height:1.02;letter-spacing:-.045em}.hero p{max-width:820px;margin:0;color:var(--muted);font-size:17px}.bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:16px 0 28px}.btn{border:1px solid transparent;border-radius:10px;padding:11px 16px;font-weight:750;cursor:pointer;background:var(--cyan);color:#062025;box-shadow:0 8px 24px rgba(82,211,216,.18)}.btn.secondary{background:transparent;color:var(--ink);border-color:var(--line);box-shadow:none}.btn:disabled{opacity:.38;cursor:not-allowed}.status{margin-left:auto;color:var(--muted);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13px}.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}.card{grid-column:span 12;background:linear-gradient(180deg,rgba(17,31,49,.96),rgba(12,24,38,.96));border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:var(--shadow)}.card h2{font-size:19px;margin:0 0 12px}.card h3{font-size:15px;margin:18px 0 8px;color:var(--cyan)}.card p{margin:8px 0;color:var(--muted)}.card strong{color:var(--ink)}.half{grid-column:span 6}.third{grid-column:span 4}.metric{display:flex;flex-direction:column;min-height:145px;justify-content:space-between}.metric .big{font-size:42px;font-weight:850;letter-spacing:-.04em}.metric .label{color:var(--muted);font-size:13px}.pill{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;padding:5px 9px;color:var(--muted);font:12px ui-monospace,SFMono-Regular,Consolas,monospace}.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}.ok .dot{background:var(--lime);box-shadow:0 0 13px var(--lime)}.warn .dot{background:var(--amber)}.fail .dot{background:var(--red)}.callout{border-left:3px solid var(--amber);background:rgba(255,203,107,.07);padding:12px 14px;border-radius:0 10px 10px 0;color:#e8d6ae}.formula{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;color:#d8e5f6;background:#091421;border:1px solid var(--line);border-radius:9px;padding:10px 12px;overflow:auto}.steps{margin:9px 0 0;padding-left:20px;color:var(--muted)}.steps li{margin:6px 0}.tableWrap{overflow:auto;border:1px solid var(--line);border-radius:11px;max-height:500px}table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}th{position:sticky;top:0;background:#132238;color:#bcd0e8;z-index:1;font:700 11px ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:.07em;text-transform:uppercase}tbody tr:hover{background:rgba(82,211,216,.045)}.mono{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.pass{color:var(--lime);font-weight:800}.bad{color:var(--red);font-weight:800}.neutral{color:var(--amber)}canvas{display:block;width:100%;height:220px;background:#091421;border:1px solid var(--line);border-radius:11px}.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:9px;color:var(--muted);font-size:12px}.swatch{display:inline-block;width:16px;height:3px;margin-right:6px;vertical-align:middle;background:var(--cyan)}.audit{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.auditItem{display:flex;gap:9px;align-items:flex-start;border:1px solid var(--line);border-radius:10px;padding:10px;background:#0a1624}.auditItem b{display:block}.auditItem small{color:var(--muted)}.footer{padding:28px 0 46px;color:var(--muted);font-size:12px}.hidden{display:none}@media(max-width:850px){.half,.third{grid-column:span 12}.status{width:100%;margin:4px 0 0}.audit{grid-template-columns:1fr}.hero{padding-top:30px}}
+</style>
+</head>
+<body>
+<header class="wrap hero">
+  <div class="eyebrow">single-file • offline • deterministic</div>
+  <h1>Ternary XOR, with every credit visible.</h1>
+  <p>A strict 0/1/2 inference network with exactly three incoming connections per trainable neuron. The page trains independent widths, identifies the smallest repeatable width, and exposes every epoch’s losses, layer credits, accumulator changes, and stored-weight transitions.</p>
+</header>
+<main class="wrap">
+  <div class="bar">
+    <button class="btn" id="runBtn">Run reproducible sweep</button>
+    <button class="btn secondary" id="testBtn" disabled>Verify 4/4 XOR</button>
+    <span class="status" id="status">Ready · verification locked until training</span>
+  </div>
+
+  <section class="grid">
+    <article class="card half">
+      <div class="eyebrow">Strict contract</div>
+      <h2>What remains ternary</h2>
+      <ul class="steps">
+        <li><strong>Stored connection weights:</strong> only 0, 1, or 2. A centered view <span class="mono">w−1</span> gives −1, 0, or +1 only during a connection calculation.</li>
+        <li><strong>Communicated signals:</strong> only 0, 1, or 2. Trainable neurons emit 0 or 2; constant buses provide 0 or 1.</li>
+        <li><strong>Fan-in:</strong> every trainable hidden and output neuron has exactly three incoming connections. Input and constant buses are not neurons.</li>
+        <li><strong>Arithmetic:</strong> pre-activation sums and credit memory are local integer state; neither is sent as a neuron signal.</li>
+      </ul>
+    </article>
+    <article class="card half">
+      <div class="eyebrow">Explicit mathematical limitation</div>
+      <h2>Why ordinary chain-rule gradients stop</h2>
+      <div class="callout">For the hard neuron <span class="mono">q(z)=2 when z&gt;0, otherwise 0</span>, the derivative is zero away from the boundary and undefined at the boundary. With integer pre-activations, a strict calculus gradient cannot carry useful credit through this node.</div>
+      <p><strong>This page does not pretend otherwise.</strong> It uses the clearly labeled discrete layerwise credit-assignment fallback below. Its bounded integer accumulator is learning memory, not a stored connection weight and not a communicated activation.</p>
+    </article>
+
+    <article class="card">
+      <div class="eyebrow">Learning rule</div>
+      <h2>Discrete layerwise credit assignment with integer memory</h2>
+      <div class="formula">output credit: cₒ = (target − output) / 2 ∈ {−1,0,1}<br>hidden reference: rᵢ = 2 only for the responsible hidden unit on a target-2 case; otherwise 0<br>hidden credit: cᵢ = (rᵢ − hᵢ) / 2 ∈ {−1,0,1}<br>connection memory: A ← clamp(A + credit × source, −12, 12)<br>stored weight: w = 0 if A&lt;0, 1 if A=0, 2 if A&gt;0</div>
+      <p>The responsible unit is determined by the fixed integer routing expression <span class="mono">(x₁/2 + 2·x₂/2 + seed) mod width</span>. This only routes backward credit; it never writes a weight. Each architecture begins from its own seeded integer memory and learns every connection through the update above. All widths run exactly 40 epochs for every seed.</p>
+    </article>
+
+    <article class="card third metric"><div><div class="eyebrow">Smallest width</div><div class="big" id="minWidth">—</div></div><div class="label" id="minWidthNote">Run training to measure.</div></article>
+    <article class="card third metric"><div><div class="eyebrow">Fixed seeds passed</div><div class="big" id="seedPass">—</div></div><div class="label">Seeds: 11, 29, 47, 83, 101</div></article>
+    <article class="card third metric"><div><div class="eyebrow">Verifier</div><div class="big" id="verifyMetric">Locked</div></div><div class="label" id="verifyNote">The button becomes available after training.</div></article>
+
+    <article class="card">
+      <div class="eyebrow">Independent architecture sweep</div>
+      <h2>Widths × fixed seeds</h2>
+      <div class="tableWrap"><table><thead><tr><th>Hidden</th><th>Seed</th><th>Epochs</th><th>Final loss</th><th>Outputs 00 · 02 · 20 · 22</th><th>Score</th><th>Result</th></tr></thead><tbody id="sweepBody"><tr><td colspan="7" class="neutral">No run yet.</td></tr></tbody></table></div>
+    </article>
+
+    <article class="card half">
+      <div class="eyebrow">Representative trained run</div>
+      <h2 id="truthTitle">XOR truth table</h2>
+      <div class="tableWrap"><table><thead><tr><th>x₁</th><th>x₂</th><th>Target</th><th>Hidden signals</th><th>Output</th><th>Check</th></tr></thead><tbody id="truthBody"><tr><td colspan="6" class="neutral">Awaiting training.</td></tr></tbody></table></div>
+    </article>
+    <article class="card half">
+      <div class="eyebrow">Loss history</div>
+      <h2>Discrete error by epoch</h2>
+      <canvas id="lossChart" width="760" height="260" aria-label="Loss history chart"></canvas>
+      <div class="legend"><span><i class="swatch"></i>post-update mean normalized squared error</span><span>0 = 4/4 correct</span></div>
+    </article>
+
+    <article class="card">
+      <div class="eyebrow">Connection audit</div>
+      <h2>Exactly three inputs and final stored weights</h2>
+      <div class="tableWrap"><table><thead><tr><th>Neuron</th><th>Incoming source 1</th><th>w</th><th>Incoming source 2</th><th>w</th><th>Incoming source 3</th><th>w</th></tr></thead><tbody id="connectionBody"><tr><td colspan="7" class="neutral">Awaiting training.</td></tr></tbody></table></div>
+    </article>
+
+    <article class="card">
+      <div class="eyebrow">Epoch ledger</div>
+      <h2>Loss, layer credits, and connection changes</h2>
+      <p>Credits are shown in XOR case order <span class="mono">00 · 02 · 20 · 22</span>. A stored-weight transition is listed as <span class="mono">name:old→new</span>; integer-memory increments are summed per layer.</p>
+      <div class="tableWrap"><table><thead><tr><th>Epoch</th><th>Loss before</th><th>Loss after</th><th>Output credits</th><th>Hidden credits by case</th><th>Σ|ΔA| hidden / output</th><th>Stored-weight changes</th></tr></thead><tbody id="epochBody"><tr><td colspan="7" class="neutral">Awaiting training.</td></tr></tbody></table></div>
+    </article>
+
+    <article class="card">
+      <div class="eyebrow">Runtime checks</div>
+      <h2>Constraint and repeatability audit</h2>
+      <div class="audit" id="auditGrid"><div class="auditItem"><span class="pill warn"><i class="dot"></i>pending</span><div><b>Not run</b><small>Start the sweep to execute checks.</small></div></div></div>
+    </article>
+  </section>
+</main>
+<footer class="wrap footer">No libraries, network calls, modules, workers, storage, or server are required. Save this file and open it directly with a browser.</footer>
+<script>
+'use strict';
+const CASES = Object.freeze([
+  Object.freeze({x:Object.freeze([0,0]), t:0, tag:'00'}),
+  Object.freeze({x:Object.freeze([0,2]), t:2, tag:'02'}),
+  Object.freeze({x:Object.freeze([2,0]), t:2, tag:'20'}),
+  Object.freeze({x:Object.freeze([2,2]), t:0, tag:'22'})
+]);
+const SEEDS = Object.freeze([11,29,47,83,101]);
+const WIDTHS = Object.freeze([1,2,3]);
+const EPOCHS = 40;
+let completedRuns = [];
+let representative = null;
+
+function rng32(seed){
+  let a = seed >>> 0;
+  return function(){
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function clampInt(v){ return Math.max(-12, Math.min(12, Math.trunc(v))); }
+function storedFromMemory(a){ return a < 0 ? 0 : (a > 0 ? 2 : 1); }
+function centered(w){ return w - 1; }
+function hardSignal(z){ return z > 0 ? 2 : 0; }
+function vectorEqual(a,b){ return a.length===b.length && a.every((v,i)=>v===b[i]); }
+function fmt(n){ return Number(n).toFixed(2); }
+function safeText(v){ return String(v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+class TernaryNet{
+  constructor(width,seed){
+    this.width=width; this.seed=seed;
+    const draw=rng32((seed ^ Math.imul(width,0x9E3779B1))>>>0);
+    this.memory=Array.from({length:width+1},()=>Array.from({length:3},()=>Math.floor(draw()*5)-2));
+    this.weights=this.memory.map(row=>row.map(storedFromMemory));
+    this.ledger=[];
+  }
+  sync(){ this.weights=this.memory.map(row=>row.map(storedFromMemory)); }
+  outputSources(h){
+    if(this.width===1) return [h[0],0,1];
+    if(this.width===2) return [h[0],h[1],1];
+    return [h[0],h[1],h[2]];
+  }
+  outputLabels(){
+    if(this.width===1) return ['h0','const-0','bias-1'];
+    if(this.width===2) return ['h0','h1','bias-1'];
+    return ['h0','h1','h2'];
+  }
+  forward(x){
+    const input=[x[0],x[1],1];
+    const hz=[]; const h=[];
+    for(let i=0;i<this.width;i++){
+      const z=input.reduce((sum,s,j)=>sum+centered(this.weights[i][j])*s,0);
+      hz.push(z); h.push(hardSignal(z));
+    }
+    const os=this.outputSources(h);
+    const ow=this.weights[this.width];
+    const oz=os.reduce((sum,s,j)=>sum+centered(ow[j])*s,0);
+    return {input,hz,h,os,oz,o:hardSignal(oz)};
+  }
+  evaluate(){
+    const rows=CASES.map(c=>({case:c,...this.forward(c.x)}));
+    const loss=rows.reduce((s,r)=>s+((r.o-r.case.t)*(r.o-r.case.t)/4),0)/CASES.length;
+    return {rows,loss,outputs:rows.map(r=>r.o),score:rows.filter(r=>r.o===r.case.t).length};
+  }
+  route(x){ return ((x[0]/2)+2*(x[1]/2)+this.seed)%this.width; }
+  name(layer,index,conn){ return layer==='h' ? `h${index}.${['x1','x2','b1'][conn]}` : `out.${this.outputLabels()[conn]}`; }
+  trainEpoch(epoch){
+    const before=this.evaluate();
+    const outputCredits=Array(4).fill(0);
+    const hiddenCredits=Array.from({length:4},()=>Array(this.width).fill(0));
+    const changes=[]; let hiddenMemoryMove=0, outputMemoryMove=0;
+    const shift=(this.seed+epoch)%4;
+    const order=[0,1,2,3].slice(shift).concat([0,1,2,3].slice(0,shift));
+    for(const k of order){
+      const c=CASES[k]; const f=this.forward(c.x);
+      const co=(c.t-f.o)/2;
+      outputCredits[k]=co;
+      const responsible=this.route(c.x);
+      const hc=[];
+      for(let i=0;i<this.width;i++){
+        const ref=(c.t===2 && i===responsible)?2:0;
+        hc.push((ref-f.h[i])/2);
+      }
+      hiddenCredits[k]=hc;
+      const old=this.weights.map(row=>row.slice());
+      for(let j=0;j<3;j++){
+        const d=co*f.os[j];
+        this.memory[this.width][j]=clampInt(this.memory[this.width][j]+d);
+        outputMemoryMove+=Math.abs(d);
+      }
+      for(let i=0;i<this.width;i++){
+        for(let j=0;j<3;j++){
+          const d=hc[i]*f.input[j];
+          this.memory[i][j]=clampInt(this.memory[i][j]+d);
+          hiddenMemoryMove+=Math.abs(d);
+        }
+      }
+      this.sync();
+      for(let i=0;i<this.width;i++) for(let j=0;j<3;j++) if(old[i][j]!==this.weights[i][j]) changes.push(`${this.name('h',i,j)}:${old[i][j]}→${this.weights[i][j]}`);
+      for(let j=0;j<3;j++) if(old[this.width][j]!==this.weights[this.width][j]) changes.push(`${this.name('o',0,j)}:${old[this.width][j]}→${this.weights[this.width][j]}`);
+    }
+    const after=this.evaluate();
+    const record={epoch,before:before.loss,after:after.loss,outputCredits,hiddenCredits,hiddenMemoryMove,outputMemoryMove,changes};
+    this.ledger.push(record); return record;
+  }
+  train(){ for(let e=1;e<=EPOCHS;e++) this.trainEpoch(e); return this; }
+  fanInRows(){
+    const rows=[];
+    for(let i=0;i<this.width;i++) rows.push({neuron:`hidden h${i}`,sources:['x1','x2','bias-1'],weights:this.weights[i]});
+    rows.push({neuron:'output',sources:this.outputLabels(),weights:this.weights[this.width]});
+    return rows;
+  }
+  signature(){ const e=this.evaluate(); return `${this.width}|${this.seed}|${e.outputs.join('')}|${this.weights.flat().join('')}|${this.ledger.map(r=>r.after).join(',')}`; }
+}
+
+function buildSweep(){
+  const runs=[];
+  for(const width of WIDTHS) for(const seed of SEEDS){
+    const net=new TernaryNet(width,seed).train();
+    runs.push({width,seed,net,final:net.evaluate()});
+  }
+  return runs;
+}
+function smallestRepeatable(runs){
+  for(const width of WIDTHS){
+    const group=runs.filter(r=>r.width===width);
+    if(group.length===SEEDS.length && group.every(r=>r.final.score===4)) return width;
+  }
+  return null;
+}
+function renderSweep(runs){
+  const body=document.getElementById('sweepBody');
+  body.innerHTML=runs.map(r=>`<tr><td>${r.width}</td><td>${r.seed}</td><td>${EPOCHS}</td><td>${fmt(r.final.loss)}</td><td class="mono">${r.final.outputs.join(' · ')}</td><td>${r.final.score}/4</td><td class="${r.final.score===4?'pass':'bad'}">${r.final.score===4?'PASS':'FAIL'}</td></tr>`).join('');
+}
+function renderTruth(run){
+  const ev=run.final; document.getElementById('truthTitle').textContent=`XOR truth table · hidden ${run.width} · seed ${run.seed}`;
+  document.getElementById('truthBody').innerHTML=ev.rows.map(r=>`<tr><td>${r.case.x[0]}</td><td>${r.case.x[1]}</td><td>${r.case.t}</td><td class="mono">${r.h.join(' · ')}</td><td>${r.o}</td><td class="${r.o===r.case.t?'pass':'bad'}">${r.o===r.case.t?'correct':'wrong'}</td></tr>`).join('');
+}
+function renderConnections(net){
+  document.getElementById('connectionBody').innerHTML=net.fanInRows().map(r=>`<tr><td>${r.neuron}</td><td>${r.sources[0]}</td><td class="mono">${r.weights[0]}</td><td>${r.sources[1]}</td><td class="mono">${r.weights[1]}</td><td>${r.sources[2]}</td><td class="mono">${r.weights[2]}</td></tr>`).join('');
+}
+function renderEpochs(net){
+  document.getElementById('epochBody').innerHTML=net.ledger.map(r=>{
+    const hc=r.hiddenCredits.map(row=>`[${row.join(',')}]`).join(' ');
+    const wc=r.changes.length?safeText(r.changes.join(' · ')):'—';
+    return `<tr><td>${r.epoch}</td><td>${fmt(r.before)}</td><td>${fmt(r.after)}</td><td class="mono">${r.outputCredits.join(' · ')}</td><td class="mono">${hc}</td><td class="mono">${r.hiddenMemoryMove} / ${r.outputMemoryMove}</td><td class="mono">${wc}</td></tr>`;
+  }).join('');
+}
+function drawLoss(net){
+  const c=document.getElementById('lossChart'),ctx=c.getContext('2d'),dpr=window.devicePixelRatio||1;
+  const cssW=c.clientWidth||760,cssH=220;c.width=Math.floor(cssW*dpr);c.height=Math.floor(cssH*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,cssW,cssH);ctx.fillStyle='#091421';ctx.fillRect(0,0,cssW,cssH);
+  const pad={l:42,r:16,t:16,b:32},w=cssW-pad.l-pad.r,h=cssH-pad.t-pad.b;
+  ctx.strokeStyle='#24354a';ctx.lineWidth=1;ctx.fillStyle='#8fa4bc';ctx.font='11px ui-monospace, monospace';
+  for(let i=0;i<=4;i++){const y=pad.t+h*i/4;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+w,y);ctx.stroke();ctx.fillText((1-i/4).toFixed(2),5,y+4);}
+  [1,10,20,30,40].forEach(e=>{const x=pad.l+w*(e-1)/(EPOCHS-1);ctx.fillText(String(e),x-5,cssH-10);});
+  const vals=net.ledger.map(r=>r.after);ctx.strokeStyle='#52d3d8';ctx.lineWidth=3;ctx.lineJoin='round';ctx.beginPath();
+  vals.forEach((v,i)=>{const x=pad.l+w*i/(vals.length-1),y=pad.t+h*Math.max(0,Math.min(1,v));if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);});ctx.stroke();
+  ctx.fillStyle='#a9e34b';const last=vals[vals.length-1],lx=pad.l+w,ly=pad.t+h*last;ctx.beginPath();ctx.arc(lx,ly,4,0,Math.PI*2);ctx.fill();
+}
+function auditRuns(runs,repeat){
+  const allWeights=runs.every(r=>r.net.weights.flat().every(v=>v===0||v===1||v===2));
+  const fanIn=runs.every(r=>r.net.fanInRows().every(row=>row.sources.length===3&&row.weights.length===3));
+  const signals=runs.every(r=>r.final.rows.every(row=>[...row.input,...row.h,...row.os,row.o].every(v=>v===0||v===1||v===2)));
+  const same=runs.length===repeat.length&&runs.every((r,i)=>r.net.signature()===repeat[i].net.signature());
+  const noEarly=runs.every(r=>r.net.ledger.length===EPOCHS);
+  return [
+    {ok:allWeights,title:'Stored weights are ternary',note:'Every live connection stores 0, 1, or 2.'},
+    {ok:signals,title:'Signals are ternary',note:'All audited input, hidden, constant-bus, and output signals are 0, 1, or 2.'},
+    {ok:fanIn,title:'Fan-in is exactly three',note:'Every trainable neuron exposes three incoming sources and three stored weights.'},
+    {ok:same,title:'Replay is identical',note:'A fresh run produced the same histories, outputs, and final weights.'},
+    {ok:noEarly,title:'Equal training budget',note:`Every width/seed pair completed exactly ${EPOCHS} epochs.`}
+  ];
+}
+function renderAudit(items){
+  document.getElementById('auditGrid').innerHTML=items.map(a=>`<div class="auditItem"><span class="pill ${a.ok?'ok':'fail'}"><i class="dot"></i>${a.ok?'pass':'fail'}</span><div><b>${a.title}</b><small>${a.note}</small></div></div>`).join('');
+}
+function runAll(){
+  const status=document.getElementById('status'),runBtn=document.getElementById('runBtn');runBtn.disabled=true;document.getElementById('testBtn').disabled=true;status.textContent='Training 15 independent runs…';
+  setTimeout(()=>{
+    completedRuns=buildSweep();
+    const min=smallestRepeatable(completedRuns);
+    representative=min===null?completedRuns[0]:completedRuns.find(r=>r.width===min&&r.seed===SEEDS[0]);
+    renderSweep(completedRuns);renderTruth(representative);renderConnections(representative.net);renderEpochs(representative.net);drawLoss(representative.net);
+    document.getElementById('minWidth').textContent=min===null?'none':String(min);
+    document.getElementById('minWidthNote').textContent=min===null?'No width passed every fixed seed.':`${min} hidden neurons passed all five fixed seeds; width 1 did not.`;
+    const group=min===null?[]:completedRuns.filter(r=>r.width===min);
+    document.getElementById('seedPass').textContent=min===null?'0/5':`${group.filter(r=>r.final.score===4).length}/5`;
+    document.getElementById('verifyMetric').textContent='Ready';document.getElementById('verifyNote').textContent='Training is complete; the verifier is now enabled.';
+    const repeat=buildSweep();renderAudit(auditRuns(completedRuns,repeat));
+    document.getElementById('testBtn').disabled=false;runBtn.disabled=false;status.textContent=`Complete · smallest repeatable width: ${min===null?'none':min}`;
+  },20);
+}
+function verify(){
+  if(!representative)return;
+  const ev=representative.net.evaluate(),ok=ev.score===4&&vectorEqual(ev.outputs,[0,2,2,0]);
+  document.getElementById('verifyMetric').textContent=`${ev.score}/4`;
+  document.getElementById('verifyMetric').className=`big ${ok?'pass':'bad'}`;
+  document.getElementById('verifyNote').textContent=ok?'All four cases match XOR after training.':'The trained network did not pass every case.';
+  document.getElementById('status').textContent=ok?'Verifier passed · outputs 0 · 2 · 2 · 0':'Verifier failed';
+}
+document.getElementById('runBtn').addEventListener('click',runAll);
+document.getElementById('testBtn').addEventListener('click',verify);
+window.addEventListener('resize',()=>{if(representative)drawLoss(representative.net);});
+</script>
+</body>
+</html>
