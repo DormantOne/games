@@ -1,0 +1,519 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#02050b">
+  <title>ARES Transfer Lab — Earth to Mars 3D Mission</title>
+  <meta name="description" content="Interactive 3D Sun–Earth–Mars transfer simulator with calibrated orbital physics, precision course corrections, Mars orbit insertion, and probe landing.">
+  <style>
+:root{--ink:#edf7ff;--muted:#8aa3ba;--line:rgba(151,190,219,.17);--panel:rgba(8,18,31,.78);--panel2:rgba(12,29,47,.72);--cyan:#69e6ff;--teal:#65f0ca;--orange:#ff9d51;--red:#ff6b66;--shadow:0 24px 80px rgba(0,0,0,.35)}*{box-sizing:border-box}.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#02050b;color:var(--ink);font-family:Inter,"Segoe UI",Arial,sans-serif}body:before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(circle at 50% 35%,transparent 0,transparent 40%,rgba(0,0,0,.22) 75%,rgba(0,0,0,.58) 100%)}button,input{font:inherit}button{color:inherit}canvas{display:block;width:100%;height:100%;touch-action:none}#viewport{position:fixed;inset:0}.app{position:fixed;inset:0;z-index:2;display:grid;grid-template-columns:280px 1fr 310px;grid-template-rows:76px 1fr 92px;gap:16px;padding:18px;pointer-events:none}.panel,.topbar,.timeline,.objective-card,.view-switcher{pointer-events:auto;background:linear-gradient(145deg,rgba(11,24,41,.86),rgba(5,14,25,.72));border:1px solid var(--line);box-shadow:var(--shadow);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}.topbar{grid-column:1/-1;border-radius:18px;display:flex;align-items:center;padding:0 18px;gap:22px}.brand{display:flex;align-items:center;gap:12px;min-width:240px}.mark{width:38px;height:38px;border:1px solid rgba(105,230,255,.48);border-radius:50%;position:relative;box-shadow:inset 0 0 14px rgba(105,230,255,.12),0 0 22px rgba(105,230,255,.12)}.mark:before,.mark:after{content:"";position:absolute;border-radius:50%;border:1px solid var(--cyan);inset:8px;transform:rotate(-24deg)}.mark:after{inset:17px;background:var(--orange);border:0;box-shadow:0 0 12px var(--orange)}.eyebrow{color:var(--cyan);font-size:10px;font-weight:750;letter-spacing:.19em;text-transform:uppercase}.brand h1{font-size:15px;line-height:1.15;margin:3px 0 0;letter-spacing:.045em}.status-strip{display:grid;grid-template-columns:repeat(4,minmax(100px,1fr));gap:5px;flex:1}.metric{border-left:1px solid var(--line);padding:2px 15px}.metric label{display:block;font-size:9px;letter-spacing:.16em;color:var(--muted);text-transform:uppercase;margin-bottom:4px}.metric strong{font-size:13px;font-variant-numeric:tabular-nums}.state{display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:.13em;color:var(--teal);font-weight:750}.state .dot{width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 12px currentColor;animation:pulse 2s infinite}.state.bad{color:var(--red)}.state.good{color:var(--cyan)}.icon-btn{width:38px;height:38px;border:1px solid var(--line);background:rgba(255,255,255,.035);border-radius:11px;cursor:pointer;font-size:17px}.icon-btn:hover{border-color:rgba(105,230,255,.5);background:rgba(105,230,255,.08)}.left-panel,.right-panel{border-radius:18px;padding:19px;align-self:start;max-height:calc(100vh - 202px);overflow:auto}.left-panel{grid-column:1;grid-row:2}.right-panel{grid-column:3;grid-row:2}.panel-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}.panel-title h2{font-size:11px;letter-spacing:.17em;text-transform:uppercase;margin:0}.phase-badge{font-size:9px;padding:6px 8px;border-radius:8px;color:var(--cyan);background:rgba(105,230,255,.09);border:1px solid rgba(105,230,255,.18);letter-spacing:.1em}.stages{position:relative;margin:4px 0 18px}.stages:before{content:"";position:absolute;left:13px;top:14px;bottom:20px;width:1px;background:var(--line)}.stage{position:relative;display:grid;grid-template-columns:28px 1fr;column-gap:10px;padding:8px 0 10px;color:#536a7e;transition:.3s}.stage .node{width:27px;height:27px;border-radius:50%;display:grid;place-items:center;border:1px solid #294057;background:#091422;font-size:9px;font-weight:700;z-index:1}.stage b{font-size:12px;margin-top:2px}.stage small{display:block;font-size:10px;margin-top:4px;color:#536a7e}.stage.active{color:var(--ink)}.stage.active .node{border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 20px rgba(105,230,255,.18)}.stage.active small{color:var(--muted)}.stage.done .node{border-color:var(--teal);background:rgba(101,240,202,.08);color:var(--teal)}.button-primary{width:100%;border:0;border-radius:12px;padding:12px 14px;background:linear-gradient(100deg,#2cbeda,#60dfc0);color:#031018;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;box-shadow:0 10px 28px rgba(66,217,218,.16)}.button-primary:hover{filter:brightness(1.08);transform:translateY(-1px)}.button-primary:disabled{cursor:not-allowed;opacity:.45;filter:saturate(.4);transform:none}.microcopy{margin:10px 1px 0;color:#647e93;font-size:10px;line-height:1.45}.objective-card{position:absolute;left:50%;top:98px;transform:translateX(-50%);width:min(470px,42vw);border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:14px}.objective-icon{width:36px;height:36px;border:1px solid rgba(105,230,255,.28);border-radius:11px;display:grid;place-items:center;color:var(--cyan);background:rgba(105,230,255,.07);font-size:18px}.objective-card b{font-size:12px;display:block;margin-bottom:3px}.objective-card small{font-size:10px;color:var(--muted);line-height:1.35}.view-switcher{position:absolute;left:50%;bottom:113px;transform:translateX(-50%);display:flex;padding:4px;border-radius:12px;gap:2px}.view-switcher button{background:transparent;border:0;border-radius:8px;color:#718ba1;font-size:9px;letter-spacing:.11em;text-transform:uppercase;padding:8px 11px;cursor:pointer}.view-switcher button.active{background:rgba(105,230,255,.11);color:var(--cyan)}.telemetry-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:15px}.telemetry{background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.055);border-radius:11px;padding:10px}.telemetry label{font-size:8px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;display:block;margin-bottom:5px}.telemetry b{font-size:12px;font-variant-numeric:tabular-nums}.guidance{border-top:1px solid var(--line);padding-top:15px}.guidance h3,.sequence-card h3{font-size:9px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;margin:0 0 8px}.guidance p{font-size:10px;line-height:1.5;color:#9ab0c2;margin:0 0 12px}.guidance .good{color:var(--teal)}.guidance .warn{color:var(--orange)}.burn-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.burn-axis{grid-column:1/-1;font-size:8px;letter-spacing:.14em;color:#61788d;text-transform:uppercase;margin-top:5px}.burn-btn{padding:9px 7px;border-radius:9px;border:1px solid var(--line);background:rgba(255,255,255,.025);color:#afc3d3;font-size:9px;cursor:pointer}.burn-btn:hover{border-color:rgba(105,230,255,.45);color:var(--cyan);background:rgba(105,230,255,.07)}.sequence-card{margin-top:15px;padding:12px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.022);transition:.3s}.sequence-card.locked{opacity:.42;filter:saturate(.3)}.sequence-card p{font-size:10px;color:#91a7ba;margin:0 0 10px}.sequence-card button{width:100%;padding:9px;border:1px solid rgba(105,230,255,.28);background:rgba(105,230,255,.07);color:var(--cyan);border-radius:9px;font-size:9px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}.sequence-card button:disabled{cursor:not-allowed}.timeline{grid-column:1/-1;grid-row:3;border-radius:18px;padding:14px 18px;display:grid;grid-template-columns:150px 1fr 270px;align-items:center;gap:20px}.time-controls{display:flex;align-items:center;gap:10px}.time-controls button{width:44px;height:36px;border-radius:10px;border:1px solid var(--line);background:rgba(255,255,255,.03);cursor:pointer;font-size:10px}.time-controls .rate{font-size:11px;color:var(--cyan);font-variant-numeric:tabular-nums}.track-wrap{min-width:0}.track-label{display:flex;justify-content:space-between;font-size:8px;text-transform:uppercase;letter-spacing:.13em;color:var(--muted);margin-bottom:8px}.track{height:5px;background:#132538;border-radius:5px;overflow:hidden;position:relative}.track i{position:absolute;inset:0 auto 0 0;width:0;background:linear-gradient(90deg,#35a7e2,#68efca);border-radius:5px;box-shadow:0 0 12px rgba(105,230,255,.45);transition:width .25s}.range-wrap{display:grid;grid-template-columns:72px 1fr 58px;align-items:center;gap:10px}.range-wrap label{font-size:8px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}input[type=range]{appearance:none;height:3px;border-radius:4px;background:#20384c;outline:0}input[type=range]::-webkit-slider-thumb{appearance:none;width:14px;height:14px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px rgba(105,230,255,.5);cursor:pointer}.range-wrap output{font-size:10px;text-align:right;color:var(--cyan)}.toast{position:fixed;z-index:7;left:50%;top:180px;transform:translate(-50%,-10px);background:rgba(5,16,29,.92);border:1px solid rgba(105,230,255,.32);box-shadow:0 16px 50px rgba(0,0,0,.45);padding:10px 15px;border-radius:10px;color:var(--cyan);font-size:9px;letter-spacing:.12em;text-transform:uppercase;opacity:0;pointer-events:none;transition:.28s}.toast.show{opacity:1;transform:translate(-50%,0)}.loading{position:fixed;inset:0;z-index:20;background:#02050b;display:grid;place-items:center;transition:.6s}.loading.hidden{opacity:0;pointer-events:none}.loader-ring{width:68px;height:68px;border:1px solid #183b52;border-top-color:var(--cyan);border-radius:50%;animation:spin 1.2s linear infinite}.loading p{position:absolute;font-size:9px;letter-spacing:.2em;color:var(--muted);margin-top:105px}.spark{position:fixed;z-index:30;width:5px;height:12px;border-radius:3px;pointer-events:none;animation:spark 1.4s ease-out forwards}dialog{width:min(670px,calc(100vw - 36px));border:1px solid rgba(105,230,255,.22);border-radius:18px;background:#091521;color:var(--ink);box-shadow:0 30px 100px #000;padding:0}dialog::backdrop{background:rgba(0,4,9,.78);backdrop-filter:blur(6px)}.modal-head{display:flex;justify-content:space-between;align-items:center;padding:18px 20px;border-bottom:1px solid var(--line)}.modal-head h2{margin:0;font-size:14px}.modal-body{padding:20px;max-height:70vh;overflow:auto}.modal-body h3{font-size:10px;text-transform:uppercase;letter-spacing:.15em;color:var(--cyan);margin:20px 0 8px}.modal-body h3:first-child{margin-top:0}.modal-body p,.modal-body li{font-size:12px;line-height:1.6;color:#a7bac9}.modal-body a{color:var(--cyan)}.key{display:inline-block;min-width:24px;text-align:center;padding:2px 6px;border:1px solid var(--line);border-radius:5px;background:#101f2e;color:#d7e8f4;font-size:10px}@keyframes spin{to{transform:rotate(360deg)}}@keyframes pulse{50%{opacity:.35;transform:scale(.78)}}@keyframes spark{to{transform:translate(var(--dx),var(--dy)) rotate(480deg);opacity:0}}
+@media(max-width:1050px){.app{grid-template-columns:240px 1fr 265px}.status-strip .metric:nth-child(3){display:none}.status-strip{grid-template-columns:repeat(3,1fr)}.timeline{grid-template-columns:120px 1fr 230px}.objective-card{width:40vw}}@media(max-width:780px){.app{display:block;padding:10px}.topbar{height:60px;padding:0 11px}.brand{min-width:0}.brand h1{font-size:12px}.brand .eyebrow{display:none}.status-strip{margin-left:auto;flex:0}.status-strip .metric{display:none}.status-strip .metric:first-child{display:block;border:0}.state{display:none}.left-panel{position:absolute;left:10px;bottom:82px;width:190px;max-height:220px;padding:12px}.stages{display:none}.left-panel .panel-title{margin-bottom:10px}.right-panel{position:absolute;right:10px;bottom:82px;width:190px;max-height:300px;padding:12px}.telemetry-grid{display:none}.guidance p{font-size:9px}.burn-grid{gap:4px}.burn-btn{padding:7px 4px}.sequence-card{padding:9px;margin-top:8px}.objective-card{top:78px;width:calc(100vw - 20px);max-width:440px}.view-switcher{bottom:78px}.timeline{position:absolute;left:10px;right:10px;bottom:10px;height:60px;padding:10px;grid-template-columns:82px 1fr}.range-wrap{display:none}.track-label{margin-bottom:6px}.icon-btn{width:34px;height:34px}}@media(max-width:520px){.right-panel{display:none}.left-panel{width:180px}.objective-card{padding:10px}.objective-icon{display:none}.view-switcher{right:10px;left:auto;transform:none}.view-switcher button{padding:7px}.metric{padding:0}.brand{gap:7px}.mark{width:31px;height:31px}}
+
+</style>
+</head>
+<body>
+  <div id="viewport" aria-label="Interactive three-dimensional solar system mission view"></div>
+  <div class="loading" id="loading"><div class="loader-ring"></div><p>INITIALIZING FLIGHT DYNAMICS</p></div>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand"><div class="mark" aria-hidden="true"></div><div><div class="eyebrow">Mission simulation</div><h1>ARES TRANSFER LAB</h1></div></div>
+      <div class="status-strip" aria-label="Mission status">
+        <div class="metric"><label>Phase</label><strong id="phaseBadge">READY</strong></div>
+        <div class="metric"><label>Mission elapsed</label><strong id="metValue">T− 00:00</strong></div>
+        <div class="metric"><label>Simulation rate</label><strong id="simRate">6 h/s</strong></div>
+        <div class="metric"><label>Correction Δv</label><strong id="dvValue">0.00 m/s</strong></div>
+      </div>
+      <div class="state" id="missionState"><i class="dot"></i>NOMINAL</div>
+      <button class="icon-btn" id="helpBtn" aria-label="Open mission guide">?</button>
+    </header>
+
+    <aside class="panel left-panel">
+      <div class="panel-title"><h2>Mission sequence</h2><span class="phase-badge">SOL 0</span></div>
+      <div class="stages">
+        <div class="stage active"><span class="node">01</span><div><b>Earth ascent</b><small>Slow throttle ramp</small></div></div>
+        <div class="stage"><span class="node">02</span><div><b>Interplanetary cruise</b><small>≈259 day transfer</small></div></div>
+        <div class="stage"><span class="node">03</span><div><b>Mars approach</b><small>Target 400 km periapsis</small></div></div>
+        <div class="stage"><span class="node">04</span><div><b>Orbital insertion</b><small>Retrograde capture</small></div></div>
+        <div class="stage"><span class="node">05</span><div><b>Probe delivery</b><small>Entry · descent · landing</small></div></div>
+      </div>
+      <button class="button-primary" id="primaryAction">Begin slow launch</button>
+      <p class="microcopy">Launch is intentionally paced over 12 seconds. Planet sizes are enlarged for visibility; dynamics remain in physical kilometers and seconds.</p>
+    </aside>
+
+    <section class="objective-card" aria-live="polite">
+      <div class="objective-icon">◎</div>
+      <div><b id="objectiveText">Departure window open</b><small id="objectiveSub">Launch slowly from Earth, then shape a precise Mars encounter.</small></div>
+    </section>
+
+    <nav class="view-switcher" aria-label="Camera focus">
+      <button data-view="AUTO" class="active">Auto</button><button data-view="SYSTEM">System</button><button data-view="EARTH">Earth</button><button data-view="MARS">Mars</button>
+    </nav>
+
+    <aside class="panel right-panel">
+      <div class="panel-title"><h2>Flight dynamics</h2><span class="phase-badge">LIVE</span></div>
+      <div class="telemetry-grid">
+        <div class="telemetry"><label>Mars range</label><b id="distanceValue">—</b></div>
+        <div class="telemetry"><label>Relative speed</label><b id="speedValue">—</b></div>
+        <div class="telemetry"><label>Altitude</label><b id="altitudeValue">—</b></div>
+        <div class="telemetry"><label>Pred. periapsis</label><b id="closestValue">—</b></div>
+      </div>
+      <div class="guidance">
+        <h3>Precision course correction</h3>
+        <p id="correctionText">Launch to begin navigation solution.</p>
+        <div class="burn-grid">
+          <div class="burn-axis">Along track · <span id="targetValue">target 400 km</span></div>
+          <button class="burn-btn" data-dv="prograde" data-amount="1">− time / +1 m/s</button><button class="burn-btn" data-dv="prograde" data-amount="-1">+ time / −1 m/s</button>
+          <div class="burn-axis">Radial</div>
+          <button class="burn-btn" data-dv="radial" data-amount="1">Out +1 m/s</button><button class="burn-btn" data-dv="radial" data-amount="-1">In −1 m/s</button>
+          <div class="burn-axis">Normal</div>
+          <button class="burn-btn" data-dv="normal" data-amount="0.25">North +0.25</button><button class="burn-btn" data-dv="normal" data-amount="-0.25">South −0.25</button>
+        </div>
+      </div>
+      <div class="sequence-card locked" id="insertionPanel"><h3>Mars orbit insertion</h3><p id="insertionState">Locked until approach</p><button id="insertionBtn" disabled>Arm insertion burn</button></div>
+      <div class="sequence-card locked" id="probePanel"><h3>Probe deployment</h3><p id="probeState">Stowed</p><button id="probeBtn" disabled>Deploy probe</button></div>
+    </aside>
+
+    <footer class="timeline">
+      <div class="time-controls"><button id="pauseBtn" aria-pressed="false">Pause</button><span class="rate" id="rateLabel">6 h/s</span></div>
+      <div class="track-wrap"><div class="track-label"><span>Earth departure</span><span id="progressText">0%</span><span>Mars surface</span></div><div class="track"><i id="missionProgress"></i></div></div>
+      <div class="range-wrap"><label for="rateRange">Time warp</label><input id="rateRange" type="range" min="1" max="21600" step="1" value="21600"><output>1× — 6 h/s</output></div>
+    </footer>
+  </main>
+
+  <div class="toast" id="toast" role="status"></div><div id="liveRegion" class="sr-only" aria-live="assertive"></div>
+
+  <dialog id="helpModal">
+    <div class="modal-head"><h2>Mission guide & model fidelity</h2><button class="icon-btn" id="closeHelp" aria-label="Close guide">×</button></div>
+    <div class="modal-body">
+      <h3>Fly the mission</h3>
+      <ol><li>Begin the slow 12-second launch and wait for trans-Mars injection.</li><li>During cruise, use 0.25–1 m/s impulses to keep the predicted periapsis close to the 400 km target. The default trajectory is already inside the safe corridor.</li><li>At Mars approach, arm the insertion burn. The simulator executes the retrograde burn at detected periapsis.</li><li>Once a stable orbit is reported, deploy the probe. Heat shield, parachute, and powered descent sequence automatically.</li></ol>
+      <p>Drag to orbit the camera and scroll to zoom. Keyboard: <span class="key">W</span>/<span class="key">S</span> prograde, <span class="key">A</span>/<span class="key">D</span> radial, <span class="key">Q</span>/<span class="key">E</span> normal, <span class="key">Space</span> pause.</p>
+      <h3>Physics model</h3>
+      <p>The transfer uses SI-compatible kilometers and seconds, NASA reference radii, semimajor axes, periods, and standard gravitational parameters. Spacecraft propagation uses fourth-order Runge–Kutta integration under solar gravity, adding Mars gravity inside its sphere of influence. The departure is a patched-conic, minimum-energy Hohmann transfer with Mars initially ≈44.34° ahead and a nominal flight time of ≈258.88 days. Course controls apply true impulsive Δv in the local radial, along-track, and orbit-normal frame.</p>
+      <p>For clarity, planetary radii and the spacecraft are visually exaggerated in the system view. Planet orbits are simplified as circular and coplanar. Mars insertion circularizes at detected periapsis. Atmospheric entry uses an exponential Mars atmosphere, drag by ballistic coefficient, parachute deployment logic, and closed-loop terminal descent. It is educational—not operational flight software.</p>
+      <h3>Reference data</h3>
+      <p><a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/" target="_blank" rel="noreferrer">NASA NSSDCA Planetary Fact Sheet</a> · <a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html" target="_blank" rel="noreferrer">Mars Fact Sheet</a> · <a href="https://science.nasa.gov/planetary-science/programs/mars-exploration/mission-timeline/" target="_blank" rel="noreferrer">NASA Mars Mission Timeline</a></p>
+    </div>
+  </dialog>
+  <script>setTimeout(()=>{if(!window.__ARES_READY){const l=document.getElementById('loading');if(l){l.querySelector('p').textContent='3D RUNTIME UNAVAILABLE · CHECK CONNECTION AND RELOAD';l.querySelector('.loader-ring').style.borderTopColor='#ff6b66';}}},8000);</script>
+  <script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+
+// ARES Transfer Lab — educational patched-conic mission simulator.
+// Dynamics are in km, s, and kg-derived standard gravitational parameters.
+const K = {
+  AU: 149_597_870.7,
+  DAY: 86_400,
+  MU_SUN: 1.32712e11,
+  MU_EARTH: 3.9860e5,
+  MU_MARS: 4.2828e4,
+  R_EARTH: 6_371.0,
+  R_MARS: 3_389.5,
+  A_EARTH: 149.598e6,
+  A_MARS: 227.956e6,
+  T_EARTH: 365.256 * 86_400,
+  T_MARS: 686.980 * 86_400,
+  MARS_SOI: 1.10e6,
+  TARGET_ALT: 400
+};
+
+const INITIAL_LOCAL = new THREE.Vector3(4266, 0, 5000); // 200 km parking-orbit radius, b-plane targeting offset.
+const TRANSFER_R0 = K.A_EARTH + INITIAL_LOCAL.x;
+const TRANSFER_A = (TRANSFER_R0 + K.A_MARS) / 2;
+const TRANSFER_TIME = Math.PI * Math.sqrt(TRANSFER_A ** 3 / K.MU_SUN);
+const MARS_PHASE = Math.PI - (2 * Math.PI / K.T_MARS) * TRANSFER_TIME;
+const V_EARTH = Math.sqrt(K.MU_SUN / K.A_EARTH);
+const V_TRANSFER = Math.sqrt(K.MU_SUN * (2 / TRANSFER_R0 - 1 / TRANSFER_A));
+
+const $ = (s) => document.querySelector(s);
+const ui = {
+  phase: $('#phaseBadge'), met: $('#metValue'), simRate: $('#simRate'), distance: $('#distanceValue'),
+  speed: $('#speedValue'), altitude: $('#altitudeValue'), dv: $('#dvValue'), progress: $('#missionProgress'),
+  progressText: $('#progressText'), objective: $('#objectiveText'), objectiveSub: $('#objectiveSub'),
+  action: $('#primaryAction'), pause: $('#pauseBtn'), rate: $('#rateRange'), rateLabel: $('#rateLabel'),
+  closest: $('#closestValue'), target: $('#targetValue'), correction: $('#correctionText'),
+  insertion: $('#insertionPanel'), insertionBtn: $('#insertionBtn'), insertionState: $('#insertionState'),
+  probe: $('#probePanel'), probeBtn: $('#probeBtn'), probeState: $('#probeState'),
+  toast: $('#toast'), loading: $('#loading'), missionState: $('#missionState'),
+  live: $('#liveRegion'), stages: [...document.querySelectorAll('.stage')], viewButtons: [...document.querySelectorAll('[data-view]')],
+  correctionButtons: [...document.querySelectorAll('[data-dv]')]
+};
+
+let scene, camera, renderer, clock;
+let sun, earth, mars, craft, probe, plume, sunGlow, atmosphereEarth, atmosphereMars;
+let earthOrbit, marsOrbit, transferOrbit, localOrbit, trailLine, probeTrailLine;
+let starfield;
+let phase = 'READY';
+let simTime = 0;
+let timeScale = 21_600;
+let paused = false;
+let ascentT = 0;
+let insertionArmed = false;
+let totalDV = 0;
+let prediction = null;
+let lastPredictAt = 0;
+let craftPos = new THREE.Vector3();
+let craftVel = new THREE.Vector3();
+let craftRelPos = null;
+let craftRelVel = null;
+let probeRelPos = null;
+let probeRelVel = null;
+let probeStatus = 'STOWED';
+let orbitElapsed = 0;
+let trail = [];
+let probeTrail = [];
+let lastTrailTime = -Infinity;
+let closestObserved = Infinity;
+let previousMarsRadial = -1;
+let viewMode = 'AUTO';
+let effectiveView = 'EARTH';
+let autoSlowTriggered = false;
+let missionFailedReason = '';
+let toastTimer;
+
+const cameraRig = { azimuth: 0.82, polar: 1.04, distance: 260, target: new THREE.Vector3(), dragging: false, x: 0, y: 0 };
+
+function planetPos(name, t, out = new THREE.Vector3()) {
+  const a = name === 'earth' ? K.A_EARTH : K.A_MARS;
+  const period = name === 'earth' ? K.T_EARTH : K.T_MARS;
+  const phase0 = name === 'earth' ? 0 : MARS_PHASE;
+  const a0 = phase0 + 2 * Math.PI * t / period;
+  return out.set(a * Math.cos(a0), a * Math.sin(a0), 0);
+}
+function planetVel(name, t, out = new THREE.Vector3()) {
+  const a = name === 'earth' ? K.A_EARTH : K.A_MARS;
+  const period = name === 'earth' ? K.T_EARTH : K.T_MARS;
+  const phase0 = name === 'earth' ? 0 : MARS_PHASE;
+  const a0 = phase0 + 2 * Math.PI * t / period;
+  const n = 2 * Math.PI / period;
+  return out.set(-a * n * Math.sin(a0), a * n * Math.cos(a0), 0);
+}
+
+function acceleration(pos, t, includeMars = true) {
+  const r = pos.length();
+  const a = pos.clone().multiplyScalar(-K.MU_SUN / (r * r * r));
+  if (includeMars) {
+    const mp = planetPos('mars', t);
+    const d = pos.clone().sub(mp);
+    const md = d.length();
+    if (md < K.MARS_SOI) a.addScaledVector(d, -K.MU_MARS / (md * md * md));
+  }
+  return a;
+}
+
+function rk4Helio(pos, vel, t, dt, includeMars = true) {
+  const p1 = pos.clone(), v1 = vel.clone();
+  const a1 = acceleration(p1, t, includeMars);
+  const p2 = p1.clone().addScaledVector(v1, dt / 2);
+  const v2 = v1.clone().addScaledVector(a1, dt / 2);
+  const a2 = acceleration(p2, t + dt / 2, includeMars);
+  const p3 = p1.clone().addScaledVector(v2, dt / 2);
+  const v3 = v1.clone().addScaledVector(a2, dt / 2);
+  const a3 = acceleration(p3, t + dt / 2, includeMars);
+  const p4 = p1.clone().addScaledVector(v3, dt);
+  const v4 = v1.clone().addScaledVector(a3, dt);
+  const a4 = acceleration(p4, t + dt, includeMars);
+  pos.addScaledVector(v1, dt / 6).addScaledVector(v2, dt / 3).addScaledVector(v3, dt / 3).addScaledVector(v4, dt / 6);
+  vel.addScaledVector(a1, dt / 6).addScaledVector(a2, dt / 3).addScaledVector(a3, dt / 3).addScaledVector(a4, dt / 6);
+}
+
+function rk4TwoBody(pos, vel, mu, dt, dragFn = null) {
+  const accel = (p, v) => {
+    const r = p.length();
+    const a = p.clone().multiplyScalar(-mu / (r * r * r));
+    if (dragFn) a.add(dragFn(p, v));
+    return a;
+  };
+  const p1 = pos.clone(), v1 = vel.clone(), a1 = accel(p1, v1);
+  const p2 = p1.clone().addScaledVector(v1, dt / 2), v2 = v1.clone().addScaledVector(a1, dt / 2), a2 = accel(p2, v2);
+  const p3 = p1.clone().addScaledVector(v2, dt / 2), v3 = v1.clone().addScaledVector(a2, dt / 2), a3 = accel(p3, v3);
+  const p4 = p1.clone().addScaledVector(v3, dt), v4 = v1.clone().addScaledVector(a3, dt), a4 = accel(p4, v4);
+  pos.addScaledVector(v1, dt / 6).addScaledVector(v2, dt / 3).addScaledVector(v3, dt / 3).addScaledVector(v4, dt / 6);
+  vel.addScaledVector(a1, dt / 6).addScaledVector(a2, dt / 3).addScaledVector(a3, dt / 3).addScaledVector(a4, dt / 6);
+}
+
+function createNoiseTexture(type, size = 1024) {
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const x = c.getContext('2d');
+  const g = x.createLinearGradient(0, 0, 0, size);
+  if (type === 'earth') { g.addColorStop(0, '#0b3e73'); g.addColorStop(.5, '#0c5892'); g.addColorStop(1, '#062d59'); }
+  else if (type === 'mars') { g.addColorStop(0, '#a64427'); g.addColorStop(.5, '#d06a3a'); g.addColorStop(1, '#76291f'); }
+  else { g.addColorStop(0, '#ffdc72'); g.addColorStop(.5, '#ff9f1c'); g.addColorStop(1, '#f35b12'); }
+  x.fillStyle = g; x.fillRect(0, 0, size, size);
+  const seed = type === 'earth' ? 19 : type === 'mars' ? 43 : 71;
+  let s = seed;
+  const rnd = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+  if (type === 'earth') {
+    x.globalAlpha = .92;
+    for (let i = 0; i < 56; i++) {
+      const cx = rnd() * size, cy = (0.13 + rnd() * .74) * size;
+      const rx = (12 + rnd() * 68), ry = (8 + rnd() * 42);
+      x.fillStyle = rnd() > .55 ? '#4f8d52' : '#6f9e50';
+      x.beginPath();
+      for (let k = 0; k < 14; k++) {
+        const a = k / 14 * Math.PI * 2, wobble = .55 + rnd() * .75;
+        const px = cx + Math.cos(a) * rx * wobble, py = cy + Math.sin(a) * ry * wobble;
+        k ? x.lineTo(px, py) : x.moveTo(px, py);
+      }
+      x.closePath(); x.fill();
+    }
+    x.globalAlpha = .33; x.fillStyle = '#fff';
+    for (let i = 0; i < 34; i++) { x.beginPath(); x.ellipse(rnd()*size, rnd()*size, 40+rnd()*110, 2+rnd()*8, rnd(), 0, Math.PI*2); x.fill(); }
+    x.globalAlpha = .65; x.fillRect(0, 0, size, 26); x.fillRect(0, size-28, size, 28);
+  } else if (type === 'mars') {
+    for (let i=0;i<240;i++) {
+      const r=2+rnd()*18; x.globalAlpha=.08+rnd()*.24; x.fillStyle=rnd()>.45?'#401c18':'#f2a05e';
+      x.beginPath(); x.arc(rnd()*size,rnd()*size,r,0,Math.PI*2); x.fill();
+    }
+    x.globalAlpha=.42; x.fillStyle='#f4d5bd'; x.fillRect(0,0,size,17);
+  } else {
+    for (let i=0;i<500;i++){ x.globalAlpha=.05+rnd()*.12;x.fillStyle=rnd()>.5?'#fff4b3':'#d94c12';x.beginPath();x.arc(rnd()*size,rnd()*size,3+rnd()*20,0,Math.PI*2);x.fill(); }
+  }
+  x.globalAlpha = 1;
+  const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4; return tex;
+}
+
+function makeGlowTexture() {
+  const c=document.createElement('canvas'); c.width=c.height=256; const x=c.getContext('2d');
+  const g=x.createRadialGradient(128,128,10,128,128,128); g.addColorStop(0,'rgba(255,235,170,1)'); g.addColorStop(.18,'rgba(255,174,51,.78)'); g.addColorStop(.52,'rgba(255,104,24,.18)'); g.addColorStop(1,'rgba(255,88,20,0)'); x.fillStyle=g; x.fillRect(0,0,256,256); return new THREE.CanvasTexture(c);
+}
+
+function makePlanet(radius, texture, roughness=1) {
+  return new THREE.Mesh(new THREE.SphereGeometry(radius, 64, 48), new THREE.MeshStandardMaterial({ map: texture, roughness, metalness: 0 }));
+}
+
+function createCraft() {
+  const g = new THREE.Group();
+  const metal = new THREE.MeshStandardMaterial({color:0xd7e4ec, metalness:.72, roughness:.27});
+  const dark = new THREE.MeshStandardMaterial({color:0x25313b, metalness:.55, roughness:.34});
+  const gold = new THREE.MeshStandardMaterial({color:0xffc04b, metalness:.78, roughness:.28});
+  const blue = new THREE.MeshStandardMaterial({color:0x184b7a, metalness:.35, roughness:.24, emissive:0x08233a});
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(.35,.42,1.5,16),metal); body.rotation.z=Math.PI/2; g.add(body);
+  const nose=new THREE.Mesh(new THREE.ConeGeometry(.36,.62,16),gold); nose.rotation.z=-Math.PI/2; nose.position.x=.99; g.add(nose);
+  const engine=new THREE.Mesh(new THREE.CylinderGeometry(.23,.32,.36,16),dark); engine.rotation.z=Math.PI/2; engine.position.x=-.91; g.add(engine);
+  [-1,1].forEach(side=>{ const arm=new THREE.Mesh(new THREE.BoxGeometry(.08,.65,.08),metal); arm.position.y=side*.62; g.add(arm); const panel=new THREE.Mesh(new THREE.BoxGeometry(.06,1.6,.72),blue); panel.position.y=side*1.65; g.add(panel); });
+  const dish=new THREE.Mesh(new THREE.SphereGeometry(.28,20,10,0,Math.PI*2,0,Math.PI/2),metal); dish.rotation.z=-Math.PI/2; dish.position.set(.1,0,.46); g.add(dish);
+  const plumeMat=new THREE.MeshBasicMaterial({color:0x69e6ff,transparent:true,opacity:.75,blending:THREE.AdditiveBlending,depthWrite:false});
+  plume=new THREE.Mesh(new THREE.ConeGeometry(.24,1.7,14),plumeMat); plume.rotation.z=Math.PI/2; plume.position.x=-1.8; plume.visible=false; g.add(plume);
+  return g;
+}
+
+function createProbe() {
+  const g=new THREE.Group();
+  const shell=new THREE.Mesh(new THREE.ConeGeometry(.48,.6,20),new THREE.MeshStandardMaterial({color:0xd7a04a,metalness:.6,roughness:.34})); shell.rotation.x=Math.PI; g.add(shell);
+  const cap=new THREE.Mesh(new THREE.CylinderGeometry(.34,.45,.25,20),new THREE.MeshStandardMaterial({color:0xdfe8ed,metalness:.65,roughness:.28})); cap.position.y=.24; g.add(cap);
+  for(let i=0;i<3;i++){const leg=new THREE.Mesh(new THREE.CylinderGeometry(.025,.025,.75,8),new THREE.MeshStandardMaterial({color:0xaebbc5,metalness:.8,roughness:.3}));leg.rotation.z=(i-1)*.62;leg.position.set((i-1)*.26,-.38,0);g.add(leg);}
+  g.visible=false; return g;
+}
+
+function makeOrbit(radius, color, opacity=.35, segments=256) {
+  const pts=[]; for(let i=0;i<=segments;i++){const a=i/segments*Math.PI*2;pts.push(new THREE.Vector3(Math.cos(a)*radius,Math.sin(a)*radius,0));}
+  return new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color,transparent:true,opacity}));
+}
+
+function makeTransferOrbit() {
+  const e=(K.A_MARS-K.A_EARTH)/(K.A_MARS+K.A_EARTH), p=TRANSFER_A*(1-e*e), pts=[];
+  for(let i=0;i<=240;i++){const th=i/240*Math.PI;const r=p/(1+e*Math.cos(th));pts.push(new THREE.Vector3(r*Math.cos(th),r*Math.sin(th),0));}
+  return new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineDashedMaterial({color:0x64d9ff,dashSize:4,gapSize:2,transparent:true,opacity:.5}));
+}
+
+function initScene() {
+  scene=new THREE.Scene(); scene.background=new THREE.Color(0x02050b); scene.fog=new THREE.FogExp2(0x02050b,.0007);
+  camera=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,.01,5000);
+  renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'}); renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setSize(innerWidth,innerHeight); renderer.outputColorSpace=THREE.SRGBColorSpace; renderer.toneMapping=THREE.ACESFilmicToneMapping; renderer.toneMappingExposure=1.18; $('#viewport').appendChild(renderer.domElement);
+  scene.add(new THREE.AmbientLight(0x17345b,.72)); const light=new THREE.PointLight(0xfff1d1,6,0,1); scene.add(light);
+
+  sun=makePlanet(11,createNoiseTexture('sun',512),.82); sun.material.emissive=new THREE.Color(0xff7d16); sun.material.emissiveIntensity=2.2; scene.add(sun);
+  sunGlow=new THREE.Sprite(new THREE.SpriteMaterial({map:makeGlowTexture(),transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));sunGlow.scale.set(42,42,1);scene.add(sunGlow);
+  earth=makePlanet(3.2,createNoiseTexture('earth'),.94); earth.rotation.z=THREE.MathUtils.degToRad(23.44); scene.add(earth);
+  atmosphereEarth=new THREE.Mesh(new THREE.SphereGeometry(3.34,48,32),new THREE.MeshBasicMaterial({color:0x64bfff,transparent:true,opacity:.11,side:THREE.BackSide,blending:THREE.AdditiveBlending}));scene.add(atmosphereEarth);
+  mars=makePlanet(2.6,createNoiseTexture('mars'),1); mars.rotation.z=THREE.MathUtils.degToRad(25.19); scene.add(mars);
+  atmosphereMars=new THREE.Mesh(new THREE.SphereGeometry(2.72,48,32),new THREE.MeshBasicMaterial({color:0xff8454,transparent:true,opacity:.07,side:THREE.BackSide,blending:THREE.AdditiveBlending}));scene.add(atmosphereMars);
+  craft=createCraft(); scene.add(craft); probe=createProbe(); scene.add(probe);
+
+  const sysScale=120/K.A_EARTH;
+  earthOrbit=makeOrbit(K.A_EARTH*sysScale,0x2b8fff,.22);marsOrbit=makeOrbit(K.A_MARS*sysScale,0xff6b42,.22);transferOrbit=makeTransferOrbit();transferOrbit.scale.setScalar(sysScale);transferOrbit.computeLineDistances();scene.add(earthOrbit,marsOrbit,transferOrbit);
+  localOrbit=makeOrbit(8*(K.R_MARS+K.TARGET_ALT)/K.R_MARS,0x70f0d0,.55);localOrbit.visible=false;scene.add(localOrbit);
+  trailLine=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0x72ecff,transparent:true,opacity:.92}));scene.add(trailLine);
+  probeTrailLine=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0xffc95b,transparent:true,opacity:.85}));scene.add(probeTrailLine);
+
+  const starGeo=new THREE.BufferGeometry(), stars=[]; let seed=101; const rnd=()=> (seed=(seed*16807)%2147483647)/2147483647;
+  for(let i=0;i<2400;i++){const r=780+650*rnd(),u=rnd()*2-1,a=rnd()*Math.PI*2,s=Math.sqrt(1-u*u);stars.push(r*s*Math.cos(a),r*s*Math.sin(a),r*u);}
+  starGeo.setAttribute('position',new THREE.Float32BufferAttribute(stars,3));starfield=new THREE.Points(starGeo,new THREE.PointsMaterial({color:0xa9c9ff,size:1.15,sizeAttenuation:false,transparent:true,opacity:.72}));scene.add(starfield);
+  bindControls(); clock=new THREE.Clock(); updateSceneObjects(); window.__ARES_READY=true; animate(); setTimeout(()=>ui.loading.classList.add('hidden'),500);
+}
+
+function bindControls() {
+  addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+  const c=renderer.domElement;
+  c.addEventListener('pointerdown',e=>{cameraRig.dragging=true;cameraRig.x=e.clientX;cameraRig.y=e.clientY;c.setPointerCapture(e.pointerId);});
+  c.addEventListener('pointermove',e=>{if(!cameraRig.dragging)return;cameraRig.azimuth-=(e.clientX-cameraRig.x)*.005;cameraRig.polar=Math.max(.15,Math.min(Math.PI-.15,cameraRig.polar-(e.clientY-cameraRig.y)*.004));cameraRig.x=e.clientX;cameraRig.y=e.clientY;});
+  c.addEventListener('pointerup',()=>cameraRig.dragging=false);c.addEventListener('pointercancel',()=>cameraRig.dragging=false);
+  c.addEventListener('wheel',e=>{e.preventDefault();cameraRig.distance=Math.max(8,Math.min(720,cameraRig.distance*Math.exp(e.deltaY*.001)));},{passive:false});
+  ui.action.addEventListener('click',startLaunch);ui.pause.addEventListener('click',()=>{paused=!paused;ui.pause.textContent=paused?'Resume':'Pause';ui.pause.setAttribute('aria-pressed',String(paused));});
+  ui.rate.addEventListener('input',()=>{timeScale=Number(ui.rate.value);updateRateLabel();});
+  ui.correctionButtons.forEach(b=>b.addEventListener('click',()=>applyCorrection(b.dataset.dv,Number(b.dataset.amount))));
+  ui.insertionBtn.addEventListener('click',()=>{insertionArmed=!insertionArmed;ui.insertionBtn.textContent=insertionArmed?'Insertion armed ✓':'Arm insertion burn';ui.insertionState.textContent=insertionArmed?'AUTO-BURN AT PERIAPSIS':'Waiting for arm';announce(insertionArmed?'Mars orbit insertion armed. Burn will execute at periapsis.':'Mars orbit insertion disarmed.');});
+  ui.probeBtn.addEventListener('click',deployProbe);
+  ui.viewButtons.forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
+  $('#helpBtn').addEventListener('click',()=>$('#helpModal').showModal());$('#closeHelp').addEventListener('click',()=>$('#helpModal').close());
+  addEventListener('keydown',e=>{if(e.target.matches('input,button'))return;const key=e.key.toLowerCase(); if(key===' '){e.preventDefault();ui.pause.click();} if(key==='w')applyCorrection('prograde',1);if(key==='s')applyCorrection('prograde',-1);if(key==='a')applyCorrection('radial',-1);if(key==='d')applyCorrection('radial',1);if(key==='q')applyCorrection('normal',.25);if(key==='e')applyCorrection('normal',-.25);});
+}
+
+function resetMission() {
+  phase='READY';simTime=0;ascentT=0;paused=false;insertionArmed=false;totalDV=0;prediction=null;craftRelPos=craftRelVel=probeRelPos=probeRelVel=null;probeStatus='STOWED';orbitElapsed=0;trail=[];probeTrail=[];lastTrailTime=-Infinity;closestObserved=Infinity;previousMarsRadial=-1;autoSlowTriggered=false;missionFailedReason='';
+  ui.pause.textContent='Pause';ui.action.textContent='Begin slow launch';ui.action.disabled=false;ui.insertionBtn.disabled=true;ui.probeBtn.disabled=true;ui.insertion.classList.add('locked');ui.probe.classList.add('locked');ui.insertionBtn.textContent='Arm insertion burn';ui.insertionState.textContent='Locked until approach';ui.probeState.textContent='Stowed';setRate(21600);setView('AUTO');updateUI();
+}
+
+function startLaunch() {
+  if(phase==='READY'){phase='ASCENT';ascentT=0;ui.action.disabled=true;ui.action.textContent='Launch in progress';setView('AUTO');announce('Liftoff. Slow launch sequence underway.');showToast('LIFTOFF · throttle ramp nominal');}
+  else if(phase==='COMPLETE'||phase==='FAILED'){resetMission();}
+}
+
+function completeAscent() {
+  phase='CRUISE';simTime=0;
+  craftPos.set(K.A_EARTH+INITIAL_LOCAL.x,INITIAL_LOCAL.y,INITIAL_LOCAL.z);
+  const r0=K.A_EARTH+INITIAL_LOCAL.x, a=(r0+K.A_MARS)/2;
+  const v=Math.sqrt(K.MU_SUN*(2/r0-1/a));craftVel.set(0,v,0);
+  trail=[craftPos.clone()];lastTrailTime=0;setRate(21600);prediction=predictApproach(craftPos,craftVel,simTime);updateGuidance();showToast(`TRANS-MARS INJECTION · C3 ${((V_TRANSFER-V_EARTH)**2).toFixed(2)} km²/s²`);announce('Earth departure complete. Cruise phase active. Tiny course correction controls are available.');
+}
+
+function applyCorrection(axis, amountMS) {
+  if(!['CRUISE','APPROACH'].includes(phase)){showToast('Course corrections unlock after injection');return;}
+  const rHat=craftPos.clone().normalize();
+  let dir;
+  if(axis==='prograde') dir=craftVel.clone().normalize();
+  else if(axis==='radial') dir=rHat;
+  else dir=new THREE.Vector3().crossVectors(rHat,craftVel).normalize();
+  craftVel.addScaledVector(dir,amountMS/1000);totalDV+=Math.abs(amountMS);plume.visible=true;setTimeout(()=>plume.visible=false,250);
+  prediction=predictApproach(craftPos,craftVel,simTime);updateGuidance();showToast(`${axis.toUpperCase()} ${amountMS>0?'+':''}${amountMS.toFixed(2)} m/s · predicted ${formatKm(prediction.altitude)} altitude`);announce(`${axis} correction ${amountMS>0?'plus':''} ${amountMS} meters per second applied.`);
+}
+
+function predictApproach(p0,v0,t0) {
+  const p=p0.clone(),v=v0.clone();let t=t0,min=Infinity,minT=t;const maxT=Math.max(TRANSFER_TIME+12*K.DAY,t0+10*K.DAY);let guard=0;
+  while(t<maxT&&guard++<16000){const d=p.distanceTo(planetPos('mars',t));let dt=d<2e6?300:21600;if(d<100000)dt=30;if(t+dt>maxT)dt=maxT-t;rk4Helio(p,v,t,dt,true);t+=dt;const nd=p.distanceTo(planetPos('mars',t));if(nd<min){min=nd;minT=t;}else if(min<1e6&&nd>min*1.08)break;}
+  return {distance:min,altitude:min-K.R_MARS,time:minT};
+}
+
+function updateGuidance() {
+  if(!prediction){ui.closest.textContent='—';ui.correction.textContent='Launch to begin navigation solution.';return;}
+  ui.closest.textContent=formatKm(prediction.altitude)+' alt';const err=prediction.altitude-K.TARGET_ALT;
+  if(Math.abs(err)<120)ui.correction.innerHTML='<b class="good">CORRIDOR NOMINAL</b><br>Hold course. Insertion periapsis is inside the ±120 km gate.';
+  else if(err<0)ui.correction.innerHTML='<b class="warn">PERIAPSIS TOO LOW</b><br>Add a small normal or radial-out burn, then recheck the prediction.';
+  else ui.correction.innerHTML='<b class="warn">PERIAPSIS TOO HIGH</b><br>Use a small normal or radial-in burn, then recheck the prediction.';
+}
+
+function performMOI() {
+  const mp=planetPos('mars',simTime),mv=planetVel('mars',simTime);craftRelPos=craftPos.clone().sub(mp);
+  const rel=craftVel.clone().sub(mv),rhat=craftRelPos.clone().normalize();let tangent=rel.clone().sub(rhat.clone().multiplyScalar(rel.dot(rhat))).normalize();
+  const circular=Math.sqrt(K.MU_MARS/craftRelPos.length()),before=rel.length();craftRelVel=tangent.multiplyScalar(circular);craftVel.copy(mv).add(craftRelVel);phase='ORBIT';orbitElapsed=0;setRate(30);insertionArmed=false;ui.insertionState.textContent=`Captured · Δv ${Math.abs(before-circular).toFixed(2)} km/s`;ui.insertionBtn.disabled=true;ui.probe.classList.remove('locked');ui.probeBtn.disabled=false;showToast(`MARS ORBIT INSERTION · ${Math.round(craftRelPos.length()-K.R_MARS)} km`);announce('Mars orbit insertion complete. Stable orbit confirmed. Probe deployment is available.');
+}
+
+function deployProbe() {
+  if(phase!=='ORBIT')return;probeRelPos=craftRelPos.clone();const rA=probeRelPos.length(),rP=K.R_MARS+18,a=(rA+rP)/2;const vA=Math.sqrt(K.MU_MARS*(2/rA-1/a));const tangent=craftRelVel.clone().normalize();probeRelVel=tangent.multiplyScalar(vA);probeStatus='COAST';probe.visible=true;probeTrail=[probeRelPos.clone()];phase='EDL';setRate(300);ui.probeBtn.disabled=true;ui.probeState.textContent=`Deorbit burn · ${(craftRelVel.length()-vA).toFixed(2)} km/s`;showToast('PROBE RELEASED · deorbit trajectory committed');announce('Probe released. Automated entry descent and landing sequence active.');
+}
+
+function probeDrag(p,v) {
+  const alt=Math.max(0,p.length()-K.R_MARS);if(alt>125)return new THREE.Vector3();
+  const rho=.020*Math.exp(-alt/11.1);let beta=probeStatus==='CHUTE'?7:95;const speed=v.length(),vm=speed*1000;let a=.5*rho*vm*vm/beta/1000;a=Math.min(a,.12);return v.clone().normalize().multiplyScalar(-a);
+}
+
+function integrateSimulation(dtSim) {
+  if(phase==='CRUISE'||phase==='APPROACH'){
+    let remaining=dtSim;
+    while(remaining>0){const marsP=planetPos('mars',simTime);const d=craftPos.distanceTo(marsP);let h=d<150000?5:d<K.MARS_SOI?120:Math.min(21600,remaining);h=Math.min(h,remaining);
+      const relP=craftPos.clone().sub(marsP),relV=craftVel.clone().sub(planetVel('mars',simTime));previousMarsRadial=relP.dot(relV)/Math.max(relP.length(),1);
+      rk4Helio(craftPos,craftVel,simTime,h,true);simTime+=h;remaining-=h;
+      const newMP=planetPos('mars',simTime),newRelP=craftPos.clone().sub(newMP),newRelV=craftVel.clone().sub(planetVel('mars',simTime));const radial=newRelP.dot(newRelV)/Math.max(newRelP.length(),1),dist=newRelP.length();closestObserved=Math.min(closestObserved,dist);
+      if(dist<K.MARS_SOI&&phase==='CRUISE'){phase='APPROACH';ui.insertion.classList.remove('locked');ui.insertionBtn.disabled=false;showToast('MARS SPHERE OF INFLUENCE · insertion available');announce('Mars approach. Arm the insertion burn before periapsis.');}
+      if(dist<150000&&!autoSlowTriggered){autoSlowTriggered=true;setRate(300);showToast('AUTO-SLOW · terminal approach');}
+      if(previousMarsRadial<0&&radial>=0){if(insertionArmed&&dist-K.R_MARS<5000){performMOI();return;} if(dist>K.R_MARS){phase='FAILED';missionFailedReason='Mars flyby: insertion burn was not armed or the periapsis was outside the capture gate.';failMission();return;}}
+      if(dist<=K.R_MARS){phase='FAILED';missionFailedReason='The spacecraft intersected Mars before a capture burn could be completed.';failMission();return;}
+    }
+    if(simTime-lastTrailTime>.45*K.DAY){trail.push(craftPos.clone());if(trail.length>900)trail.shift();lastTrailTime=simTime;}
+  } else if(phase==='ORBIT'||phase==='EDL'){
+    let remaining=dtSim;while(remaining>0){const h=Math.min(phase==='EDL'&&probeStatus!=='COAST'?0.25:2,remaining);rk4TwoBody(craftRelPos,craftRelVel,K.MU_MARS,h);orbitElapsed+=h;
+      if(phase==='EDL'){
+        const alt=probeRelPos.length()-K.R_MARS,speed=probeRelVel.length();
+        if(alt<125&&probeStatus==='COAST'){probeStatus='ENTRY';setRate(20);showToast('ATMOSPHERIC INTERFACE · 125 km');}
+        if(alt<11&&speed<.75&&probeStatus==='ENTRY'){probeStatus='CHUTE';showToast('SUPERSONIC PARACHUTE DEPLOYED');}
+        rk4TwoBody(probeRelPos,probeRelVel,K.MU_MARS,h,probeDrag);
+        const newAlt=probeRelPos.length()-K.R_MARS;
+        if(newAlt<2.2&&probeStatus!=='POWERED'){probeStatus='POWERED';setRate(4);showToast('POWERED DESCENT · terrain relative navigation');}
+        if(probeStatus==='POWERED'){
+          const rhat=probeRelPos.clone().normalize(),vertical=probeRelVel.dot(rhat),target=newAlt<.35?-.004:-.025;const correction=Math.max(0,Math.min(.025,(target-vertical)*.9));probeRelVel.addScaledVector(rhat,correction*h);const lateral=probeRelVel.clone().sub(rhat.clone().multiplyScalar(probeRelVel.dot(rhat)));probeRelVel.addScaledVector(lateral,-Math.min(.8*h,lateral.length()? .8*h:0));
+        }
+        if(newAlt<=0){const touchdown=probeRelVel.length();if(touchdown<.018){probeRelPos.setLength(K.R_MARS);probeRelVel.set(0,0,0);probeStatus='LANDED';phase='COMPLETE';showToast(`TOUCHDOWN · ${Math.round(touchdown*1000)} m/s`);announce('Mission complete. Probe touchdown confirmed.');completeMission();}else{phase='FAILED';missionFailedReason=`Probe impact at ${Math.round(touchdown*1000)} m/s.`;failMission();}return;}
+        if(simTime-lastTrailTime>18){probeTrail.push(probeRelPos.clone());if(probeTrail.length>1200)probeTrail.shift();lastTrailTime=simTime;}
+      }
+      simTime+=h;remaining-=h;
+    }
+  }
+}
+
+function failMission(){paused=true;ui.action.disabled=false;ui.action.textContent='Reset mission';ui.objective.textContent='Mission review required';ui.objectiveSub.textContent=missionFailedReason;showToast('MISSION SAFE MODE');announce(missionFailedReason);}
+function completeMission(){paused=true;ui.action.disabled=false;ui.action.textContent='Fly again';ui.objective.textContent='Surface link established';ui.objectiveSub.textContent='Orbital insertion and safe probe delivery complete.';confetti();}
+function confetti(){for(let i=0;i<24;i++){const s=document.createElement('i');s.className='spark';s.style.left=`${35+Math.random()*30}%`;s.style.top=`${30+Math.random()*25}%`;s.style.setProperty('--dx',`${(Math.random()-.5)*320}px`);s.style.setProperty('--dy',`${-80-Math.random()*240}px`);s.style.background=Math.random()>.5?'#69e6ff':'#ffb24a';document.body.appendChild(s);setTimeout(()=>s.remove(),1500);}}
+
+function phaseIndex(){return {READY:0,ASCENT:0,CRUISE:1,APPROACH:2,ORBIT:3,EDL:4,COMPLETE:5,FAILED:-1}[phase]??0;}
+function setRate(v){timeScale=v;ui.rate.value=String(v);updateRateLabel();}
+function updateRateLabel(){const v=Number(timeScale);ui.rateLabel.textContent=v>=3600?`${(v/3600).toFixed(v%3600?1:0)} h/s`:v>=60?`${(v/60).toFixed(v%60?1:0)} min/s`:`${v}×`;ui.simRate.textContent=ui.rateLabel.textContent;}
+function formatKm(v){if(!Number.isFinite(v))return'—';const a=Math.abs(v);if(a>=1e6)return`${(v/1e6).toFixed(2)}M km`;if(a>=1000)return`${Math.round(v).toLocaleString()} km`;return`${Math.round(v)} km`;}
+function formatMET(s){if(phase==='READY')return'T− 00:00';if(phase==='ASCENT')return`T+ ${String(Math.floor(ascentT/60)).padStart(2,'0')}:${String(Math.floor(ascentT%60)).padStart(2,'0')}`;const d=Math.floor(s/K.DAY),h=Math.floor((s%K.DAY)/3600),m=Math.floor((s%3600)/60);return`${String(d).padStart(3,'0')}d ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;}
+function announce(t){ui.live.textContent=t;}
+function showToast(t){clearTimeout(toastTimer);ui.toast.textContent=t;ui.toast.classList.add('show');toastTimer=setTimeout(()=>ui.toast.classList.remove('show'),2800);}
+
+function setView(mode){viewMode=mode;ui.viewButtons.forEach(b=>b.classList.toggle('active',b.dataset.view===mode));applyEffectiveView();}
+function applyEffectiveView(){const desired=viewMode==='AUTO'?(phase==='READY'||phase==='ASCENT'?'EARTH':phase==='CRUISE'?'SYSTEM':'MARS'):viewMode;if(desired===effectiveView)return;effectiveView=desired;cameraRig.distance=desired==='SYSTEM'?260:desired==='EARTH'?31:33;cameraRig.azimuth=desired==='SYSTEM'?.82:.68;cameraRig.polar=desired==='SYSTEM'?1.04:1.16;}
+function displayTransform(pos, focus){if(focus==='SYSTEM')return pos.clone().multiplyScalar(120/K.A_EARTH);const center=planetPos(focus.toLowerCase(),simTime);const radius=focus==='EARTH'?K.R_EARTH:K.R_MARS;return pos.clone().sub(center).multiplyScalar(8/radius);}
+
+function updateSceneObjects() {
+  applyEffectiveView();const ep=planetPos('earth',simTime),mp=planetPos('mars',simTime),focus=effectiveView;
+  const sunP=displayTransform(new THREE.Vector3(),focus),earthP=displayTransform(ep,focus),marsP=displayTransform(mp,focus);
+  sun.position.copy(sunP);sunGlow.position.copy(sunP);earth.position.copy(earthP);atmosphereEarth.position.copy(earthP);mars.position.copy(marsP);atmosphereMars.position.copy(marsP);
+  const local=focus!=='SYSTEM';sun.visible=sunGlow.visible=!local;earth.visible=atmosphereEarth.visible=focus!=='MARS'||earthP.length()<400;mars.visible=atmosphereMars.visible=focus!=='EARTH'||marsP.length()<400;
+  if(focus==='SYSTEM'){sun.scale.setScalar(1);sunGlow.scale.set(42,42,1);earth.scale.setScalar(1);atmosphereEarth.scale.setScalar(1);mars.scale.setScalar(1);atmosphereMars.scale.setScalar(1);}else{const isE=focus==='EARTH';earth.scale.setScalar(isE?8/3.2:1);atmosphereEarth.scale.setScalar(isE?8/3.34:1);mars.scale.setScalar(!isE?8/2.6:1);atmosphereMars.scale.setScalar(!isE?8/2.72:1);}
+  earthOrbit.visible=marsOrbit.visible=transferOrbit.visible=focus==='SYSTEM';localOrbit.visible=focus==='MARS'&&['APPROACH','ORBIT','EDL','COMPLETE'].includes(phase);
+  if(localOrbit.visible)localOrbit.scale.setScalar(1);
+  let cp;
+  if(phase==='READY')cp=ep.clone().add(new THREE.Vector3(K.R_EARTH,0,0));
+  else if(phase==='ASCENT'){const eased=1-Math.pow(1-Math.min(ascentT/12,1),3),alt=K.R_EARTH+200*eased;cp=ep.clone().add(new THREE.Vector3(alt,0,0));}
+  else if(['ORBIT','EDL','COMPLETE'].includes(phase))cp=mp.clone().add(craftRelPos||new THREE.Vector3(K.R_MARS+K.TARGET_ALT,0,0));
+  else cp=craftPos;
+  craft.position.copy(displayTransform(cp,focus));craft.scale.setScalar(focus==='SYSTEM'?1.1:.72);craft.visible=true;
+  const orient=phase==='ASCENT'?new THREE.Vector3(1,0,0):phase==='ORBIT'||phase==='EDL'?(craftRelVel||new THREE.Vector3(1,0,0)):(craftVel||new THREE.Vector3(1,0,0));craft.quaternion.setFromUnitVectors(new THREE.Vector3(1,0,0),orient.clone().normalize());
+  if(probeRelPos){const pp=mp.clone().add(probeRelPos);probe.position.copy(displayTransform(pp,focus));probe.scale.setScalar(focus==='SYSTEM'?.9:.62);probe.visible=true;probe.quaternion.setFromUnitVectors(new THREE.Vector3(0,-1,0),probeRelVel.length()?probeRelVel.clone().normalize():probeRelPos.clone().normalize().negate());}else probe.visible=false;
+  earth.rotation.y+=.0012;mars.rotation.y+=.001;sun.rotation.y+=.0003;starfield.rotation.z+=.000015;
+  updateTrails(focus);
+}
+
+function updateTrails(focus){if(focus==='SYSTEM'&&trail.length>1){trailLine.geometry.dispose();trailLine.geometry=new THREE.BufferGeometry().setFromPoints(trail.map(p=>p.clone().multiplyScalar(120/K.A_EARTH)));trailLine.visible=true;}else if(focus==='MARS'&&craftRelPos){const pts=[];const r=craftRelPos.length()*8/K.R_MARS;const pHat=craftRelPos.clone().normalize();const hHat=new THREE.Vector3().crossVectors(craftRelPos,craftRelVel||new THREE.Vector3(0,1,0)).normalize();const qHat=new THREE.Vector3().crossVectors(hHat,pHat).normalize();for(let i=0;i<=100;i++){const a=i/100*Math.PI*2;pts.push(pHat.clone().multiplyScalar(Math.cos(a)*r).addScaledVector(qHat,Math.sin(a)*r));}trailLine.geometry.dispose();trailLine.geometry=new THREE.BufferGeometry().setFromPoints(pts);trailLine.visible=['ORBIT','EDL','COMPLETE'].includes(phase);}else trailLine.visible=false;
+  if(focus==='MARS'&&probeTrail.length>1){probeTrailLine.geometry.dispose();probeTrailLine.geometry=new THREE.BufferGeometry().setFromPoints(probeTrail.map(p=>p.clone().multiplyScalar(8/K.R_MARS)));probeTrailLine.visible=true;}else probeTrailLine.visible=false;}
+
+function updateCamera(){const s=Math.sin(cameraRig.polar),d=cameraRig.distance;camera.position.set(d*s*Math.cos(cameraRig.azimuth),d*s*Math.sin(cameraRig.azimuth),d*Math.cos(cameraRig.polar));camera.lookAt(cameraRig.target);}
+
+function updateUI(){
+  ui.phase.textContent=phase==='EDL'?`PROBE · ${probeStatus}`:phase;ui.met.textContent=formatMET(simTime);ui.dv.textContent=`${totalDV.toFixed(2)} m/s`;
+  const mp=planetPos('mars',simTime),mv=planetVel('mars',simTime);let d=Infinity,s=0,alt=Infinity;
+  if(phase==='READY'||phase==='ASCENT'){d=planetPos('earth',simTime).distanceTo(mp);s=planetVel('earth',simTime).distanceTo(mv);}else if(['ORBIT','EDL','COMPLETE'].includes(phase)){d=craftRelPos?.length()||0;alt=d-K.R_MARS;s=craftRelVel?.length()||0;}else{d=craftPos.distanceTo(mp);alt=d-K.R_MARS;s=craftVel.clone().sub(mv).length();}
+  ui.distance.textContent=formatKm(d);ui.speed.textContent=`${s.toFixed(2)} km/s`;ui.altitude.textContent=Number.isFinite(alt)?formatKm(alt):'—';
+  let pct=0;if(phase==='ASCENT')pct=Math.min(4,ascentT/12*4);else if(phase==='CRUISE'||phase==='APPROACH')pct=4+Math.min(76,simTime/TRANSFER_TIME*76);else if(phase==='ORBIT')pct=84;else if(phase==='EDL')pct=92;else if(phase==='COMPLETE')pct=100;ui.progress.style.width=`${pct}%`;ui.progressText.textContent=`${Math.round(pct)}%`;
+  const objectives={READY:['Departure window open','Launch slowly from Earth, then shape a precise Mars encounter.'],ASCENT:['Climb to injection','Throttle is intentionally limited for a readable, cinematic ascent.'],CRUISE:['Trim the encounter','Use tiny 0.25–1 m/s corrections; keep predicted periapsis near 400 km.'],APPROACH:['Prepare capture','Arm the insertion burn. It will execute automatically at periapsis.'],ORBIT:['Orbit verified','Deploy the probe when you are ready for automated EDL.'],EDL:['Protect the probe',probeStatus==='COAST'?'Coasting to atmospheric interface.':probeStatus==='ENTRY'?'Heat shield is managing hypersonic drag.':probeStatus==='CHUTE'?'Parachute is reducing terminal velocity.':'Powered descent is targeting a soft landing.'],COMPLETE:['Surface link established','Orbital insertion and safe probe delivery complete.'],FAILED:['Mission review required',missionFailedReason]};
+  if(!['COMPLETE','FAILED'].includes(phase)){ui.objective.textContent=objectives[phase][0];ui.objectiveSub.textContent=objectives[phase][1];}
+  const idx=phaseIndex();ui.stages.forEach((el,i)=>{el.classList.toggle('active',i===idx);el.classList.toggle('done',i<idx||phase==='COMPLETE');});
+  ui.missionState.textContent=phase==='FAILED'?'SAFE MODE':phase==='COMPLETE'?'SUCCESS':'NOMINAL';ui.missionState.classList.toggle('bad',phase==='FAILED');ui.missionState.classList.toggle('good',phase==='COMPLETE');
+  if(phase==='APPROACH'){ui.insertionState.textContent=insertionArmed?'AUTO-BURN AT PERIAPSIS':`Predicted ${formatKm(Math.max(0,(prediction?.altitude ?? closestObserved-K.R_MARS)))}`;}
+  if(phase==='EDL'&&probeRelPos)ui.probeState.textContent=`${probeStatus} · ${formatKm(Math.max(0,probeRelPos.length()-K.R_MARS))}`;
+}
+
+function animate(){requestAnimationFrame(animate);const dt=Math.min(clock.getDelta(),.05);if(!paused){if(phase==='ASCENT'){ascentT+=dt;plume.visible=true;if(ascentT>=12){plume.visible=false;completeAscent();}}else if(['CRUISE','APPROACH','ORBIT','EDL'].includes(phase)){integrateSimulation(dt*timeScale);}}
+  updateSceneObjects();updateCamera();updateUI();renderer.render(scene,camera);
+}
+
+resetMission();initScene();
+
+</script>
+</body>
+</html>
