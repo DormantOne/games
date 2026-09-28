@@ -1,0 +1,217 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Trinary Cart-Pole — Undifferentiated Connectome Lab</title>
+<style>
+:root{color-scheme:dark;--bg:#07101d;--panel:#101d31;--line:#29415f;--text:#eaf3ff;--muted:#9fb1c8;--cyan:#53d9ff;--green:#55e58b;--red:#ff6f7d;--gold:#ffd166;--purple:#b99cff}*{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#06101d,#0d1830);font-family:Segoe UI,Arial,sans-serif;color:var(--text)}.wrap{max-width:1400px;margin:auto;padding:18px}h1{margin:0 0 4px}.sub{color:var(--muted);line-height:1.5;margin-bottom:14px}.grid{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}@media(max-width:1050px){.grid{grid-template-columns:1fr}}.card{background:rgba(16,29,49,.96);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 10px 28px #0005}.controls{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}button,input,select{border:1px solid var(--line);border-radius:8px;padding:9px 12px;background:#142844;color:var(--text)}button{cursor:pointer;font-weight:700}button.primary{background:var(--cyan);color:#04121b}button.good{background:var(--green);color:#062014}button.bad{background:var(--red);color:#25040a}button.purple{background:var(--purple);color:#170b2a}button.gold{background:var(--gold);color:#241900}button:disabled{opacity:.5}label{font-size:12px;color:var(--muted)}input{width:92px;margin-left:5px}.status{margin-top:8px;padding:8px 10px;border-radius:9px;background:#0a1628;border:1px solid var(--line);font-size:13px}.status strong{color:var(--cyan)}.small{color:var(--muted);font-size:12px;line-height:1.5}.metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:10px}@media(max-width:900px){.metrics{grid-template-columns:repeat(3,1fr)}}@media(max-width:600px){.metrics{grid-template-columns:repeat(2,1fr)}}.m{background:#0a1628;border:1px solid var(--line);border-radius:9px;padding:9px}.m span{display:block;color:var(--muted);font-size:12px}.m b{font-size:18px}.legend{display:flex;gap:5px;flex-wrap:wrap}.pill{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:4px 8px;font-size:12px;color:var(--muted)}canvas{display:block;width:100%;height:auto;background:#050c16;border:1px solid var(--line);border-radius:10px}.split{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}@media(max-width:950px){.split{grid-template-columns:1fr}}pre{background:#07101d;border:1px solid var(--line);border-radius:9px;padding:10px;max-height:330px;overflow:auto;white-space:pre-wrap}.note{padding:10px;border:1px solid var(--line);border-radius:10px;background:#0a1628;margin-top:10px}.networkHidden{display:none}.table{width:100%;border-collapse:collapse;font-size:12px}.table th,.table td{border-bottom:1px solid var(--line);padding:7px;text-align:left}.ok{color:var(--green)}.warn{color:var(--gold)}
+</style>
+</head>
+<body><div class="wrap">
+<h1>Trinary Cart-Pole — Undifferentiated Connectome Lab</h1>
+<div class="sub">Hypothesis: intelligence may live in the <b>connectome</b>, not in a layered hidden/voter hierarchy. Every computational neuron is identical: exactly <b>3 incoming connections</b>, ternary stored weights, ternary communicated activation, and arbitrary recurrent wiring. The graph is synchronous, so feedback loops are real.</div>
+
+<div class="grid">
+  <div class="card">
+    <canvas id="world" width="860" height="390"></canvas>
+    <div class="controls">
+      <button class="primary" id="trainRL">Train RL</button>
+      <button class="good" id="trainTeacher">Train teacher</button>
+      <button class="purple" id="trainHybrid">Train hybrid</button>
+      <button id="pause">Pause</button>
+      <button id="resume">Resume</button>
+      <button class="good" id="test">Test paused current</button>
+      <button id="newNet">New network</button>
+      <button class="purple" id="evolve">Optimize connectome</button>
+      <button class="gold" id="audit">Audit graph</button>
+    </div>
+    <div class="metrics">
+      <div class="m"><span>Neurons</span><b id="nMetric">64</b></div>
+      <div class="m"><span>Episode</span><b id="ep">0</b></div>
+      <div class="m"><span>Best</span><b id="best">0.00 s</b></div>
+      <div class="m"><span>Eval</span><b id="eval">0.00 s</b></div>
+      <div class="m"><span>Active</span><b id="active">0</b></div>
+      <div class="m"><span>Force</span><b id="force">0.00</b></div>
+    </div>
+    <div class="status" id="status">Status: <strong>Ready.</strong> Train, pause, then test to reveal the live connectome.</div>
+    <div id="networkWrap" class="networkHidden" style="margin-top:14px">
+      <canvas id="network" width="1180" height="620"></canvas>
+      <div class="note small"><b>Live test view.</b> All neurons are the same kind of node. Edges are the actual 3-incoming sparse connectome. Green/red/gray nodes are +1/−1/0. Only while testing does the graph animate active signals and show the current state flowing through it.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Connectome controls</h3>
+    <label>Random seed <input id="seed" type="number" value="47017"></label><br><br>
+    <label>Neurons <input id="neurons" type="number" min="8" max="512" value="64"></label><br><br>
+    <label>Learning rate <input id="lr" type="number" min="0.001" max="0.2" step="0.001" value="0.035"></label><br><br>
+    <label>RL / hybrid exploration σ <input id="sigma" type="number" min="0.02" max="1" step="0.01" value="0.25"></label><br><br>
+    <label>Episodes / burst <input id="batch" type="number" min="1" max="12" value="4"></label><br><br>
+    <label>Connectome mutation attempts <input id="mutations" type="number" min="1" max="200" value="30"></label>
+    <div class="controls"><button id="apply">Apply neuron count</button><button id="mutateOnce">Mutate 1 edge</button></div>
+    <h3>Architecture</h3>
+    <div class="legend">
+      <span class="pill">undifferentiated N neurons</span>
+      <span class="pill">exactly 3 incoming / neuron</span>
+      <span class="pill">arbitrary recurrent edges</span>
+      <span class="pill">synchronous updates</span>
+      <span class="pill">weights ∈ {−1,0,+1}</span>
+      <span class="pill">activation ∈ {−1,0,+1}</span>
+    </div>
+    <div class="note small">There are exactly <b>3N</b> neuron→neuron connection slots. The connectome cannot get denser without violating the 3-incoming constraint; optimization therefore means finding a more useful arrangement of those fixed slots, not adding more edges.</div>
+    <h3>What is optimized?</h3>
+    <div class="small">Training has three modes. <b>RL</b> is reward-only policy search: it mutates ternary weights and sparse connections, evaluates the actual controller, and keeps improvements. <b>Teacher</b> uses direct supervised control. <b>Hybrid</b> combines teacher guidance with exploration while fading the teacher out over 80 episodes. <b>Connectome optimization</b> is separate: it proposes a random replacement for one incoming source, evaluates the resulting controller, and keeps the change only when the measured evaluation improves. Every accepted graph still has exactly 3 incoming edges per neuron.</div>
+    <pre id="log">Ready. The old layered hidden/voter topology has been removed.</pre>
+  </div>
+</div>
+
+<div class="split">
+  <div class="card"><h3>Training history</h3><div id="chartBox" style="background:#050c16;border:1px solid var(--line);border-radius:10px;padding:8px;min-height:278px"><svg id="chartSvg" viewBox="0 0 680 250" width="100%" height="250" role="img" aria-label="Training history graph"><rect x="35" y="12" width="620" height="205" fill="#07101d" stroke="#29415f"/><line x1="35" y1="217" x2="655" y2="217" stroke="#29415f"/><line x1="35" y1="12" x2="35" y2="217" stroke="#29415f"/><text x="48" y="34" fill="#9fb1c8" font-size="12">No training samples yet</text></svg><div id="historyReadout" class="small" style="margin-top:6px">Samples: 0 · start training to populate the graph.</div></div><div class="small">Green: evaluation duration (0–12 s). Purple: accepted connectome mutations.</div></div>
+  <div class="card"><h3>Graph audit</h3><pre id="auditOut">Not run.</pre></div>
+</div>
+
+<div class="card" style="margin-top:14px"><h3>Why this is different</h3><table class="table"><tr><th>Old model</th><th>This model</th></tr><tr><td>features → hidden → voters</td><td>one undifferentiated recurrent population</td></tr><tr><td>hidden/voter roles are predefined</td><td>all neurons have the same local rule</td></tr><tr><td>one forward pass through layers</td><td>synchronous recurrent update each physics step</td></tr><tr><td>capacity mostly means width</td><td>capacity = width <i>plus</i> possible graph motifs</td></tr><tr><td>connectome fixed at construction</td><td>connectome can mutate and be selected</td></tr></table></div>
+</div>
+
+<script>
+'use strict';
+const $=id=>document.getElementById(id),cv=$('world'),ctx=cv.getContext('2d'),ncv=$('network'),nctx=ncv.getContext('2d'),chartSvg=$('chartSvg'),historyReadout=$('historyReadout');
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const tri=x=>x>0.33?1:x<-.33?-1:0;
+function PRNG(seed){let s=seed>>>0;return()=>{s+=0x6D2B79F5;let t=s;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
+let rng,net,state,mode='idle',episode=0,best=0,evalBest=0,history=[],timer=0,connectomeAccepted=0,lastCache=null,pulse=0,optimizing=false,trainMode='rl',rlEpoch=0,rlScore=0;
+
+function size(){return clamp(Math.round(Number($('neurons').value)||64),8,512)}
+function makeNet(){
+  const N=size(),features=15;rng=PRNG(Number($('seed').value)||47017);
+  const src=Array.from({length:N},(_,i)=>{const set=new Set();while(set.size<3){let s=Math.floor(rng()*(N+features));if(s>=features&&s-features===i)continue;set.add(s)}return [...set]});
+  const w=Array.from({length:N},()=>Array.from({length:3},()=>Math.floor(rng()*3)-1));
+  return {N,features,src,w,shadow:w.map(a=>a.slice()),act:new Array(N).fill(0),prev:new Array(N).fill(0),critic:[0,0,0,0,0],lr:Number($('lr').value)||.035};
+}
+function resetState(random=true){state={x:random?(rng()-.5)*.34:0,xd:0,th:random?(rng()-.5)*.15:.08,thd:0,t:0,done:false,force:0}}
+function encode(s){const raw=[s.x/2.4,s.xd/3,s.th/.35,s.thd/3];let f=[];for(const z of raw)f.push(tri(z/.22),tri(z/.55),tri(z),z>=0?1:-1);return f.slice(0,14).concat([1])}
+function readSource(idx,f,acts){return idx<net.features?f[idx]:acts[idx-net.features]}
+function forward(s){
+  const f=encode(s),next=new Array(net.N),sums=new Array(net.N);
+  for(let i=0;i<net.N;i++){
+    let q=0;for(let k=0;k<3;k++)q+=net.w[i][k]*readSource(net.src[i][k],f,net.prev);sums[i]=q;next[i]=tri(q/2);
+  }
+  net.act=next;
+  // Every neuron contributes equally. No special voter neurons.
+  let sum=0;for(const a of next)sum+=a;
+  return {f,act:next.slice(),sums,sum,action:Math.tanh(sum/Math.max(2.8,1.15*Math.sqrt(net.N)))};
+}
+function physics(force,dt=.02){
+  const g=9.8,mc=1,mp=.1,total=1.1,L=.5,pml=mp*L;let{x,xd,th,thd}=state;const sn=Math.sin(th),co=Math.cos(th);const temp=(force+pml*thd*thd*sn)/total;const tha=(g*sn-co*temp)/(L*(4/3-mp*co*co/total));const xa=temp-pml*tha*co/total;xd+=xa*dt;x+=xd*dt;thd+=tha*dt;th+=thd*dt;Object.assign(state,{x,xd,th,thd,t:state.t+dt,force});state.done=Math.abs(x)>2.4||Math.abs(th)>.42||state.t>=12}
+function reward(s){return 1-1.8*Math.abs(s.th)-.12*Math.abs(s.thd)-.06*Math.abs(s.x)-.025*Math.abs(s.xd)}
+function teacherAction(s){return clamp(2.4*s.th+0.95*s.thd+0.18*s.x+0.08*s.xd,-1,1)}
+function randn(){let u=0,v=0;while(!u)u=rng();while(!v)v=rng();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+function value(s){const z=[1,s.x/2.4,s.xd/3,s.th/.42,s.thd/3];let v=0;for(let i=0;i<5;i++)v+=net.critic[i]*z[i];return v}
+function updateCritic(s,target){const z=[1,s.x/2.4,s.xd/3,s.th/.42,s.thd/3];const v=value(s),e=target-v;for(let i=0;i<5;i++)net.critic[i]+=net.lr*.08*e*z[i];return e}
+function applyActor(cache,s,signal,teacherErr=0){
+  let teacherMix=0;
+  if(trainMode==='teacher')teacherMix=1;
+  else if(trainMode==='hybrid')teacherMix=Math.max(0,1-episode/80);
+  const d=(signal+0.9*teacherMix*teacherErr)*(1-cache.action*cache.action);
+  let flips=0;
+  for(let i=0;i<net.N;i++){
+    const credit=d/Math.max(1,net.N)*((cache.act[i]!==0)?1:.15);
+    for(let k=0;k<3;k++){
+      const srcAct=readSource(net.src[i][k],cache.f,cache.prevInputs||new Array(net.N).fill(0));
+      const old=net.w[i][k];
+      net.shadow[i][k]=clamp(net.shadow[i][k]+net.lr*2.1*credit*srcAct,-1.49,1.49);
+      net.w[i][k]=tri(net.shadow[i][k]);
+      if(old!==net.w[i][k])flips++;
+    }
+  }
+  return flips;
+}
+function snapshotNet(){return {w:net.w.map(a=>a.slice()),src:net.src.map(a=>a.slice()),shadow:net.shadow.map(a=>a.slice())}}
+function restoreNet(s){net.w=s.w.map(a=>a.slice());net.src=s.src.map(a=>a.slice());net.shadow=s.shadow.map(a=>a.slice())}
+function mutatePolicy(count){let rewires=0,weightFlips=0;for(let z=0;z<count;z++){const i=Math.floor(rng()*net.N),k=Math.floor(rng()*3);if(rng()<.45){let c=Math.floor(rng()*(net.N+net.features));if(c>=net.features&&c-net.features===i)c=(c+1)%(net.N+net.features);if(c!==net.src[i][k]){net.src[i][k]=c;rewires++}}else{const old=net.w[i][k];let nw=old;while(nw===old)nw=Math.floor(rng()*3)-1;net.w[i][k]=nw;net.shadow[i][k]=nw;if(nw!==old)weightFlips++}}return{rewires,weightFlips}}
+function trainRLGeneration(){
+  if(!net.rlBest){net.rlBest=snapshotNet();net.rlBestScore=evaluate(4);rlScore=net.rlBestScore}
+  const base=net.rlBest,baseScore=net.rlBestScore;
+  let winner=base,winnerScore=baseScore,winnerStats={rewires:0,weightFlips:0};
+  const candidates=6;
+  const mutationCount=clamp(3+Math.floor(rlEpoch*.10),2,Math.max(4,Math.floor(net.N*.12)));
+  for(let c=0;c<candidates;c++){
+    restoreNet(base);const stats=mutatePolicy(mutationCount);const score=evaluate(4);
+    if(score>winnerScore){winner=snapshotNet();winnerScore=score;winnerStats=stats}
+  }
+  restoreNet(winner);net.rlBest=snapshotNet();net.rlBestScore=winnerScore;rlScore=winnerScore;
+  connectomeAccepted+=winnerStats.rewires;
+  rlEpoch++;episode++;
+  best=Math.max(best,winnerScore);let d=evaluate(8);evalBest=Math.max(evalBest,d);
+  history.push({ep:episode,dur:d,mut:connectomeAccepted});if(history.length>240)history.shift();
+  $('log').textContent=`episode / RL generation: ${episode}\ntraining mode: PURE RL — reward-only policy search\n4-start search score: ${winnerScore.toFixed(2)} s\n8-start evaluation: ${d.toFixed(2)} s\nbest evaluation: ${evalBest.toFixed(2)} s\nmutation attempts per candidate: ${mutationCount}\nweight flips accepted: ${winnerStats.weightFlips}\nconnection rewires accepted: ${winnerStats.rewires}\nNo teacher signal is used by RL.\nall ${3*net.N} connection slots remain exactly 3 per neuron`;
+  updateUI();
+}
+function trainEpisode(){
+  if(trainMode==='rl'){trainRLGeneration();return}
+  resetState(true);net.prev=new Array(net.N).fill(0);let R=0,last={flips:0,criticErr:0,teacherErr:0},traj=[];
+  while(!state.done){
+    const before={...state};const prevInputs=net.prev.slice();const cache=forward(state);cache.prevInputs=prevInputs;
+    const sigma=clamp(Number($('sigma')?.value)||.25,.02,1);const explore=sigma;
+    const sampled=clamp(cache.action+(trainMode==='teacher'?0:randn()*explore),-1,1);
+    physics(sampled*12);const r=reward(state);const teacherErr=teacherAction(before)-cache.action;
+    traj.push({cache,s:before,a:sampled,mean:cache.action,r,teacherErr});net.prev=cache.act;R+=r;
+  }
+  let G=0,gamma=.985;const returns=new Array(traj.length);for(let t=traj.length-1;t>=0;t--){G=traj[t].r+gamma*G;returns[t]=G}
+  const mean=returns.reduce((a,b)=>a+b,0)/Math.max(1,returns.length);const variance=returns.reduce((a,b)=>a+(b-mean)*(b-mean),0)/Math.max(1,returns.length);const scale=Math.sqrt(variance)+.15;
+  for(let ti=0;ti<traj.length;ti++){const step=traj[ti];const adv=clamp(returns[ti]-mean,-8,8)/scale;let signal=0;if(trainMode==='hybrid'){const sigma=clamp(Number($('sigma')?.value)||.25,.02,1);signal=adv*((step.a-step.mean)/(sigma*sigma))}const teacherMix=trainMode==='hybrid'?Math.max(0,1-episode/80):1;last.flips+=applyActor(step.cache,step.s,signal,step.teacherErr*teacherMix)}
+  for(let t=0;t<traj.length;t++)last.criticErr=updateCritic(traj[t].s,returns[t]);
+  episode++;best=Math.max(best,state.t);const d=evaluate(8);evalBest=Math.max(evalBest,d);history.push({ep:episode,dur:d,mut:connectomeAccepted});if(history.length>240)history.shift();
+  const teacherMix=trainMode==='hybrid'?Math.max(0,1-episode/80):1;$('log').textContent=`episode: ${episode}\ntraining mode: ${trainMode.toUpperCase()}\neval: ${d.toFixed(2)} s · best eval: ${evalBest.toFixed(2)} s\nreturn: ${R.toFixed(2)}\nlast critic error: ${last.criticErr.toFixed(4)}\nweight flips this episode: ${last.flips}\nRL / hybrid exploration σ: ${(Number($('sigma')?.value)||.25).toFixed(2)}\nteacher mix: ${teacherMix.toFixed(2)}\nall ${3*net.N} connection slots remain exactly 3 per neuron`;updateUI();
+}
+function evaluate(starts=8){const save={...state},acts=net.act.slice(),prev=net.prev.slice();let total=0;for(let n=0;n<starts;n++){resetState(false);const center=(starts-1)/2;state.x=(n-center)*.04;state.th=(n-center)*.025;net.prev=new Array(net.N).fill(0);while(!state.done){const c=forward(state);physics(c.action*12);net.prev=c.act}total+=state.t}state=save;net.act=acts;net.prev=prev;return total/starts}
+function trainLoop(){if(mode!=='train')return;const n=clamp(Number($('batch').value)||4,1,12);for(let i=0;i<n;i++){trainEpisode();drawChart();}timer=setTimeout(trainLoop,Math.max(0,18-Number($('speed')?.value||10)))}
+function startTrain(kind){clearTimeout(timer);trainMode=kind;mode='train';$('networkWrap').classList.add('networkHidden');const label=kind==='rl'?'pure RL (TD actor-critic)':kind==='teacher'?'teacher-guided supervision':'hybrid (teacher fades over 80 episodes)';$('status').innerHTML=`Status: <strong>Training ${label}.</strong>`;trainLoop()}
+function pause(){if(mode==='train'){mode='idle';clearTimeout(timer);$('status').innerHTML=`Status: <strong>Paused.</strong> ${trainMode.toUpperCase()} training can resume without resetting the current network.`}}
+function resume(){if(mode==='idle'&&!optimizing){mode='train';$('status').innerHTML='Status: <strong>Resumed training.</strong>';trainLoop()}}
+function resetNetwork(){clearTimeout(timer);optimizing=false;episode=0;best=0;evalBest=0;connectomeAccepted=0;history=[];rlEpoch=0;rlScore=0;net=makeNet();resetState(false);net.prev=new Array(net.N).fill(0);lastCache=null;mode='idle';$('networkWrap').classList.add('networkHidden');$('nMetric').textContent=net.N;$('status').innerHTML='Status: <strong>New undifferentiated network created.</strong>';audit();drawChart();updateUI()}
+function test(){if(mode!=='idle'){pause();}mode='test';resetState(false);state.th=.08;net.prev=new Array(net.N).fill(0);pulse=0;$('status').innerHTML='Status: <strong>Testing paused current controller.</strong> Live connectome view is active.';$('networkWrap').classList.remove('networkHidden')}
+function mutateEdge(){if(!net)return;const i=Math.floor(rng()*net.N),k=Math.floor(rng()*3);let candidate=Math.floor(rng()*(net.N+net.features));if(candidate>=net.features&&candidate-net.features===i)return mutateEdge();const oldSrc=net.src[i][k],oldW=net.w[i][k],oldShadow=net.shadow[i][k];const oldEval=evaluate();net.src[i][k]=candidate;const newEval=evaluate();if(newEval>=oldEval){connectomeAccepted++;}else{net.src[i][k]=oldSrc;net.w[i][k]=oldW;net.shadow[i][k]=oldShadow}audit();return newEval>=oldEval}
+async function optimize(){if(optimizing)return;pause();optimizing=true;$('evolve').disabled=true;const attempts=clamp(Number($('mutations').value)||30,1,200);let accepted=0;for(let i=0;i<attempts;i++){if(mutateEdge())accepted++;await new Promise(requestAnimationFrame)}optimizing=false;$('evolve').disabled=false;$('status').innerHTML=`Status: <strong>Connectome optimization complete.</strong> Accepted ${accepted}/${attempts} proposed rewires.`;$('log').textContent+=`\n\noptimization accepted ${accepted}/${attempts} edge mutations.`;drawChart()}
+function audit(){if(!net)return;let unique=true,self=false,edges=0;for(let i=0;i<net.N;i++){if(net.src[i].length!==3)unique=false;const s=new Set(net.src[i]);if(s.size!==3)unique=false;for(const x of net.src[i]){edges++;if(x>=net.features&&x-net.features===i)self=true}for(const w of net.w[i])if(![-1,0,1].includes(w))unique=false}const recurrent=net.src.flat().filter(x=>x>=net.features).length;const sensor=edges-recurrent;$('auditOut').textContent=`${unique?'PASS':'FAIL'}\nneurons: ${net.N}\nconnection slots: ${edges} = 3 × ${net.N}\nrecurrent neuron→neuron edges: ${recurrent}\nexternal feature→neuron edges: ${sensor}\nself-loops: ${self?'YES':'NO'}\nunique sources within each neuron's 3 inputs: ${unique?'YES':'NO'}\nweights: all ternary\n\nInterpretation:\nThe graph has fixed degree 3. Optimization rearranges those 3 slots; it cannot add a fourth incoming edge.`}
+function updateUI(){$('nMetric').textContent=net.N;$('ep').textContent=episode;$('best').textContent=best.toFixed(2)+' s';$('eval').textContent=evalBest.toFixed(2)+' s';$('active').textContent=net.act.filter(v=>v!==0).length;$('force').textContent=state.force.toFixed(2)}
+function drawWorld(){ctx.clearRect(0,0,cv.width,cv.height);ctx.strokeStyle='#29415f';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(30,300);ctx.lineTo(830,300);ctx.stroke();const sx=430+state.x*150,sy=286;ctx.fillStyle='#53d9ff';ctx.fillRect(sx-55,sy-22,110,34);ctx.fillStyle='#a9bed8';ctx.beginPath();ctx.arc(sx-35,sy+17,12,0,7);ctx.arc(sx+35,sy+17,12,0,7);ctx.fill();const L=145,px=sx+L*Math.sin(state.th),py=sy-L*Math.cos(state.th);ctx.strokeStyle=Math.abs(state.th)<.15?'#55e58b':'#ffd166';ctx.lineWidth=9;ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(px,py);ctx.stroke();ctx.fillStyle='#ff6f7d';ctx.beginPath();ctx.arc(px,py,16,0,7);ctx.fill();ctx.fillStyle='#eaf3ff';ctx.font='16px Segoe UI';ctx.fillText(mode==='train'?'Training undifferentiated connectome':mode==='test'?(state.done?'Test ended':'Testing paused current'):'Paused / ready',22,28);ctx.fillText(`angle ${(state.th*180/Math.PI).toFixed(1)}°   x ${state.x.toFixed(2)} m`,22,54);if(state.done&&mode==='test'){ctx.fillStyle='#ff6f7d';ctx.font='bold 24px Segoe UI';ctx.fillText(`Balanced ${state.t.toFixed(2)} seconds`,300,350)}}
+function pos(i){const N=net.N;const phi=Math.PI*(3-Math.sqrt(5));const r=245*Math.sqrt((i+.5)/N);const a=i*phi;return{x:ncv.width/2+r*Math.cos(a),y:ncv.height/2+r*Math.sin(a)}}
+function drawNetwork(){if(mode!=='test'){ $('networkWrap').classList.add('networkHidden'); return }$('networkWrap').classList.remove('networkHidden');nctx.clearRect(0,0,ncv.width,ncv.height);const cache=lastCache;if(!cache){nctx.fillStyle='#9fb1c8';nctx.font='14px Segoe UI';nctx.fillText('Waiting for test step…',20,28);return}
+  const p=Array.from({length:net.N},(_,i)=>pos(i));
+  for(let i=0;i<net.N;i++)for(let k=0;k<3;k++){const s=net.src[i][k];let a,b;if(s<net.features){a={x:45+(s%5)*24,y:45+Math.floor(s/5)*26};b=p[i]}else{a=p[s-net.features];b=p[i]};const w=net.w[i][k],srcAct=s<net.features?cache.f[s]:cache.act[s-net.features];const active=w!==0&&srcAct!==0;nctx.strokeStyle=w>0?'#55e58b55':w<0?'#ff6f7d55':'#29415f55';nctx.lineWidth=active?2:0.8;nctx.beginPath();nctx.moveTo(a.x,a.y);nctx.lineTo(b.x,b.y);nctx.stroke();if(active){const t=(pulse*0.025+(i*3+k)/(net.N*3))%1;const qx=a.x+(b.x-a.x)*t,qy=a.y+(b.y-a.y)*t;nctx.fillStyle=w>0?'#55e58b':'#ff6f7d';nctx.beginPath();nctx.arc(qx,qy,3,0,Math.PI*2);nctx.fill()}}
+  for(let i=0;i<net.N;i++){const a=cache.act[i],p0=p[i];nctx.beginPath();nctx.arc(p0.x,p0.y,Math.min(11,6+900/net.N),0,Math.PI*2);nctx.fillStyle=a>0?'#55e58bcc':a<0?'#ff6f7dcc':'#29415fcc';nctx.fill();nctx.strokeStyle='#eaf3ff77';nctx.stroke();if(net.N<=128){nctx.fillStyle='#eaf3ff';nctx.font='9px Segoe UI';nctx.textAlign='center';nctx.fillText(i+1,p0.x,p0.y+3);nctx.textAlign='left'}}
+  for(let s=0;s<net.features;s++){const q={x:45+(s%5)*24,y:45+Math.floor(s/5)*26};nctx.fillStyle=cache.f[s]>0?'#55e58b':cache.f[s]<0?'#ff6f7d':'#29415f';nctx.fillRect(q.x-5,q.y-5,10,10)}
+  nctx.fillStyle='#9fb1c8';nctx.font='12px Segoe UI';nctx.fillText('15 encoded state sources',18,22);nctx.fillText(`N=${net.N} · exactly 3 incoming per neuron · ${3*net.N} total slots`,18,ncv.height-26);nctx.fillText(`action ${cache.action.toFixed(3)} · active ${cache.act.filter(v=>v!==0).length}/${net.N}`,18,ncv.height-9);
+}
+function drawChart(){
+  const W=620,H=205,X0=35,Y0=217,ns='http://www.w3.org/2000/svg';
+  while(chartSvg.firstChild) chartSvg.removeChild(chartSvg.firstChild);
+  const mk=(tag,attrs,text='')=>{const e=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,v);if(text)e.textContent=text;chartSvg.appendChild(e);return e};
+  mk('rect',{x:'35',y:'12',width:String(W),height:String(H),fill:'#07101d',stroke:'#29415f'});
+  [12,63,114,165,217].forEach(y=>mk('line',{x1:'35',y1:String(y),x2:'655',y2:String(y),stroke:'#182a40','stroke-width':'1'}));
+  mk('line',{x1:'35',y1:'12',x2:'35',y2:'217',stroke:'#29415f'});
+  mk('text',{x:'40',y:'28',fill:'#9fb1c8','font-size':'11'},'12s');
+  mk('text',{x:'40',y:'216',fill:'#9fb1c8','font-size':'11'},'0s');
+  if(!history.length){
+    mk('text',{x:'255',y:'112',fill:'#9fb1c8','font-size':'15'},'No training samples yet');
+    historyReadout.textContent='Samples: 0 · start RL, teacher, or hybrid training.';
+    return;
+  }
+  const denom=Math.max(1,history.length-1),maxDur=12,maxMut=Math.max(1,...history.map(h=>Number(h.mut)||0));
+  const ptsDur=history.map((h,i)=>`${(X0+i/denom*W).toFixed(1)},${(Y0-(Math.max(0,Math.min(maxDur,Number(h.dur)||0))/maxDur)*190).toFixed(1)}`).join(' ');
+  const ptsMut=history.map((h,i)=>`${(X0+i/denom*W).toFixed(1)},${(Y0-(Math.max(0,Number(h.mut)||0)/maxMut)*190).toFixed(1)}`).join(' ');
+  mk('polyline',{points:ptsDur,fill:'none',stroke:'#55e58b','stroke-width':'3','stroke-linejoin':'round','stroke-linecap':'round'});
+  if(maxMut>0) mk('polyline',{points:ptsMut,fill:'none',stroke:'#b99cff','stroke-width':'2','stroke-linejoin':'round','stroke-linecap':'round'});
+  const last=history[history.length-1],x=X0+(history.length-1)/denom*W,y=Y0-(Math.max(0,Math.min(maxDur,Number(last.dur)||0))/maxDur)*190;
+  mk('circle',{cx:x,cy:y,r:'5',fill:'#55e58b'});
+  mk('text',{x:'48',y:'34',fill:'#eaf3ff','font-size':'12'},`${history.length} samples · latest ${Number(last.dur||0).toFixed(2)}s`);
+  historyReadout.textContent=`Samples: ${history.length} · latest eval: ${Number(last.dur||0).toFixed(2)} s · best eval: ${evalBest.toFixed(2)} s · accepted rewires: ${connectomeAccepted}`;
+}
+
+function loop(){drawWorld();if(mode!=='train' && history.length){drawChart();}if(mode==='test'&&!state.done){const c=forward(state);lastCache=c;physics(c.action*12);net.prev=c.act;pulse++;updateUI()}drawNetwork();requestAnimationFrame(loop)}
+
+$('trainRL').onclick=()=>startTrain('rl');$('trainTeacher').onclick=()=>startTrain('teacher');$('trainHybrid').onclick=()=>startTrain('hybrid');$('pause').onclick=pause;$('resume').onclick=resume;$('test').onclick=test;$('newNet').onclick=resetNetwork;$('evolve').onclick=optimize;$('audit').onclick=audit;$('mutateOnce').onclick=()=>{pause();const ok=mutateEdge();$('status').innerHTML=`Status: <strong>Single connectome mutation ${ok?'accepted':'rejected'}.</strong>`};$('apply').onclick=resetNetwork;
+net=makeNet();resetState(false);net.prev=new Array(net.N).fill(0);audit();drawChart();updateUI();loop();
+</script></body></html>
