@@ -1,0 +1,985 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Protoneuron Triple-Pendulum Lab v12 — Champion Evolution</title>
+<style>
+:root{color-scheme:dark;--bg:#06101b;--panel:#0f1b2c;--panel2:#091522;--line:#29415f;--text:#eaf3ff;--muted:#9fb1c8;--cyan:#53d9ff;--green:#55e58b;--gold:#ffd166;--red:#ff6f7d;--violet:#b9a0ff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#112540,#06101b 62%);font-family:Segoe UI,Arial,sans-serif;color:var(--text)}.wrap{max-width:1500px;margin:auto;padding:16px}.grid{display:grid;grid-template-columns:1.15fr .85fr;gap:14px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:1080px){.grid,.grid2{grid-template-columns:1fr}}
+.card{background:rgba(15,27,44,.97);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 12px 30px #0005}.sub{color:var(--muted);line-height:1.5;margin:5px 0 12px}h1{margin:0;font-size:28px}h3{margin:4px 0 10px}.controls{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0}button,input,select{border:1px solid var(--line);border-radius:8px;padding:9px 11px;background:#142844;color:var(--text)}button{cursor:pointer;font-weight:700}button.primary{background:var(--cyan);color:#04121b}button.good{background:var(--green);color:#062014}button.warn{background:var(--gold);color:#241904}button.bad{background:var(--red);color:#25040a}button.violet{background:var(--violet);color:#160f29}button:disabled{opacity:.45;cursor:not-allowed}input{width:88px}textarea{width:100%;min-height:96px;background:#07101d;color:var(--text);border:1px solid var(--line);border-radius:9px;padding:9px;font:11px Consolas,monospace}.small{font-size:12px;color:var(--muted)}.tiny{font-size:11px;color:var(--muted)}label{font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:4px}.metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}@media(max-width:950px){.metrics{grid-template-columns:repeat(3,1fr)}}.m{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:8px}.m span{display:block;color:var(--muted);font-size:11px}.m b{font-size:18px}.status{padding:9px 10px;border-radius:9px;background:#081523;border:1px solid var(--line);min-height:40px}.ok{color:var(--green)}.warntext{color:var(--gold)}.badtext{color:var(--red)}.pill{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:3px 7px;margin:2px;font-size:11px}.pill b{color:var(--gold)}.legend{line-height:1.55}.head{border-top:1px solid #1b3048;margin-top:12px;padding-top:9px;color:var(--cyan);font-size:11px;letter-spacing:.04em}
+canvas{display:block;width:100%;height:auto;background:#081321;border:1px solid var(--line);border-radius:10px}.vizWrap{position:relative}.vizLabel{position:absolute;left:14px;top:12px;padding:5px 8px;border-radius:999px;background:#071321dd;border:1px solid var(--line);font-size:11px;color:var(--muted)}#history,#archiveGrid{width:100%;background:#081321;border:1px solid var(--line);border-radius:10px;display:block}#history{min-height:260px}#archiveGrid{min-height:300px}#history .axis,#archiveGrid .axis{stroke:#29415f;stroke-width:1}#history .gridline{stroke:#1b3048;stroke-width:1;stroke-dasharray:4 6}#history .evo{fill:none;stroke:var(--cyan);stroke-width:2.2}#history .champ{fill:none;stroke:var(--gold);stroke-width:2.2}#history .bp{fill:none;stroke:var(--violet);stroke-width:2.2}
+pre{background:#07101d;border:1px solid var(--line);border-radius:9px;padding:10px;min-height:240px;max-height:380px;overflow:auto;white-space:pre-wrap;font:12px Consolas,monospace}.section{padding-top:8px;border-top:1px solid #1b3048;margin-top:10px}.callout{border-left:3px solid var(--cyan);padding-left:10px;color:#cddbea;line-height:1.5}.methodGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}@media(max-width:850px){.methodGrid{grid-template-columns:1fr}}
+</style>
+</head>
+<body><div class="wrap">
+<h1>Protoneuron Triple-Pendulum Connectome Lab v12</h1>
+<div class="sub">A deliberately undifferentiated recurrent population controls a three-link inverted pendulum. Every protoneuron has exactly <b>3 incoming slots</b>; synaptic weights and communicated activations are ternary <b>&minus;1, 0, +1</b>. This build runs one method only — <b>evolution with champions</b> — and adds a diversity archive so the champions you keep are behaviourally different brains rather than eight copies of the same one. The survival lane, episode length, and every champion-feed ratio are editable while it runs.</div>
+
+<div class="grid">
+<div class="card">
+ <div class="vizWrap"><canvas id="world" width="900" height="420"></canvas><div class="vizLabel" id="modeBadge">IDLE</div></div>
+ <div class="controls">
+   <button class="warn" id="start">Start fresh run</button>
+   <button class="violet" id="continue">Continue from champions</button>
+   <button id="pause">Pause</button><button id="resume">Resume</button>
+   <button class="good" id="test">Test paused current</button><button id="evalCurrent">Robust eval current</button><button id="perturb">Perturb now</button><button class="bad" id="reset">Reset</button>
+ </div>
+ <div class="metrics">
+   <div class="m"><span>Mode</span><b id="mode">idle</b></div><div class="m"><span>Generation</span><b id="gen">0</b></div><div class="m"><span>Live time</span><b id="time">0.00 s</b></div><div class="m"><span>Neurons</span><b id="nCount">128</b></div><div class="m"><span>Numerical faults</span><b id="faults">0</b></div>
+   <div class="m"><span>Champion mean</span><b id="best">0.00 s</b></div><div class="m"><span>Champion worst</span><b id="worst">0.00 s</b></div><div class="m"><span>Champion survival</span><b id="survival">0%</b></div><div class="m"><span>Archive cells</span><b id="cells">0</b></div><div class="m"><span>Archive coverage</span><b id="coverage">0%</b></div>
+ </div>
+ <div class="status" id="status">Press Start fresh run. Training is accelerated; Test pauses learning and exposes only the frozen current brain.</div>
+</div>
+
+<div class="card">
+ <h3>Champion evolution setup</h3>
+ <div class="head">Brain and search</div>
+ <div class="controls">
+  <label>Protoneurons <input id="neurons" type="number" min="16" max="512" step="8" value="128"></label>
+  <label>Seed <input id="seed" type="number" value="47017"></label>
+  <label>Mutations/candidate <input id="mutations" type="number" min="1" max="64" value="4"></label>
+  <label>Candidates/gen <input id="candidates" type="number" min="2" max="16" value="8"></label>
+  <label>Strong jump every <input id="strongEvery" type="number" min="0" max="500" value="20"></label>
+  <label>Mutate read neurons % <input id="focus" type="number" min="0" max="100" step="1" value="85"></label>
+  <label>Rewire to sensors % <input id="sensorBias" type="number" min="0" max="100" step="1" value="50"></label>
+  <label>Decision temp <input id="dect" type="number" min="0.05" max="2" step="0.01" value="0.22"></label>
+  <label>Decoder density % <input id="decDensity" type="number" min="1" max="100" step="1" value="12"></label>
+ </div>
+ <div class="head">Survival lane and episodes</div>
+ <div class="controls">
+  <label>Angle lane &plusmn;&deg; <input id="laneDeg" type="number" min="10" max="150" step="1" value="77"></label>
+  <label>Velocity lane <input id="velLane" type="number" min="2" max="40" step="0.5" value="10"></label>
+  <label>Max torque <input id="torque" type="number" min="1" max="40" step="0.5" value="22"></label>
+  <label>Episode cap s <input id="maxT" type="number" min="2" max="60" step="0.5" value="10"></label>
+  <label>Survival &ge; s <input id="survS" type="number" min="0.5" max="60" step="0.5" value="9"></label>
+  <label>Start &plusmn;&deg; <input id="startDeg" type="number" min="0.5" max="60" step="0.5" value="10"></label>
+  <label>Start vel &plusmn; <input id="startVel" type="number" min="0" max="6" step="0.05" value="0.75"></label>
+  <label>Hard case &times; <input id="hardMul" type="number" min="1" max="3" step="0.05" value="1.45"></label>
+  <label>Perturb &times; <input id="perturbMul" type="number" min="0" max="4" step="0.1" value="1"></label>
+ </div>
+ <div class="head">Champion feeds</div>
+ <div class="controls">
+  <label>Champion pool <input id="poolSize" type="number" min="1" max="24" value="8"></label>
+  <label>Revisit threshold <input id="threshold" type="number" min="5" max="500" value="60"></label>
+  <label>Parent from champions % <input id="revisitPct" type="number" min="0" max="100" value="35"></label>
+  <label>&hellip;of those, archive % <input id="archivePct" type="number" min="0" max="100" value="45"></label>
+  <label>Crossover % <input id="crossPct" type="number" min="0" max="100" value="20"></label>
+  <label>Selection exponent <input id="selExp" type="number" min="0.3" max="8" step="0.1" value="1.8"></label>
+ </div>
+ <div class="head">Diversity archive and validation</div>
+ <div class="controls">
+  <label>Bins per axis <input id="bins" type="number" min="2" max="10" value="5"></label>
+  <label>Archive cap <input id="archiveCap" type="number" min="8" max="400" value="120"></label>
+  <label>Min genome distance % <input id="minDist" type="number" min="0" max="60" step="0.5" value="4"></label>
+  <label>Novelty bonus <input id="novelty" type="number" min="0" max="20" step="0.1" value="0"></label>
+  <label>Training cases <input id="trainCases" type="number" min="2" max="32" value="12"></label>
+  <label>Rotate cases every <input id="rotate" type="number" min="0" max="500" step="1" value="25"></label>
+  <label>Validation trials <input id="validationTrials" type="number" min="12" max="128" value="48"></label>
+  <label>Validate every <input id="valEvery" type="number" min="1" max="25" value="3"></label>
+ </div>
+ <div class="methodGrid" style="margin-top:10px">
+  <div class="callout"><b>Champion pool</b><br><span class="small">Derived from the archive: best first, skipping any brain closer than the minimum genome distance to one already chosen.</span></div>
+  <div class="callout"><b>Diversity archive</b><br><span class="small">One elite per behaviour cell (control effort &times; firing activity &times; top-joint share). Each generation also validates the best candidate that landed in an empty cell, so losing strategies still get kept.</span></div>
+  <div class="callout"><b>Feeds</b><br><span class="small">Each candidate's parent is the current brain, a pool champion, or a random archive cell; crossover splices a second champion's neuron block.</span></div>
+  <div class="callout"><b>Lane</b><br><span class="small">Angle and velocity lanes define both failure and the sensory scale, so the encoder rescales itself when you widen the lane.</span></div>
+ </div>
+ <div class="controls"><button id="crossval" class="good">Cross-validate champions</button><button id="audit">Audit connectome</button><button id="copyBiopsy">Copy biopsy</button><button id="rescore">Rescore + rebin</button><button id="reseed">Revisit champion</button><button id="loadTop">Load top champion</button><button class="bad" id="clearArchive">Clear champions</button></div>
+ <div class="status" id="auditOut">Not audited.</div>
+ <div class="status" id="championStatus" style="margin-top:7px">Champions: 0</div>
+ <div class="tiny" style="margin-top:8px">Neuron count and seed take effect after Reset. Lane, episode, and suite changes rebuild the case suites immediately — use Rescore + rebin to re-place existing champions under the new settings so scores stay comparable.</div>
+</div>
+</div>
+
+<div class="grid2" style="margin-top:14px">
+<div class="card"><h3>Validation history</h3><svg id="history" viewBox="0 0 860 260" preserveAspectRatio="none"></svg><div id="historyReadout" class="small">No validation samples yet.</div><div class="tiny" style="margin-top:6px">Gold = mean duration • cyan = worst case • violet = survival share scaled to the episode cap.</div></div>
+<div class="card"><h3>Run log</h3><pre id="log">Ready. One method: evolution with champions.</pre></div>
+</div>
+
+<div class="grid2" style="margin-top:14px">
+<div class="card"><h3>Behaviour archive</h3>
+ <svg id="archiveGrid" viewBox="0 0 430 330" preserveAspectRatio="xMidYMid meet"></svg>
+ <div class="tiny" style="margin-top:6px">Each filled cell holds the best brain found with that behaviour. Brighter is a higher robust score; the number is how many third-axis cells sit behind that square.</div>
+ <div id="archiveList" class="legend" style="margin-top:8px"><span class="small">No champions yet.</span></div>
+</div>
+<div class="card"><h3>Save and load champions</h3>
+ <div class="small">Champions and the whole archive are saved as one payload: pool, behaviour cells, descriptors, and packed ternary genomes. Browser storage is used when available; the text box below always works.</div>
+ <div class="controls"><button class="primary" id="saveStore">Save to browser</button><button id="loadStore">Load from browser</button><button id="exportBox">Write to box</button><button id="importBox">Load from box</button><button id="copyBox">Copy box</button><button id="downloadJson">Download file</button></div>
+ <textarea id="ioBox" spellcheck="false" placeholder="Champion payload JSON appears here. Paste a saved payload and press Load from box."></textarea>
+ <div class="status" id="ioStatus" style="margin-top:8px">Nothing saved yet this session.</div>
+ <div class="tiny" style="margin-top:6px">Payloads are keyed to seed, neuron count, trial count, lane, and bin count. Loading a payload from different settings still works, but rescore before trusting the numbers.</div>
+</div>
+</div>
+
+<div class="card" id="networkCard" style="margin-top:14px;display:none">
+<h3>Live connectome — visible only during frozen-current testing</h3>
+<div class="small">Green node = +1 firing • red node = &minus;1 firing • gray = 0. Green edge = +1 weight • red = &minus;1 • dim edge = 0. Pulses show currently active recurrent transmission.</div>
+<canvas id="netview" width="1200" height="760" style="margin-top:8px"></canvas>
+</div>
+</div>
+
+<script>
+'use strict';
+const $=id=>document.getElementById(id), world=$('world'), wctx=world.getContext('2d'), netview=$('netview'), nctx=netview.getContext('2d');
+let rng,net,state,mode='idle',paused=true,running=false,generation=0;
+let bestMean=0,bestWorst=0,bestSurvival=0,history=[],trainTimer=0;
+let champions=[],archive=new Map(),championSerial=0,stagnation=0;
+let trainingPool=[],validationPool=[],holdoutPool=[];
+let currentTestRng=null,lastFrame=performance.now(),layoutCache=null,numericalFaults=0;
+let lastParentTag='current',lastAdmit='none yet',busy=false;
+const SENS=13, DT=0.025;
+let MAX_TORQUE=22, MAXT=10, POS_LIMIT=1.35, VEL_LIMIT=10, SURV=9, DECT=.22;
+const CFG={};
+
+function PRNG(seed){let s=(seed>>>0)||1;return()=>{s=(s+0x6D2B79F5)>>>0;let t=s;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296}}
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x)), tri=x=>x>0.33?1:x<-0.33?-1:0, choice=(r,a)=>a[Math.floor(r()*a.length)];
+function finiteNum(x,f=0){return Number.isFinite(x)?x:f}
+function otherTern(r,cur){const o=[-1,0,1].filter(v=>v!==cur);return o[Math.floor(r()*o.length)]}
+
+function readCfg(){
+  CFG.N=clamp(Math.round(+$('neurons').value||128),16,512);
+  CFG.seed=((+$('seed').value||47017)>>>0);
+  CFG.mut=clamp(Math.round(+$('mutations').value||4),1,64);
+  CFG.cand=clamp(Math.round(+$('candidates').value||8),2,16);
+  CFG.strongEvery=clamp(Math.round(+$('strongEvery').value||0),0,500);
+  CFG.focus=clamp(+$('focus').value||0,0,100)/100;
+  CFG.sensorBias=clamp(+$('sensorBias').value||0,0,100)/100;
+  CFG.dect=clamp(+$('dect').value||.22,.05,2);
+  CFG.decDensity=clamp(+$('decDensity').value||12,1,100)/100;
+  CFG.laneDeg=clamp(+$('laneDeg').value||77,10,150);
+  CFG.velLane=clamp(+$('velLane').value||10,2,40);
+  CFG.torque=clamp(+$('torque').value||9,1,40);
+  CFG.maxT=clamp(+$('maxT').value||10,2,60);
+  CFG.survS=clamp(+$('survS').value||9,.5,60);
+  CFG.startDeg=clamp(+$('startDeg').value||10,.5,60);
+  CFG.startVel=clamp(+$('startVel').value||0,0,6);
+  CFG.hardMul=clamp(+$('hardMul').value||1.45,1,3);
+  CFG.perturbMul=clamp(+$('perturbMul').value||0,0,4);
+  CFG.pool=clamp(Math.round(+$('poolSize').value||8),1,24);
+  CFG.threshold=clamp(Math.round(+$('threshold').value||60),5,500);
+  CFG.revisitPct=clamp(+$('revisitPct').value||0,0,100);
+  CFG.archivePct=clamp(+$('archivePct').value||0,0,100);
+  CFG.crossPct=clamp(+$('crossPct').value||0,0,100);
+  CFG.selExp=clamp(+$('selExp').value||1.8,.3,8);
+  CFG.bins=clamp(Math.round(+$('bins').value||5),2,10);
+  CFG.archiveCap=clamp(Math.round(+$('archiveCap').value||120),8,400);
+  CFG.minDist=clamp(+$('minDist').value||0,0,60)/100;
+  CFG.novelty=clamp(+$('novelty').value||0,0,20);
+  CFG.trainCases=clamp(Math.round(+$('trainCases').value||12),2,32);
+  CFG.rotate=clamp(Math.round(+$('rotate').value||0),0,500);
+  CFG.valTrials=clamp(Math.round(+$('validationTrials').value||48),12,128);
+  CFG.valEvery=clamp(Math.round(+$('valEvery').value||3),1,25);
+  POS_LIMIT=CFG.laneDeg*Math.PI/180; VEL_LIMIT=CFG.velLane; MAX_TORQUE=CFG.torque; MAXT=CFG.maxT; SURV=Math.min(CFG.survS,CFG.maxT); DECT=CFG.dect;
+}
+
+function sanitizeBrain(b){
+  for(let i=0;i<b.N;i++){
+    for(let k=0;k<3;k++){
+      if(![-1,0,1].includes(b.w[i][k]))b.w[i][k]=0;
+      b.src[i][k]=Math.min(SENS+b.N-1,Math.max(0,b.src[i][k]|0));
+      b.fireBias[i][k]=clamp(finiteNum(b.fireBias[i][k],0),-5,5);
+    }
+    b.fireGain[i]=clamp(finiteNum(b.fireGain[i],.9),.08,3.5);
+    b.bias[i]=clamp(finiteNum(b.bias[i],0),-2.5,2.5);
+  }
+  b.dnz=[0,0,0];
+  for(let j=0;j<3;j++){let nz=0;for(let i=0;i<b.N;i++){if(![-1,0,1].includes(b.decoder[j][i]))b.decoder[j][i]=0;if(b.decoder[j][i])nz++}b.dnz[j]=nz}
+  return b;
+}
+function deepCloneNet(n){return{N:n.N,src:n.src.map(r=>r.slice()),w:n.w.map(r=>r.slice()),decoder:n.decoder.map(r=>r.slice()),bias:n.bias?n.bias.slice():Array(n.N).fill(0),fireBias:n.fireBias?n.fireBias.map(r=>r.slice()):Array.from({length:n.N},()=>[0,0,0]),fireGain:n.fireGain?n.fireGain.slice():Array(n.N).fill(.9),seed:n.seed}}
+function makeNet(){
+ const N=CFG.N,total=SENS+N,src=[],w=[];
+ for(let i=0;i<N;i++){src.push([Math.floor(rng()*total),Math.floor(rng()*total),Math.floor(rng()*total)]);w.push([Math.floor(rng()*3)-1,Math.floor(rng()*3)-1,Math.floor(rng()*3)-1]);}
+ const dens=CFG.decDensity;
+ const decoder=Array.from({length:3},()=>Array.from({length:N},()=>rng()<dens?(rng()<.5?-1:1):0));
+ return sanitizeBrain({N,src,w,decoder,bias:Array(N).fill(0),fireBias:Array.from({length:N},()=>[0,0,0]),fireGain:Array(N).fill(.9),seed:CFG.seed});
+}
+
+function freshState(r,hard=false){const m=hard?CFG.hardMul:1,a=CFG.startDeg*Math.PI/180*m,v=CFG.startVel*m;return{q:[(r()-.5)*2*a,(r()-.5)*2*a,(r()-.5)*2*a],qd:[(r()-.5)*2*v,(r()-.5)*2*v,(r()-.5)*2*v],t:0,torque:[0,0,0],done:false,impulse:0}}
+function cloneState(s){return{q:s.q.slice(),qd:s.qd.slice(),t:s.t,torque:s.torque.slice(),done:false,impulse:s.impulse,caseSeed:s.caseSeed||0}}
+function encode(s){
+  const f=[],qs=POS_LIMIT*.237,vs=VEL_LIMIT*.26,qd=POS_LIMIT*.259,qw=POS_LIMIT*.333,vd=VEL_LIMIT*.15;
+  for(let i=0;i<3;i++)f.push(tri(s.q[i]/qs));
+  for(let i=0;i<3;i++)f.push(tri(s.qd[i]/vs));
+  f.push(tri((s.q[0]-s.q[1])/qd),tri((s.q[1]-s.q[2])/qd),tri((s.q[0]-s.q[2])/qw));
+  f.push(tri((s.qd[0]-s.qd[1])/vd),tri((s.qd[1]-s.qd[2])/vd),tri((s.qd[0]-s.qd[2])/(VEL_LIMIT*.2)));
+  f.push(1);
+  return f;
+}
+
+// Point-mass triple pendulum. Rods are massless; each joint angle is measured from upright.
+const PM={m:.55,l:.68,g:9.81,damp:.04};
+function massMat(q){const M=Array.from({length:3},()=>[0,0,0]);for(let i=0;i<3;i++)for(let j=0;j<3;j++){const mult=3-Math.max(i,j);M[i][j]=PM.m*PM.l*PM.l*mult*Math.cos(q[i]-q[j])}return M}
+function dM(q,a,b,k){if(a===b)return 0;const mult=3-Math.max(a,b),d=q[a]-q[b];if(k===a)return-PM.m*PM.l*PM.l*mult*Math.sin(d);if(k===b)return PM.m*PM.l*PM.l*mult*Math.sin(d);return 0}
+function gravity(q,i){return-PM.m*PM.g*PM.l*(3-i)*Math.sin(q[i])}
+function solve3(A,b){const a=A.map(r=>r.slice()),x=b.slice();for(let k=0;k<3;k++){let p=k;for(let i=k+1;i<3;i++)if(Math.abs(a[i][k])>Math.abs(a[p][k]))p=i;[a[k],a[p]]=[a[p],a[k]];[x[k],x[p]]=[x[p],x[k]];const piv=Math.abs(a[k][k])<1e-9?(a[k][k]<0?-1:1)*1e-9:a[k][k];for(let i=k+1;i<3;i++){const fac=a[i][k]/piv;for(let j=k;j<3;j++)a[i][j]-=fac*a[k][j];x[i]-=fac*x[k]}}const out=[0,0,0];for(let i=2;i>=0;i--){let s=x[i];for(let j=i+1;j<3;j++)s-=a[i][j]*out[j];out[i]=s/(Math.abs(a[i][i])<1e-9?(a[i][i]<0?-1:1)*1e-9:a[i][i])}return out}
+function accel(q,qd,tau){const M=massMat(q),b=[-gravity(q,0)-PM.damp*qd[0],-gravity(q,1)-PM.damp*qd[1],-gravity(q,2)-PM.damp*qd[2]],c=[0,0,0];for(let i=0;i<3;i++)for(let j=0;j<3;j++)for(let k=0;k<3;k++){const G=.5*(dM(q,i,j,k)+dM(q,i,k,j)-dM(q,j,k,i));c[i]+=G*qd[j]*qd[k]}return solve3(M,[tau[0]-c[0]+b[0],tau[1]-c[1]+b[1],tau[2]-c[2]+b[2]])}
+function physics(s,tau,dt=DT){
+  const q=s.q,v=s.qd,a1=accel(q,v,tau),q2=q.map((x,i)=>x+.5*dt*v[i]),v2=v.map((x,i)=>x+.5*dt*a1[i]),a2=accel(q2,v2,tau),q3=q.map((x,i)=>x+.5*dt*v2[i]),v3=v.map((x,i)=>x+.5*dt*a2[i]),a3=accel(q3,v3,tau),q4=q.map((x,i)=>x+dt*v3[i]),v4=v.map((x,i)=>x+dt*a3[i]),a4=accel(q4,v4,tau);
+  s.q=q.map((x,i)=>x+dt*(v[i]+2*v2[i]+2*v3[i]+v4[i])/6);
+  s.qd=v.map((x,i)=>x+dt*(a1[i]+2*a2[i]+2*a3[i]+a4[i])/6);
+  s.t+=dt;s.torque=tau.slice();
+  if(!s.q.every(Number.isFinite)||!s.qd.every(Number.isFinite)){numericalFaults++;s.q=s.q.map(v2=>finiteNum(v2,POS_LIMIT*2));s.qd=s.qd.map(v2=>finiteNum(v2,0));s.done=true;return}
+  s.done=s.q.some(v2=>Math.abs(v2)>POS_LIMIT)||s.qd.some(v2=>Math.abs(v2)>VEL_LIMIT)||s.t>=MAXT;
+}
+function reward(s,tau){const qc=s.q.reduce((a,v)=>a+v*v,0)/3,vc=s.qd.reduce((a,v)=>a+v*v,0)/3,uc=tau.reduce((a,v)=>a+v*v,0)/(3*MAX_TORQUE*MAX_TORQUE);let r=1-3.2*qc-.032*vc-.06*uc;if(Math.max(...s.q.map(Math.abs))<POS_LIMIT*.089)r+=.55;return clamp(r,-4,2)}
+function teacherAction(s){const q=s.q,v=s.qd;return[clamp(-(42*q[0]+10*v[0]+10*q[1]+2.5*v[1]+6*q[2]+1.2*v[2]),-MAX_TORQUE,MAX_TORQUE),clamp(-(36*q[1]+9*v[1]+8*q[0]+2*v[0]+7*q[2]+1.8*v[2]),-MAX_TORQUE,MAX_TORQUE),clamp(-(28*q[2]+7*v[2]+7*q[1]+1.6*v[1]),-MAX_TORQUE,MAX_TORQUE)]}
+function teacherMatch(a,t){return 1-(Math.abs(a[0]-t[0])+Math.abs(a[1]-t[1])+Math.abs(a[2]-t[2]))/(6*MAX_TORQUE)}
+
+function classProbs(brain,i,z,temp){const b=(brain.fireBias?.[i]||[0,0,0]).map(v=>finiteNum(v,0));const gain=clamp(finiteNum(brain.fireGain?.[i],.9),.05,4),T=Math.max(.05,finiteNum(temp,1)),zz=clamp(finiteNum(z,0),-12,12),drive=gain*zz/T,raw=[b[0]-drive,b[1],b[2]+drive],m=Math.max(...raw),e=raw.map(v=>Math.exp(clamp(v-m,-18,18))),d=Math.max(1e-12,e[0]+e[1]+e[2]);return[e[0]/d,e[1]/d,e[2]/d]}
+function deterministicForward(brain,s,prev){
+  const f=encode(s),h=[],z=[],p=[];
+  for(let i=0;i<brain.N;i++){
+    let q=finiteNum(brain.bias?.[i],0);
+    for(let k=0;k<3;k++){const src=brain.src[i][k];const pre=src<SENS?finiteNum(f[src],0):finiteNum(prev[src-SENS],0);q+=finiteNum(brain.w[i][k],0)*pre}
+    z[i]=q;const pp=classProbs(brain,i,q,DECT);p[i]=pp;
+    let im=1;if(pp[0]>pp[1]&&pp[0]>=pp[2])im=0;else if(pp[2]>pp[1]&&pp[2]>pp[0])im=2;
+    h[i]=im-1;
+  }
+  const tor=[0,0,0];
+  for(let j=0;j<3;j++){let sum=0;for(let i=0;i<brain.N;i++)sum+=brain.decoder[j][i]*h[i];tor[j]=Math.tanh(sum/Math.max(3,(brain.dnz?.[j]||brain.N*.12)*.55))*MAX_TORQUE}
+  return{f,h,z,p,tor};
+}
+
+function makeCase(seed,hard=false){const s=freshState(PRNG(seed>>>0),hard);s.caseSeed=seed>>>0;return s}
+let trainEpoch=0;
+function buildTraining(){
+  const base=(CFG.seed+trainEpoch*2654435761)>>>0;
+  trainingPool=Array.from({length:CFG.trainCases},(_,i)=>makeCase((base+7919*(i+1))>>>0,i>=Math.floor(CFG.trainCases*.72)));
+}
+function buildSuites(){
+  const base=CFG.seed;
+  buildTraining();
+  validationPool=Array.from({length:CFG.valTrials},(_,i)=>makeCase((base+1000003+i*104729)>>>0,i>=Math.floor(CFG.valTrials*.72)));
+  holdoutPool=Array.from({length:CFG.valTrials},(_,i)=>makeCase((base+7700017+i*15485863)>>>0,i>=Math.floor(CFG.valTrials*.72)));
+}
+function perturbSchedule(caseSeed){const r=PRNG((caseSeed||1)>>>0);return{rng:r,next:1.0+r()*1.8}}
+function applyScheduledPerturb(s,plan){
+  const j=Math.floor(plan.rng()*3),sg=plan.rng()<.5?-1:1;
+  s.qd[j]+=sg*VEL_LIMIT*(.15+plan.rng()*.12)*CFG.perturbMul;
+  plan.next=s.t+1.5+plan.rng()*2.0;s.impulse=1;
+}
+
+// One episode of the frozen deterministic policy, with behaviour descriptors collected on the way.
+function runEpisode(brain,base,opts){
+  const o=opts||{},perturbing=o.perturb!==false;
+  let prev=Array(brain.N).fill(0),s=cloneState(base),total=0,t=0,steps=0;
+  let eff=0,act=0,tempo=0,top=0,tot=0,match=0;
+  const plan=perturbSchedule(s.caseSeed||1);
+  while(!s.done&&t<MAXT){
+    const fw=deterministicForward(brain,s,prev);prev=fw.h;
+    if(o.match)match+=teacherMatch(fw.tor,teacherAction(s))*DT;
+    physics(s,fw.tor,DT);
+    total+=reward(s,fw.tor)*DT;t+=DT;steps++;
+    const a0=Math.abs(fw.tor[0]),a1=Math.abs(fw.tor[1]),a2=Math.abs(fw.tor[2]),sum=a0+a1+a2;
+    eff+=sum/(3*MAX_TORQUE);tot+=sum;top+=a2;
+    let nz=0;for(let i=0;i<brain.N;i++)if(fw.h[i]!==0)nz++;
+    act+=nz/brain.N;
+    tempo+=(Math.abs(s.qd[0])+Math.abs(s.qd[1])+Math.abs(s.qd[2]))/(3*VEL_LIMIT);
+    if(perturbing&&s.t>=plan.next)applyScheduledPerturb(s,plan);
+  }
+  const n=Math.max(1,steps);
+  return{duration:s.t,total,match:match/Math.max(t,DT),effort:eff/n,activity:act/n,tempo:tempo/n,topShare:tot>1e-9?top/tot:1/3,last:s};
+}
+function scoreSet(brain,suite,opts){
+  sanitizeBrain(brain);
+  const durations=[];let total=0,eff=0,act=0,tempo=0,top=0,match=0;
+  for(let i=0;i<suite.length;i++){
+    const ep=runEpisode(brain,suite[i],opts);
+    durations.push(ep.duration);total+=ep.total;eff+=ep.effort;act+=ep.activity;tempo+=ep.tempo;top+=ep.topShare;match+=ep.match;
+  }
+  const n=Math.max(1,durations.length),sorted=durations.slice().sort((a,b)=>a-b);
+  const mean=sorted.reduce((a,b)=>a+b,0)/n;
+  const median=n%2?sorted[(n-1)>>1]:.5*(sorted[n/2-1]+sorted[n/2]);
+  const worst=sorted[0]||0;
+  const survival=sorted.filter(v=>v>=SURV).length/n;
+  const sc=Math.max(.2,MAXT/10);
+  // Robust score deliberately rewards broad survival rather than one long run; time terms are
+  // normalised by the episode cap so scores stay comparable when you change episode length.
+  const robust=(.55*mean+.25*median+.20*worst)/sc+3*survival;
+  return{mean,median,worst,survival,total,robust,durations:sorted,teacherMatch:match/n,
+         desc:{effort:clamp(eff/n,0,1),activity:clamp(act/n,0,1),tempo:clamp(tempo/n,0,1),topShare:clamp(top/n,0,1)}};
+}
+const scoreSuite=(brain,suite)=>scoreSet(brain,suite,{});
+function fitness(brain){
+  const ts=scoreSet(brain,trainingPool,{match:true});
+  let f=ts.total+2*ts.mean+1.5*ts.worst+8*ts.survival;
+  if(CFG.novelty>0&&!archive.has(cellKey(binOf(ts.desc))))f+=CFG.novelty;
+  return Object.assign({fitness:f},ts);
+}
+function scoreReference(suite){
+  const durations=[];let survive=0;
+  for(const c of suite){
+    let s=cloneState(c),t=0;const plan=perturbSchedule(s.caseSeed||1);
+    while(!s.done&&t<MAXT){physics(s,teacherAction(s),DT);t+=DT;if(s.t>=plan.next)applyScheduledPerturb(s,plan)}
+    durations.push(s.t);if(s.t>=SURV)survive++;
+  }
+  const n=Math.max(1,durations.length),sorted=durations.slice().sort((a,b)=>a-b);
+  return{mean:sorted.reduce((a,b)=>a+b,0)/n,worst:sorted[0]||0,survival:survive/n};
+}
+
+// Most of an undifferentiated population is read by nothing, so a uniformly random mutation is
+// usually invisible to the actuators. Bias the target toward neurons the decoder actually reads
+// (and their direct inputs), and bias rewiring toward the sensor block, which is only 9% of the
+// source space by uniform draw.
+function relevantSet(b){
+  const read=new Set();
+  for(let j=0;j<3;j++)for(let i=0;i<b.N;i++)if(b.decoder[j][i])read.add(i);
+  const deep=new Set(read);
+  for(const i of read)for(let k=0;k<3;k++){const sc=b.src[i][k];if(sc>=SENS)deep.add(sc-SENS)}
+  return[...deep];
+}
+function mutate(parent,strong=false){
+  const c=deepCloneNet(parent),r=rng||PRNG(1),count=CFG.mut;
+  const rel=relevantSet(c),focus=CFG.focus;
+  const target=()=>rel.length&&r()<focus?rel[Math.floor(r()*rel.length)]:Math.floor(r()*c.N);
+  const source=()=>r()<CFG.sensorBias?Math.floor(r()*SENS):Math.floor(r()*(SENS+c.N));
+  for(let z=0;z<count;z++){
+    const i=target(),k=Math.floor(r()*3),u=r();
+    if(u<.26){
+      c.w[i][k]=otherTern(r,c.w[i][k]);                                   // local weight flip
+    }else if(u<.50){
+      c.src[i][k]=source();                                              // rewire, keep the sign
+    }else if(u<.62){
+      c.bias[i]=clamp((c.bias[i]||0)+(r()<.5?-1:1)*.25,-2.5,2.5);         // small drive offset
+    }else if(u<.72){
+      const ci=Math.floor(r()*3);
+      c.fireBias[i][ci]=clamp(c.fireBias[i][ci]+(r()<.5?-1:1)*.3,-5,5);   // firing threshold / zero band
+    }else if(u<.78){
+      c.fireGain[i]=clamp(c.fireGain[i]*(r()<.5?.82:1.22),.08,3.5);       // sensitivity
+    }else{
+      const j=Math.floor(r()*3),ni=r()<focus&&rel.length?rel[Math.floor(r()*rel.length)]:Math.floor(r()*c.N);
+      c.decoder[j][ni]=otherTern(r,c.decoder[j][ni]);                     // actuator wiring
+    }
+  }
+  if(strong){
+    const extra=Math.max(2,Math.round(count*1.5));
+    for(let z=0;z<extra;z++){const i=target(),k=Math.floor(r()*3);c.src[i][k]=source();c.w[i][k]=choice(r,[-1,0,1])}
+  }
+  return sanitizeBrain(c);
+}
+function crossover(a,b){
+  if(a.N!==b.N)return deepCloneNet(a);
+  const c=deepCloneNet(a),r=rng,cut=Math.floor(r()*c.N),len=Math.max(1,Math.floor(c.N*(.2+r()*.4)));
+  for(let x=0;x<len;x++){
+    const i=(cut+x)%c.N;
+    c.src[i]=b.src[i].slice();c.w[i]=b.w[i].slice();c.bias[i]=b.bias[i];
+    c.fireBias[i]=b.fireBias[i].slice();c.fireGain[i]=b.fireGain[i];
+    for(let j=0;j<3;j++)c.decoder[j][i]=b.decoder[j][i];
+  }
+  return sanitizeBrain(c);
+}
+function genomeDistance(a,b){
+  if(a.N!==b.N)return 1;
+  let diff=0,tot=0;
+  for(let i=0;i<a.N;i++)for(let k=0;k<3;k++){tot+=2;if(a.src[i][k]!==b.src[i][k])diff++;if(a.w[i][k]!==b.w[i][k])diff++}
+  for(let j=0;j<3;j++)for(let i=0;i<a.N;i++){tot++;if(a.decoder[j][i]!==b.decoder[j][i])diff++}
+  return diff/Math.max(1,tot);
+}
+
+// ---- diversity archive: one elite per behaviour cell (MAP-Elites) ----
+// Descriptors never use the whole 0-1 range: every brain that can balance at all ends up with a
+// similar control effort. So the axes track the range actually observed and rebin when it widens,
+// which costs nothing because descriptors are stored alongside each elite.
+const AXES=['effort','activity','topShare'];
+const cellKey=cell=>cell.join('|');
+let axisRange={effort:[.30,.55],activity:[.35,.65],topShare:[.20,.45]};
+function resetAxes(){axisRange={effort:[.30,.55],activity:[.35,.65],topShare:[.20,.45]}}
+function noteDesc(d){
+  let widened=false;
+  for(const k of AXES){
+    const v=clamp(finiteNum(d[k],0),0,1),r=axisRange[k];
+    if(v<r[0]-1e-9){r[0]=v;widened=true}
+    if(v>r[1]+1e-9){r[1]=v;widened=true}
+  }
+  return widened;
+}
+function binOf(desc){
+  const b=CFG.bins;
+  return AXES.map(k=>{
+    const[lo,hi]=axisRange[k],span=Math.max(1e-6,hi-lo);
+    return Math.min(b-1,Math.max(0,Math.floor((clamp(finiteNum(desc[k],0),lo,hi)-lo)/span*b*.999999)));
+  });
+}
+function rebinArchive(){
+  const e=[...archive.values()];archive=new Map();
+  for(const x of e){
+    x.cell=binOf(x.validation.desc);
+    const k=cellKey(x.cell),cur=archive.get(k);
+    if(!cur||x.validation.robust>cur.validation.robust)archive.set(k,x);
+  }
+}
+function tryArchive(brain,val){
+  if(noteDesc(val.desc))rebinArchive();
+  const cell=binOf(val.desc),key=cellKey(cell),cur=archive.get(key);
+  if(!cur||val.robust>cur.validation.robust+1e-9){
+    archive.set(key,{id:++championSerial,generation,brain:deepCloneNet(brain),validation:val,cell});
+    pruneArchive();return cur?'improved':'new';
+  }
+  return false;
+}
+function pruneArchive(){
+  if(archive.size<=CFG.archiveCap)return;
+  const e=[...archive.entries()].sort((a,b)=>a[1].validation.robust-b[1].validation.robust);
+  for(let i=0;i<archive.size-CFG.archiveCap;i++)archive.delete(e[i][0]);
+}
+function refreshPool(){
+  const all=[...archive.values()].sort((a,b)=>b.validation.robust-a.validation.robust),picked=[];
+  // Best first, but skip anything that is structurally a near-copy of a brain already picked, so
+  // the pool holds different brains rather than eight variants of one lineage.
+  for(const e of all){
+    if(picked.length>=CFG.pool)break;
+    if(CFG.minDist>0&&picked.some(p=>genomeDistance(p.brain,e.brain)<CFG.minDist))continue;
+    picked.push(e);
+  }
+  for(const e of all){if(picked.length>=CFG.pool)break;if(!picked.includes(e))picked.push(e)}
+  champions=picked;
+  updateChampionUI();
+  return champions.length;
+}
+function pickChampion(){if(!champions.length)return null;return champions[Math.min(champions.length-1,Math.floor(Math.pow(rng(),CFG.selExp)*champions.length))]}
+function pickArchive(){if(!archive.size)return null;const a=[...archive.values()];return a[Math.floor(rng()*a.length)]}
+function pickParent(){
+  if(rng()*100<CFG.revisitPct){
+    if(rng()*100<CFG.archivePct){const a=pickArchive();if(a)return{brain:a.brain,from:'archive #'+a.id}}
+    const c=pickChampion();if(c)return{brain:c.brain,from:'champion #'+c.id};
+  }
+  return{brain:net,from:'current'};
+}
+function revisitChampion(){
+  const c=(rng()*100<CFG.archivePct?pickArchive():null)||pickChampion();
+  if(!c){setStatus('No champion exists yet. Train first.');return false}
+  net=mutate(c.brain,true);stagnation=0;
+  setStatus(`Revisited champion #${c.id} from generation ${c.generation}.`);
+  return true;
+}
+function hofDiversity(){
+  if(champions.length<2)return{min:0,mean:0};
+  let mn=Infinity,sum=0,n=0;
+  for(let i=0;i<champions.length;i++)for(let j=i+1;j<champions.length;j++){const d=genomeDistance(champions[i].brain,champions[j].brain);mn=Math.min(mn,d);sum+=d;n++}
+  return{min:mn===Infinity?0:mn,mean:sum/Math.max(1,n)};
+}
+function coverage(){const cells=Math.pow(CFG.bins,3);return{cells:archive.size,pct:100*archive.size/cells,total:cells}}
+function updateChampionUI(){
+  const top=champions[0];
+  if(top){
+    bestMean=top.validation.mean;bestWorst=top.validation.worst;bestSurvival=top.validation.survival;
+    const d=hofDiversity();
+    $('championStatus').textContent=`Champions: ${champions.length} • top #${top.id} • robust ${top.validation.robust.toFixed(2)} • mean ${top.validation.mean.toFixed(2)} s • median ${top.validation.median.toFixed(2)} s • worst ${top.validation.worst.toFixed(2)} s • survival ${(top.validation.survival*100).toFixed(0)}% • pool genome spread min ${(d.min*100).toFixed(1)}% / mean ${(d.mean*100).toFixed(1)}%`;
+  }else $('championStatus').textContent='Champions: 0';
+  const list=$('archiveList');
+  const entries=[...champions.map(c=>['pool',c]),...[...archive.values()].sort((a,b)=>b.validation.robust-a.validation.robust).slice(0,10).map(c=>['cell',c])];
+  if(!entries.length){list.innerHTML='<span class="small">No champions yet.</span>';return}
+  const seen=new Set();
+  list.innerHTML=entries.filter(([,c])=>!seen.has(c.id)&&seen.add(c.id)).map(([kind,c])=>{
+    const v=c.validation,d=v.desc||{effort:0,activity:0,topShare:0};
+    return `<span class="pill">${kind==='pool'?'pool':'cell'} #${c.id} • <b>${v.robust.toFixed(2)}</b> • ${v.mean.toFixed(1)}s • ${(v.survival*100).toFixed(0)}% • effort ${(d.effort*100).toFixed(0)}% • active ${(d.activity*100).toFixed(0)}% • top ${(d.topShare*100).toFixed(0)}%</span>`;
+  }).join('');
+}
+
+// ---- training loop ----
+function trainGeneration(){
+  if(!running||paused||mode!=='train')return;
+  readCfg();
+  if(!trainingPool.length)buildSuites();
+  if(CFG.rotate>0&&generation%CFG.rotate===0){trainEpoch++;buildTraining()}
+  const parentF=fitness(net);
+  let winner=net,wF=parentF,tag='current (kept)',explorer=null,explorerF=-Infinity;
+  for(let i=0;i<CFG.cand;i++){
+    const p=pickParent();
+    let base=p.brain,note=p.from;
+    if(champions.length>1&&rng()*100<CFG.crossPct){
+      const other=pickChampion();
+      if(other&&other.brain.N===base.N&&other.brain!==base){base=crossover(base,other.brain);note+=' × #'+other.id}
+    }
+    const strong=CFG.strongEvery>0&&i===CFG.cand-1&&(generation%CFG.strongEvery)===CFG.strongEvery-1;
+    const c=mutate(base,strong),f=fitness(c);
+    // A candidate whose behaviour lands in an empty archive cell is worth validating even if it
+    // loses this generation: that is how the archive fills with strategies the winner never tried.
+    if(!archive.has(cellKey(binOf(f.desc)))&&f.fitness>explorerF){explorer=c;explorerF=f.fitness}
+    if(f.fitness>wF.fitness){winner=c;wF=f;tag=note+(strong?' + strong jump':'')}
+  }
+  const improved=winner!==net;
+  net=winner;generation++;lastParentTag=tag;
+  if(improved)stagnation=0;else stagnation++;
+
+  let v=null;
+  if(generation%CFG.valEvery===0){
+    v=scoreSuite(net,validationPool);
+    const admitted=tryArchive(net,v);
+    let probe='none';
+    if(explorer){
+      const pv=scoreSuite(explorer,validationPool),pa=tryArchive(explorer,pv);
+      probe=`cell ${binOf(pv.desc).join('/')} ${pa?pa+' — kept':'already better — dropped'}`;
+    }
+    refreshPool();
+    const inPool=champions.some(c=>c.generation===generation);
+    lastAdmit=`winner ${admitted?'took a '+admitted+' cell':'changed nothing'}${inPool?', in pool':''} • probe ${probe}`;
+    history.push({g:generation,d:v.mean,w:v.worst,s:v.survival});
+    if(history.length>240)history.shift();
+  }
+  if(stagnation>=CFG.threshold&&revisitChampion())stagnation=0;
+
+  const cov=coverage(),div=hofDiversity(),rec=net.src.flat().filter(x=>x>=SENS).length;
+  $('log').textContent=`generation ${generation}
+method: evolution with champions + diversity archive
+winning parent: ${lastParentTag}
+train fitness: ${wF.fitness.toFixed(4)}   (mean ${wF.mean.toFixed(2)} s, worst ${wF.worst.toFixed(2)} s, survival ${(wF.survival*100).toFixed(0)}%)
+reference match: ${(wF.teacherMatch*100).toFixed(1)}%
+${v?`validation mean: ${v.mean.toFixed(2)} s
+validation median: ${v.median.toFixed(2)} s
+validation worst: ${v.worst.toFixed(2)} s
+survival >= ${SURV.toFixed(1)} s: ${(v.survival*100).toFixed(1)}%
+robust score: ${v.robust.toFixed(3)}
+behaviour: effort ${(v.desc.effort*100).toFixed(0)}% • active ${(v.desc.activity*100).toFixed(0)}% • tempo ${(v.desc.tempo*100).toFixed(0)}% • top-joint ${(v.desc.topShare*100).toFixed(0)}%
+admission: ${lastAdmit}`:`validation: skipped (runs every ${CFG.valEvery} generations)`}
+stagnation: ${stagnation}/${CFG.threshold}
+champions: ${champions.length}/${CFG.pool}   pool genome spread: min ${(div.min*100).toFixed(1)}%
+archive: ${cov.cells} cells of ${cov.total} (${cov.pct.toFixed(1)}% coverage, cap ${CFG.archiveCap})
+feeds: ${CFG.revisitPct}% champion parents, ${CFG.archivePct}% of those from archive, ${CFG.crossPct}% crossover
+lane: ±${CFG.laneDeg.toFixed(0)}° angle, ±${VEL_LIMIT.toFixed(1)} rad/s, episode cap ${MAXT.toFixed(1)} s
+recurrent slots: ${rec}/${net.N*3}
+weights ∈ {-1,0,+1}`;
+  drawHistory();drawArchive();updateUI();
+  trainTimer=setTimeout(trainGeneration,18);
+}
+
+function startTrain(keep){
+  clearTimeout(trainTimer);readCfg();
+  rng=PRNG(CFG.seed);
+  if(keep&&champions.length){net=mutate(champions[0].brain,true)}else{net=makeNet()}
+  generation=0;stagnation=0;history=[];numericalFaults=0;trainEpoch=0;
+  buildSuites();
+  if(!keep){champions=[];archive=new Map();championSerial=0;resetAxes()}
+  mode='train';paused=false;running=true;layoutCache=null;
+  $('networkCard').style.display='none';
+  setStatus(keep&&champions.length
+    ?`Continuing from champion #${champions[0].id}. Pool and archive stay as parent feeds; generation counter restarts.`
+    :`Fresh champion-evolution run from seed ${CFG.seed}. Pool and archive cleared.`);
+  trainGeneration();updateUI();
+}
+function pauseTrain(){if(mode==='train'&&!paused){paused=true;running=false;clearTimeout(trainTimer);setStatus(`Paused at generation ${generation}. Test the frozen current brain or press Resume.`);updateUI()}}
+function resumeTrain(){
+  if(mode==='test'&&state?.done){mode='train';paused=true;running=false;$('networkCard').style.display='none';state=freshState(rng,false);setStatus('Returned from test. Exact same brain is frozen; press Resume to continue training.');updateUI();return}
+  if(mode==='train'&&paused){paused=false;running=true;setStatus('Resuming. Current weights, wiring, champions, and generation are preserved.');trainGeneration();updateUI()}
+}
+function resetAll(){
+  clearTimeout(trainTimer);readCfg();
+  rng=PRNG(CFG.seed);net=makeNet();
+  generation=0;bestMean=bestWorst=bestSurvival=0;stagnation=0;history=[];numericalFaults=0;trainEpoch=0;
+  mode='idle';paused=true;running=false;
+  buildSuites();champions=[];archive=new Map();championSerial=0;resetAxes();
+  state=freshState(rng,false);layoutCache=null;
+  $('networkCard').style.display='none';
+  $('log').textContent='Reset. Ready for a fresh champion-evolution run.';
+  drawHistory();drawArchive();audit();updateChampionUI();updateUI();
+  setStatus('Reset complete. Suites rebuilt from the current lane and seed.');
+}
+function testCurrent(){
+  if(!paused||mode!=='train'){setStatus('Pause training first. Test intentionally freezes the current brain.');return}
+  mode='test';running=false;clearTimeout(trainTimer);
+  currentTestRng=PRNG(CFG.seed+generation*9187+77);
+  const idx=Math.floor(currentTestRng()*validationPool.length);
+  state=cloneState(validationPool[idx]);
+  state._caseIndex=idx;state._prev=Array(net.N).fill(0);state._trace=[];
+  const plan=perturbSchedule(state.caseSeed||1);
+  state._nextPerturb=plan.next;state._perturbRng=plan.rng;
+  $('networkCard').style.display='block';
+  setStatus(`Testing frozen current on validation case ${idx+1}/${validationPool.length}. Perturbations exactly match the validation protocol.`);
+  updateUI();
+}
+function evalCurrent(){
+  if(mode==='test'||(mode==='train'&&!paused)){setStatus('Pause training before running a robust evaluation.');return}
+  readCfg();buildSuites();
+  const t=scoreSuite(net,validationPool),h=scoreSuite(net,holdoutPool);
+  $('log').textContent=`ROBUST EVALUATION OF CURRENT BRAIN
+validation cases: ${validationPool.length}   holdout cases: ${holdoutPool.length}
+                  validation      holdout
+mean duration     ${t.mean.toFixed(3)} s        ${h.mean.toFixed(3)} s
+median duration   ${t.median.toFixed(3)} s        ${h.median.toFixed(3)} s
+worst duration    ${t.worst.toFixed(3)} s        ${h.worst.toFixed(3)} s
+survival >= ${SURV.toFixed(1)}s   ${(t.survival*100).toFixed(1)}%          ${(h.survival*100).toFixed(1)}%
+robust score      ${t.robust.toFixed(3)}          ${h.robust.toFixed(3)}
+
+behaviour: effort ${(t.desc.effort*100).toFixed(0)}% • active ${(t.desc.activity*100).toFixed(0)}% • tempo ${(t.desc.tempo*100).toFixed(0)}% • top-joint ${(t.desc.topShare*100).toFixed(0)}%
+archive cell: ${binOf(t.desc).join(' / ')}
+
+Same protocol as the live Test button. Nothing about the brain, the champions,
+or the generation counter was changed.`;
+  setStatus(`Robust evaluation complete: mean ${t.mean.toFixed(2)} s, worst ${t.worst.toFixed(2)} s, survival ${(t.survival*100).toFixed(0)}% (holdout mean ${h.mean.toFixed(2)} s).`);
+  drawHistory();updateUI();
+}
+function perturbNow(){
+  if(mode!=='test'||!state)return;
+  const rr=state._perturbRng||currentTestRng||Math.random;
+  const j=Math.floor(rr()*3),sg=rr()<.5?-1:1;
+  state.qd[j]+=sg*VEL_LIMIT*(.15+rr()*.12)*Math.max(.25,CFG.perturbMul);
+  state.impulse=1;state._nextPerturb=state.t+1.5+rr()*2.0;
+}
+function audit(){
+  let ok=true,tern=true,valid=true,finite=true;
+  for(const row of net.src){if(row.length!==3)ok=false;for(const s of row)if(s<0||s>=SENS+net.N)valid=false}
+  for(const row of net.w)for(const v of row)if(![-1,0,1].includes(v))tern=false;
+  for(let j=0;j<3;j++)for(const v of net.decoder[j])if(![-1,0,1].includes(v))tern=false;
+  for(let i=0;i<net.N;i++)if(!Number.isFinite(net.bias[i])||!Number.isFinite(net.fireGain[i]))finite=false;
+  const rec=net.src.flat().filter(x=>x>=SENS).length,pass=ok&&tern&&valid&&finite;
+  $('auditOut').innerHTML=`<b class="${pass?'ok':'badtext'}">${pass?'PASS':'FAIL'}</b> — ${net.N} protoneurons, ${net.N*3} incoming slots, every neuron has 3; recurrent ${rec} (${(100*rec/(net.N*3)).toFixed(1)}%); ternary weights and decoder ${tern?'yes':'no'}; thresholds finite ${finite?'yes':'no'}; lane ±${CFG.laneDeg.toFixed(0)}°.`;
+}
+function loadTopChampion(){
+  if(mode==='test'||(mode==='train'&&!paused)){setStatus('Pause training before loading a champion into the current brain.');return}
+  if(!champions.length){setStatus('No champions to load yet.');return}
+  const c=champions[0];net=deepCloneNet(c.brain);layoutCache=null;
+  $('neurons').value=net.N;readCfg();
+  setStatus(`Champion #${c.id} (generation ${c.generation}, robust ${c.validation.robust.toFixed(2)}) is now the current brain. Test or evaluate it directly.`);
+  audit();updateUI();
+}
+function rescoreArchive(){
+  if(busy)return;
+  if(mode==='train'&&!paused){setStatus('Pause training before rescoring.');return}
+  busy=true;setStatus('Rescoring and rebinning every champion under the current settings…');
+  setTimeout(()=>{
+    readCfg();buildSuites();
+    const entries=[...archive.values()];
+    for(const e of entries)e.validation=scoreSuite(e.brain,validationPool);
+    resetAxes();for(const e of entries)noteDesc(e.validation.desc);
+    archive=new Map();
+    for(const e of entries){
+      e.cell=binOf(e.validation.desc);
+      const k=cellKey(e.cell),cur=archive.get(k);
+      if(!cur||e.validation.robust>cur.validation.robust)archive.set(k,e);
+    }
+    pruneArchive();
+    refreshPool();
+    const cov=coverage(),merged=entries.length-archive.size;
+    setStatus(`Rescored ${entries.length} archive entries and re-derived a pool of ${champions.length}.${merged>0?` ${merged} entr${merged===1?'y':'ies'} rebinned into an occupied cell and only the better one was kept.`:''} ${cov.cells} cells occupied (${cov.pct.toFixed(1)}% coverage).`);
+    drawArchive();updateUI();busy=false;
+  },40);
+}
+function crossValidate(){
+  if(busy)return;
+  if(mode==='train'&&!paused){setStatus('Pause training before cross-validating.');return}
+  if(!champions.length&&!archive.size){setStatus('No champions to cross-validate yet.');return}
+  busy=true;setStatus('Cross-validating champions on the holdout suite…');
+  setTimeout(()=>{
+    readCfg();buildSuites();
+    const seen=new Set(),rows=[];
+    const list=[...champions.map(c=>['pool',c]),...[...archive.values()].sort((a,b)=>b.validation.robust-a.validation.robust).slice(0,10).map(c=>['cell',c])];
+    for(const [kind,c] of list){
+      if(seen.has(c.id))continue;seen.add(c.id);
+      const h=scoreSuite(c.brain,holdoutPool),d=c.validation.desc||{effort:0,activity:0,topShare:0};
+      rows.push({kind,id:c.id,val:c.validation.robust,h,d,dist:champions.length?genomeDistance(c.brain,champions[0].brain):0});
+    }
+    rows.sort((a,b)=>b.h.robust-a.h.robust);
+    const ref=scoreReference(holdoutPool);
+    $('log').textContent=`CHAMPION CROSS-VALIDATION — holdout suite, ${holdoutPool.length} unseen cases
+============================================================
+src  id    val.rob  hold.rob  mean    worst   surv   effort active top  dist
+${rows.map(r=>`${r.kind.padEnd(4)} #${String(r.id).padEnd(4)} ${r.val.toFixed(2).padStart(7)} ${r.h.robust.toFixed(2).padStart(9)} ${r.h.mean.toFixed(2).padStart(6)}s ${r.h.worst.toFixed(2).padStart(6)}s ${(r.h.survival*100).toFixed(0).padStart(4)}% ${(r.d.effort*100).toFixed(0).padStart(6)}% ${(r.d.activity*100).toFixed(0).padStart(6)}% ${(r.d.topShare*100).toFixed(0).padStart(4)}% ${(r.dist*100).toFixed(1).padStart(5)}%
+`).join('')}
+reference controller (hand-tuned, not evolved): mean ${ref.mean.toFixed(2)} s, worst ${ref.worst.toFixed(2)} s, survival ${(ref.survival*100).toFixed(0)}%
+
+val.rob is the score the brain was archived with; hold.rob is on cases it has never seen.
+dist is genome distance from the top pool champion, so a spread of distances means the
+pool really is holding different brains rather than one brain eight times.`;
+    setStatus(`Cross-validation finished on ${rows.length} champions. Best holdout robust ${rows[0]?rows[0].h.robust.toFixed(2):'—'}.`);
+    updateUI();busy=false;
+  },40);
+}
+
+// ---- persistence: packed ternary genomes, browser storage with a text-box fallback ----
+const T3='-0+',MEM={};
+const packTern=arr=>arr.map(v=>T3[(v|0)+1]).join('');
+const unpackTern=s=>[...s].map(ch=>Math.max(0,T3.indexOf(ch))-1);
+function packBrain(b){return{N:b.N,src:b.src.flat(),w:packTern(b.w.flat()),dec:b.decoder.map(packTern),bias:b.bias.map(v=>+v.toFixed(3)),fb:b.fireBias.flat().map(v=>+v.toFixed(3)),fg:b.fireGain.map(v=>+v.toFixed(3)),seed:b.seed||0}}
+function unpackBrain(p){
+  const N=p.N|0,src=[],w=[],fb=[],flatW=unpackTern(p.w||''),flatFb=p.fb||[];
+  for(let i=0;i<N;i++){
+    src.push([p.src[i*3]|0,p.src[i*3+1]|0,p.src[i*3+2]|0]);
+    w.push([flatW[i*3]??0,flatW[i*3+1]??0,flatW[i*3+2]??0]);
+    fb.push([finiteNum(flatFb[i*3],0),finiteNum(flatFb[i*3+1],0),finiteNum(flatFb[i*3+2],0)]);
+  }
+  const decoder=[0,1,2].map(j=>{const a=unpackTern((p.dec||[])[j]||'');while(a.length<N)a.push(0);return a.slice(0,N)});
+  const bias=Array.from({length:N},(_,i)=>finiteNum((p.bias||[])[i],0));
+  const fireGain=Array.from({length:N},(_,i)=>finiteNum((p.fg||[])[i],.9));
+  return sanitizeBrain({N,src,w,decoder,bias,fireBias:fb,fireGain,seed:p.seed||0});
+}
+const slimVal=v=>({mean:+v.mean.toFixed(4),median:+v.median.toFixed(4),worst:+v.worst.toFixed(4),survival:+v.survival.toFixed(4),robust:+v.robust.toFixed(4),total:+v.total.toFixed(3),
+  desc:{effort:+v.desc.effort.toFixed(4),activity:+v.desc.activity.toFixed(4),tempo:+v.desc.tempo.toFixed(4),topShare:+v.desc.topShare.toFixed(4)}});
+const storeKey=()=>`protonlab-champ-v12-${CFG.seed}-${CFG.N}-${CFG.valTrials}-${CFG.laneDeg}-${CFG.bins}`;
+function serializeAll(){
+  return JSON.stringify({v:12,kind:'champion-evolution',key:storeKey(),generation,serial:championSerial,
+    cfg:{seed:CFG.seed,N:CFG.N,laneDeg:CFG.laneDeg,velLane:CFG.velLane,torque:MAX_TORQUE,maxT:CFG.maxT,survS:SURV,bins:CFG.bins,valTrials:CFG.valTrials},
+    axes:axisRange,
+    champions:champions.map(c=>({id:c.id,generation:c.generation,validation:slimVal(c.validation),brain:packBrain(c.brain)})),
+    archive:[...archive.values()].map(e=>({id:e.id,generation:e.generation,cell:e.cell,validation:slimVal(e.validation),brain:packBrain(e.brain)}))});
+}
+function deserializeAll(txt){
+  const d=JSON.parse(txt);
+  if(!d||d.v!==12)throw new Error('payload is not a v12 champion set');
+  // Pool and archive entries both go into the archive map; the pool is then re-derived, so a
+  // payload saved under a different bin count still lands in sensible cells.
+  archive=new Map();const loaded=[...(d.archive||[]),...(d.champions||[])];
+  // Saved axis ranges come back with the payload, otherwise two elites can rebin into the same
+  // cell on load and one champion disappears.
+  resetAxes();
+  if(d.axes)for(const k of AXES){const r=d.axes[k];if(Array.isArray(r)&&r.length===2&&r.every(Number.isFinite)&&r[0]<=r[1])axisRange[k]=[clamp(r[0],0,1),clamp(r[1],0,1)]}
+  for(const e of loaded)if(e.validation?.desc)noteDesc(e.validation.desc);
+  for(const e of loaded){
+    const entry={id:e.id|0,generation:e.generation|0,brain:unpackBrain(e.brain),validation:e.validation,cell:binOf(e.validation.desc)};
+    const k=cellKey(entry.cell),cur=archive.get(k);
+    if(!cur||entry.validation.robust>cur.validation.robust)archive.set(k,entry);
+  }
+  championSerial=Math.max(d.serial|0,...[...archive.values()].map(e=>e.id),0);
+  pruneArchive();refreshPool();drawArchive();updateUI();
+  return{champions:champions.length,cells:archive.size,cfg:d.cfg||{}};
+}
+async function storeSet(k,v){
+  if(window.storage?.set){try{await window.storage.set(k,v);return'browser storage'}catch(_){}}
+  try{localStorage.setItem(k,v);return'local storage'}catch(_){}
+  MEM[k]=v;return'session memory only';
+}
+async function storeGet(k){
+  if(window.storage?.get){try{const r=await window.storage.get(k);if(r&&r.value)return r.value}catch(_){}}
+  try{const v=localStorage.getItem(k);if(v)return v}catch(_){}
+  return MEM[k]||null;
+}
+async function saveStore(){
+  readCfg();
+  if(!champions.length&&!archive.size){$('ioStatus').textContent='Nothing to save yet — train until champions appear.';return}
+  const txt=serializeAll(),where=await storeSet(storeKey(),txt);
+  $('ioStatus').textContent=`Saved ${champions.length} pool champions and ${archive.size} archive cells to ${where} (${(txt.length/1024).toFixed(0)} KB) under key ${storeKey()}.`;
+}
+async function loadStore(silent){
+  readCfg();
+  const txt=await storeGet(storeKey());
+  if(!txt){if(!silent)$('ioStatus').textContent=`No saved champions under key ${storeKey()}.`;return}
+  try{const r=deserializeAll(txt);$('ioStatus').textContent=`Loaded ${r.champions} pool champions and ${r.cells} archive cells saved at lane ±${r.cfg.laneDeg??'?'}°.`}
+  catch(e){$('ioStatus').textContent='Could not read the saved payload: '+e.message}
+}
+function exportBox(){
+  readCfg();
+  if(!champions.length&&!archive.size){$('ioStatus').textContent='Nothing to export yet — train until champions appear.';return}
+  const txt=serializeAll();$('ioBox').value=txt;
+  $('ioStatus').textContent=`Wrote ${champions.length} pool champions and ${archive.size} archive cells to the box (${(txt.length/1024).toFixed(0)} KB). Copy it somewhere safe.`;
+}
+function importBox(){
+  const txt=$('ioBox').value.trim();
+  if(!txt){$('ioStatus').textContent='Paste a saved payload into the box first.';return}
+  try{const r=deserializeAll(txt);$('ioStatus').textContent=`Loaded ${r.champions} pool champions and ${r.cells} archive cells from the box. Rescore + rebin if your lane differs.`}
+  catch(e){$('ioStatus').textContent='Could not read that payload: '+e.message}
+}
+async function copyBox(){
+  if(!$('ioBox').value)exportBox();
+  const txt=$('ioBox').value;if(!txt)return;
+  try{await navigator.clipboard.writeText(txt);$('ioStatus').textContent='Payload copied to the clipboard.'}
+  catch(_){
+    let ok=false;
+    try{const ta=$('ioBox');ta.select();ok=document.execCommand('copy')}catch(__){ok=false}
+    $('ioStatus').textContent=ok?'Payload copied to the clipboard.':'Clipboard unavailable — select the box contents and copy manually.';
+  }
+}
+function downloadJson(){
+  if(!$('ioBox').value)exportBox();
+  const txt=$('ioBox').value;if(!txt)return;
+  try{
+    const b=new Blob([txt],{type:'application/json'}),u=URL.createObjectURL(b),a=document.createElement('a');
+    a.href=u;a.download=`protoneuron-champions-${CFG.seed}-${CFG.N}.json`;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(u),2000);
+    $('ioStatus').textContent='Download started.';
+  }catch(_){$('ioStatus').textContent='Download blocked here — use Copy box instead.'}
+}
+
+function neutralBaseline(brain){
+  const s={q:[0,0,0],qd:[0,0,0],t:0,torque:[0,0,0],done:false,impulse:0};
+  const o=deterministicForward(brain,s,Array(brain.N).fill(0));
+  const c={neg:0,zero:0,pos:0};for(const v of o.h){if(v<0)c.neg++;else if(v>0)c.pos++;else c.zero++}
+  return{active:c,torque:o.tor};
+}
+function biopsyText(){
+  const rec=net.src.flat().filter(x=>x>=SENS).length,wc={'-1':0,'0':0,'1':0};
+  for(const row of net.w)for(const v of row)wc[String(v)]++;
+  const active=state&&state._prev?state._prev:[];
+  const ac={neg:active.filter(v=>v<0).length,zero:active.filter(v=>v===0).length,pos:active.filter(v=>v>0).length};
+  const nb=neutralBaseline(net),cov=coverage(),div=hofDiversity();
+  const a=['PROTONEURON CONNECTOME BIOPSY v12 — champion evolution',`timestamp=${new Date().toISOString()}`,
+   `mode=${mode}`,`generation=${generation}`,`neurons=${net.N}`,`incomingSlots=${net.N*3}`,`recurrentSlots=${rec}`,`recurrentPct=${(100*rec/(net.N*3)).toFixed(1)}%`,
+   `laneAngleDeg=${CFG.laneDeg.toFixed(1)}`,`laneAngleRad=${POS_LIMIT.toFixed(4)}`,`laneVelocity=${VEL_LIMIT.toFixed(2)}`,`maxTorque=${MAX_TORQUE.toFixed(2)}`,`decoderDensityInit=${(CFG.decDensity*100).toFixed(1)}%`,`decoderFanIn=${(net.dnz||[]).join('/')}`,`mutateReadNeuronsPct=${(CFG.focus*100).toFixed(0)}`,`rewireToSensorsPct=${(CFG.sensorBias*100).toFixed(0)}`,`mutationsPerCandidate=${CFG.mut}`,`candidatesPerGen=${CFG.cand}`,`trainingCases=${trainingPool.length}`,`rotateCasesEvery=${CFG.rotate}`,`trainEpoch=${trainEpoch}`,`episodeCap=${MAXT.toFixed(2)}s`,`survivalThreshold=${SURV.toFixed(2)}s`,
+   `startSpreadDeg=${CFG.startDeg.toFixed(2)}`,`startVel=${CFG.startVel.toFixed(2)}`,`hardCaseMultiplier=${CFG.hardMul.toFixed(2)}`,`perturbMultiplier=${CFG.perturbMul.toFixed(2)}`,`decisionTemp=${DECT.toFixed(3)}`,
+   `bestMeanValidation=${bestMean.toFixed(3)}s`,`bestWorstValidation=${bestWorst.toFixed(3)}s`,`bestSurvival=${(bestSurvival*100).toFixed(1)}%`,
+   `weightCounts=-1:${wc['-1']} 0:${wc['0']} +1:${wc['1']}`,`active=-1:${ac.neg} 0:${ac.zero} +1:${ac.pos}`,
+   `championPool=${champions.length}/${CFG.pool}`,`poolGenomeSpreadMin=${(div.min*100).toFixed(2)}%`,`poolGenomeSpreadMean=${(div.mean*100).toFixed(2)}%`,
+   `archiveCells=${cov.cells}/${cov.total}`,`axisRanges=effort:${axisRange.effort.map(v=>v.toFixed(3)).join('-')} activity:${axisRange.activity.map(v=>v.toFixed(3)).join('-')} topShare:${axisRange.topShare.map(v=>v.toFixed(3)).join('-')}`,`archiveCoverage=${cov.pct.toFixed(2)}%`,`archiveCap=${CFG.archiveCap}`,`binsPerAxis=${CFG.bins}`,`minGenomeDistance=${(CFG.minDist*100).toFixed(2)}%`,`noveltyBonus=${CFG.novelty.toFixed(2)}`,
+   `feedChampionPct=${CFG.revisitPct}`,`feedArchivePct=${CFG.archivePct}`,`crossoverPct=${CFG.crossPct}`,`selectionExponent=${CFG.selExp}`,`revisitThreshold=${CFG.threshold}`,`stagnation=${stagnation}`,
+   `validationTrials=${validationPool.length}`,`holdoutTrials=${holdoutPool.length}`,`validateEvery=${CFG.valEvery}`,`testCase=${state?((state._caseIndex??-1)+1):'n/a'}`,
+   `numericalFaults=${numericalFaults}`,`deterministicTieBreak=neutral_zero`,
+   `neutralBaselineActive=-1:${nb.active.neg} 0:${nb.active.zero} +1:${nb.active.pos}`,`neutralBaselineTorque=${nb.torque.map(v=>v.toFixed(4)).join(',')}`,
+   '','CHAMPION POOL  id, generation, robust, mean, worst, survival, cell, descriptors'];
+  for(const c of champions){const v=c.validation,d=v.desc;a.push(`#${c.id} gen=${c.generation} robust=${v.robust.toFixed(3)} mean=${v.mean.toFixed(3)}s worst=${v.worst.toFixed(3)}s surv=${(v.survival*100).toFixed(1)}% cell=${(c.cell||[]).join('/')} effort=${d.effort.toFixed(3)} active=${d.activity.toFixed(3)} tempo=${d.tempo.toFixed(3)} topShare=${d.topShare.toFixed(3)}`)}
+  a.push('','BEHAVIOUR ARCHIVE  cell -> id, robust, descriptors');
+  for(const [k,e] of [...archive.entries()].sort()){const d=e.validation.desc;a.push(`${k} -> #${e.id} robust=${e.validation.robust.toFixed(3)} effort=${d.effort.toFixed(3)} active=${d.activity.toFixed(3)} topShare=${d.topShare.toFixed(3)}`)}
+  a.push('','FIRING THRESHOLDS (zero-drive reference, decision temperature '+DECT.toFixed(2)+')');
+  for(let i=0;i<net.N;i++){const pp=classProbs(net,i,0,DECT);a.push(`N${i+1}: P(-1)=${pp[0].toFixed(4)} P(0)=${pp[1].toFixed(4)} P(+1)=${pp[2].toFixed(4)} gain=${net.fireGain[i].toFixed(4)} bias=${net.bias[i].toFixed(4)}`)}
+  a.push('','CONNECTOME target <- source, weight');
+  for(let i=0;i<net.N;i++)for(let k=0;k<3;k++){const s=net.src[i][k];a.push(`N${i+1} <- ${s<SENS?`S${s+1}`:`N${s-SENS+1}`}  ${net.w[i][k]}`)}
+  a.push('','ACTUATOR DECODER');
+  for(let j=0;j<3;j++)a.push(`T${j+1}: ${net.decoder[j].map((v,i)=>`N${i+1}:${v}`).join(' ')}`);
+  if(mode==='test')a.push('','CURRENT ACTIVATIONS',active.map((v,i)=>`N${i+1}:${v}`).join(' '));
+  return a.join('\n');
+}
+async function copyBiopsy(){
+  const txt=biopsyText();
+  try{await navigator.clipboard.writeText(txt);setStatus('Biopsy copied.')}
+  catch(_){
+    let ok=false;
+    try{const ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.left='-9999px';document.body.appendChild(ta);ta.select();ok=document.execCommand('copy');ta.remove()}catch(__){ok=false}
+    setStatus(ok?'Biopsy copied.':'Clipboard unavailable — the biopsy is in the log instead.');
+    if(!ok)$('log').textContent=txt;
+  }
+}
+
+function updateUI(){
+  const cov=coverage();
+  $('mode').textContent=mode;$('gen').textContent=generation;$('time').textContent=(state?.t||0).toFixed(2)+' s';
+  $('best').textContent=bestMean.toFixed(2)+' s';$('worst').textContent=bestWorst.toFixed(2)+' s';$('survival').textContent=(bestSurvival*100).toFixed(0)+'%';
+  $('nCount').textContent=net.N;$('faults').textContent=numericalFaults;
+  $('cells').textContent=cov.cells;$('coverage').textContent=cov.pct.toFixed(0)+'%';
+  $('modeBadge').textContent=mode.toUpperCase()+` • lane ±${CFG.laneDeg.toFixed(0)}°`;
+  $('pause').disabled=mode!=='train'||paused;
+  $('resume').disabled=!((mode==='train'&&paused)||(mode==='test'&&state?.done));
+  $('test').disabled=!(mode==='train'&&paused);
+  $('continue').disabled=!champions.length;
+  $('loadTop').disabled=!champions.length;
+}
+function setStatus(s){$('status').textContent=s}
+function drawWorld(){
+  const c=wctx,W=world.width,H=world.height;
+  c.clearRect(0,0,W,H);
+  c.strokeStyle='#29415f';c.lineWidth=2;c.beginPath();c.moveTo(25,H-45);c.lineTo(W-25,H-45);c.stroke();
+  const ox=W/2,oy=H-60,l=72;
+  c.save();c.setLineDash([5,8]);c.strokeStyle='#294a6d';c.lineWidth=1.5;
+  for(const sgn of[-1,1]){c.beginPath();c.moveTo(ox,oy);c.lineTo(ox+3*l*Math.sin(sgn*POS_LIMIT),oy-3*l*Math.cos(sgn*POS_LIMIT));c.stroke()}
+  c.restore();
+  let x=ox,y=oy,pts=[[x,y]];
+  for(let i=0;i<3;i++){x+=l*Math.sin(state?.q?.[i]||0);y-=l*Math.cos(state?.q?.[i]||0);pts.push([x,y])}
+  c.strokeStyle='#53d9ff';c.lineWidth=7;c.beginPath();c.moveTo(ox,oy);for(let i=1;i<pts.length;i++)c.lineTo(pts[i][0],pts[i][1]);c.stroke();
+  for(let i=0;i<pts.length;i++){c.fillStyle=i===0?'#8aa6c7':Math.abs((state?.q?.[Math.min(2,i-1)]||0))<POS_LIMIT*.133?'#55e58b':'#ffd166';c.beginPath();c.arc(pts[i][0],pts[i][1],i===0?9:13,0,Math.PI*2);c.fill()}
+  c.fillStyle='#eaf3ff';c.font='15px Segoe UI';
+  c.fillText(`q ${(state?.q||[0,0,0]).map(v=>(v*180/Math.PI).toFixed(1)+'°').join('  ')}`,18,27);
+  c.fillText(`q̇ ${(state?.qd||[0,0,0]).map(v=>v.toFixed(2)).join('  ')}`,18,50);
+  c.fillText(`τ ${(state?.torque||[0,0,0]).map(v=>v.toFixed(1)).join('  ')}`,18,73);
+  if(mode==='test'){c.fillStyle='#55e58b';c.fillText('FROZEN CURRENT TEST',W-205,27);if(state.impulse){c.fillStyle='#ff6f7d';c.fillText('PERTURBATION',W-175,50)}}
+  else{c.fillStyle='#9fb1c8';c.fillText(mode==='train'?(paused?'PAUSED':'TRAINING'):'IDLE',W-110,27)}
+}
+function drawHistory(){
+  const svg=$('history'),W=860,H=260,p=34,ns='http://www.w3.org/2000/svg';
+  while(svg.firstChild)svg.removeChild(svg.firstChild);
+  const add=(t,attrs)=>{const e=document.createElementNS(ns,t);for(const[k,v]of Object.entries(attrs))e.setAttribute(k,v);svg.appendChild(e);return e};
+  add('rect',{x:0,y:0,width:W,height:H,fill:'#081321'});
+  const max=Math.max(1,MAXT);
+  for(let i=0;i<5;i++){const y=p+i*(H-p*1.45)/4;add('line',{x1:p,y1:y,x2:W-12,y2:y,class:'gridline'});const tx=add('text',{x:5,y:y+4,fill:'#8fa4bd','font-size':11});tx.textContent=((4-i)*max/4).toFixed(1)+'s'}
+  add('line',{x1:p,y1:H-p,x2:W-12,y2:H-p,class:'axis'});add('line',{x1:p,y1:p,x2:p,y2:H-p,class:'axis'});
+  if(!history.length){const t=add('text',{x:W/2-95,y:H/2,fill:'#9fb1c8','font-size':14});t.textContent='No validation samples yet.';$('historyReadout').textContent='No samples yet.';return}
+  const xa=i=>p+(W-p-12)*(i/Math.max(1,history.length-1)),ya=v=>H-p-(clamp(v,0,max)/max)*(H-p*1.4);
+  for(const [key,cls,col] of [['d','champ','#ffd166'],['w','evo','#53d9ff'],['s','bp','#b9a0ff']]){
+    let d='';history.forEach((h,i)=>{const v=key==='s'?h.s*max:h[key];d+=(i?' L ':'M ')+xa(i)+' '+ya(v)});
+    add('path',{d,class:cls});
+    if(history.length<90)for(let i=0;i<history.length;i++){const v=key==='s'?history[i].s*max:history[i][key];add('circle',{cx:xa(i),cy:ya(v),r:2.2,fill:col})}
+  }
+  const last=history[history.length-1];
+  const t=add('text',{x:W-245,y:22,fill:'#eaf3ff','font-size':12});t.textContent=`last mean ${last.d.toFixed(2)} s`;
+  const r=add('text',{x:W-245,y:40,fill:'#9fb1c8','font-size':12});r.textContent=`samples ${history.length}`;
+  $('historyReadout').textContent=`${history.length} samples • latest mean ${last.d.toFixed(2)} s • worst ${last.w.toFixed(2)} s • survival ${(last.s*100).toFixed(0)}%`;
+}
+function drawArchive(){
+  const svg=$('archiveGrid'),W=430,H=330,ns='http://www.w3.org/2000/svg',b=CFG.bins||5;
+  while(svg.firstChild)svg.removeChild(svg.firstChild);
+  const add=(t,attrs,text)=>{const e=document.createElementNS(ns,t);for(const[k,v]of Object.entries(attrs))e.setAttribute(k,v);if(text!==undefined)e.textContent=text;svg.appendChild(e);return e};
+  add('rect',{x:0,y:0,width:W,height:H,fill:'#081321'});
+  const px=56,py=18,pb=52,cw=(W-px-16)/b,ch=(H-py-pb)/b;
+  const cells=new Map();let mn=Infinity,mx=-Infinity;
+  for(const e of archive.values()){
+    const key=e.cell[0]+'|'+e.cell[1];let c=cells.get(key);
+    if(!c){c={count:0,best:-Infinity,top:null};cells.set(key,c)}
+    c.count++;if(e.validation.robust>c.best){c.best=e.validation.robust;c.top=e}
+    mn=Math.min(mn,e.validation.robust);mx=Math.max(mx,e.validation.robust);
+  }
+  for(let i=0;i<b;i++)for(let j=0;j<b;j++){
+    const c=cells.get(i+'|'+j),x=px+i*cw,y=py+(b-1-j)*ch;
+    const t=c&&mx>mn?(c.best-mn)/(mx-mn):c?1:0;
+    add('rect',{x:x+1,y:y+1,width:cw-2,height:ch-2,rx:4,
+      fill:c?`hsl(${(196-150*t).toFixed(0)},82%,${(26+26*t).toFixed(0)}%)`:'#0c1826',
+      stroke:c?'#7fb6dd':'#1b3048','stroke-width':c?1:1,'fill-opacity':c?.95:1});
+    if(c)add('text',{x:x+cw/2,y:y+ch/2+4,fill:'#06121d','font-size':Math.min(13,cw*.36),'text-anchor':'middle','font-weight':'700'},String(c.count));
+  }
+  add('line',{x1:px,y1:py,x2:px,y2:py+b*ch,class:'axis'});
+  add('line',{x1:px,y1:py+b*ch,x2:px+b*cw,y2:py+b*ch,class:'axis'});
+  const fr=k=>`${(axisRange[k][0]*100).toFixed(0)} → ${(axisRange[k][1]*100).toFixed(0)}%`;
+  add('text',{x:px+b*cw/2,y:H-30,fill:'#9fb1c8','font-size':12,'text-anchor':'middle'},`control effort  ${fr('effort')}`);
+  const yl=add('text',{x:14,y:py+b*ch/2,fill:'#9fb1c8','font-size':12,'text-anchor':'middle'},`firing activity  ${fr('activity')}`);
+  yl.setAttribute('transform',`rotate(-90 14 ${py+b*ch/2})`);
+  const cov=coverage();
+  add('text',{x:px,y:H-10,fill:'#eaf3ff','font-size':12},`${cov.cells} cells • ${cov.pct.toFixed(1)}% coverage • robust ${mn===Infinity?'—':mn.toFixed(2)} → ${mx===-Infinity?'—':mx.toFixed(2)} • top-joint axis ${fr('topShare')}`);
+}
+function nodeLayout(){const N=net.N,W=netview.width,H=netview.height,rad=Math.min(W,H)*.35,cx=W*.5,cy=H*.53,p=[];for(let i=0;i<N;i++){const a=(i/N)*Math.PI*2,rr=rad*(.72+.22*((i*17)%13)/13);p.push({x:cx+Math.cos(a)*rr,y:cy+Math.sin(a)*rr})}return p}
+function drawNetwork(){
+  if(mode!=='test')return;
+  const pts=layoutCache&&layoutCache.length===net.N?layoutCache:(layoutCache=nodeLayout()),h=state?state._prev||[]:[];
+  nctx.clearRect(0,0,netview.width,netview.height);
+  for(let i=0;i<net.N;i++)for(let k=0;k<3;k++){
+    const src=net.src[i][k],w=net.w[i][k];if(src<SENS)continue;
+    const a=pts[src-SENS],bq=pts[i],col=w>0?'#55e58b':w<0?'#ff6f7d':'#42546c';
+    nctx.strokeStyle=col;nctx.globalAlpha=w===0?.15:(h[src-SENS]!==0?.75:.25);nctx.lineWidth=h[src-SENS]!==0?1.8:1;
+    nctx.beginPath();nctx.moveTo(a.x,a.y);nctx.lineTo(bq.x,bq.y);nctx.stroke();
+    if(w!==0&&h[src-SENS]!==0){const f=(performance.now()/420+i*.071)%1;nctx.globalAlpha=.95;nctx.fillStyle=col;nctx.beginPath();nctx.arc(a.x+(bq.x-a.x)*f,a.y+(bq.y-a.y)*f,2.4,0,Math.PI*2);nctx.fill()}
+  }
+  nctx.globalAlpha=1;
+  for(let i=0;i<net.N;i++){
+    const a=pts[i],v=h[i]||0;
+    nctx.fillStyle=v>0?'#55e58b':v<0?'#ff6f7d':'#52647c';
+    nctx.beginPath();nctx.arc(a.x,a.y,Math.min(5,Math.max(2.5,260/net.N)),0,Math.PI*2);nctx.fill();
+    if(net.N<=170){nctx.fillStyle='#d9e7f7';nctx.font='8px Segoe UI';nctx.fillText(String(i+1),a.x+6,a.y+3)}
+  }
+  nctx.fillStyle='#eaf3ff';nctx.font='13px Segoe UI';
+  nctx.fillText(`N=${net.N} • 3N=${net.N*3} incoming slots • ${net.src.flat().filter(x=>x>=SENS).length} recurrent • ternary activations`,18,24);
+}
+
+$('start').onclick=()=>startTrain(false);
+$('continue').onclick=()=>startTrain(true);
+$('pause').onclick=pauseTrain;$('resume').onclick=resumeTrain;
+$('test').onclick=testCurrent;$('evalCurrent').onclick=evalCurrent;$('perturb').onclick=perturbNow;$('reset').onclick=resetAll;
+$('crossval').onclick=crossValidate;$('audit').onclick=audit;$('copyBiopsy').onclick=copyBiopsy;$('rescore').onclick=rescoreArchive;
+$('reseed').onclick=()=>{if(revisitChampion())updateUI()};
+$('loadTop').onclick=loadTopChampion;
+$('clearArchive').onclick=()=>{champions=[];archive=new Map();championSerial=0;resetAxes();bestMean=bestWorst=bestSurvival=0;updateChampionUI();drawArchive();updateUI();setStatus('Champion pool and behaviour archive cleared. The current brain is untouched.')};
+$('saveStore').onclick=saveStore;$('loadStore').onclick=()=>loadStore(false);
+$('exportBox').onclick=exportBox;$('importBox').onclick=importBox;$('copyBox').onclick=copyBox;$('downloadJson').onclick=downloadJson;
+for(const id of ['laneDeg','velLane','torque','maxT','survS','startDeg','startVel','hardMul','perturbMul','trainCases','validationTrials'])
+  $(id).onchange=()=>{readCfg();buildSuites();drawHistory();drawArchive();updateUI();setStatus('Case suites rebuilt for the new lane or episode settings. Existing champion scores came from the old settings — press Rescore + rebin, or Reset for a clean run.')};
+for(const id of ['bins','archiveCap'])
+  $(id).onchange=()=>{readCfg();pruneArchive();drawArchive();updateUI();setStatus('Archive geometry changed. Press Rescore + rebin to re-place existing champions into the new cells.')};
+for(const id of ['poolSize','minDist'])
+  $(id).onchange=()=>{readCfg();refreshPool();updateUI();setStatus(`Pool re-derived from the archive: ${champions.length} champions at least ${(CFG.minDist*100).toFixed(1)}% apart.`)};
+for(const id of ['threshold','revisitPct','archivePct','crossPct','selExp','novelty','mutations','candidates','strongEvery','valEvery','dect','focus','sensorBias','rotate'])
+  $(id).onchange=()=>{readCfg();updateUI();setStatus('Search and feed settings applied live from the next generation.')};
+$('decDensity').onchange=()=>setStatus('Decoder density changed. Press Reset to build a brain with the new actuator fan-in.');
+$('neurons').onchange=()=>setStatus('Neuron count changed. Press Reset to create the new-sized brain.');
+$('seed').onchange=()=>setStatus('Seed changed. Press Reset to create the new brain and suites.');
+
+function frame(now){
+  const dt=Math.min(.05,(now-lastFrame)/1000);lastFrame=now;
+  if(mode==='test'&&state&&!state.done){
+    if(state.t>=state._nextPerturb)perturbNow();
+    const o=deterministicForward(net,state,state._prev||Array(net.N).fill(0));
+    state._prev=o.h;state.torque=o.tor;physics(state,o.tor,DT);
+    state.impulse=Math.max(0,state.impulse-dt*2.5);
+    state._trace.push(o);if(state._trace.length>200)state._trace.shift();
+    if(state.done)setStatus(`Test ended at ${state.t.toFixed(2)} s on validation case ${(state._caseIndex??0)+1}. Frozen brain preserved; Resume is ready.`);
+  }
+  drawWorld();if(mode==='test')drawNetwork();updateUI();requestAnimationFrame(frame);
+}
+
+readCfg();rng=PRNG(CFG.seed);net=makeNet();buildSuites();state=freshState(rng,false);
+audit();drawHistory();drawArchive();updateChampionUI();updateUI();requestAnimationFrame(frame);
+loadStore(true);
+</script>
+</body></html>
