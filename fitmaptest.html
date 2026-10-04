@@ -1,0 +1,425 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Protoneuron Pendulum — Fair Search A/B</title>
+<style>
+:root{color-scheme:dark;--bg:#06101b;--panel:#0f1b2c;--panel2:#091522;--line:#29415f;--text:#eaf3ff;--muted:#9fb1c8;--cyan:#53d9ff;--green:#55e58b;--gold:#ffd166;--red:#ff6f7d;--violet:#b9a0ff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#112540,#06101b 62%);font-family:Segoe UI,Arial,sans-serif;color:var(--text)}.wrap{max-width:1500px;margin:auto;padding:16px}
+.card{background:rgba(15,27,44,.97);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 12px 30px #0005;margin-top:14px}.sub{color:var(--muted);line-height:1.55;margin:6px 0 4px}h1{margin:0;font-size:26px}h3{margin:4px 0 10px}
+.controls{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0;align-items:center}button,input,select{border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#142844;color:var(--text)}button{cursor:pointer;font-weight:700}button.primary{background:var(--cyan);color:#04121b}button.bad{background:var(--red);color:#25040a}button:disabled{opacity:.45;cursor:not-allowed}input{width:80px}label{font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:5px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:1080px){.grid2{grid-template-columns:1fr}}
+table{border-collapse:collapse;width:100%;font-size:12.5px}th,td{border-bottom:1px solid #1b3048;padding:6px 7px;text-align:right}th:first-child,td:first-child{text-align:left}th{color:var(--muted);font-weight:600}
+.status{padding:9px 10px;border-radius:9px;background:#081523;border:1px solid var(--line);min-height:38px;font-size:13px;line-height:1.5}.small{font-size:12px;color:var(--muted);line-height:1.5}.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle}
+canvas{display:block;width:100%;height:auto;background:#081321;border:1px solid var(--line);border-radius:10px}.bar{height:6px;background:#142844;border-radius:4px;overflow:hidden}.bar>i{display:block;height:100%;background:var(--cyan)}
+ul{margin:6px 0 0 18px;padding:0;color:#cddbea;line-height:1.55;font-size:13px}pre{background:#07101d;border:1px solid var(--line);border-radius:9px;padding:10px;white-space:pre-wrap;font:12px Consolas,monospace;max-height:340px;overflow:auto}
+</style>
+</head>
+<body><div class="wrap">
+<h1>Protoneuron Pendulum — Fair Search A/B</h1>
+<div class="sub">Champion-style search against fitness-map basin search, on your lab's own pendulum, brain, mutation operator and fitness (copied unchanged from the Triple-Pendulum Lab v12). Four arms, so each difference can be told apart:</div>
+<ul>
+ <li><b>A0, champions as written</b>: the original baseline. Its hall of fame rejects any brain within 4 % wiring distance of a member, and a 3-mutation child is at most 0.26 % away, so it rarely changes and 55 % of parents stay the starting brain.</li>
+ <li><b>A1, champions with the hall of fame fixed</b>: an improved near-copy <i>replaces</i> its weaker neighbour instead of being rejected. Everything else as A0.</li>
+ <li><b>A2, A1 with the map's step sizes</b>: 2, 3 or 5 mutations (55 / 35 / 10 %), like the map search's local samples. This separates "smaller steps" from "searching several peaks".</li>
+ <li><b>B, fitness-map basin search</b>: as written, minus one redundant re-evaluation of an already scored brain.</li>
+</ul>
+<div class="sub">Fair by construction: for each seed every arm starts from the <b>same newborn brain</b>, trains on the <b>same 12 cases</b>, is tested on the <b>same unseen holdout cases</b>, and spends <b>exactly the same number of evaluations</b> (1 + generations × samples, counted and shown). A0, A1 and A2 share their random-number stream. Results are compared seed by seed with an exact paired permutation test.</div>
+
+<div class="card">
+ <h3>Settings</h3>
+ <div class="controls">
+  <label>Seeds <input id="seeds" type="number" min="1" max="24" value="6"></label>
+  <label>First seed <input id="seed0" type="number" value="47017" style="width:90px"></label>
+  <label>Generations <input id="gens" type="number" min="5" max="2000" value="250"></label>
+  <label>Samples / gen X <input id="X" type="number" min="4" max="64" value="16"></label>
+  <label>Mutations / sample <input id="mut" type="number" min="1" max="16" value="3"></label>
+  <label>Map peaks K <input id="K" type="number" min="1" max="8" value="4"></label>
+  <label>Map dimensions D <input id="D" type="number" min="3" max="8" value="6"></label>
+  <label>Escape probes % <input id="esc" type="number" min="0" max="50" value="20"></label>
+  <label>Holdout cases <input id="hold" type="number" min="8" max="128" value="48"></label>
+  <label>Protoneurons <input id="N" type="number" min="16" max="512" step="8" value="128"></label>
+  <label>Parallel workers <input id="workers" type="number" min="1" max="64" value="0"></label>
+ </div>
+ <div class="controls" id="armBoxes"></div>
+ <div class="controls"><button class="primary" id="run">Run fair A/B</button><button class="bad" id="stop" disabled>Stop</button></div>
+ <div class="status" id="status">Workers 0 = all cores but one. Each (arm, seed) is one job; jobs run in parallel.</div>
+ <div id="progress" style="margin-top:8px"></div>
+</div>
+
+<div class="card"><h3>Results</h3><div id="summary" class="small">No results yet.</div><div id="paired" style="margin-top:10px"></div></div>
+<div class="grid2">
+ <div class="card"><h3>Best training fitness by generation (median across seeds)</h3><canvas id="plot" width="900" height="380"></canvas></div>
+ <div class="card"><h3>Per seed — holdout fitness / survival</h3><div id="perseed" class="small">No results yet.</div></div>
+</div>
+<div class="card"><h3>Watch a champion on an unseen case</h3>
+ <div class="controls"><label>Arm <select id="vArm"></select></label><label>Seed <select id="vSeed"></select></label><label>Holdout case <input id="vCase" type="number" min="1" value="1"></label><button id="watch" disabled>Watch</button><button id="watchAll" disabled>Watch all arms</button></div>
+ <canvas id="view" width="1200" height="380"></canvas><div class="status" id="vStatus" style="margin-top:8px">Run the A/B first.</div>
+</div>
+<div class="card"><h3>Log</h3><pre id="log">Ready.</pre></div>
+</div>
+
+<script id="core" type="text/plain">
+'use strict';
+/* ===== the lab's core, unchanged (Protoneuron Triple-Pendulum Lab v12) ===== */
+const SENS=13, DT=0.025;
+let MAX_TORQUE=22, MAXT=10, POS_LIMIT=77*Math.PI/180, VEL_LIMIT=10, SURV=9, DECT=.22, numericalFaults=0;
+const CFG={N:128,seed:47017,mut:3,focus:.85,sensorBias:.5,decDensity:.12,startDeg:10,startVel:.75,hardMul:1.45,perturbMul:1,minDist:.04,selExp:1.8,crossPct:20};
+let rng=null;
+function PRNG(seed){let s=(seed>>>0)||1;return()=>{s=(s+0x6D2B79F5)>>>0;let t=s;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296}}
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x)), tri=x=>x>0.33?1:x<-0.33?-1:0, choice=(r,a)=>a[Math.floor(r()*a.length)];
+function finiteNum(x,f=0){return Number.isFinite(x)?x:f}
+function otherTern(r,cur){const o=[-1,0,1].filter(v=>v!==cur);return o[Math.floor(r()*o.length)]}
+function sanitizeBrain(b){
+  for(let i=0;i<b.N;i++){
+    for(let k=0;k<3;k++){
+      if(![-1,0,1].includes(b.w[i][k]))b.w[i][k]=0;
+      b.src[i][k]=Math.min(SENS+b.N-1,Math.max(0,b.src[i][k]|0));
+      b.fireBias[i][k]=clamp(finiteNum(b.fireBias[i][k],0),-5,5);
+    }
+    b.fireGain[i]=clamp(finiteNum(b.fireGain[i],.9),.08,3.5);
+    b.bias[i]=clamp(finiteNum(b.bias[i],0),-2.5,2.5);
+  }
+  b.dnz=[0,0,0];
+  for(let j=0;j<3;j++){let nz=0;for(let i=0;i<b.N;i++){if(![-1,0,1].includes(b.decoder[j][i]))b.decoder[j][i]=0;if(b.decoder[j][i])nz++}b.dnz[j]=nz}
+  return b;
+}
+function deepCloneNet(n){return{N:n.N,src:n.src.map(r=>r.slice()),w:n.w.map(r=>r.slice()),decoder:n.decoder.map(r=>r.slice()),bias:n.bias?n.bias.slice():Array(n.N).fill(0),fireBias:n.fireBias?n.fireBias.map(r=>r.slice()):Array.from({length:n.N},()=>[0,0,0]),fireGain:n.fireGain?n.fireGain.slice():Array(n.N).fill(.9),seed:n.seed}}
+function makeNet(){
+ const N=CFG.N,total=SENS+N,src=[],w=[];
+ for(let i=0;i<N;i++){src.push([Math.floor(rng()*total),Math.floor(rng()*total),Math.floor(rng()*total)]);w.push([Math.floor(rng()*3)-1,Math.floor(rng()*3)-1,Math.floor(rng()*3)-1]);}
+ const dens=CFG.decDensity;
+ const decoder=Array.from({length:3},()=>Array.from({length:N},()=>rng()<dens?(rng()<.5?-1:1):0));
+ return sanitizeBrain({N,src,w,decoder,bias:Array(N).fill(0),fireBias:Array.from({length:N},()=>[0,0,0]),fireGain:Array(N).fill(.9),seed:CFG.seed});
+}
+function freshState(r,hard=false){const m=hard?CFG.hardMul:1,a=CFG.startDeg*Math.PI/180*m,v=CFG.startVel*m;return{q:[(r()-.5)*2*a,(r()-.5)*2*a,(r()-.5)*2*a],qd:[(r()-.5)*2*v,(r()-.5)*2*v,(r()-.5)*2*v],t:0,torque:[0,0,0],done:false,impulse:0}}
+function cloneState(s){return{q:s.q.slice(),qd:s.qd.slice(),t:s.t,torque:s.torque.slice(),done:false,impulse:s.impulse,caseSeed:s.caseSeed||0}}
+function encode(s){
+  const f=[],qs=POS_LIMIT*.237,vs=VEL_LIMIT*.26,qd=POS_LIMIT*.259,qw=POS_LIMIT*.333,vd=VEL_LIMIT*.15;
+  for(let i=0;i<3;i++)f.push(tri(s.q[i]/qs));
+  for(let i=0;i<3;i++)f.push(tri(s.qd[i]/vs));
+  f.push(tri((s.q[0]-s.q[1])/qd),tri((s.q[1]-s.q[2])/qd),tri((s.q[0]-s.q[2])/qw));
+  f.push(tri((s.qd[0]-s.qd[1])/vd),tri((s.qd[1]-s.qd[2])/vd),tri((s.qd[0]-s.qd[2])/(VEL_LIMIT*.2)));
+  f.push(1);
+  return f;
+}
+const PM={m:.55,l:.68,g:9.81,damp:.04};
+function massMat(q){const M=Array.from({length:3},()=>[0,0,0]);for(let i=0;i<3;i++)for(let j=0;j<3;j++){const mult=3-Math.max(i,j);M[i][j]=PM.m*PM.l*PM.l*mult*Math.cos(q[i]-q[j])}return M}
+function dM(q,a,b,k){if(a===b)return 0;const mult=3-Math.max(a,b),d=q[a]-q[b];if(k===a)return-PM.m*PM.l*PM.l*mult*Math.sin(d);if(k===b)return PM.m*PM.l*PM.l*mult*Math.sin(d);return 0}
+function gravity(q,i){return-PM.m*PM.g*PM.l*(3-i)*Math.sin(q[i])}
+function solve3(A,b){const a=A.map(r=>r.slice()),x=b.slice();for(let k=0;k<3;k++){let p=k;for(let i=k+1;i<3;i++)if(Math.abs(a[i][k])>Math.abs(a[p][k]))p=i;[a[k],a[p]]=[a[p],a[k]];[x[k],x[p]]=[x[p],x[k]];const piv=Math.abs(a[k][k])<1e-9?(a[k][k]<0?-1:1)*1e-9:a[k][k];for(let i=k+1;i<3;i++){const fac=a[i][k]/piv;for(let j=k;j<3;j++)a[i][j]-=fac*a[k][j];x[i]-=fac*x[k]}}const out=[0,0,0];for(let i=2;i>=0;i--){let s=x[i];for(let j=i+1;j<3;j++)s-=a[i][j]*out[j];out[i]=s/(Math.abs(a[i][i])<1e-9?(a[i][i]<0?-1:1)*1e-9:a[i][i])}return out}
+function accel(q,qd,tau){const M=massMat(q),b=[-gravity(q,0)-PM.damp*qd[0],-gravity(q,1)-PM.damp*qd[1],-gravity(q,2)-PM.damp*qd[2]],c=[0,0,0];for(let i=0;i<3;i++)for(let j=0;j<3;j++)for(let k=0;k<3;k++){const G=.5*(dM(q,i,j,k)+dM(q,i,k,j)-dM(q,j,k,i));c[i]+=G*qd[j]*qd[k]}return solve3(M,[tau[0]-c[0]+b[0],tau[1]-c[1]+b[1],tau[2]-c[2]+b[2]])}
+function physics(s,tau,dt=DT){
+  const q=s.q,v=s.qd,a1=accel(q,v,tau),q2=q.map((x,i)=>x+.5*dt*v[i]),v2=v.map((x,i)=>x+.5*dt*a1[i]),a2=accel(q2,v2,tau),q3=q.map((x,i)=>x+.5*dt*v2[i]),v3=v.map((x,i)=>x+.5*dt*a2[i]),a3=accel(q3,v3,tau),q4=q.map((x,i)=>x+dt*v3[i]),v4=v.map((x,i)=>x+dt*a3[i]),a4=accel(q4,v4,tau);
+  s.q=q.map((x,i)=>x+dt*(v[i]+2*v2[i]+2*v3[i]+v4[i])/6);
+  s.qd=v.map((x,i)=>x+dt*(a1[i]+2*a2[i]+2*a3[i]+a4[i])/6);
+  s.t+=dt;s.torque=tau.slice();
+  if(!s.q.every(Number.isFinite)||!s.qd.every(Number.isFinite)){numericalFaults++;s.q=s.q.map(v2=>finiteNum(v2,POS_LIMIT*2));s.qd=s.qd.map(v2=>finiteNum(v2,0));s.done=true;return}
+  s.done=s.q.some(v2=>Math.abs(v2)>POS_LIMIT)||s.qd.some(v2=>Math.abs(v2)>VEL_LIMIT)||s.t>=MAXT;
+}
+function reward(s,tau){const qc=s.q.reduce((a,v)=>a+v*v,0)/3,vc=s.qd.reduce((a,v)=>a+v*v,0)/3,uc=tau.reduce((a,v)=>a+v*v,0)/(3*MAX_TORQUE*MAX_TORQUE);let r=1-3.2*qc-.032*vc-.06*uc;if(Math.max(...s.q.map(Math.abs))<POS_LIMIT*.089)r+=.55;return clamp(r,-4,2)}
+function teacherAction(s){const q=s.q,v=s.qd;return[clamp(-(42*q[0]+10*v[0]+10*q[1]+2.5*v[1]+6*q[2]+1.2*v[2]),-MAX_TORQUE,MAX_TORQUE),clamp(-(36*q[1]+9*v[1]+8*q[0]+2*v[0]+7*q[2]+1.8*v[2]),-MAX_TORQUE,MAX_TORQUE),clamp(-(28*q[2]+7*v[2]+7*q[1]+1.6*v[1]),-MAX_TORQUE,MAX_TORQUE)]}
+function teacherMatch(a,t){return 1-(Math.abs(a[0]-t[0])+Math.abs(a[1]-t[1])+Math.abs(a[2]-t[2]))/(6*MAX_TORQUE)}
+function classProbs(brain,i,z,temp){const b=(brain.fireBias?.[i]||[0,0,0]).map(v=>finiteNum(v,0));const gain=clamp(finiteNum(brain.fireGain?.[i],.9),.05,4),T=Math.max(.05,finiteNum(temp,1)),zz=clamp(finiteNum(z,0),-12,12),drive=gain*zz/T,raw=[b[0]-drive,b[1],b[2]+drive],m=Math.max(...raw),e=raw.map(v=>Math.exp(clamp(v-m,-18,18))),d=Math.max(1e-12,e[0]+e[1]+e[2]);return[e[0]/d,e[1]/d,e[2]/d]}
+function deterministicForward(brain,s,prev){
+  const f=encode(s),h=[],z=[],p=[];
+  for(let i=0;i<brain.N;i++){
+    let q=finiteNum(brain.bias?.[i],0);
+    for(let k=0;k<3;k++){const src=brain.src[i][k];const pre=src<SENS?finiteNum(f[src],0):finiteNum(prev[src-SENS],0);q+=finiteNum(brain.w[i][k],0)*pre}
+    z[i]=q;const pp=classProbs(brain,i,q,DECT);p[i]=pp;
+    let im=1;if(pp[0]>pp[1]&&pp[0]>=pp[2])im=0;else if(pp[2]>pp[1]&&pp[2]>pp[0])im=2;
+    h[i]=im-1;
+  }
+  const tor=[0,0,0];
+  for(let j=0;j<3;j++){let sum=0;for(let i=0;i<brain.N;i++)sum+=brain.decoder[j][i]*h[i];tor[j]=Math.tanh(sum/Math.max(3,(brain.dnz?.[j]||brain.N*.12)*.55))*MAX_TORQUE}
+  return{f,h,z,p,tor};
+}
+function makeCase(seed,hard=false){const s=freshState(PRNG(seed>>>0),hard);s.caseSeed=seed>>>0;return s}
+function perturbSchedule(caseSeed){const r=PRNG((caseSeed||1)>>>0);return{rng:r,next:1.0+r()*1.8}}
+function applyScheduledPerturb(s,plan){
+  const j=Math.floor(plan.rng()*3),sg=plan.rng()<.5?-1:1;
+  s.qd[j]+=sg*VEL_LIMIT*(.15+plan.rng()*.12)*CFG.perturbMul;
+  plan.next=s.t+1.5+plan.rng()*2.0;s.impulse=1;
+}
+function runEpisode(brain,base,opts){
+  const o=opts||{},perturbing=o.perturb!==false;
+  let prev=Array(brain.N).fill(0),s=cloneState(base),total=0,t=0,steps=0;
+  let eff=0,act=0,tempo=0,top=0,tot=0,match=0;
+  const plan=perturbSchedule(s.caseSeed||1);
+  while(!s.done&&t<MAXT){
+    const fw=deterministicForward(brain,s,prev);prev=fw.h;
+    if(o.match)match+=teacherMatch(fw.tor,teacherAction(s))*DT;
+    physics(s,fw.tor,DT);
+    total+=reward(s,fw.tor)*DT;t+=DT;steps++;
+    const a0=Math.abs(fw.tor[0]),a1=Math.abs(fw.tor[1]),a2=Math.abs(fw.tor[2]),sum=a0+a1+a2;
+    eff+=sum/(3*MAX_TORQUE);tot+=sum;top+=a2;
+    let nz=0;for(let i=0;i<brain.N;i++)if(fw.h[i]!==0)nz++;
+    act+=nz/brain.N;
+    tempo+=(Math.abs(s.qd[0])+Math.abs(s.qd[1])+Math.abs(s.qd[2]))/(3*VEL_LIMIT);
+    if(perturbing&&s.t>=plan.next)applyScheduledPerturb(s,plan);
+  }
+  const n=Math.max(1,steps);
+  return{duration:s.t,total,match:match/Math.max(t,DT),effort:eff/n,activity:act/n,tempo:tempo/n,topShare:tot>1e-9?top/tot:1/3,last:s};
+}
+function scoreSet(brain,suite,opts){
+  sanitizeBrain(brain);
+  const durations=[];let total=0,eff=0,act=0,tempo=0,top=0,match=0;
+  for(let i=0;i<suite.length;i++){
+    const ep=runEpisode(brain,suite[i],opts);
+    durations.push(ep.duration);total+=ep.total;eff+=ep.effort;act+=ep.activity;tempo+=ep.tempo;top+=ep.topShare;match+=ep.match;
+  }
+  const n=Math.max(1,durations.length),sorted=durations.slice().sort((a,b)=>a-b);
+  const mean=sorted.reduce((a,b)=>a+b,0)/n;
+  const median=n%2?sorted[(n-1)>>1]:.5*(sorted[n/2-1]+sorted[n/2]);
+  const worst=sorted[0]||0;
+  const survival=sorted.filter(v=>v>=SURV).length/n;
+  const sc=Math.max(.2,MAXT/10);
+  const robust=(.55*mean+.25*median+.20*worst)/sc+3*survival;
+  return{mean,median,worst,survival,total,robust,durations:sorted,teacherMatch:match/n,
+         desc:{effort:clamp(eff/n,0,1),activity:clamp(act/n,0,1),tempo:clamp(tempo/n,0,1),topShare:clamp(top/n,0,1)}};
+}
+function comparisonFitness(brain,suite){const x=scoreSet(brain,suite,{match:true});return Object.assign({fitness:x.total+2*x.mean+1.5*x.worst+8*x.survival},x)}
+function relevantSet(b){
+  const read=new Set();
+  for(let j=0;j<3;j++)for(let i=0;i<b.N;i++)if(b.decoder[j][i])read.add(i);
+  const deep=new Set(read);
+  for(const i of read)for(let k=0;k<3;k++){const sc=b.src[i][k];if(sc>=SENS)deep.add(sc-SENS)}
+  return[...deep];
+}
+function mutate(parent,strong=false){
+  const c=deepCloneNet(parent),r=rng||PRNG(1),count=CFG.mut;
+  const rel=relevantSet(c),focus=CFG.focus;
+  const target=()=>rel.length&&r()<focus?rel[Math.floor(r()*rel.length)]:Math.floor(r()*c.N);
+  const source=()=>r()<CFG.sensorBias?Math.floor(r()*SENS):Math.floor(r()*(SENS+c.N));
+  for(let z=0;z<count;z++){
+    const i=target(),k=Math.floor(r()*3),u=r();
+    if(u<.26){c.w[i][k]=otherTern(r,c.w[i][k]);}
+    else if(u<.50){c.src[i][k]=source();}
+    else if(u<.62){c.bias[i]=clamp((c.bias[i]||0)+(r()<.5?-1:1)*.25,-2.5,2.5);}
+    else if(u<.72){const ci=Math.floor(r()*3);c.fireBias[i][ci]=clamp(c.fireBias[i][ci]+(r()<.5?-1:1)*.3,-5,5);}
+    else if(u<.78){c.fireGain[i]=clamp(c.fireGain[i]*(r()<.5?.82:1.22),.08,3.5);}
+    else{const j=Math.floor(r()*3),ni=r()<focus&&rel.length?rel[Math.floor(r()*rel.length)]:Math.floor(r()*c.N);c.decoder[j][ni]=otherTern(r,c.decoder[j][ni]);}
+  }
+  if(strong){const extra=Math.max(2,Math.round(count*1.5));for(let z=0;z<extra;z++){const i=target(),k=Math.floor(r()*3);c.src[i][k]=source();c.w[i][k]=choice(r,[-1,0,1])}}
+  return sanitizeBrain(c);
+}
+function crossover(a,b){
+  if(a.N!==b.N)return deepCloneNet(a);
+  const c=deepCloneNet(a),r=rng,cut=Math.floor(r()*c.N),len=Math.max(1,Math.floor(c.N*(.2+r()*.4)));
+  for(let x=0;x<len;x++){
+    const i=(cut+x)%c.N;
+    c.src[i]=b.src[i].slice();c.w[i]=b.w[i].slice();c.bias[i]=b.bias[i];
+    c.fireBias[i]=b.fireBias[i].slice();c.fireGain[i]=b.fireGain[i];
+    for(let j=0;j<3;j++)c.decoder[j][i]=b.decoder[j][i];
+  }
+  return sanitizeBrain(c);
+}
+function genomeDistance(a,b){
+  if(a.N!==b.N)return 1;
+  let diff=0,tot=0;
+  for(let i=0;i<a.N;i++)for(let k=0;k<3;k++){tot+=2;if(a.src[i][k]!==b.src[i][k])diff++;if(a.w[i][k]!==b.w[i][k])diff++}
+  for(let j=0;j<3;j++)for(let i=0;i<a.N;i++){tot++;if(a.decoder[j][i]!==b.decoder[j][i])diff++}
+  return diff/Math.max(1,tot);
+}
+/* the map search's genotype projection, unchanged */
+let PROJ_SEED=0;
+function mdGenomeParts(b){
+  const a=[]; if(!b)return a;
+  for(let i=0;i<b.N;i++)for(let k=0;k<3;k++){a.push((b.src[i][k]/Math.max(1,SENS+b.N-1))*2-1);a.push(b.w[i][k]);}
+  for(let j=0;j<3;j++)for(let i=0;i<b.N;i++)a.push(b.decoder[j][i]);
+  for(let i=0;i<b.N;i++)a.push(clamp(finiteNum(b.bias?.[i],0)/2.5,-1,1));
+  for(let i=0;i<b.N;i++)for(let k=0;k<3;k++)a.push(clamp(finiteNum(b.fireBias?.[i]?.[k],0)/5,-1,1));
+  for(let i=0;i<b.N;i++)a.push(clamp((finiteNum(b.fireGain?.[i],.9)-.08)/(3.5-.08)*2-1,-1,1));
+  return a;
+}
+function mdCoord(b,dims){
+  dims=clamp(Math.round(dims||6),3,8);const v=mdGenomeParts(b),out=[];
+  for(let d=0;d<dims;d++){const r=PRNG(((PROJ_SEED>>>0)^Math.imul(d+1,0x9E3779B9)^Math.imul(dims,0x85EBCA6B))>>>0);let sum=0,norm=0;for(let i=0;i<v.length;i++){const w=r()*2-1;sum+=v[i]*w;norm+=w*w}out.push(sum/Math.sqrt(Math.max(1,norm)))}
+  return out;
+}
+function mdDistance(a,b){const x=a.coord||a,y=b.coord||b,n=Math.min(x?.length||0,y?.length||0);if(!n)return Infinity;let s=0;for(let i=0;i<n;i++){const d=x[i]-y[i];s+=d*d}return Math.sqrt(s)}
+function cmpSelectPeaks(samples,k,dims,sep=.18){const pts=samples.slice().sort((a,b)=>b.fitness-a.fitness);if(!pts.length)return [];const out=[];const scale=Math.sqrt(Math.max(1,dims));for(const p of pts){if(out.length>=k)break;if(out.every(q=>mdDistance(p,q)>sep*scale))out.push(p)}if(out.length<k)for(const p of pts){if(out.length>=k)break;if(out.every(q=>mdDistance(p,q)>.10*scale))out.push(p)}return out.length?out:[pts[0]]}
+function mutateWith(parent,count,r){const oldR=rng,oldMut=CFG.mut;rng=r;CFG.mut=count;try{return mutate(parent,false)}finally{CFG.mut=oldMut;rng=oldR}}
+function crossoverWith(a,b,r){const oldR=rng;rng=r;try{return crossover(a,b)}finally{rng=oldR}}
+
+/* ===== the fair A/B ===== */
+/* A0: the hall of fame as written: reject anything near a member */
+function pushAsWritten(list,entry,maxN){if(list.some(e=>genomeDistance(e.brain,entry.brain)<Math.max(CFG.minDist,.01)))return false;list.push(entry);list.sort((a,b)=>b.fitness-a.fitness);if(list.length>maxN)list.length=maxN;return true}
+/* A1/A2: niching replacement: a near-copy replaces its nearest member if it is better */
+function pushNiche(list,entry,maxN){const md=Math.max(CFG.minDist,.01);let ni=-1,nd=Infinity;
+  for(let i=0;i<list.length;i++){const d=genomeDistance(list[i].brain,entry.brain);if(d<md&&d<nd){nd=d;ni=i}}
+  if(ni>=0){if(entry.fitness>list[ni].fitness)list[ni]=entry;else return false}else list.push(entry);
+  list.sort((a,b)=>b.fitness-a.fitness);if(list.length>maxN)list.length=maxN;return true}
+function mapMix(r,m){const u=r();return u<.55?Math.max(1,m-1):(u<.90?m:Math.min(16,m+2))}
+const ARM_SALT={A0:0xC0A11AB,A1:0xC0A11AB,A2:0xC0A11AB,B:0xC0A11AB^0x5A17BEEF};
+function runJob(job,progress){
+  Object.assign(CFG,{N:job.N,seed:job.seed>>>0});PROJ_SEED=(job.seed^0x6D61704D)>>>0;numericalFaults=0;
+  rng=PRNG(job.seed);const start=makeNet();                      // the same newborn for every arm of this seed
+  const train=Array.from({length:12},(_,i)=>makeCase((job.seed+7919*(i+1))>>>0,i>=Math.floor(12*.72)));
+  const hold=Array.from({length:job.holdout},(_,i)=>makeCase((job.seed+8800003+i*32452843)>>>0,i>=Math.floor(job.holdout*.72)));
+  let evals=0;const fit=b=>{evals++;return comparisonFitness(b,train)};
+  const r=PRNG((job.seed^ARM_SALT[job.arm])>>>0),hist=[],diag={};let best;
+  if(job.arm==='B'){
+    const D=job.dims,K=job.peaks,X=job.X;
+    let mf=fit(start),mapBrain=start;best={brain:start,score:mf};
+    let pool=[{brain:start,fitness:mf.fitness,score:mf,coord:mdCoord(start,D),source:'root'}];hist.push(mf.fitness);
+    for(let g=1;g<=job.gens;g++){
+      const rawPeaks=cmpSelectPeaks(pool,K,D,.18),newSamples=[],buckets=rawPeaks.map(p=>({root:p,children:[]}));
+      const randomN=Math.min(X-rawPeaks.length,Math.max(0,Math.round(X*job.randomPct/100))),localN=Math.max(0,X-randomN);
+      for(let i=0;i<localN;i++){const bk=buckets[i%Math.max(1,buckets.length)],root=bk.root,c=mutateWith(root.brain,mapMix(r,job.mut),r),f=fit(c);
+        const e={brain:c,fitness:f.fitness,score:f,coord:mdCoord(c,D),source:'local'};newSamples.push(e);bk.children.push(e)}
+      for(let i=0;i<randomN;i++){const origin=(i%2===0?start:best.brain)||start,c=mutateWith(origin,Math.min(16,Math.max(job.mut+2,4+Math.floor(r()*3))),r),f=fit(c);
+        newSamples.push({brain:c,fitness:f.fitness,score:f,coord:mdCoord(c,D),source:'escape'})}
+      const scoredRoots=[];
+      for(const b of buckets){const vals=b.children.map(c=>c.fitness),avg=vals.length?vals.reduce((a,v)=>a+v,0)/vals.length:b.root.fitness,bst=vals.length?Math.max(...vals):b.root.fitness;
+        const variance=vals.length?vals.reduce((a,v)=>a+(v-avg)*(v-avg),0)/vals.length:0,stability=avg-.15*Math.sqrt(Math.max(0,variance));
+        scoredRoots.push({...b.root,basinScore:.50*b.root.fitness+.30*stability+.20*bst})}
+      const cands=scoredRoots.concat(newSamples.map(e=>({...e,basinScore:e.fitness}))),cap=Math.max(K*4,K);pool=[];
+      for(const e of cands.slice().sort((a,b)=>(b.basinScore??b.fitness)-(a.basinScore??a.fitness))){if(pool.length>=cap)break;
+        if(pool.every(q=>genomeDistance(q.brain,e.brain)>=Math.max(CFG.minDist,.01))&&pool.every(q=>mdDistance(q,e)>=.06*Math.sqrt(D)))pool.push(e)}
+      for(const e of newSamples.slice().sort((a,b)=>b.fitness-a.fitness))if(!pool.includes(e)&&e.fitness>=(pool[pool.length-1]?.fitness??-Infinity)&&pool.length<cap)pool.push(e);
+      for(const e of cands)if(e.fitness>mf.fitness){mapBrain=e.brain;mf=e.score}       // stored score: no re-evaluation
+      if(mf.fitness>best.score.fitness)best={brain:mapBrain,score:mf};
+      hist.push(best.score.fitness);if(progress&&g%5===0)progress(g,best.score.fitness);
+    }
+    diag.pool=pool.length;
+  }else{
+    const push=job.arm==='A0'?pushAsWritten:pushNiche;
+    let cur=start,cf=fit(cur);best={brain:cur,score:cf};
+    const hof=[{brain:cur,fitness:cf.fitness,isStart:true}];let fromStart=0,parents=0,admitted=0;hist.push(cf.fitness);
+    for(let g=1;g<=job.gens;g++){
+      let nextB=cur,nextF=cf;
+      for(let i=0;i<job.X;i++){
+        let parent=cur,fromHof=null;
+        if(hof.length&&r()<.55){fromHof=hof[Math.min(hof.length-1,Math.floor(Math.pow(r(),Math.max(.3,CFG.selExp))*hof.length))];parent=fromHof.brain}
+        parents++;if(fromHof&&fromHof.isStart)fromStart++;
+        let c=mutateWith(parent,job.arm==='A2'?mapMix(r,job.mut):job.mut,r);
+        if(hof.length>1&&r()*100<CFG.crossPct){const o=hof[Math.floor(r()*hof.length)];if(o&&o.brain.N===c.N)c=crossoverWith(c,o.brain,r)}
+        const f=fit(c);if(f.fitness>nextF.fitness){nextB=c;nextF=f}
+        if(push(hof,{brain:c,fitness:f.fitness},8))admitted++;
+      }
+      cur=nextB;cf=nextF;if(push(hof,{brain:cur,fitness:cf.fitness},8))admitted++;
+      if(cf.fitness>best.score.fitness)best={brain:cur,score:cf};
+      hist.push(best.score.fitness);if(progress&&g%5===0)progress(g,best.score.fitness);
+    }
+    Object.assign(diag,{fromStart:parents?fromStart/parents:0,hofSize:hof.length,admitted});
+  }
+  const h=comparisonFitness(best.brain,hold);
+  return {id:job.id,arm:job.arm,seed:job.seed,evals,hist,train:best.score.fitness,hold:{fitness:h.fitness,mean:h.mean,worst:h.worst,survival:h.survival},diag,faults:numericalFaults,brain:best.brain};
+}
+/* for the viewer: one recorded episode of a frozen brain on a holdout case */
+function holdoutCase(seed,n,i){return makeCase((seed+8800003+i*32452843)>>>0,i>=Math.floor(n*.72))}
+function episodeFrames(brain,base){
+  const frames=[];let prev=Array(brain.N).fill(0),s=cloneState(base);const plan=perturbSchedule(s.caseSeed||1);
+  while(!s.done&&s.t<MAXT){const fw=deterministicForward(brain,s,prev);prev=fw.h;physics(s,fw.tor,DT);
+    let kick=0;if(s.t>=plan.next){applyScheduledPerturb(s,plan);kick=1}frames.push({q:s.q.slice(),t:s.t,kick})}
+  return frames;
+}
+function setN(N){CFG.N=N}
+</script>
+
+<script>
+'use strict';
+const $=id=>document.getElementById(id),coreText=$('core').textContent;
+const CORE=new Function(coreText+'\nreturn {episodeFrames,holdoutCase,setN,POS_LIMIT,MAXT};')();
+const ARMS={A0:{label:'A0 champions, as written',color:'#8fa4bd'},A1:{label:'A1 champions, fixed hall of fame',color:'#53d9ff'},A2:{label:'A2 fixed + map step sizes',color:'#55e58b'},B:{label:'B fitness-map basin search',color:'#ffd166'}};
+let workers=[],queue=[],results=[],busy=new Map(),cfg=null,stopped=false,progressRows={};
+$('armBoxes').innerHTML='<span class="small">Arms:</span>'+Object.entries(ARMS).map(([k,a])=>`<label><input type="checkbox" id="arm_${k}" checked style="width:auto"> <span class="dot" style="background:${a.color}"></span>${a.label}</label>`).join('');
+const num=(id,d)=>{const v=Number($(id).value);return Number.isFinite(v)?v:d};
+const log=s=>{$('log').textContent=`${new Date().toLocaleTimeString()}  ${s}\n`+$('log').textContent};
+const workerSrc=URL.createObjectURL(new Blob([coreText+`
+self.onmessage=e=>{const job=e.data;try{const res=runJob(job,(g,b)=>self.postMessage({type:'progress',id:job.id,g,best:b}));self.postMessage({type:'done',res})}catch(err){self.postMessage({type:'error',id:job.id,error:String(err&&err.stack||err)})}};`],{type:'text/javascript'}));
+
+function start(){
+  const arms=Object.keys(ARMS).filter(k=>$('arm_'+k).checked);if(!arms.length){$('status').textContent='Choose at least one arm.';return}
+  cfg={seeds:Math.max(1,Math.round(num('seeds',6))),seed0:Math.round(num('seed0',47017))>>>0,gens:Math.max(5,Math.round(num('gens',250))),X:Math.max(4,Math.round(num('X',16))),mut:Math.max(1,Math.round(num('mut',3))),
+    peaks:Math.max(1,Math.round(num('K',4))),dims:Math.max(3,Math.min(8,Math.round(num('D',6)))),randomPct:Math.max(0,Math.min(50,num('esc',20))),holdout:Math.max(8,Math.round(num('hold',48))),N:Math.max(16,Math.round(num('N',128))),arms};
+  const nw=Math.round(num('workers',0))||Math.max(1,(navigator.hardwareConcurrency||4)-1);
+  results=[];queue=[];progressRows={};stopped=false;let id=0;
+  for(let s=0;s<cfg.seeds;s++)for(const arm of arms){const seed=(cfg.seed0+s*1000003)>>>0;queue.push({id:id++,arm,seed,N:cfg.N,gens:cfg.gens,X:cfg.X,mut:cfg.mut,peaks:cfg.peaks,dims:cfg.dims,randomPct:cfg.randomPct,holdout:cfg.holdout})}
+  for(const j of queue)progressRows[j.id]={arm:j.arm,seed:j.seed,g:0,best:null,done:false};
+  const total=queue.length;$('run').disabled=true;$('stop').disabled=false;
+  $('status').textContent=`Running ${total} jobs (${arms.length} arms × ${cfg.seeds} seeds) on ${Math.min(nw,total)} workers. Each job: ${1+cfg.gens*cfg.X} evaluations × 12 training cases, then ${cfg.holdout} holdout cases.`;
+  log(`start: ${JSON.stringify(cfg)}`);
+  workers.forEach(w=>w.terminate());workers=[];busy.clear();
+  try{for(let i=0;i<Math.min(nw,total);i++){const w=new Worker(workerSrc);w.onmessage=e=>onMsg(w,e.data);w.onerror=e=>{log('worker error: '+e.message)};workers.push(w);next(w)}}
+  catch(err){$('run').disabled=false;$('stop').disabled=true;$('status').textContent='This browser would not start background workers for a page opened from a file ('+err.message+'). Open it in Chrome, Firefox or Safari, or serve the folder locally (for example: python3 -m http.server) and open it from http://localhost.';return}
+  drawProgress();
+}
+function next(w){if(stopped)return;const j=queue.shift();if(!j){busy.delete(w);if(!busy.size)finish();return}busy.set(w,j.id);w.postMessage(j)}
+function onMsg(w,m){
+  if(m.type==='progress'){const p=progressRows[m.id];if(p){p.g=m.g;p.best=m.best}drawProgressSoon()}
+  else if(m.type==='done'){results.push(m.res);const p=progressRows[m.res.id];p.g=cfg.gens;p.best=m.res.train;p.done=true;log(`${m.res.arm} seed ${m.res.seed}: train ${m.res.train.toFixed(2)}, holdout ${m.res.hold.fitness.toFixed(2)} (survival ${(100*m.res.hold.survival).toFixed(0)}%), ${m.res.evals} evaluations`);render();next(w)}
+  else if(m.type==='error'){log('job '+m.id+' failed: '+m.error);next(w)}
+}
+function stop(){stopped=true;workers.forEach(w=>w.terminate());workers=[];busy.clear();$('run').disabled=false;$('stop').disabled=true;$('status').textContent=`Stopped. ${results.length} jobs finished; their results are shown.`;render()}
+function finish(){$('run').disabled=false;$('stop').disabled=true;$('status').textContent=`Done: ${results.length} jobs.`;render()}
+let progTimer=null;function drawProgressSoon(){if(!progTimer)progTimer=setTimeout(()=>{progTimer=null;drawProgress()},400)}
+function drawProgress(){
+  const rows=Object.values(progressRows);if(!rows.length){$('progress').innerHTML='';return}
+  $('progress').innerHTML=`<table><tr><th>arm</th><th>seed</th><th style="width:45%">progress</th><th>best training fitness</th></tr>${rows.map(p=>`<tr><td><span class="dot" style="background:${ARMS[p.arm].color}"></span>${p.arm}</td><td>${p.seed}</td><td><div class="bar"><i style="width:${(100*p.g/cfg.gens).toFixed(0)}%;background:${ARMS[p.arm].color}"></i></div></td><td>${p.best===null?'—':p.best.toFixed(2)}${p.done?' ✓':''}</td></tr>`).join('')}</table>`;
+}
+
+// ── statistics ──
+const med=a=>{const s=a.slice().sort((x,y)=>x-y),n=s.length;return n?(n%2?s[(n-1)>>1]:(s[n/2-1]+s[n/2])/2):NaN};
+const mean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:NaN;
+function pairedPerm(d){                          // exact two-sided sign-flip test on the mean difference
+  const n=d.length;if(!n)return NaN;const obs=Math.abs(mean(d));if(n>16){let c=0;const R=20000;for(let r=0;r<R;r++){let s=0;for(const x of d)s+=Math.random()<.5?x:-x;if(Math.abs(s/n)>=obs-1e-12)c++}return c/R}
+  let c=0;for(let m=0;m<(1<<n);m++){let s=0;for(let i=0;i<n;i++)s+=(m>>i)&1?-d[i]:d[i];if(Math.abs(s/n)>=obs-1e-12)c++}return c/(1<<n);
+}
+function render(){
+  const arms=cfg?cfg.arms:[];const by={};for(const a of arms)by[a]=results.filter(r=>r.arm===a).sort((x,y)=>x.seed-y.seed);
+  const f=(x,d=2)=>Number.isFinite(x)?x.toFixed(d):'—';
+  $('summary').innerHTML=`<table><tr><th>arm</th><th>seeds done</th><th>holdout fitness, median (min–max)</th><th>holdout survival ≥ 9 s</th><th>holdout mean</th><th>holdout worst</th><th>best training fitness, median</th><th>evaluations per run</th><th>diagnostics</th></tr>${arms.map(a=>{const R=by[a];if(!R.length)return `<tr><td>${ARMS[a].label}</td><td>0</td><td colspan="7">—</td></tr>`;
+    const hf=R.map(r=>r.hold.fitness),dg=R[0].diag;const diag=a==='B'?`frontier ${mean(R.map(r=>r.diag.pool)).toFixed(1)} brains`:`parents that were the starting brain ${f(100*mean(R.map(r=>r.diag.fromStart)),0)} % · hall of fame ${f(mean(R.map(r=>r.diag.hofSize)),1)}`;
+    return `<tr><td><span class="dot" style="background:${ARMS[a].color}"></span>${ARMS[a].label}</td><td>${R.length}</td><td>${f(med(hf))} (${f(Math.min(...hf))}–${f(Math.max(...hf))})</td><td>${f(100*mean(R.map(r=>r.hold.survival)),0)} %</td><td>${f(mean(R.map(r=>r.hold.mean)))} s</td><td>${f(mean(R.map(r=>r.hold.worst)))} s</td><td>${f(med(R.map(r=>r.train)))}</td><td>${R[0].evals}</td><td class="small">${diag}</td></tr>`}).join('')}</table>`;
+  const pairs=[['B','A1','does the map search beat fixed champions?'],['A2','A1','do the map\'s smaller steps alone help?'],['B','A2','does multi-peak search help beyond the step sizes?'],['A1','A0','how much did the hall-of-fame bug cost?']].filter(([x,y])=>arms.includes(x)&&arms.includes(y));
+  $('paired').innerHTML=pairs.length?`<table><tr><th>comparison (same seeds)</th><th>seeds</th><th>first arm wins</th><th>mean holdout fitness difference</th><th>exact paired p</th><th></th></tr>${pairs.map(([x,y,q])=>{const seeds=by[x].map(r=>r.seed).filter(s=>by[y].some(r=>r.seed===s));
+    const d=seeds.map(s=>by[x].find(r=>r.seed===s).hold.fitness-by[y].find(r=>r.seed===s).hold.fitness),w=d.filter(v=>v>0).length,p=pairedPerm(d);
+    return `<tr><td>${x} vs ${y}: ${q}</td><td>${d.length}</td><td>${w} of ${d.length}</td><td>${f(mean(d))}</td><td>${f(p,3)}</td><td class="small">${d.length<5?'too few seeds to be sure':p<.05?(mean(d)>0?x+' better':y+' better'):'not distinguishable'}</td></tr>`}).join('')}</table>
+    <div class="small" style="margin-top:6px">If a champions arm's hall of fame stays at 1 brain, its lineage never drifted the 4 % needed to count as a different champion, so it searched as a single climber. The exact paired test flips the sign of each seed's difference in every possible way; with n seeds its smallest possible p is 2/2ⁿ (6 seeds: 0.031). Holdout fitness uses the lab's formula on ${cfg.holdout} unseen cases (total reward sums over cases, so it is larger than training fitness, which has 12).</div>`:'';
+  const seeds=[...new Set(results.map(r=>r.seed))].sort((a,b)=>a-b);
+  $('perseed').innerHTML=seeds.length?`<table><tr><th>seed</th>${arms.map(a=>`<th><span class="dot" style="background:${ARMS[a].color}"></span>${a}</th>`).join('')}</tr>${seeds.map(s=>`<tr><td>${s}</td>${arms.map(a=>{const r=by[a].find(x=>x.seed===s);return `<td>${r?`${f(r.hold.fitness,1)} / ${f(100*r.hold.survival,0)}%`:'…'}</td>`}).join('')}</tr>`).join('')}</table>`:'No results yet.';
+  drawPlot(by);fillViewer();
+}
+function drawPlot(by){
+  const c=$('plot'),g=c.getContext('2d'),W=c.width,H=c.height,pad=46;g.clearRect(0,0,W,H);g.fillStyle='#081321';g.fillRect(0,0,W,H);
+  const series=Object.entries(by).filter(([,R])=>R.length).map(([a,R])=>{const L=Math.min(...R.map(r=>r.hist.length));return [a,Array.from({length:L},(_,i)=>med(R.map(r=>r.hist[i])))]});
+  if(!series.length){g.fillStyle='#9fb1c8';g.font='14px Segoe UI';g.fillText('No results yet.',W/2-45,H/2);return}
+  const all=series.flatMap(([,s])=>s),mn=Math.min(...all),mx=Math.max(...all),span=Math.max(1e-9,mx-mn),L=Math.max(...series.map(([,s])=>s.length));
+  for(let i=0;i<5;i++){const y=pad+i*(H-pad*1.6)/4;g.strokeStyle='#1b3048';g.beginPath();g.moveTo(pad,y);g.lineTo(W-12,y);g.stroke();g.fillStyle='#8fa4bd';g.font='11px Segoe UI';g.fillText((mx-span*i/4).toFixed(1),4,y+4)}
+  const px=i=>pad+(W-pad-12)*(i/Math.max(1,L-1)),py=v=>H-pad*.6-(v-mn)/span*(H-pad*1.6);
+  for(const [a,s] of series){g.strokeStyle=ARMS[a].color;g.lineWidth=2.5;g.beginPath();s.forEach((v,i)=>i?g.lineTo(px(i),py(v)):g.moveTo(px(i),py(v)));g.stroke()}
+  series.forEach(([a],k)=>{g.fillStyle=ARMS[a].color;g.font='12px Segoe UI';g.fillText(ARMS[a].label,W-250,22+16*k)});
+  g.fillStyle='#9fb1c8';g.font='11px Segoe UI';g.fillText('generation',W/2-25,H-6);
+}
+// ── viewer ──
+let anim=null;
+function fillViewer(){
+  const arms=[...new Set(results.map(r=>r.arm))],seeds=[...new Set(results.map(r=>r.seed))].sort((a,b)=>a-b),va=$('vArm'),vs=$('vSeed'),oa=va.value,os=vs.value;
+  va.innerHTML=arms.map(a=>`<option value="${a}">${ARMS[a].label}</option>`).join('');vs.innerHTML=seeds.map(s=>`<option value="${s}">${s}</option>`).join('');
+  if(arms.includes(oa))va.value=oa;if(seeds.map(String).includes(os))vs.value=os;$('watch').disabled=$('watchAll').disabled=!results.length;$('vCase').max=cfg?.holdout||48;
+}
+function watch(all){
+  const seed=Number($('vSeed').value),n=cfg.holdout,i=Math.max(1,Math.min(n,Math.round(num('vCase',1))))-1;
+  const arms=all?cfg.arms.filter(a=>results.some(r=>r.arm===a&&r.seed===seed)):[$('vArm').value];
+  const items=arms.map(a=>{const r=results.find(x=>x.arm===a&&x.seed===seed);CORE.setN(r.brain.N);return {a,frames:CORE.episodeFrames(r.brain,CORE.holdoutCase(seed,n,i))}});
+  if(anim)cancelAnimationFrame(anim);let k=0,last=0;
+  const step=t=>{if(t-last>=25){last=t;k++}drawView(items,k,i);if(items.some(it=>k<it.frames.length))anim=requestAnimationFrame(step);else $('vStatus').textContent=`Finished holdout case ${i+1}: `+items.map(it=>`${it.a} ${(it.frames.at(-1)?.t??0).toFixed(2)} s`).join(' · ')};
+  $('vStatus').textContent=`Seed ${seed}, holdout case ${i+1}/${n}.`;anim=requestAnimationFrame(step);
+}
+function drawView(items,k,ci){
+  const c=$('view'),g=c.getContext('2d'),W=c.width,H=c.height,slot=W/items.length,PL=CORE.POS_LIMIT;g.clearRect(0,0,W,H);g.fillStyle='#081321';g.fillRect(0,0,W,H);
+  items.forEach((it,ii)=>{const fr=it.frames[Math.min(k,it.frames.length-1)]||{q:[0,0,0],t:0},ox=slot*(ii+.5),oy=H-58,l=Math.min(64,slot/6.5),col=ARMS[it.a].color,done=k>=it.frames.length;
+    g.strokeStyle='#29415f';g.lineWidth=2;g.beginPath();g.moveTo(ii*slot+18,H-38);g.lineTo((ii+1)*slot-18,H-38);g.stroke();
+    let x=ox,y=oy;const pts=[[x,y]];for(let j=0;j<3;j++){x+=l*Math.sin(fr.q[j]);y-=l*Math.cos(fr.q[j]);pts.push([x,y])}
+    g.strokeStyle=col;g.lineWidth=6;g.beginPath();g.moveTo(pts[0][0],pts[0][1]);for(let j=1;j<4;j++)g.lineTo(pts[j][0],pts[j][1]);g.stroke();
+    for(let j=0;j<4;j++){g.fillStyle=j===0?'#8aa6c7':(Math.abs(fr.q[Math.min(2,j-1)])<PL*.133?'#55e58b':'#ffd166');g.beginPath();g.arc(pts[j][0],pts[j][1],j?10:8,0,Math.PI*2);g.fill()}
+    g.fillStyle='#eaf3ff';g.font='14px Segoe UI';g.fillText(it.a,ii*slot+18,26);g.fillStyle='#9fb1c8';g.font='12px Segoe UI';g.fillText(`t ${fr.t.toFixed(2)} s`,ii*slot+18,46);
+    g.fillStyle=done?'#ff6f7d':'#55e58b';g.fillText(done?(fr.t>=CORE.MAXT-1e-6?'SURVIVED':'FELL'):'RUNNING',ii*slot+18,66);if(fr.kick){g.fillStyle='#ff6f7d';g.fillText('push',ii*slot+18,86)}});
+}
+$('run').onclick=start;$('stop').onclick=stop;$('watch').onclick=()=>watch(false);$('watchAll').onclick=()=>watch(true);
+drawPlot({});
+</script>
+</body></html>
