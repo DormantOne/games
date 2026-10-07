@@ -1,0 +1,2436 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Shock Bot: a narrated serial</title>
+<meta name="description" content="A narrated, illustrated serial on how the Shock Bot builds cardiogenic shock case-review requests for Microsoft 365 Copilot, why it matters, and how to validate and build tools like it.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Big+Shoulders+Display:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>:root{
+  --glass:#0b2032; --glass-2:#10293d; --glass-3:#16364f;
+  --line:#1e3d55; --line-2:#2a5170;
+  --art:#ff5d73; --ecg:#5ef2a3; --pa:#ffd25e; --cvp:#5bc8ff; --pleth:#eaf4ff;
+  --muted:#93aac0; --soft:#cddbea;
+  --paper:#fbf6f2; --ink:#172131; --ink-2:#6a7383; --hi:#ffe27a;
+  --display:"Big Shoulders Display","Avenir Next Condensed","Arial Narrow","Roboto Condensed",sans-serif;
+  --body:"Atkinson Hyperlegible","Segoe UI",system-ui,-apple-system,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --ease:cubic-bezier(.2,.7,.2,1);
+  --accent:var(--pleth); --accent-ink:#2a3a52;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  background:radial-gradient(120% 90% at 50% 12%,#12324c 0%,#0b2032 50%,#071626 100%) fixed;
+  color:var(--pleth);font-family:var(--body);font-size:17px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;overflow:hidden;
+}
+button,select,input{font-family:inherit}
+:focus-visible{outline:2px solid var(--pa);outline-offset:3px;border-radius:6px}
+.defs{position:absolute;width:0;height:0;overflow:hidden}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+.app{display:grid;grid-template-rows:auto minmax(0,1fr) auto;height:100vh;height:100dvh}
+
+/* ---------- rail ---------- */
+.rail{display:flex;align-items:center;gap:clamp(10px,1.6vw,22px);padding:9px clamp(12px,2.4vw,28px);
+  border-bottom:1px solid var(--line);background:rgba(7,22,38,.78);backdrop-filter:blur(10px);position:relative;z-index:20}
+.brand{display:flex;align-items:center;gap:10px;color:var(--pleth);text-decoration:none;
+  font:700 23px/1 var(--display);letter-spacing:.01em;white-space:nowrap}
+.brand svg{width:38px;height:22px;flex:none}
+.ticks{flex:1;display:flex;gap:5px;align-items:center;justify-content:center;min-width:0}
+.tick{flex:1;max-width:58px;height:30px;border:0;background:transparent;padding:0;cursor:pointer;position:relative}
+.tick::before{content:"";position:absolute;left:0;right:0;top:50%;height:4px;margin-top:-2px;border-radius:2px;background:rgba(147,170,192,.24);transition:background .2s}
+.tick .fill{position:absolute;left:0;top:50%;height:4px;margin-top:-2px;border-radius:2px;width:0;background:var(--c,var(--pleth));opacity:.5;transition:width .25s linear}
+.tick.current::before{background:rgba(234,244,255,.3)}
+.tick.current .fill{opacity:1;box-shadow:0 0 10px var(--c)}
+.tick:hover::before{background:rgba(234,244,255,.5)}
+.controls{display:flex;gap:8px;position:relative}
+.ctl{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 15px;border-radius:19px;border:1px solid var(--line-2);
+  background:rgba(16,41,61,.85);color:var(--pleth);font:700 15px/1 var(--body);cursor:pointer;white-space:nowrap}
+.ctl svg{width:18px;height:18px;flex:none}
+.ctl:hover{border-color:var(--muted)}
+.ctl.primary{background:var(--ecg);border-color:var(--ecg);color:#04261a}
+.ctl.primary:hover{filter:brightness(1.06)}
+.ctl[aria-pressed="false"]{color:var(--muted)}
+
+.popover{position:absolute;right:clamp(12px,2.4vw,28px);top:calc(100% + 8px);width:min(350px,92vw);background:#0d2438;
+  border:1px solid var(--line-2);border-radius:16px;padding:16px 16px 14px;box-shadow:0 24px 50px rgba(0,0,0,.5);z-index:30}
+.popover[hidden]{display:none}
+.field{display:grid;gap:6px;margin:0 0 14px;font-size:14px;color:var(--muted)}
+.field span{display:flex;justify-content:space-between;gap:10px}
+.field output{color:var(--pleth);font-weight:700}
+select,.field input[type=number]{width:100%;background:#071626;color:var(--pleth);border:1px solid var(--line-2);border-radius:10px;height:40px;padding:0 10px;font-size:15px}
+input[type=range]{width:100%;accent-color:var(--ecg)}
+.check{display:flex;gap:10px;align-items:center;font-size:15px;color:var(--pleth);cursor:pointer}
+.check input{width:18px;height:18px;accent-color:var(--ecg)}
+.note{font-size:13px;color:var(--muted);margin:12px 0 0;line-height:1.45}
+
+/* ---------- deck (footer) ---------- */
+.deck{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px clamp(12px,2.4vw,28px) 11px;
+  border-top:1px solid var(--line);background:rgba(7,22,38,.66)}
+.nav{display:flex;align-items:center;gap:10px;background:transparent;border:1px solid var(--line-2);color:var(--pleth);border-radius:22px;
+  height:44px;padding:0 16px 0 12px;font:700 15px var(--body);cursor:pointer;max-width:42%;min-width:0}
+.nav svg{width:18px;height:18px;flex:none}
+.nav.next{padding:0 12px 0 16px}
+.nav .nav-title{color:var(--muted);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav:hover:not(:disabled){border-color:var(--muted)}
+.nav:disabled{opacity:.3;cursor:default}
+.deck-count{color:var(--muted);font-size:14px;white-space:nowrap}
+
+/* ---------- pages ---------- */
+main{position:relative;overflow:auto;min-height:0;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
+.page{display:none;max-width:1500px;margin:0 auto;padding:clamp(12px,1.8vw,24px) clamp(14px,2.6vw,36px) 16px;height:100%}
+.page.active{display:grid;grid-template-rows:auto minmax(0,1fr);gap:clamp(10px,1.5vw,18px);animation:pageIn .7s var(--ease) both}
+@keyframes pageIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.page-head{display:flex;align-items:flex-end;gap:clamp(12px,1.8vw,24px);min-width:0}
+.page-num{font:800 clamp(60px,7.6vw,118px)/.78 var(--display);color:transparent;-webkit-text-stroke:1.5px var(--accent);
+  text-shadow:0 0 30px color-mix(in srgb,var(--accent) 28%,transparent);letter-spacing:-.01em;flex:none}
+.page-title{margin:0;font:700 clamp(32px,4.1vw,58px)/.95 var(--display);letter-spacing:.004em;color:var(--pleth)}
+.page-title:focus{outline:none}
+.page-dek{margin:8px 0 2px;color:var(--muted);font-size:clamp(16px,1.3vw,19px);max-width:62ch}
+.page-body{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(330px,1fr);gap:clamp(14px,2vw,28px);min-height:0}
+.page-body.solo{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr)}
+
+.scene{margin:0;position:relative;min-height:0;border-radius:20px;border:1px solid var(--line);
+  background:linear-gradient(180deg,rgba(18,47,71,.6),rgba(8,26,42,.62));
+  box-shadow:inset 0 1px 0 rgba(234,244,255,.05),0 30px 60px -32px rgba(0,0,0,.7);overflow:hidden;display:flex}
+.scene>svg{display:block;width:100%;height:100%}
+
+/* ---------- narration column ---------- */
+.narration{display:flex;flex-direction:column;min-height:0;gap:10px}
+.trace-slot{flex:none}
+.trace{position:relative;height:54px;border-radius:12px;border:1px solid var(--line);background:rgba(4,16,28,.72);overflow:hidden}
+.trace canvas{position:absolute;inset:0;width:100%;height:100%}
+.trace-read{position:absolute;right:10px;top:7px;display:flex;flex-direction:column;align-items:flex-end;line-height:1;pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(4,16,28,.92) 22%);padding-left:26px}
+.trace-num{font:700 25px/1 var(--display);color:var(--ecg);min-width:2ch;text-align:right}
+.trace-unit{font-size:11.5px;color:var(--muted);margin-top:3px}
+.strips{list-style:none;margin:0;padding:2px 8px 18px 2px;overflow:auto;flex:1;min-height:0;display:flex;flex-direction:column;gap:12px;
+  position:relative;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
+.strip{filter:drop-shadow(0 10px 16px rgba(0,0,0,.32));cursor:pointer;transition:opacity .45s var(--ease);flex:none}
+.strip:focus-visible{outline:2px solid var(--pa);outline-offset:3px}
+.paper{
+  background-color:var(--paper);
+  background-image:
+    linear-gradient(to right,rgba(222,96,88,.2) 1px,transparent 1px),
+    linear-gradient(to bottom,rgba(222,96,88,.2) 1px,transparent 1px),
+    linear-gradient(to right,rgba(222,96,88,.085) 1px,transparent 1px),
+    linear-gradient(to bottom,rgba(222,96,88,.085) 1px,transparent 1px);
+  background-size:25px 25px,25px 25px,5px 5px,5px 5px;
+  color:var(--ink);font-size:clamp(16.5px,1.18vw,18.5px);line-height:1.62;padding:13px 28px 14px 19px;border-radius:5px 0 0 5px;
+  clip-path:polygon(0 0,100% 0,calc(100% - 7px) 5%,100% 10%,calc(100% - 7px) 15%,100% 20%,calc(100% - 7px) 25%,100% 30%,calc(100% - 7px) 35%,100% 40%,calc(100% - 7px) 45%,100% 50%,calc(100% - 7px) 55%,100% 60%,calc(100% - 7px) 65%,100% 70%,calc(100% - 7px) 75%,100% 80%,calc(100% - 7px) 85%,100% 90%,calc(100% - 7px) 95%,100% 100%,0 100%);
+  box-shadow:inset 5px 0 0 transparent;transition:box-shadow .3s}
+.strip:hover .paper{box-shadow:inset 5px 0 0 rgba(23,33,49,.22)}
+.strips.playing .strip.future{opacity:.46}
+.strips.playing .strip.active .paper{box-shadow:inset 5px 0 0 var(--accent-ink)}
+.strips.playing .strip.active .w{color:var(--ink-2)}
+.strips.playing .strip.active .w.done{color:var(--ink)}
+.w{border-radius:3px;transition:background-color .1s,color .1s,box-shadow .1s}
+.w.now{background:var(--hi);color:var(--ink)!important;box-shadow:0 0 0 2px var(--hi)}
+.strips.paused .w.now{background:rgba(255,226,122,.55);box-shadow:0 0 0 2px rgba(255,226,122,.55)}
+.deeper-btn{align-self:flex-start;flex:none;display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px 0 13px;border-radius:20px;
+  border:1px solid var(--accent);background:transparent;color:var(--pleth);font:700 15px var(--body);cursor:pointer}
+.deeper-btn svg{width:18px;height:18px}
+.deeper-btn:hover{background:color-mix(in srgb,var(--accent) 14%,transparent)}
+
+/* ---------- cover ---------- */
+.page.cover.active{display:flex;flex-direction:column;gap:clamp(12px,2vw,22px)}
+.cover-monitor{position:relative;flex:1 1 auto;min-height:max(220px,36vh);border-radius:20px;border:1px solid var(--line);
+  background:linear-gradient(180deg,rgba(5,18,30,.7),rgba(8,26,42,.55));overflow:hidden}
+.cover-monitor canvas{position:absolute;inset:0;width:100%;height:100%}
+.channels{list-style:none;margin:0;padding:0;position:absolute;inset:0;display:grid;grid-template-rows:repeat(5,1fr);pointer-events:none}
+.channels li{display:flex;align-items:baseline;gap:10px;padding:8px 16px 0;transition:opacity .6s var(--ease);border-top:1px solid rgba(30,61,85,.55)}
+.channels li:first-child{border-top:0}
+.ch-name{font:700 19px/1 var(--display);color:var(--c);letter-spacing:.02em}
+.ch-desc{font-size:13px;color:var(--muted)}
+.cover.has-hl .channels li:not(.hl){opacity:.28}
+.cover-copy{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(280px,1fr);gap:clamp(16px,3vw,48px);align-items:end;flex:none}
+.cover-title{margin:0;font:800 clamp(58px,8.2vw,136px)/.84 var(--display);letter-spacing:-.006em;color:var(--pleth);
+  text-shadow:0 0 50px rgba(91,200,255,.18)}
+.cover-title:focus{outline:none}
+.cover-dek{font-size:clamp(18px,1.55vw,23px);line-height:1.4;color:var(--soft);margin:16px 0 6px;max-width:36ch}
+.cover-meta{color:var(--muted);font-size:15px;margin:0 0 18px;max-width:54ch}
+.cover-actions{display:flex;gap:10px;flex-wrap:wrap}
+.btn{height:48px;padding:0 22px;border-radius:24px;border:1px solid var(--line-2);background:rgba(16,41,61,.9);color:var(--pleth);
+  font:700 16px var(--body);cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--ecg);color:#04261a;border-color:var(--ecg)}
+.btn.small{height:36px;padding:0 14px;font-size:14px;border-radius:18px}
+.btn.ghost{background:transparent}
+.cover-side{display:flex;flex-direction:column;gap:10px;min-width:0}
+.cover-side .strips{overflow:visible;flex:none;padding:0}
+.subtitles .strip{display:none}
+.subtitles .strip.active{display:block}
+.subtitles:not(.playing) .strip:first-child{display:block}
+
+/* ---------- sources ---------- */
+.sources-wrap{overflow:auto;min-height:0;padding-right:6px;scrollbar-width:thin;scrollbar-color:var(--line-2) transparent}
+.sources{columns:2 380px;column-gap:34px;list-style:none;margin:0;padding:0;counter-reset:src}
+.sources li{break-inside:avoid;padding:11px 0 13px 46px;position:relative;border-top:1px solid var(--line)}
+.sources li::before{counter-increment:src;content:counter(src);position:absolute;left:0;top:9px;font:700 24px/1 var(--display);color:var(--muted)}
+.sources a{color:var(--pleth);text-decoration:none;font-weight:700;line-height:1.35}
+.sources a:hover{text-decoration:underline;text-underline-offset:3px}
+.sources .meta{display:block;color:var(--muted);font-size:14px;margin-top:3px}
+.sources .why{display:block;color:#b9c9da;font-size:14px;margin-top:2px}
+.colophon{margin:22px 0 6px;padding:16px 18px;border:1px solid var(--line);border-radius:14px;background:rgba(5,18,30,.5);color:var(--soft);font-size:15px;max-width:96ch}
+.colophon p{margin:0 0 8px}.colophon p:last-child{margin:0}
+
+/* ---------- drawer ---------- */
+.backdrop{position:fixed;inset:0;background:rgba(3,10,18,.55);z-index:40;opacity:0;pointer-events:none;transition:opacity .3s}
+.backdrop.open{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(580px,94vw);background:#0c2336;border-left:1px solid var(--line-2);z-index:50;
+  transform:translateX(104%);transition:transform .45s var(--ease);display:flex;flex-direction:column;box-shadow:-30px 0 60px rgba(0,0,0,.45)}
+.drawer.open{transform:none}
+.drawer-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line)}
+.drawer-head h2{margin:0;font:700 28px/1.05 var(--display)}
+.icon-btn{width:40px;height:40px;border-radius:20px;border:1px solid var(--line-2);background:transparent;color:var(--pleth);cursor:pointer;display:grid;place-items:center;flex:none}
+.icon-btn svg{width:18px;height:18px}
+.drawer-body{overflow:auto;padding:6px 22px 44px}
+.pane{display:none}.pane.active{display:block}
+.pane h3{font:700 23px/1.1 var(--display);margin:22px 0 8px;color:var(--pleth)}
+.pane p,.pane li{color:var(--soft);max-width:64ch}
+.pane li{margin:0 0 6px}
+.pane ol,.pane ul{padding-left:22px}
+.pane strong{color:var(--pleth)}
+.pane code{font-family:var(--mono);font-size:.9em;color:#ffe9a8}
+.pane pre{background:#061423;border:1px solid var(--line);border-radius:12px;padding:14px;overflow:auto;font:12.5px/1.55 var(--mono);color:#c7f2db;white-space:pre}
+.pane table{border-collapse:collapse;width:100%;font-size:14.5px;margin:6px 0 10px}
+.pane th,.pane td{border-bottom:1px solid var(--line);text-align:left;padding:8px 8px 8px 0;vertical-align:top}
+.pane th{color:var(--pleth)}
+.pane td{color:var(--soft)}
+.fine{font-size:14px;color:var(--muted)!important}
+.toy-ctx{color:var(--pleth);font-weight:700}
+.toy-bars{display:grid;gap:7px;margin:4px 0 14px}
+.toy-row{display:grid;grid-template-columns:92px 1fr 44px;gap:10px;align-items:center;font-size:14.5px}
+.toy-w{color:var(--pleth)}
+.toy-bar{height:14px;border-radius:7px;background:rgba(91,200,255,.12);overflow:hidden}
+.toy-bar i{display:block;height:100%;background:var(--cvp);border-radius:7px;transition:width .35s var(--ease)}
+.toy-row.picked .toy-bar i{background:var(--ecg)}
+.toy-p{color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+.toy-actions{display:flex;gap:8px;flex-wrap:wrap}
+.toy-out{min-height:1.6em;color:var(--pleth)}
+.toy-out mark{background:rgba(94,242,163,.18);color:var(--ecg);border-radius:4px;padding:0 4px}
+.calc{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:end}
+.calc-out{grid-column:1/-1;display:flex;align-items:baseline;justify-content:space-between;padding:12px 16px;border:1px solid var(--ecg);border-radius:12px;background:rgba(94,242,163,.06)}
+.calc-out span{color:var(--muted)}
+.calc-out strong{font:700 34px/1 var(--display);color:var(--ecg)}
+.checklist{list-style:none;padding:0}
+.checklist li{margin:0 0 4px}
+.checklist label{display:flex;gap:12px;align-items:flex-start;padding:8px 10px;border-radius:10px;cursor:pointer}
+.checklist label:hover{background:rgba(234,244,255,.04)}
+.checklist input{width:18px;height:18px;margin-top:3px;accent-color:var(--ecg);flex:none}
+.checklist input:checked+span{color:var(--muted);text-decoration:line-through;text-decoration-color:rgba(147,170,192,.6)}
+.kit-count{font-weight:700;color:var(--ecg)!important}
+.code-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 0 8px}
+.code-head span{font-family:var(--mono);font-size:13px;color:var(--muted)}
+
+/* ---------- SVG scene language ---------- */
+.scene text{font-family:var(--body)}
+.t{fill:var(--pleth);font-size:15px}
+.t.c{fill:currentColor}
+.t.sm{font-size:13px}
+.t.xs{font-size:11.5px}
+.t.lg{font-size:18px;font-weight:700}
+.t.dim{fill:var(--muted)}
+.t.mono{font-family:var(--mono);font-size:12.5px}
+.t.disp{font-family:var(--display);font-weight:700}
+.t.knock{paint-order:stroke;stroke:#0d2539;stroke-width:6px;stroke-linejoin:round}
+.ln{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ln.thin{stroke-width:1.4}
+.ln.thick{stroke-width:2.8}
+.dash{stroke-dasharray:6 7}
+.fl{fill:currentColor;fill-opacity:.09}
+.solid{fill:currentColor;stroke:none}
+.glow{filter:url(#glow)}
+.glow-lg{filter:url(#glow-lg)}
+.red{color:var(--art)}.green{color:var(--ecg)}.yellow{color:var(--pa)}.blue{color:var(--cvp)}.white{color:var(--pleth)}.mutedc{color:var(--muted)}
+.tabfill{fill:currentColor;fill-opacity:.2}
+.meter-bg{fill:rgba(147,170,192,.18)}
+.meter-fill{fill:var(--ecg);transform-box:fill-box;transform-origin:left center;transform:scaleX(0);transition:transform 1.6s var(--ease) .25s}
+.shown .meter-fill{transform:scaleX(.284)}
+
+.scene [data-b]{opacity:0;transition:opacity .75s var(--ease)}
+.scene [data-b].shown{opacity:1}
+.has-hl [data-hl]:not(.hl){opacity:.3}
+[data-hl]{transition:opacity .5s var(--ease)}
+.scene .draw{stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset 1.3s var(--ease) var(--d,0s)}
+.scene .shown .draw,.scene .draw.shown{stroke-dashoffset:0}
+.scene .draw.slow{transition-duration:3.4s}
+.scene .drop,.scene .slide,.scene .pop,.scene .fly,.scene .rise{opacity:0}
+.scene .shown .drop{animation:drop .9s var(--ease) var(--d,0s) both}
+.scene .shown .slide{animation:slide .7s var(--ease) var(--d,0s) both}
+.scene .shown .pop{animation:pop .6s var(--ease) var(--d,0s) both}
+.scene .shown .fly{animation:fly 1.2s var(--ease) var(--d,0s) both}
+.scene .shown .rise{animation:rise .8s var(--ease) var(--d,0s) both}
+.scene .pop{transform-box:fill-box;transform-origin:center}
+@keyframes drop{from{opacity:0;transform:translateY(-40px)}to{opacity:1;transform:none}}
+@keyframes slide{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:scale(.55)}to{opacity:1;transform:none}}
+@keyframes fly{from{opacity:0;transform:translate(var(--fx,0px),var(--fy,0px)) scale(.5)}to{opacity:1;transform:none}}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.flow{stroke-dasharray:5 9;animation:flow 1.1s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-14}}
+.breathe{animation:breathe 2.6s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes breathe{50%{transform:scale(1.07);opacity:.75}}
+.hb{animation:hb 1.6s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes hb{0%,100%{transform:scale(1)}14%{transform:scale(1.12)}28%{transform:scale(1)}42%{transform:scale(1.07)}56%{transform:scale(1)}}
+.fragile.hl{opacity:.45!important}
+.fragile.hl .bub{stroke-dasharray:4 6}
+.fragile .drift{transition:transform 1.6s var(--ease)}
+.fragile.hl .drift{transform:translateY(-14px)}
+.no-anim,.no-anim *{transition:none!important;animation:none!important}
+
+/* ---------- responsive ---------- */
+@media (max-width:980px){
+  .page{height:auto}
+  .page.active{grid-template-rows:auto auto}
+  .page-body{grid-template-columns:1fr}
+  .scene{position:sticky;top:0;z-index:3;height:min(40vh,400px);background:#0d2539}
+  .strips{overflow:visible;flex:none}
+  .page.cover.active{min-height:100%}
+  .cover-monitor{flex:none;height:34vh}
+  .cover-copy{grid-template-columns:1fr}
+  .sources-wrap{overflow:visible}
+}
+@media (max-width:640px){
+  .brand span{display:none}
+  .ctl span{display:none}
+  .ctl{padding:0 11px}
+  .nav .nav-title{display:none}
+  .nav{max-width:none}
+  .ticks{gap:2px}
+  .page-num{font-size:56px}
+  .calc{grid-template-columns:1fr}
+  .drawer{top:auto;left:0;width:100%;height:88vh;border-left:0;border-top:1px solid var(--line-2);border-radius:18px 18px 0 0;transform:translateY(104%)}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
+}
+
+/* ---------- errata ---------- */
+.errata{margin:0 0 24px;padding:16px 20px 15px;border:1px solid var(--line-2);border-left:4px solid var(--pa);border-radius:12px;background:rgba(5,18,30,.6);max-width:118ch}
+.errata h3{margin:0;font:700 26px/1.05 var(--display);color:var(--pleth)}
+.errata-sub{margin:4px 0 12px;color:var(--muted);font-size:14px}
+.errata ul{list-style:none;margin:0;padding:0;display:grid;gap:9px}
+.errata li{color:var(--soft);font-size:15px;line-height:1.5;max-width:110ch}
+.errata li strong{color:var(--pleth)}
+</style>
+<style>
+.drawer-kicker{margin:0 0 4px;font-size:13px;color:var(--muted)}
+.hl.emph{filter:url(#glow-lg)}
+.toy-row{grid-template-columns:92px 1fr 44px 40px}
+.toy-n{color:var(--ecg);text-align:right;font-variant-numeric:tabular-nums;font-size:13.5px}
+.scene .fragile{transition:opacity .6s var(--ease)}
+</style>
+</head>
+<body>
+<svg class="defs" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="2.3" result="b"/>
+    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+  <filter id="glow-lg" x="-60%" y="-60%" width="220%" height="220%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="b"/>
+    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+  <pattern id="graticule" width="40" height="40" patternUnits="userSpaceOnUse">
+    <path d="M40 0H0V40" fill="none" stroke="#5bc8ff" stroke-opacity=".07"/>
+  </pattern>
+  <radialGradient id="vignette" cx="50%" cy="42%" r="70%">
+    <stop offset="0" stop-color="#16395a" stop-opacity=".6"/>
+    <stop offset="1" stop-color="#06121e" stop-opacity="0"/>
+  </radialGradient>
+  <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+    <stop offset="0" stop-color="#eaf4ff" stop-opacity=".36"/>
+    <stop offset="1" stop-color="#eaf4ff" stop-opacity="0"/>
+  </radialGradient>
+  <linearGradient id="future" x1="0" y1="1" x2="1" y2="0">
+    <stop offset="0" stop-color="#eaf4ff" stop-opacity=".85"/>
+    <stop offset="1" stop-color="#eaf4ff" stop-opacity="0"/>
+  </linearGradient>
+
+  <marker id="ah-g" viewBox="0 0 10 10" refX="8" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto-start-reverse"><path d="M1.5 1.5L8.5 5L1.5 8.5" fill="none" stroke="#5ef2a3" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></marker>
+  <marker id="ah-r" viewBox="0 0 10 10" refX="8" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto-start-reverse"><path d="M1.5 1.5L8.5 5L1.5 8.5" fill="none" stroke="#ff5d73" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></marker>
+  <marker id="ah-y" viewBox="0 0 10 10" refX="8" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto-start-reverse"><path d="M1.5 1.5L8.5 5L1.5 8.5" fill="none" stroke="#ffd25e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></marker>
+  <marker id="ah-b" viewBox="0 0 10 10" refX="8" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto-start-reverse"><path d="M1.5 1.5L8.5 5L1.5 8.5" fill="none" stroke="#5bc8ff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></marker>
+  <marker id="ah-w" viewBox="0 0 10 10" refX="8" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto-start-reverse"><path d="M1.5 1.5L8.5 5L1.5 8.5" fill="none" stroke="#eaf4ff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></marker>
+
+  <symbol id="sym-doc" viewBox="-2 -2 68 86">
+    <path d="M0 0H50L64 14V82H0Z" fill="currentColor" fill-opacity=".1" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M50 0V14H64" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M10 30H54M10 42H48M10 54H52M10 66H36" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".65"/>
+  </symbol>
+  <symbol id="sym-key" viewBox="-2 -2 68 86">
+    <path d="M0 0H50L64 14V82H0Z" fill="currentColor" fill-opacity=".12" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M50 0V14H64" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M24 30c-6 0-6 5-6 9s-2 6-5 6c3 0 5 2 5 6s0 9 6 9M40 30c6 0 6 5 6 9s2 6 5 6c-3 0-5 2-5 6s0 9-6 9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="32" cy="45" r="3.2" fill="currentColor"/>
+  </symbol>
+  <symbol id="sym-person" viewBox="-2 -2 44 60">
+    <circle cx="20" cy="12" r="9.5" fill="currentColor" fill-opacity=".14" stroke="currentColor" stroke-width="2"/>
+    <path d="M2 55C2 38 9 29 20 29S38 38 38 55Z" fill="currentColor" fill-opacity=".14" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="sym-env" viewBox="-2 -2 100 68">
+    <rect x="0" y="0" width="96" height="64" rx="7" fill="currentColor" fill-opacity=".12" stroke="currentColor" stroke-width="2.4"/>
+    <path d="M3 5L48 38L93 5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="sym-engine" viewBox="-52 -52 104 104">
+    <path d="M0-48L41.6-24V24L0 48L-41.6 24V-24Z" fill="currentColor" fill-opacity=".1" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+    <path d="M0-30L26-15V15L0 30L-26 15V-15Z" fill="none" stroke="currentColor" stroke-width="1.6" opacity=".7" stroke-linejoin="round"/>
+    <path d="M0-30V-10M26 15L8.7 5M-26 15L-8.7 5" fill="none" stroke="currentColor" stroke-width="1.6" opacity=".7"/>
+    <circle r="9" fill="currentColor"/>
+  </symbol>
+  <symbol id="sym-shield" viewBox="-2 -2 64 74">
+    <path d="M30 2L56 12V34C56 52 44 63 30 68C16 63 4 52 4 34V12Z" fill="currentColor" fill-opacity=".1" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+    <path d="M18 36L27 45L43 27" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="sym-mag" viewBox="-2 -2 64 64">
+    <circle cx="24" cy="24" r="18" fill="currentColor" fill-opacity=".08" stroke="currentColor" stroke-width="2.6"/>
+    <path d="M37.5 37.5L57 57" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+  </symbol>
+  <symbol id="sym-clip" viewBox="-2 -2 68 86">
+    <rect x="0" y="7" width="64" height="75" rx="7" fill="currentColor" fill-opacity=".1" stroke="currentColor" stroke-width="2"/>
+    <rect x="18" y="0" width="28" height="15" rx="4" fill="#0b2032" stroke="currentColor" stroke-width="2"/>
+    <path d="M12 34H52M12 46H46M12 58H50" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".6"/>
+  </symbol>
+  <symbol id="sym-lock" viewBox="-2 -2 44 50">
+    <path d="M10 21V14a10 10 0 0 1 20 0v7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
+    <rect x="3" y="21" width="34" height="25" rx="5" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="2.4"/>
+    <circle cx="20" cy="33" r="3" fill="currentColor"/>
+  </symbol>
+  <symbol id="sym-check" viewBox="-2 -2 34 34">
+    <circle cx="15" cy="15" r="14" fill="currentColor" fill-opacity=".16" stroke="currentColor" stroke-width="2"/>
+    <path d="M8 15.5L13 20.5L22 10" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="sym-bubble" viewBox="-2 -2 64 54">
+    <path d="M8 0H52a8 8 0 0 1 8 8V30a8 8 0 0 1-8 8H24L12 50V38H8a8 8 0 0 1-8-8V8a8 8 0 0 1 8-8Z" fill="currentColor" fill-opacity=".1" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+  </symbol>
+  <symbol id="sym-list" viewBox="-2 -2 54 64">
+    <rect x="0" y="0" width="50" height="60" rx="6" fill="currentColor" fill-opacity=".1" stroke="currentColor" stroke-width="2"/>
+    <path d="M9 16l4 4 7-8M9 32l4 4 7-8M9 48l4 4 7-8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M26 17H42M26 33H42M26 49H38" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" opacity=".7"/>
+  </symbol>
+  <symbol id="sym-page" viewBox="-2 -2 74 58">
+    <rect x="0" y="0" width="70" height="54" rx="7" fill="currentColor" fill-opacity=".1" stroke="currentColor" stroke-width="2"/>
+    <path d="M0 13H70" stroke="currentColor" stroke-width="1.6" opacity=".7"/>
+    <circle cx="8" cy="6.5" r="2.2" fill="currentColor"/><circle cx="15" cy="6.5" r="2.2" fill="currentColor" opacity=".6"/>
+    <path d="M9 24H50M9 32H42" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".6"/>
+    <rect x="38" y="38" width="24" height="10" rx="5" fill="currentColor"/>
+  </symbol>
+</defs>
+</svg>
+
+<div class="app">
+<header class="rail">
+  <a class="brand" href="#p0" id="brand"><svg viewBox="0 0 38 22" aria-hidden="true"><path d="M1 13h9l3-7 4 14 4-17 3 10h13" fill="none" stroke="#5ef2a3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>The Shock Bot</span></a>
+  <nav class="ticks" id="ticks" aria-label="Pages"></nav>
+  <div class="controls">
+    <button class="ctl primary" id="btnPlay" type="button" aria-label="Play narration">
+      <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>
+      <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true" style="display:none"><path d="M7 5h3.6v14H7zM13.4 5H17v14h-3.6z" fill="currentColor"/></svg>
+      <span>Play</span></button>
+    <button class="ctl" id="btnVoice" type="button" aria-pressed="true">
+      <svg class="i-on" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <svg class="i-off" viewBox="0 0 24 24" aria-hidden="true" style="display:none"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor"/><path d="M16 9.5l5 5M21 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <span>Voice on</span></button>
+    <button class="ctl" id="btnSettings" type="button" aria-expanded="false" aria-controls="settings">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="16" cy="7" r="2.2" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="8" cy="17" r="2.2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+      <span>Settings</span></button>
+  </div>
+  <div class="popover" id="settings" hidden>
+    <label class="field"><span>Voice</span><select id="voiceSel"><option value="">Default voice</option></select></label>
+    <label class="field"><span>Speed <output id="rateOut">1.0×</output></span><input id="rateIn" type="range" min="0.75" max="1.5" step="0.05" value="1"></label>
+    <label class="check"><input id="autoTurn" type="checkbox" checked><span>Turn pages automatically</span></label>
+    <p class="note" id="voiceNote"></p>
+    <p class="note">Space plays or pauses. The arrow keys turn pages. V turns the voice on or off. Click any caption to replay from there.</p>
+  </div>
+</header>
+
+<main id="stage">
+  <section class="page cover" id="p0" aria-labelledby="coverTitle">
+    <div class="cover-monitor">
+      <canvas id="coverCanvas" aria-hidden="true"></canvas>
+      <ul class="channels" aria-label="The cast">
+        <li data-hl="1 2" style="--c:var(--art)"><span class="ch-name">Case</span><span class="ch-desc">the patient’s record</span></li>
+        <li data-hl="1 3" style="--c:var(--ecg)"><span class="ch-name">Wrapper</span><span class="ch-desc">the page you open</span></li>
+        <li data-hl="1 4" style="--c:var(--pa)"><span class="ch-name">Key</span><span class="ch-desc">the private reference file</span></li>
+        <li data-hl="1 5" style="--c:var(--cvp)"><span class="ch-name">Engine</span><span class="ch-desc">Copilot, reading and reasoning</span></li>
+        <li data-hl="1 6" style="--c:var(--pleth)"><span class="ch-name">Team</span><span class="ch-desc">the people who make it matter</span></li>
+      </ul>
+    </div>
+    <div class="cover-copy">
+      <div>
+        <h1 class="cover-title" id="coverTitle" tabindex="-1">The Shock Bot</h1>
+        <p class="cover-dek">How a page, a private key, and a reasoning engine help a shock team think together</p>
+        <p class="cover-meta">A narrated serial in twelve parts. For education and case review, not for clinical decisions.</p>
+        <div class="cover-actions"><button class="btn primary" id="startStory" type="button">Start the story</button><button class="btn" id="readQuiet" type="button">Read without sound</button></div>
+      </div>
+      <div class="cover-side"><ol class="strips subtitles"></ol></div>
+    </div>
+  </section>
+</main>
+
+<footer class="deck">
+  <button class="nav" id="btnPrev" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Previous</span><span class="nav-title"></span></button>
+  <div class="deck-count" id="deckCount" aria-live="polite"></div>
+  <button class="nav next" id="btnNext" type="button"><span>Next</span><span class="nav-title"></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+</footer>
+</div>
+
+<div class="backdrop" id="backdrop"></div>
+<aside class="drawer" id="drawer" aria-label="Go deeper" aria-hidden="true" inert>
+  <div class="drawer-head"><div><p class="drawer-kicker">Go deeper</p><h2 id="drawerTitle">Go deeper</h2></div><button class="icon-btn" id="drawerClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>
+  <div class="drawer-body"><div class="pane" data-for="p2">
+  <h3>Anatomy of the payload</h3>
+  <p>The wrapper assembles its blocks in the same order every time. The rules come before the case, so the model reads the case already knowing how its answer will be judged.</p>
+  <ol>
+    <li><strong>Header.</strong> The 2025 ACC reference, the chosen depth, how many lenses and documents are included, and an education-only banner.</li>
+    <li><strong>Reference data.</strong> The handle to the private key: Shock Bot team, General channel, Files, shockjson.docx.</li>
+    <li><strong>Analyst role and rules.</strong> Infer details from the case. Skip generic openers. Cite case data or a specific guideline figure. Say what is missing and why it matters. Cross-reference documents and note discrepancies. No treatment recommendations.</li>
+    <li><strong>Clinical emphasis.</strong> SCAI staging, etiology categories and write-ins, device and vasoactive focus, any hemodynamic values, and the flagged inflection point.</li>
+    <li><strong>Case data.</strong> Every pasted document, under its own label.</li>
+    <li><strong>Audience.</strong> Fellow, attending, shock team, M&amp;M or QI, transfer team, or general, each with its own writing instruction.</li>
+    <li><strong>Specific focus.</strong> Your priority question and context, if you gave one.</li>
+    <li><strong>Analysis tasks.</strong> One block of numbered questions for each lens you selected.</li>
+    <li><strong>Synthesis.</strong> A case summary, the key decision points, a concordance score out of 10 with its justification, the primary learning point, and the questions still unanswered.</li>
+    <li><strong>Web search instruction.</strong> Added only when the evidence lens is on.</li>
+  </ol>
+  <h3>How a payload begins</h3>
+<pre>=== CARDIOGENIC SHOCK CASE ANALYSIS ===
+Reference: Sinha SS, Morrow DA, Kapur NK, et al. 2025 ACC
+Expert Consensus Statement on CS. JACC 2025;85:1618–1641.
+Depth: thorough | Lenses: 5 | Input documents: 3
+FOR EDUCATIONAL UNDERSTANDING ONLY — NOT FOR CLINICAL DECISION-MAKING
+
+--- REFERENCE DATA ---
+The structured CS case classification schema (JSON) is stored
+in Microsoft Teams:
+  Team: "Shock Bot" → Channel: "General" → Files → shockjson.docx</pre>
+  <h3>Small details that do a lot</h3>
+  <p>The token meter turns amber as you approach the budget and red past it. The page warns you before you leave a pasted document unsaved. A short spoken guide explains each step. None of it needs a server.</p>
+</div>
+
+<div class="pane" data-for="p4">
+  <h3>Lens, key, or rule?</h3>
+  <table>
+    <tr><th>If it is…</th><th>It belongs in…</th><th>For example</th></tr>
+    <tr><td>A question you ask of every case</td><td>A lens</td><td>Was escalation timely, or delayed?</td></tr>
+    <tr><td>A definition, code, or list everyone should share</td><td>The key</td><td>Valid SCAI stages, device names, etiology codes</td></tr>
+    <tr><td>A rule about how to answer</td><td>The analyst rules</td><td>Cite a specific figure for every guideline claim</td></tr>
+  </table>
+  <p>Keeping the three apart is what makes the system easy to maintain. A new device goes in the key. A new question goes in a lens. Neither change touches the other.</p>
+</div>
+
+<div class="pane" data-for="p5">
+  <h3>Make the key prove it was read</h3>
+  <p>Put a version line at the top of the key, for example <code>"schema_version": "1.4"</code>, along with the date it was updated. Then add one sentence to the payload’s rules: state the schema version you used. If an answer can’t name the version, the key wasn’t read, and the analysis didn’t use your vocabulary.</p>
+  <h3>Why a Word file in a Teams channel</h3>
+  <p>Copilot reads Word documents directly, and a file in a channel’s Files tab is stored in the team’s SharePoint site, so it carries the team’s permissions. For a standard channel like General, membership in the team is the access list.</p>
+  <h3>Exchanging the key</h3>
+  <ol>
+    <li>Edit shockjson in place and raise its version number.</li>
+    <li>Note what changed, in one line, at the top of the file.</li>
+    <li>Rerun a few known cases to confirm nothing broke.</li>
+    <li>Every payload uses the new key the next time it runs. The wrapper doesn’t change.</li>
+  </ol>
+  <p>Another program swaps in its own key by changing one line in the wrapper: the handle in the reference data block.</p>
+</div>
+
+<div class="pane" data-for="p6">
+  <h3>One request, step by step</h3>
+  <ol>
+    <li>You paste the payload and send it.</li>
+    <li>Copilot’s orchestrator reads the prompt and plans what to retrieve.</li>
+    <li>Grounding: with a Microsoft 365 Copilot license and work data on, Copilot searches Microsoft Graph, helped by the semantic index. Copilot Chat without that license is grounded in the web, so attach the file yourself.</li>
+    <li>Permission trimming: only content you can already open is eligible.</li>
+    <li>The retrieved passages join your payload in the model’s working context.</li>
+    <li>The model writes the analysis. Think Deeper sends the work to a reasoning model.</li>
+    <li>Post-processing: further grounding calls, responsible AI checks, and security and compliance tasks.</li>
+    <li>The answer comes back with references to what it used.</li>
+  </ol>
+  <h3>Habits that make it reliable</h3>
+  <p>Type <code>/</code> in the prompt box and choose shockjson.docx to attach it directly. Check every answer’s references for the key. Sign in with your work account so enterprise data protection applies, and follow your institution’s policy on what patient information may be used.</p>
+  <p>Microsoft notes that the Copilot web address is moving from m365.cloud.microsoft to copilot.cloud.microsoft. That’s worth knowing if the wrapper’s Open Copilot link ever stops working.</p>
+</div>
+
+<div class="pane" data-for="p7">
+  <h3>Try the next-token step</h3>
+  <p>The model has just read: <span class="toy-ctx">Lactate kept rising despite the new device, suggesting</span></p>
+  <div id="toy">
+    <label class="field"><span>Temperature <output id="toyTempVal">1.0</output></span><input id="toyTemp" type="range" min="0.2" max="2" step="0.1" value="1"></label>
+    <div id="toyBars" class="toy-bars"></div>
+    <div class="toy-actions"><button type="button" class="btn small" id="toyOne">Draw one token</button><button type="button" class="btn small" id="toyMany">Draw 20 tokens</button><button type="button" class="btn small ghost" id="toyReset">Reset</button></div>
+    <p class="toy-out" id="toyOut" aria-live="polite"></p>
+  </div>
+  <p class="fine">These probabilities are illustrative, not taken from a real model. Low temperature makes the top choice dominate; high temperature spreads the odds and invites surprises. You can’t set this in Copilot. It’s here to show the idea.</p>
+  <h3>What changes with Think Deeper</h3>
+  <p>A reasoning model spends more computation before it answers: it plans, works through intermediate steps, and checks them. It’s slower, and for a long, multi-document case it is usually more thorough.</p>
+</div>
+
+<div class="pane" data-for="p8">
+  <h3>A hard calculator, live</h3>
+  <div class="calc">
+    <label class="field"><span>Mean arterial pressure (mmHg)</span><input id="cpoMap" type="number" inputmode="decimal" value="65" min="0" step="1"></label>
+    <label class="field"><span>Cardiac output (L/min)</span><input id="cpoCo" type="number" inputmode="decimal" value="4.0" min="0" step="0.1"></label>
+    <div class="calc-out"><span>Cardiac power output</span><strong id="cpoOut">0.58 W</strong></div>
+  </div>
+  <p class="fine">CPO = MAP × CO ÷ 451. In the SHOCK trial registry, lower cardiac power tracked with higher in-hospital mortality, and 0.53 W is a commonly cited cutoff from that work. Educational demonstration only.</p>
+  <h3>Hard and soft, side by side</h3>
+  <table>
+    <tr><th></th><th>Hard calculator</th><th>Soft calculator</th></tr>
+    <tr><td>Input</td><td>A few defined numbers</td><td>The whole record, in prose</td></tr>
+    <tr><td>Output</td><td>One number</td><td>A judgment, with reasons and priorities</td></tr>
+    <tr><td>Typical failure</td><td>Wrong number in, wrong number out</td><td>Wrong value pulled, wrong rule applied, confident tone</td></tr>
+    <tr><td>Earns trust by</td><td>Derivation and validation cohorts</td><td>Known-answer testing, expert comparison, ongoing monitoring</td></tr>
+    <tr><td>Best use</td><td>Exact arithmetic</td><td>Reading, weighing, and ranking, then handing the numbers to a hard calculator</td></tr>
+  </table>
+</div>
+
+<div class="pane" data-for="p9">
+  <h3>A validation starter kit</h3>
+  <p>Check items off as your team completes them. Nothing here is saved.</p>
+  <ul class="checklist" id="valList">
+    <li><label><input type="checkbox"><span>Gather 20 to 30 de-identified cases with settled answers, spanning SCAI stages and etiologies.</span></label></li>
+    <li><label><input type="checkbox"><span>Have two clinicians review each case independently, without seeing the AI’s output.</span></label></li>
+    <li><label><input type="checkbox"><span>Run the same cases through the Shock Bot with a fixed wrapper and key version.</span></label></li>
+    <li><label><input type="checkbox"><span>Measure agreement on stage, etiology, device, and key decisions. For stage, report a chance-corrected statistic such as Cohen’s kappa.</span></label></li>
+    <li><label><input type="checkbox"><span>Log every miss by type: wrong source value, unsupported citation, silent gap-filling, or other.</span></label></li>
+    <li><label><input type="checkbox"><span>Stamp each run with the wrapper version, key version, Copilot mode, and date.</span></label></li>
+    <li><label><input type="checkbox"><span>Rerun the full set after any change to the wrapper, the key, or the model behind Copilot.</span></label></li>
+    <li><label><input type="checkbox"><span>Decide together, in writing, what the tool may and may not be used for.</span></label></li>
+  </ul>
+  <p class="kit-count" id="valCount" aria-live="polite">0 of 8 done</p>
+  <h3>Why kappa</h3>
+  <p>Two reviewers will agree some of the time by chance alone. Cohen’s kappa corrects raw agreement for that, which makes it a fairer test of whether the Shock Bot and your experts really see the same stage.</p>
+  <h3>Where the field is pointing</h3>
+  <p>TRIPOD-LLM (Nature Medicine, 2025) sets out what studies of language models should report, with emphasis on transparency, human oversight, and task-specific performance. The Joint Commission and Coalition for Health AI guidance from 2025 asks health systems for AI governance, local validation, and ongoing, risk-based monitoring.</p>
+</div>
+
+<div class="pane" data-for="p11">
+  <h3>A starter template</h3>
+  <p>This is a complete, working payload builder in about forty lines. Save it as an .html file, open it in a browser, and replace the rules, the lenses, and the reference line with your own.</p>
+  <div class="code-head"><span>starter-payload-builder.html</span><button type="button" class="btn small" id="copyStarter">Copy template</button></div>
+  <pre id="starterCode"></pre>
+  <h3>What to change first</h3>
+  <ol>
+    <li>The rules: how you want answers written and cited.</li>
+    <li>The lenses: your experts’ questions, one per checkbox.</li>
+    <li>The reference line: the handle to your own key.</li>
+    <li>Then test on cases you know before anyone relies on it.</li>
+  </ol>
+</div>
+</div>
+</aside>
+
+<!-- ===================== 1. MEET ===================== -->
+<template id="scene-p1">
+<svg viewBox="0 0 800 560" role="img" aria-label="Scattered case documents flow into the wrapper, which sends a request to the engine; the engine follows a pointer to the private key and returns an answer to the team.">
+<rect width="800" height="560" fill="url(#vignette)"/><rect width="800" height="560" fill="url(#graticule)"/>
+<g data-b="0" class="red">
+  <g class="drop" style="--d:0s"><use href="#sym-doc" width="64" height="82" transform="translate(44 150) rotate(-10)"/></g>
+  <g class="drop" style="--d:.12s"><use href="#sym-doc" width="64" height="82" transform="translate(124 126) rotate(7)"/></g>
+  <g class="drop" style="--d:.24s"><use href="#sym-doc" width="64" height="82" transform="translate(66 262) rotate(4)"/></g>
+  <g class="drop" style="--d:.36s"><use href="#sym-doc" width="64" height="82" transform="translate(148 246) rotate(-6)"/></g>
+  <g class="drop" style="--d:.48s"><use href="#sym-doc" width="64" height="82" transform="translate(100 356) rotate(-2)"/></g>
+  <text class="t c lg" x="134" y="474" text-anchor="middle">The record</text>
+  <text class="t dim sm" x="134" y="495" text-anchor="middle">shock log, H&amp;P, notes</text>
+</g>
+<g class="mutedc">
+  <rect data-b="1" data-e="1" class="ln thin dash" x="296" y="196" width="178" height="150" rx="16"/>
+  <rect data-b="1" data-e="2" class="ln thin dash" x="556" y="60" width="196" height="164" rx="16"/>
+  <rect data-b="1" data-e="3" class="ln thin dash" x="556" y="302" width="196" height="196" rx="16"/>
+</g>
+<g data-b="2" class="green">
+  <g class="pop">
+    <rect class="ln fl glow" x="306" y="208" width="158" height="118" rx="10"/>
+    <path class="ln thin" d="M306 230H464"/>
+    <circle cx="320" cy="219" r="3" class="solid"/><circle cx="331" cy="219" r="3" class="solid" opacity=".6"/><circle cx="342" cy="219" r="3" class="solid" opacity=".35"/>
+    <rect class="ln thin" x="318" y="240" width="40" height="14" rx="7"/>
+    <rect class="ln thin" x="364" y="240" width="40" height="14" rx="7"/>
+    <rect class="ln thin" x="410" y="240" width="40" height="14" rx="7"/>
+    <path class="ln thin" d="M320 274H448M320 290H428M320 306H440" opacity=".7"/>
+  </g>
+  <text class="t c lg" x="385" y="368" text-anchor="middle">The wrapper</text>
+  <text class="t dim sm" x="385" y="389" text-anchor="middle">one web page</text>
+</g>
+<g data-b="3" class="yellow">
+  <g class="pop">
+    <rect class="ln fl glow" x="566" y="70" width="176" height="144" rx="16"/>
+    <text class="t c sm" x="654" y="95" text-anchor="middle">Shock Bot team</text>
+    <use href="#sym-key" x="626" y="106" width="56" height="72" class="glow"/>
+    <use href="#sym-lock" x="712" y="80" width="20" height="23"/>
+  </g>
+  <text class="t c lg" x="654" y="246" text-anchor="middle">The private key</text>
+</g>
+<g data-b="4" class="blue">
+  <g class="pop">
+    <circle cx="654" cy="396" r="80" class="ln thin dash" opacity=".55">
+      <animateTransform attributeName="transform" type="rotate" from="0 654 396" to="360 654 396" dur="40s" repeatCount="indefinite"/>
+    </circle>
+    <use href="#sym-engine" x="600" y="342" width="108" height="108" class="glow"/>
+  </g>
+  <text class="t c lg" x="654" y="504" text-anchor="middle">The engine</text>
+  <text class="t dim sm" x="654" y="525" text-anchor="middle">your institution’s Copilot</text>
+</g>
+<g data-b="4" class="yellow">
+  <path class="ln flow" d="M744 332V224" marker-end="url(#ah-y)"/>
+  <text class="t c sm knock" x="734" y="288" text-anchor="end">follows the pointer</text>
+</g>
+<g data-b="5">
+  <g class="green">
+    <path class="ln draw" pathLength="1" d="M222 300C252 300 266 292 294 284" marker-end="url(#ah-g)"/>
+    <text class="t c sm knock" x="248" y="278" text-anchor="middle">Paste</text>
+    <text class="t c sm" x="385" y="188" text-anchor="middle">Shape</text>
+    <path class="ln draw" pathLength="1" style="--d:.3s" d="M468 300C520 308 546 340 574 368" marker-end="url(#ah-g)"/>
+    <text class="t c sm knock" x="534" y="318">Send</text>
+    <use href="#sym-env" x="-15" y="-10" width="30" height="21">
+      <animateMotion dur="2.8s" repeatCount="indefinite" path="M468 300C520 308 546 340 574 368"/>
+    </use>
+  </g>
+  <g class="blue">
+    <path class="ln draw" pathLength="1" style="--d:.6s" d="M588 452C540 476 484 484 450 482" marker-end="url(#ah-b)"/>
+    <text class="t c sm knock" x="520" y="500" text-anchor="middle">Read</text>
+  </g>
+  <g class="white">
+    <use href="#sym-person" x="332" y="446" width="34" height="48"/>
+    <use href="#sym-person" x="368" y="438" width="40" height="56"/>
+    <use href="#sym-person" x="410" y="446" width="34" height="48"/>
+    <text class="t sm" x="388" y="520" text-anchor="middle">the team</text>
+    <path class="ln thin flow" d="M326 470C276 468 238 454 208 446" marker-end="url(#ah-w)" opacity=".7"/>
+    <text class="t dim xs" x="264" y="480" text-anchor="middle">the next case</text>
+  </g>
+</g>
+</svg>
+</template>
+
+<!-- ===================== 2. WRAPPER ===================== -->
+<template id="scene-p2">
+<svg viewBox="0 0 800 560" role="img" aria-label="The wrapper's three tabs: pasting labelled documents with a token meter, choosing emphasis, lenses, audience and depth, then assembling the payload that is copied to the clipboard.">
+<rect width="800" height="560" fill="url(#vignette)"/><rect width="800" height="560" fill="url(#graticule)"/>
+<g class="green">
+  <rect class="ln fl" x="36" y="26" width="728" height="508" rx="18"/>
+  <path class="ln thin" d="M36 68H764" opacity=".55"/>
+  <circle cx="62" cy="47" r="5" class="solid"/><circle cx="80" cy="47" r="5" class="solid" opacity=".55"/><circle cx="98" cy="47" r="5" class="solid" opacity=".3"/>
+  <rect class="tabfill" data-b="1" data-e="2" x="56" y="84" width="208" height="38" rx="10"/>
+  <rect class="tabfill" data-b="3" data-e="4" x="276" y="84" width="248" height="38" rx="10"/>
+  <rect class="tabfill" data-b="5" x="536" y="84" width="208" height="38" rx="10"/>
+  <rect class="ln thin" x="56" y="84" width="208" height="38" rx="10"/>
+  <rect class="ln thin" x="276" y="84" width="248" height="38" rx="10"/>
+  <rect class="ln thin" x="536" y="84" width="208" height="38" rx="10"/>
+</g>
+<text class="t dim sm" x="400" y="52" text-anchor="middle">CS Case Analyzer</text>
+<text class="t" x="160" y="108" text-anchor="middle">1 Case data</text>
+<text class="t" x="400" y="108" text-anchor="middle">2 Emphasis and lenses</text>
+<text class="t" x="640" y="108" text-anchor="middle">3 Generate</text>
+
+<g data-b="0" data-e="0">
+  <g class="green pop"><use href="#sym-doc" x="364" y="148" width="72" height="92" class="glow"/></g>
+  <text class="t dim sm" x="400" y="266" text-anchor="middle">a single .html file</text>
+  <text class="t lg" x="400" y="314" text-anchor="middle">Opens in any modern browser</text>
+  <g class="mutedc">
+    <rect class="ln thin" x="200" y="346" width="124" height="38" rx="19"/>
+    <rect class="ln thin" x="338" y="346" width="124" height="38" rx="19"/>
+    <rect class="ln thin" x="476" y="346" width="124" height="38" rx="19"/>
+  </g>
+  <text class="t sm" x="262" y="370" text-anchor="middle">No server</text>
+  <text class="t sm" x="400" y="370" text-anchor="middle">No install</text>
+  <text class="t sm" x="538" y="370" text-anchor="middle">No database</text>
+</g>
+
+<g data-b="1" data-e="2">
+  <g class="mutedc"><rect class="ln thin dash" x="64" y="140" width="672" height="98" rx="12"/><path class="ln thin" d="M86 198H360M86 216H300" opacity=".5"/></g>
+  <text class="t dim" x="86" y="174">Paste a document, give it a label, add it</text>
+  <g class="green"><rect class="ln thin fl" x="600" y="190" width="116" height="34" rx="9"/><text class="t c sm" x="658" y="212" text-anchor="middle">Add entry</text></g>
+  <g class="red">
+    <g class="slide" style="--d:.15s"><rect class="ln thin fl" x="64" y="254" width="672" height="40" rx="10"/><text class="t c" x="84" y="279">Shock log</text><text class="t dim sm" x="690" y="278" text-anchor="end">12,480 characters</text><path class="ln thin" d="M708 269l9 9m0-9l-9 9"/></g>
+    <g class="slide" style="--d:.45s"><rect class="ln thin fl" x="64" y="304" width="672" height="40" rx="10"/><text class="t c" x="84" y="329">H&amp;P</text><text class="t dim sm" x="690" y="328" text-anchor="end">6,210 characters</text><path class="ln thin" d="M708 319l9 9m0-9l-9 9"/></g>
+    <g class="slide" style="--d:.75s"><rect class="ln thin fl" x="64" y="354" width="672" height="40" rx="10"/><text class="t c" x="84" y="379">Consult note</text><text class="t dim sm" x="690" y="378" text-anchor="end">4,032 characters</text><path class="ln thin" d="M708 369l9 9m0-9l-9 9"/></g>
+  </g>
+  <rect class="meter-bg" x="64" y="428" width="672" height="12" rx="6"/>
+</g>
+<g data-b="2" data-e="2">
+  <rect class="meter-fill" x="64" y="428" width="672" height="12" rx="6"/>
+  <text class="t sm" x="64" y="466">About 5,680 tokens of a roughly 20,000-token budget</text>
+  <text class="t dim xs" x="736" y="466" text-anchor="end">illustrative</text>
+</g>
+
+<g data-b="3" data-e="4">
+  <text class="t dim sm" x="64" y="156">Emphasis: the AI infers the details, you choose the focus</text>
+  <g class="green">
+    <g class="pop" style="--d:0s"><rect class="ln thin fl" x="64" y="166" width="118" height="32" rx="16"/><circle cx="81" cy="182" r="4.5" class="solid"/><text class="t sm" x="93" y="187">SCAI staging</text></g>
+    <g class="pop" style="--d:.05s"><rect class="ln thin fl" x="190" y="166" width="80" height="32" rx="16"/><circle cx="207" cy="182" r="4.5" class="solid"/><text class="t sm" x="219" y="187">AMI-CS</text></g>
+    <g class="pop" style="--d:.1s"><rect class="ln thin fl" x="278" y="166" width="74" height="32" rx="16"/><circle cx="295" cy="182" r="4.5" class="solid"/><text class="t sm" x="307" y="187">HF-CS</text></g>
+    <g class="pop" style="--d:.15s"><rect class="ln thin fl" x="360" y="166" width="104" height="32" rx="16"/><circle cx="377" cy="182" r="4.5" class="solid"/><text class="t sm" x="389" y="187">RV failure</text></g>
+    <g class="pop" style="--d:.2s"><rect class="ln thin fl" x="472" y="166" width="110" height="32" rx="16"/><circle cx="489" cy="182" r="4.5" class="solid"/><text class="t sm" x="501" y="187">BiV failure</text></g>
+    <g class="pop" style="--d:.25s"><rect class="ln thin fl" x="590" y="166" width="110" height="32" rx="16"/><circle cx="607" cy="182" r="4.5" class="solid"/><text class="t sm" x="619" y="187">Mixed shock</text></g>
+    <g class="pop" style="--d:.3s"><rect class="ln thin fl" x="64" y="206" width="104" height="32" rx="16"/><circle cx="81" cy="222" r="4.5" class="solid"/><text class="t sm" x="93" y="227">Impella CP</text></g>
+    <g class="pop" style="--d:.35s"><rect class="ln thin fl" x="176" y="206" width="110" height="32" rx="16"/><circle cx="193" cy="222" r="4.5" class="solid"/><text class="t sm" x="205" y="227">Impella 5.5</text></g>
+    <g class="pop" style="--d:.4s"><rect class="ln thin fl" x="294" y="206" width="86" height="32" rx="16"/><circle cx="311" cy="222" r="4.5" class="solid"/><text class="t sm" x="323" y="227">VA-ECMO</text></g>
+    <g class="pop" style="--d:.45s"><rect class="ln thin fl" x="388" y="206" width="64" height="32" rx="16"/><circle cx="405" cy="222" r="4.5" class="solid"/><text class="t sm" x="417" y="227">IABP</text></g>
+    <g class="pop" style="--d:.5s"><rect class="ln thin fl" x="460" y="206" width="130" height="32" rx="16"/><circle cx="477" cy="222" r="4.5" class="solid"/><text class="t sm" x="489" y="227">Norepinephrine</text></g>
+    <g class="pop" style="--d:.55s"><rect class="ln thin fl" x="598" y="206" width="98" height="32" rx="16"/><circle cx="615" cy="222" r="4.5" class="solid"/><text class="t sm" x="627" y="227">Milrinone</text></g>
+  </g>
+  <g class="mutedc"><rect class="ln thin" x="64" y="250" width="672" height="34" rx="9"/></g>
+  <text class="t dim sm" x="80" y="272">Inflection point</text>
+  <text class="t sm" x="196" y="272">CI fell from 1.8 to 1.1 after the device was placed</text>
+  <text class="t dim sm" x="64" y="312">Lenses</text>
+  <g class="green">
+    <g class="rise" style="--d:.1s"><rect class="ln thin fl" x="64" y="320" width="128" height="64" rx="10"/><text class="t sm" x="128" y="357" text-anchor="middle">Hemodynamics</text></g>
+    <g class="rise" style="--d:.2s"><rect class="ln thin fl" x="200" y="320" width="128" height="64" rx="10"/><text class="t sm" x="264" y="347" text-anchor="middle">SCAI</text><text class="t sm" x="264" y="365" text-anchor="middle">trajectory</text></g>
+    <g class="rise" style="--d:.3s"><rect class="ln thin fl" x="336" y="320" width="128" height="64" rx="10"/><text class="t sm" x="400" y="347" text-anchor="middle">Device</text><text class="t sm" x="400" y="365" text-anchor="middle">selection</text></g>
+    <g class="rise" style="--d:.4s"><rect class="ln thin fl" x="472" y="320" width="128" height="64" rx="10"/><text class="t sm" x="536" y="347" text-anchor="middle">Escalation</text><text class="t sm" x="536" y="365" text-anchor="middle">and wean</text></g>
+    <g class="rise" style="--d:.5s"><rect class="ln thin fl" x="608" y="320" width="128" height="64" rx="10"/><text class="t sm" x="672" y="347" text-anchor="middle">Guideline</text><text class="t sm" x="672" y="365" text-anchor="middle">concordance</text></g>
+  </g>
+</g>
+<g data-b="4" data-e="4">
+  <text class="t dim sm" x="64" y="414">Audience</text>
+  <g class="white">
+    <rect class="ln thin" x="64" y="422" width="72" height="32" rx="16"/><text class="t sm" x="100" y="443" text-anchor="middle">Fellow</text>
+    <rect class="ln thin" x="144" y="422" width="92" height="32" rx="16"/><text class="t sm" x="190" y="443" text-anchor="middle">Attending</text>
+    <rect class="solid" x="244" y="422" width="100" height="32" rx="16"/><text class="t sm" x="294" y="443" text-anchor="middle" style="fill:#0b2032;font-weight:700">Shock team</text>
+    <rect class="ln thin" x="352" y="422" width="86" height="32" rx="16"/><text class="t sm" x="395" y="443" text-anchor="middle">M&amp;M / QI</text>
+    <rect class="ln thin" x="446" y="422" width="86" height="32" rx="16"/><text class="t sm" x="489" y="443" text-anchor="middle">Transfer</text>
+    <rect class="ln thin" x="540" y="422" width="80" height="32" rx="16"/><text class="t sm" x="580" y="443" text-anchor="middle">General</text>
+  </g>
+  <text class="t dim sm" x="64" y="482">Depth</text>
+  <g class="green">
+    <rect class="ln thin" x="64" y="490" width="372" height="34" rx="9"/>
+    <rect class="solid" x="188" y="490" width="124" height="34" opacity=".9"/>
+    <path class="ln thin" d="M188 490V524M312 490V524"/>
+  </g>
+  <text class="t sm" x="126" y="512" text-anchor="middle">Concise</text>
+  <text class="t sm" x="250" y="512" text-anchor="middle" style="fill:#04261a;font-weight:700">Thorough</text>
+  <text class="t sm" x="374" y="512" text-anchor="middle">Deep dive</text>
+</g>
+
+<g data-b="5">
+  <g class="green slide" style="--d:0s"><rect class="ln thin fl" x="64" y="146" width="340" height="32" rx="8"/><text class="t c sm" x="80" y="167">Header</text></g>
+  <g class="yellow slide" style="--d:.1s"><rect class="ln thin fl" x="64" y="186" width="340" height="32" rx="8"/><text class="t c sm" x="80" y="207">Key pointer</text></g>
+  <g class="green slide" style="--d:.2s"><rect class="ln thin fl" x="64" y="226" width="340" height="32" rx="8"/><text class="t c sm" x="80" y="247">Analyst rules</text></g>
+  <g class="green slide" style="--d:.3s"><rect class="ln thin fl" x="64" y="266" width="340" height="32" rx="8"/><text class="t c sm" x="80" y="287">Clinical emphasis</text></g>
+  <g class="red slide" style="--d:.4s"><rect class="ln thin fl" x="64" y="306" width="340" height="32" rx="8"/><text class="t c sm" x="80" y="327">Case data</text></g>
+  <g class="green slide" style="--d:.5s"><rect class="ln thin fl" x="64" y="346" width="340" height="32" rx="8"/><text class="t c sm" x="80" y="367">Audience</text></g>
+  <g class="green slide" style="--d:.6s"><rect class="ln thin fl" x="64" y="386" width="340" height="32" rx="8"/><text class="t c sm" x="80" y="407">Lenses</text></g>
+  <g class="green slide" style="--d:.7s"><rect class="ln thin fl" x="64" y="426" width="340" height="32" rx="8"/><text class="t c sm" x="80" y="447">Synthesis and open questions</text></g>
+  <g class="green">
+    <path class="ln draw" pathLength="1" style="--d:1.1s" d="M414 290H492" marker-end="url(#ah-g)"/>
+    <g class="pop" style="--d:1.2s"><use href="#sym-env" x="502" y="244" width="140" height="94" class="glow"/></g>
+    <text class="t c sm" x="572" y="362" text-anchor="middle">the payload</text>
+    <path class="ln draw" pathLength="1" style="--d:1.6s" d="M642 318C676 332 690 352 692 378" marker-end="url(#ah-g)"/>
+  </g>
+  <g class="white pop" style="--d:1.8s"><use href="#sym-clip" x="660" y="384" width="64" height="82"/></g>
+  <g class="green pop" style="--d:2.2s"><use href="#sym-check" x="706" y="372" width="28" height="28"/></g>
+  <text class="t sm" x="424" y="498">Copied to your clipboard.</text>
+  <text class="t dim sm" x="424" y="518">The page never sends your case anywhere.</text>
+</g>
+</svg>
+</template>
+
+<!-- ===================== 3. WHY IT MATTERS ===================== -->
+<template id="scene-p3">
+<svg viewBox="0 0 800 560" role="img" aria-label="A one-hour ring for the golden hour; scattered fragments of a case on a 24-hour timeline become four review questions; a SCAI stage ladder shows a trajectory from C to E; the team argues, teaches, notices and decides.">
+<rect width="800" height="560" fill="url(#vignette)"/><rect width="800" height="560" fill="url(#graticule)"/>
+<g data-b="0">
+  <g class="red">
+    <circle cx="150" cy="134" r="72" class="ln thin" opacity=".22"/>
+    <path class="ln thick draw slow glow" pathLength="1" d="M150 62A72 72 0 1 1 149.99 62"/>
+    <text class="t c disp" x="150" y="146" text-anchor="middle" style="font-size:46px">1</text>
+    <text class="t c sm" x="150" y="170" text-anchor="middle">hour</text>
+  </g>
+  <text class="t lg" x="150" y="240" text-anchor="middle">The golden hour</text>
+  <text class="t dim sm" x="150" y="262" text-anchor="middle">roadmaps for the first hour</text>
+  <text class="t dim sm" x="150" y="280" text-anchor="middle">and the first day</text>
+</g>
+<g data-b="1" class="mutedc">
+  <path class="ln thin" d="M300 300H760"/>
+  <path class="ln thin" d="M300 294V306M415 294V306M530 294V306M645 294V306M760 294V306"/>
+  <text class="t dim xs" x="300" y="322" text-anchor="middle">0 h</text>
+  <text class="t dim xs" x="415" y="322" text-anchor="middle">6 h</text>
+  <text class="t dim xs" x="530" y="322" text-anchor="middle">12 h</text>
+  <text class="t dim xs" x="645" y="322" text-anchor="middle">18 h</text>
+  <text class="t dim xs" x="760" y="322" text-anchor="end">24 h</text>
+</g>
+<g data-b="1" data-e="1" class="red">
+  <g class="drop" style="--d:0s"><rect class="ln thin fl" x="318" y="248" width="46" height="16" rx="3" transform="rotate(-8 341 256)"/></g>
+  <g class="drop" style="--d:.05s"><rect class="ln thin fl" x="392" y="268" width="38" height="16" rx="3" transform="rotate(6 411 276)"/></g>
+  <g class="drop" style="--d:.1s"><rect class="ln thin fl" x="470" y="240" width="54" height="16" rx="3" transform="rotate(-4 497 248)"/></g>
+  <g class="drop" style="--d:.15s"><rect class="ln thin fl" x="556" y="262" width="40" height="16" rx="3" transform="rotate(9 576 270)"/></g>
+  <g class="drop" style="--d:.2s"><rect class="ln thin fl" x="640" y="246" width="50" height="16" rx="3" transform="rotate(-6 665 254)"/></g>
+  <g class="drop" style="--d:.25s"><rect class="ln thin fl" x="712" y="270" width="36" height="16" rx="3" transform="rotate(4 730 278)"/></g>
+  <g class="drop" style="--d:.3s"><rect class="ln thin fl" x="330" y="350" width="52" height="16" rx="3" transform="rotate(5 356 358)"/></g>
+  <g class="drop" style="--d:.35s"><rect class="ln thin fl" x="430" y="372" width="40" height="16" rx="3" transform="rotate(-7 450 380)"/></g>
+  <g class="drop" style="--d:.4s"><rect class="ln thin fl" x="520" y="344" width="58" height="16" rx="3" transform="rotate(3 549 352)"/></g>
+  <g class="drop" style="--d:.45s"><rect class="ln thin fl" x="612" y="380" width="44" height="16" rx="3" transform="rotate(-5 634 388)"/></g>
+  <g class="drop" style="--d:.5s"><rect class="ln thin fl" x="700" y="352" width="48" height="16" rx="3" transform="rotate(7 724 360)"/></g>
+  <g class="drop" style="--d:.55s"><rect class="ln thin fl" x="360" y="452" width="40" height="16" rx="3" transform="rotate(-3 380 460)"/></g>
+  <g class="drop" style="--d:.6s"><rect class="ln thin fl" x="468" y="470" width="50" height="16" rx="3" transform="rotate(6 493 478)"/></g>
+  <g class="drop" style="--d:.65s"><rect class="ln thin fl" x="590" y="446" width="38" height="16" rx="3" transform="rotate(-8 609 454)"/></g>
+  <g class="drop" style="--d:.7s"><rect class="ln thin fl" x="680" y="484" width="54" height="16" rx="3" transform="rotate(4 707 492)"/></g>
+</g>
+<g data-b="2">
+  <g class="white">
+    <g class="slide" style="--d:0s"><rect class="ln thin fl" x="300" y="342" width="460" height="36" rx="9"/><text class="t sm" x="316" y="365">What stage, and when did it change?</text></g>
+    <g class="slide" style="--d:.15s"><rect class="ln thin fl" x="300" y="390" width="460" height="36" rx="9"/><text class="t sm" x="316" y="413">Was the device matched to the failing ventricle?</text></g>
+    <g class="slide" style="--d:.3s"><rect class="ln thin fl" x="300" y="438" width="460" height="36" rx="9"/><text class="t sm" x="316" y="461">Was escalation on time?</text></g>
+    <g class="slide" style="--d:.45s"><rect class="ln thin fl" x="300" y="486" width="460" height="36" rx="9"/><text class="t sm" x="316" y="509">Where did care follow or diverge from guidance?</text></g>
+  </g>
+  <g class="red">
+    <rect class="solid" x="668" y="352" width="20" height="16" rx="3" opacity=".8"/><rect class="solid" x="700" y="352" width="26" height="16" rx="3" opacity=".8"/>
+    <rect class="solid" x="690" y="400" width="30" height="16" rx="3" opacity=".8"/>
+    <rect class="solid" x="660" y="448" width="22" height="16" rx="3" opacity=".8"/><rect class="solid" x="716" y="448" width="22" height="16" rx="3" opacity=".8"/>
+    <rect class="solid" x="676" y="496" width="40" height="16" rx="3" opacity=".8"/>
+  </g>
+  <g class="red">
+    <text class="t dim sm" x="560" y="44">SCAI stage</text>
+    <rect class="solid" x="560" y="54" width="200" height="26" rx="6" fill-opacity=".12"/>
+    <rect class="solid" x="560" y="84" width="200" height="26" rx="6" fill-opacity=".2"/>
+    <rect class="solid" x="560" y="114" width="200" height="26" rx="6" fill-opacity=".3"/>
+    <rect class="solid" x="560" y="144" width="200" height="26" rx="6" fill-opacity=".44"/>
+    <rect class="solid" x="560" y="174" width="200" height="26" rx="6" fill-opacity=".62"/>
+  </g>
+  <text class="t disp" x="574" y="73" style="font-size:17px">A</text><text class="t sm" x="596" y="72">At risk</text>
+  <text class="t disp" x="574" y="103" style="font-size:17px">B</text><text class="t sm" x="596" y="102">Beginning</text>
+  <text class="t disp" x="574" y="133" style="font-size:17px">C</text><text class="t sm" x="596" y="132">Classic</text>
+  <text class="t disp" x="574" y="163" style="font-size:17px">D</text><text class="t sm" x="596" y="162">Deteriorating</text>
+  <text class="t disp" x="574" y="193" style="font-size:17px">E</text><text class="t sm" x="596" y="192">Extremis</text>
+  <g class="white"><circle r="7" class="solid glow"><animateMotion dur="5s" repeatCount="indefinite" calcMode="linear" keyPoints="0;0;.5;.5;1;1" keyTimes="0;.2;.4;.6;.8;1" path="M738 127V187"/></circle></g>
+  <text class="t dim xs" x="560" y="222">C, then D, then E: a trajectory</text>
+</g>
+<g data-b="3">
+  <text class="t sm" x="150" y="316" text-anchor="middle">Review in minutes, not hours</text>
+  <g class="white">
+    <g class="rise" style="--d:0s"><use href="#sym-person" x="62" y="338" width="40" height="56"/></g>
+    <g class="rise" style="--d:.15s"><use href="#sym-person" x="186" y="338" width="40" height="56"/></g>
+    <g class="rise" style="--d:.3s"><use href="#sym-person" x="62" y="436" width="40" height="56"/></g>
+    <g class="rise" style="--d:.45s"><use href="#sym-person" x="186" y="436" width="40" height="56"/></g>
+  </g>
+  <text class="t sm" x="82" y="414" text-anchor="middle">argue</text>
+  <text class="t sm" x="206" y="414" text-anchor="middle">teach</text>
+  <text class="t sm" x="82" y="512" text-anchor="middle">notice</text>
+  <text class="t sm" x="206" y="512" text-anchor="middle">decide</text>
+</g>
+<g data-b="4" class="white">
+  <text class="t disp glow rise" x="300" y="100" style="font-size:38px">Visible</text>
+  <text class="t disp glow rise" x="300" y="148" style="font-size:38px;--d:.2s">Teachable</text>
+  <text class="t disp glow rise" x="300" y="196" style="font-size:38px;--d:.4s">Repeatable</text>
+</g>
+</svg>
+</template>
+
+<!-- ===================== 4. INSTITUTIONAL KNOWLEDGE ===================== -->
+<template id="scene-p4">
+<svg viewBox="0 0 800 560" role="img" aria-label="Two colleagues share hallway wisdom in speech bubbles; one leaves through a door; the knowledge is captured as lenses that hold the questions and a key that holds the vocabulary.">
+<rect width="800" height="560" fill="url(#vignette)"/><rect width="800" height="560" fill="url(#graticule)"/>
+<g class="mutedc"><path class="ln thin" d="M24 440H392"/><rect class="ln thin" x="30" y="250" width="58" height="190" rx="4"/><circle cx="78" cy="350" r="3" class="solid"/></g>
+<g class="white">
+  <g data-b="0" data-e="0"><use href="#sym-person" x="128" y="346" width="64" height="90"/></g>
+  <use href="#sym-person" x="250" y="346" width="64" height="90"/>
+</g>
+<g data-b="1" class="mutedc"><use href="#sym-person" x="36" y="350" width="48" height="74" opacity=".55"/></g>
+<g class="white fragile" data-hl="1">
+  <g class="drift">
+    <path class="ln fl bub" d="M62 176H226A10 10 0 0 1 236 186V212A10 10 0 0 1 226 222H142L124 240L128 222H62A10 10 0 0 1 52 212V186A10 10 0 0 1 62 176Z"/>
+    <text class="t sm" x="68" y="205">Check the RA first</text>
+  </g>
+  <g class="drift" style="transition-delay:.15s">
+    <path class="ln fl bub" d="M224 118H382A10 10 0 0 1 392 128V154A10 10 0 0 1 382 164H302L284 182L288 164H224A10 10 0 0 1 214 154V128A10 10 0 0 1 224 118Z"/>
+    <text class="t sm" x="228" y="147">That’s our turning point</text>
+  </g>
+  <g class="drift" style="transition-delay:.3s">
+    <path class="ln fl bub" d="M84 62H264A10 10 0 0 1 274 72V98A10 10 0 0 1 264 108H172L154 126L158 108H84A10 10 0 0 1 74 98V72A10 10 0 0 1 84 62Z"/>
+    <text class="t sm" x="90" y="91">Device names vary by note</text>
+  </g>
+</g>
+<g data-b="2" class="green">
+  <rect class="ln thin" x="474" y="58" width="270" height="140" rx="12" opacity=".35"/>
+  <rect class="ln thin" x="466" y="66" width="270" height="140" rx="12" opacity=".6"/>
+  <g class="pop">
+    <rect class="ln fl glow" x="458" y="74" width="270" height="140" rx="12"/>
+    <text class="t sm" x="478" y="106">1 Stage at presentation</text>
+    <text class="t sm" x="478" y="134">2 Trajectory and turning points</text>
+    <text class="t sm" x="478" y="162">3 Could it have been seen earlier?</text>
+    <text class="t sm" x="478" y="190">4 Did the device fit the failure?</text>
+  </g>
+  <text class="t c lg" x="458" y="244">Lenses hold the questions</text>
+  <path class="ln draw" pathLength="1" d="M396 140C420 136 432 130 452 128" marker-end="url(#ah-g)"/>
+  <circle r="4" class="solid"><animateMotion dur="1.8s" repeatCount="indefinite" path="M396 140C420 136 432 130 452 128"/></circle>
+</g>
+<g data-b="3" class="yellow">
+  <g class="pop">
+    <rect class="ln fl glow" x="458" y="276" width="270" height="168" rx="12"/>
+    <text class="t c mono" x="476" y="306" style="font-size:11.5px">{</text>
+    <text class="t c mono" x="490" y="330" style="font-size:11.5px">"scai": ["A","B","C","D","E"],</text>
+    <text class="t c mono" x="490" y="354" style="font-size:11.5px">"etiology": ["AMI-CS","HF-CS",…],</text>
+    <text class="t c mono" x="490" y="378" style="font-size:11.5px">"device": ["IABP","Impella",…],</text>
+    <text class="t c mono" x="490" y="402" style="font-size:11.5px">"vasoactive": ["norepi",…]</text>
+    <text class="t c mono" x="476" y="426" style="font-size:11.5px">}</text>
+    <text class="t dim xs" x="716" y="298" text-anchor="end">illustrative</text>
+  </g>
+  <text class="t c lg" x="458" y="474">The key holds the vocabulary</text>
+  <path class="ln draw" pathLength="1" d="M300 230C380 252 410 320 452 340" marker-end="url(#ah-y)"/>
+  <circle r="4" class="solid"><animateMotion dur="2.2s" repeatCount="indefinite" path="M300 230C380 252 410 320 452 340"/></circle>
+</g>
+<g data-b="4">
+  <g class="green pop"><rect class="solid" x="690" y="44" width="48" height="24" rx="12"/><text class="t" x="714" y="61" text-anchor="middle" style="fill:#04261a;font-weight:700;font-size:13px">v2</text></g>
+  <g class="yellow pop" style="--d:.2s"><rect class="solid" x="690" y="262" width="48" height="24" rx="12"/><text class="t" x="714" y="279" text-anchor="middle" style="fill:#2b2100;font-weight:700;font-size:13px">v2</text></g>
+  <g class="green"><rect class="ln thin breathe" x="452" y="68" width="282" height="152" rx="16" opacity=".35"/></g>
+  <g class="yellow"><rect class="ln thin breathe" x="452" y="270" width="282" height="180" rx="16" opacity=".35"/></g>
+  <text class="t sm" x="24" y="500">Update once.</text>
+  <text class="t dim sm" x="24" y="520">Every future review benefits.</text>
+</g>
+</svg>
+</template>
+
+<!-- ===================== 5. PRIVATE POINTER ===================== -->
+<template id="scene-p5">
+<svg viewBox="0 0 800 560" role="img" aria-label="A payload envelope carries a tag naming the Shock Bot team, General channel, Files, shockjson.docx. A dashed pointer leads to a locked team vault holding the key. Copies of the envelope travel widely; an outsider's pointer stops at the lock; the key updates from version 1 to 2; another program points to its own key.">
+<rect width="800" height="560" fill="url(#vignette)"/><rect width="800" height="560" fill="url(#graticule)"/>
+<g class="green"><use href="#sym-env" x="70" y="186" width="200" height="134" class="glow"/>
+  <text class="t c lg" x="150" y="350" text-anchor="middle">Payload</text></g>
+<g class="yellow">
+  <path class="ln thin" d="M252 318C246 350 250 386 256 418" opacity=".8"/>
+  <path class="ln fl glow" d="M236 425L258 382H426A10 10 0 0 1 436 392V458A10 10 0 0 1 426 468H258Z"/>
+  <circle cx="258" cy="425" r="5" class="ln thin"/>
+  <text class="t c mono" x="274" y="408" style="font-size:12px">Team: Shock Bot</text>
+  <text class="t c mono" x="274" y="430" style="font-size:12px">Channel: General</text>
+  <text class="t c mono" x="274" y="452" style="font-size:12px">Files: shockjson.docx</text>
+</g>
+<g data-b="0" class="yellow">
+  <rect class="ln fl glow" x="524" y="96" width="240" height="252" rx="18"/>
+  <text class="t c lg" x="544" y="128">Shock Bot team</text>
+  <text class="t dim sm" x="544" y="149">sign-in required</text>
+  <use href="#sym-key" x="606" y="174" width="76" height="98" class="glow"/>
+  <text class="t c sm" x="644" y="304" text-anchor="middle">shockjson.docx</text>
+  <path class="ln flow" d="M436 425C486 425 488 262 520 252" marker-end="url(#ah-y)"/>
+  <circle r="4.5" class="solid glow"><animateMotion dur="2.4s" repeatCount="indefinite" path="M436 425C486 425 488 262 520 252"/></circle>
+  <text class="t c sm knock" x="440" y="236" text-anchor="middle">a pointer,</text>
+  <text class="t c sm knock" x="440" y="254" text-anchor="middle">not a copy</text>
+</g>
+<g class="yellow emph" data-hl="2"><use href="#sym-lock" x="718" y="110" width="28" height="32"/></g>
+<g data-b="0" data-e="2"><rect class="solid yellow" x="688" y="180" width="44" height="24" rx="12"/><text class="t" x="710" y="197" text-anchor="middle" style="fill:#2b2100;font-weight:700;font-size:13px">v1</text></g>
+<g data-b="3">
+  <g class="pop"><rect class="solid yellow" x="688" y="180" width="44" height="24" rx="12"/><text class="t" x="710" y="197" text-anchor="middle" style="fill:#2b2100;font-weight:700;font-size:13px">v2</text></g>
+  <g class="yellow"><circle cx="644" cy="223" r="58" class="ln thin breathe" opacity=".5"/></g>
+</g>
+<g data-b="1" class="green">
+  <g class="fly" style="--fx:130px;--fy:200px"><use href="#sym-env" x="40" y="54" width="62" height="42"/><text class="t c sm" x="110" y="80">email</text></g>
+  <g class="fly" style="--fx:-160px;--fy:190px;--d:.15s"><use href="#sym-env" x="300" y="44" width="62" height="42"/><text class="t c sm" x="370" y="70">the intranet</text></g>
+  <g class="fly" style="--fx:130px;--fy:-230px;--d:.3s"><use href="#sym-env" x="40" y="470" width="62" height="42"/><text class="t c sm" x="110" y="496">a colleague elsewhere</text></g>
+</g>
+<g data-b="2" data-e="3">
+  <g class="mutedc"><use href="#sym-env" x="560" y="470" width="62" height="42"/><path class="ln thin dash" d="M591 468V384"/></g>
+  <g class="red"><path class="ln thick" d="M583 362l16 16m0-16l-16 16"/></g>
+  <text class="t sm" x="634" y="490">no permission,</text>
+  <text class="t sm" x="634" y="508">no key</text>
+</g>
+<g data-b="4">
+  <g class="yellow">
+    <rect class="ln thin dash fl" x="560" y="404" width="204" height="128" rx="16"/>
+    <text class="t c sm" x="578" y="430">Another program</text>
+    <use href="#sym-key" x="580" y="442" width="52" height="66"/>
+    <text class="t dim xs" x="648" y="466">their devices,</text>
+    <text class="t dim xs" x="648" y="482">their definitions,</text>
+    <text class="t dim xs" x="648" y="498">their house rules</text>
+  </g>
+  <g class="green"><use href="#sym-env" x="448" y="488" width="56" height="38"/></g>
+  <g class="yellow"><path class="ln thin flow" d="M508 506H554" marker-end="url(#ah-y)"/></g>
+</g>
+<g data-b="5">
+  <text class="t disp" x="644" y="50" text-anchor="middle" style="font-size:24px">Standard form,</text>
+  <text class="t disp c yellow" x="644" y="80" text-anchor="middle" style="font-size:24px">your reference ranges.</text>
+</g>
+</svg>
+</template>
+
+<!-- ===================== 6. FOLLOWING THE HANDLE ===================== -->
+<template id="scene-p6">
+<svg viewBox="0 0 800 560" role="img" aria-label="The payload enters Copilot's orchestrator, which searches Microsoft Graph and the semantic index, finds shockjson.docx, trims to your permissions, places the case and key side by side in working context, reasons, runs checks, and answers with references.">
+<rect width="800" height="560" fill="url(#vignette)"/><rect width="800" height="560" fill="url(#graticule)"/>
+<g data-b="0">
+  <g class="green"><use href="#sym-env" x="34" y="80" width="104" height="70" class="glow"/>
+    <text class="t c sm" x="86" y="174" text-anchor="middle">your payload</text>
+    <path class="ln draw" pathLength="1" d="M146 115H192" marker-end="url(#ah-g)"/></g>
+  <g class="blue"><use href="#sym-engine" x="204" y="66" width="96" height="96" class="glow"/>
+    <text class="t c lg" x="252" y="186" text-anchor="middle">Orchestrator</text>
+    <text class="t dim sm" x="252" y="206" text-anchor="middle">plans what to fetch</text></g>
+</g>
+<g data-b="1" class="blue">
+  <path class="ln draw" pathLength="1" d="M306 115H372" marker-end="url(#ah-b)"/>
+  <path class="ln thin" opacity=".45" d="M420 80L478 148M420 80L536 62M478 148L590 128M536 62L590 128M536 62L648 70M590 128L648 70M590 128L700 150M648 70L744 86M700 150L744 86M648 70L700 150"/>
+  <circle cx="420" cy="80" r="13" class="ln thin fl"/><path class="ln thin" d="M414 76H426M414 80H424M414 84H426"/>
+  <circle cx="478" cy="148" r="13" class="ln thin fl"/><path class="ln thin" d="M471 143h14v8h-8l-4 4v-4h-2z"/>
+  <circle cx="536" cy="62" r="13" class="ln thin fl"/><path class="ln thin" d="M529 57h14v10h-14zM529 57l7 5 7-5"/>
+  <circle cx="590" cy="128" r="13" class="ln thin fl"/><path class="ln thin" d="M584 124H596M584 128H594M584 132H596"/>
+  <circle cx="700" cy="150" r="13" class="ln thin fl"/><path class="ln thin" d="M693 145h14v8h-8l-4 4v-4h-2z"/>
+  <circle cx="744" cy="86" r="13" class="ln thin fl"/><path class="ln thin" d="M738 82H750M738 86H748M738 90H750"/>
+  <text class="t c sm" x="590" y="208" text-anchor="middle">Microsoft Graph and semantic index</text>
+  <g class="white"><use href="#sym-mag" x="-20" y="-20" width="34" height="34"><animateMotion dur="5s" repeatCount="indefinite" path="M430 112C480 40 560 170 600 100S640 60 656 80"/></use></g>
+</g>
+<g data-b="1" class="yellow">
+  <circle cx="648" cy="70" r="15" class="ln fl glow"/>
+  <circle cx="648" cy="70" r="24" class="ln thin breathe" opacity=".6"/>
+  <path class="ln thin" d="M643 63c-3 0-3 3-3 4s-1 3-2 3c1 0 2 1 2 3s0 4 3 4M653 63c3 0 3 3 3 4s1 3 2 3c-1 0-2 1-2 3s0 4-3 4"/>
+  <text class="t c mono" x="648" y="38" text-anchor="middle" style="font-size:12px">shockjson.docx</text>
+</g>
+<g data-b="2">
+  <g class="mutedc">
+    <circle cx="478" cy="148" r="14" style="fill:#0d2539"/><circle cx="478" cy="148" r="13" class="ln thin dash"/><path class="ln thin" d="M469 157L487 139"/>
+    <circle cx="700" cy="150" r="14" style="fill:#0d2539"/><circle cx="700" cy="150" r="13" class="ln thin dash"/><path class="ln thin" d="M691 159L709 141"/>
+  </g>
+  <g class="blue"><path class="ln draw" pathLength="1" d="M722 170C732 196 734 218 732 244" marker-end="url(#ah-b)"/></g>
+  <g class="white"><use href="#sym-shield" x="704" y="250" width="54" height="62" class="glow"/>
+    <text class="t sm knock" x="770" y="334" text-anchor="end">only what you</text>
+    <text class="t sm knock" x="770" y="352" text-anchor="end">can already open</text></g>
+  <g class="blue"><path class="ln draw" pathLength="1" style="--d:.4s" d="M700 282H604" marker-end="url(#ah-b)"/>
+    <rect class="ln fl" x="334" y="240" width="262" height="104" rx="12"/>
+    <text class="t c sm" x="334" y="230">working context</text></g>
+  <g class="green"><rect class="solid" x="352" y="258" width="108" height="14" rx="4" opacity=".75"/><rect class="solid" x="352" y="282" width="92" height="14" rx="4" opacity=".6"/><rect class="solid" x="352" y="306" width="102" height="14" rx="4" opacity=".75"/></g>
+  <g class="yellow"><rect class="solid" x="476" y="258" width="102" height="14" rx="4" opacity=".8"/><rect class="solid" x="476" y="282" width="84" height="14" rx="4" opacity=".65"/><rect class="solid" x="476" y="306" width="96" height="14" rx="4" opacity=".8"/></g>
+  <text class="t dim xs" x="352" y="336">case, rules, lenses</text>
+  <text class="t dim xs" x="476" y="336">pieces of the key</text>
+</g>
+<g data-b="3">
+  <g class="blue">
+    <path class="ln draw" pathLength="1" d="M372 346C340 380 300 400 270 414" marker-end="url(#ah-b)"/>
+    <circle cx="210" cy="458" r="64" class="ln thin dash" opacity=".5"><animateTransform attributeName="transform" type="rotate" from="0 210 458" to="360 210 458" dur="24s" repeatCount="indefinite"/></circle>
+    <use href="#sym-engine" x="160" y="408" width="100" height="100" class="glow"/>
+    <text class="t c lg" x="210" y="548" text-anchor="middle">Model reasons</text>
+    <path class="ln draw" pathLength="1" style="--d:.5s" d="M278 458H342" marker-end="url(#ah-b)"/>
+  </g>
+  <g class="white">
+    <use href="#sym-shield" x="348" y="426" width="52" height="60"/>
+    <text class="t sm" x="374" y="508" text-anchor="middle">Checks</text>
+    <text class="t dim xs" x="374" y="526" text-anchor="middle">safety, security,</text>
+    <text class="t dim xs" x="374" y="541" text-anchor="middle">compliance</text>
+    <path class="ln draw" pathLength="1" style="--d:.8s" d="M408 458H478" marker-end="url(#ah-w)"/>
+    <g class="pop" style="--d:1s"><rect class="ln fl" x="486" y="396" width="280" height="130" rx="12"/>
+      <path class="ln thin" d="M506 424H700M506 444H730" opacity=".6"/>
+      <text class="t dim xs" x="506" y="500">References</text></g>
+  </g>
+  <g class="yellow pop" style="--d:1.2s"><rect class="ln thin fl" x="576" y="484" width="150" height="24" rx="12"/><text class="t c mono" x="651" y="501" text-anchor="middle" style="font-size:12px">shockjson.docx</text></g>
+  <g class="green pop" style="--d:1.4s"><use href="#sym-check" x="734" y="404" width="26" height="26"/></g>
+</g>
+<g data-b="4">
+  <text class="t sm" x="34" y="244">Or attach it yourself</text>
+  <g class="white"><rect class="ln thin fl" x="34" y="254" width="262" height="40" rx="20"/>
+    <text class="t mono" x="54" y="279" style="font-size:13px">/shock</text>
+    <path class="ln thin" d="M106 266V284"><animate attributeName="opacity" values="1;0;1" dur="1s" repeatCount="indefinite"/></path></g>
+  <g class="yellow"><rect class="ln thin fl" x="34" y="300" width="262" height="48" rx="10"/>
+    <use href="#sym-key" x="46" y="306" width="28" height="36"/>
+    <text class="t c sm" x="84" y="321">shockjson.docx</text>
+    <text class="t dim xs" x="84" y="338">Shock Bot, General, Files</text></g>
+  <g class="yellow"><rect class="ln glow breathe" x="570" y="478" width="162" height="36" rx="18"/></g>
+  <text class="t sm knock" x="651" y="470" text-anchor="middle">is the key cited?</text>
+</g>
+<g data-b="5" class="blue">
+  <rect class="ln fl" x="24" y="512" width="132" height="34" rx="17"/>
+  <circle class="solid" cx="139" cy="529" r="12"/>
+  <text class="t sm" x="40" y="534">Think deeper</text>
+  <path class="ln draw slow" pathLength="1" d="M156 404A76 76 0 1 1 156 512" marker-end="url(#ah-b)" opacity=".85"/>
+</g>
+</svg>
+</template>
+
+<!-- ===================== 7. INFERENCE ===================== -->
+<template id="scene-p7">
+<svg viewBox="0 0 800 560" role="img" aria-label="A network of weights; a sentence cut into tokens, each with an embedding; attention arcs link the tokens; next-token probabilities choose 'inadequate'; structure narrows the choices; plausible is not the same as checked.">
+<defs><g id="wnet"><path class="ln thin" d="M80 64L208 64M80 64L208 124M80 64L208 184M80 124L208 64M80 124L208 124M80 124L208 184M80 184L208 64M80 184L208 124M80 184L208 184M208 64L336 64M208 64L336 124M208 64L336 184M208 124L336 64M208 124L336 124M208 124L336 184M208 184L336 64M208 184L336 124M208 184L336 184M336 64L464 64M336 64L464 124M336 64L464 184M336 124L464 64M336 124L464 124M336 124L464 184M336 184L464 64M336 184L464 124M336 184L464 184M464 64L592 64M464 64L592 124M464 64L592 184M464 124L592 64M464 124L592 124M464 124L592 184M464 184L592 64M464 184L592 124M464 184L592 184M592 64L720 64M592 64L720 124M592 64L720 184M592 124L720 64M592 124L720 124M592 124L720 184M592 184L720 64M592 184L720 124M592 184L720 184" opacity=".7"/><circle cx="80" cy="64" r="6" class="ln thin fl"/><circle cx="80" cy="124" r="6" class="ln thin fl"/><circle cx="80" cy="184" r="6" class="ln thin fl"/><circle cx="208" cy="64" r="6" class="ln thin fl"/><circle cx="208" cy="124" r="6" class="ln thin fl"/><circle cx="208" cy="184" r="6" class="ln thin fl"/><circle cx="336" cy="64" r="6" class="ln thin fl"/><circle cx="336" cy="124" r="6" class="ln thin fl"/><circle cx="336" cy="184" r="6" class="ln thin fl"/><circle cx="464" cy="64" r="6" class="ln thin fl"/><circle cx="464" cy="124" r="6" class="ln thin fl"/><circle cx="464" cy="184" r="6" class="ln thin fl"/><circle cx="592" cy="64" r="6" class="ln thin fl"/><circle cx="592" cy="124" r="6" class="ln thin fl"/><circle cx="592" cy="184" r="6" class="ln thin fl"/><circle cx="720" cy="64" r="6" class="ln thin fl"/><circle cx="720" cy="124" r="6" class="ln thin fl"/><circle cx="720" cy="184" r="6" class="ln thin fl"/></g></defs>
+<rect width="800" height="560" fill="url(#vignette)"/><rect width="800" height="560" fill="url(#graticule)"/>
+<g class="blue">
+  <g data-b="0" data-e="0"><use href="#wnet" opacity=".7" class="glow"/>
+    <text class="t c lg" x="400" y="236" text-anchor="middle">Weights</text>
+    <text class="t dim sm" x="400" y="258" text-anchor="middle">patterns compressed from training text</text></g>
+  <g data-b="1"><use href="#wnet" opacity=".15"/></g>
+</g>
+<g data-b="1">
+  <g class="white">
+    <g class="pop" style="--d:0s"><rect class="ln thin fl" x="80" y="262" width="48" height="34" rx="8"/><text class="t sm" x="104" y="284" text-anchor="middle">Lact</text></g>
+    <g class="pop" style="--d:.04s"><rect class="ln thin fl" x="132" y="262" width="40" height="34" rx="8"/><text class="t sm" x="152" y="284" text-anchor="middle">ate</text></g>
+    <g class="pop" style="--d:.08s"><rect class="ln thin fl" x="180" y="262" width="48" height="34" rx="8"/><text class="t sm" x="204" y="284" text-anchor="middle">kept</text></g>
+    <g class="pop" style="--d:.12s"><rect class="ln thin fl" x="234" y="262" width="62" height="34" rx="8"/><text class="t sm" x="265" y="284" text-anchor="middle">rising</text></g>
+    <g class="pop" style="--d:.16s"><rect class="ln thin fl" x="302" y="262" width="70" height="34" rx="8"/><text class="t sm" x="337" y="284" text-anchor="middle">despite</text></g>
+    <g class="pop" style="--d:.2s"><rect class="ln thin fl" x="378" y="262" width="40" height="34" rx="8"/><text class="t sm" x="398" y="284" text-anchor="middle">the</text></g>
+    <g class="pop" style="--d:.24s"><rect class="ln thin fl" x="424" y="262" width="40" height="34" rx="8"/><text class="t sm" x="444" y="284" text-anchor="middle">new</text></g>
+    <g class="pop" style="--d:.28s"><rect class="ln thin fl" x="470" y="262" width="62" height="34" rx="8"/><text class="t sm" x="501" y="284" text-anchor="middle">device</text></g>
+    <g class="pop" style="--d:.32s"><rect class="ln thin fl" x="538" y="262" width="24" height="34" rx="8"/><text class="t sm" x="550" y="284" text-anchor="middle">,</text></g>
+    <g class="pop" style="--d:.36s"><rect class="ln thin fl" x="568" y="262" width="92" height="34" rx="8"/><text class="t sm" x="614" y="284" text-anchor="middle">suggesting</text></g>
+  </g>
+  <g class="blue"><rect class="solid" x="100" y="306" width="8" height="8" rx="1.5" opacity="0.45"/><rect class="solid" x="100" y="316" width="8" height="8" rx="1.5" opacity="0.3"/><rect class="solid" x="100" y="326" width="8" height="8" rx="1.5" opacity="0.6"/><rect class="solid" x="100" y="336" width="8" height="8" rx="1.5" opacity="1"/><rect class="solid" x="100" y="346" width="8" height="8" rx="1.5" opacity="0.15"/><rect class="solid" x="100" y="356" width="8" height="8" rx="1.5" opacity="0.15"/><rect class="solid" x="148" y="306" width="8" height="8" rx="1.5" opacity="0.8"/><rect class="solid" x="148" y="316" width="8" height="8" rx="1.5" opacity="0.15"/><rect class="solid" x="148" y="326" width="8" height="8" rx="1.5" opacity="0.45"/><rect class="solid" x="148" y="336" width="8" height="8" rx="1.5" opacity="0.8"/><rect class="solid" x="148" y="346" width="8" height="8" rx="1.5" opacity="0.15"/><rect class="solid" x="148" y="356" width="8" height="8" rx="1.5" opacity="0.8"/><rect class="solid" x="200" y="306" width="8" height="8" rx="1.5" opacity="0.3"/><rect class="solid" x="200" y="316" width="8" height="8" rx="1.5" opacity="0.15"/><rect class="solid" x="200" y="326" width="8" height="8" rx="1.5" opacity="0.15"/><rect class="solid" x="200" y="336" width="8" height="8" rx="1.5" opacity="0.6"/><rect class="solid" x="200" y="346" width="8" height="8" rx="1.5" opacity="0.6"/><rect class="solid" x="200" y="356" width="8" height="8" rx="1.5" opacity="0.15"/><rect class="solid" x="261" y="306" width="8" height="8" rx="1.5" opacity="0.3"/><rect class="solid" x="261" y="316" width="8" height="8" rx="1.5" opacity="0.15"/><rect class="solid" x="261" y="326" width="8" height="8" rx="1.5" opacity="0.8"/><rect class="solid" x="261" y="336" width="8" height="8" rx="1.5" opacity="0.6"/><rect class="solid" x="261" y="346" width="8" height="8" rx="1.5" opacity="0.15"/><rect class="solid" x="261" y="356" width="8" height="8" rx="1.5" opacity="0.8"/><rect class="solid" x="333" y="306" width="8" height="8" rx="1.5" opacity="0.15"/><rect class="solid" x="333" y="316" width="8" height="8" rx="1.5" opacity="0.3"/><rect class="solid" x="333" y="326" width="8" height="8" rx="1.5" opacity="1"/><rect class="solid" x="333" y="336" width="8" height="8" rx="1.5" opacity="1"/><rect class="solid" x="333" y="346" width="8" height="8" rx="1.5" opacity="0.8"/><rect class="solid" x="333" y="356" width="8" height="8" rx="1.5" opacity="0.15"/><rect class="solid" x="394" y="306" width="8" height="8" rx="1.5" opacity="0.8"/><rect class="solid" x="394" y="316" width="8" height="8" rx="1.5" opacity="0.8"/><rect class="solid" x="394" y="326" width="8" height="8" rx="1.5" opacity="0.6"/><rect class="solid" x="394" y="336" width="8" height="8" rx="1.5" opacity="0.15"/><rect class="solid" x="394" y="346" width="8" height="8" rx="1.5" opacity="0.3"/><rect class="solid" x="394" y="356" width="8" height="8" rx="1.5" opacity="0.15"/><rect class="solid" x="440" y="306" width="8" height="8" rx="1.5" opacity="0.8"/><rect class="solid" x="440" y="316" width="8" height="8" rx="1.5" opacity="0.3"/><rect class="solid" x="440" y="326" width="8" height="8" rx="1.5" opacity="0.45"/><rect class="solid" x="440" y="336" width="8" height="8" rx="1.5" opacity="0.6"/><rect class="solid" x="440" y="346" width="8" height="8" rx="1.5" opacity="0.3"/><rect class="solid" x="440" y="356" width="8" height="8" rx="1.5" opacity="0.8"/><rect class="solid" x="497" y="306" width="8" height="8" rx="1.5" opacity="0.15"/><rect class="solid" x="497" y="316" width="8" height="8" rx="1.5" opacity="0.8"/><rect class="solid" x="497" y="326" width="8" height="8" rx="1.5" opacity="0.45"/><rect class="solid" x="497" y="336" width="8" height="8" rx="1.5" opacity="0.8"/><rect class="solid" x="497" y="346" width="8" height="8" rx="1.5" opacity="1"/><rect class="solid" x="497" y="356" width="8" height="8" rx="1.5" opacity="0.3"/><rect class="solid" x="546" y="306" width="8" height="8" rx="1.5" opacity="0.15"/><rect class="solid" x="546" y="316" width="8" height="8" rx="1.5" opacity="0.8"/><rect class="solid" x="546" y="326" width="8" height="8" rx="1.5" opacity="0.8"/><rect class="solid" x="546" y="336" width="8" height="8" rx="1.5" opacity="1"/><rect class="solid" x="546" y="346" width="8" height="8" rx="1.5" opacity="0.3"/><rect class="solid" x="546" y="356" width="8" height="8" rx="1.5" opacity="0.45"/><rect class="solid" x="610" y="306" width="8" height="8" rx="1.5" opacity="0.15"/><rect class="solid" x="610" y="316" width="8" height="8" rx="1.5" opacity="0.8"/><rect class="solid" x="610" y="326" width="8" height="8" rx="1.5" opacity="1"/><rect class="solid" x="610" y="336" width="8" height="8" rx="1.5" opacity="0.15"/><rect class="solid" x="610" y="346" width="8" height="8" rx="1.5" opacity="0.8"/><rect class="solid" x="610" y="356" width="8" height="8" rx="1.5" opacity="0.15"/></g>
+  <text class="t dim sm" x="80" y="390">each token becomes a list of numbers</text>
+</g>
+<g data-b="2" class="blue">
+  <path class="ln draw" pathLength="1" style="stroke-width:2.6" d="M614 260Q440 140 265 260"/>
+  <path class="ln draw" pathLength="1" style="--d:.15s;stroke-width:2.2" d="M614 260Q359 84 104 260" opacity=".85"/>
+  <path class="ln draw" pathLength="1" style="--d:.3s" d="M614 260Q558 222 501 260" opacity=".6"/>
+  <path class="ln draw" pathLength="1" style="--d:.45s" d="M614 260Q476 165 337 260" opacity=".5"/>
+  <path class="ln draw thin" pathLength="1" style="--d:.6s" d="M614 260Q529 202 444 260" opacity=".35"/>
+  <path class="ln draw thin" pathLength="1" style="--d:.75s" d="M265 260Q185 206 104 260" opacity=".7"/>
+  <text class="t c sm knock" x="359" y="70" text-anchor="middle">attention: every token weighs every other</text>
+</g>
+<g data-b="3">
+  <text class="t dim sm" x="80" y="414">probability of the next token</text>
+  <text class="t dim xs" x="530" y="414" text-anchor="end">illustrative</text>
+  <text class="t sm" x="80" y="438">inadequate</text><g class="green"><rect class="solid" x="180" y="426" width="235" height="16" rx="5"/></g><text class="t sm" x="423" y="439">42%</text>
+  <text class="t sm" x="80" y="464">ongoing</text><g class="blue"><rect class="solid" x="180" y="452" width="118" height="16" rx="5" opacity=".75"/></g><text class="t dim sm" x="306" y="465">21%</text>
+  <text class="t sm" x="80" y="490">persistent</text><g class="blue"><rect class="solid" x="180" y="478" width="78" height="16" rx="5" opacity=".6"/></g><text class="t dim sm" x="266" y="491">14%</text>
+  <text class="t sm" x="80" y="516">worsening</text><g class="blue"><rect class="solid" x="180" y="504" width="62" height="16" rx="5" opacity=".5"/></g><text class="t dim sm" x="250" y="517">11%</text>
+  <text class="t sm" x="80" y="542">improved</text><g class="blue"><rect class="solid" x="180" y="530" width="17" height="16" rx="5" opacity=".4"/></g><text class="t dim sm" x="205" y="543">3%</text>
+  <g class="green">
+    <path class="ln draw" pathLength="1" style="--d:.5s" d="M432 430C560 430 700 400 712 304" marker-end="url(#ah-g)"/>
+    <g class="pop" style="--d:.9s"><rect class="ln fl glow" x="666" y="262" width="92" height="34" rx="8"/><text class="t c sm" x="712" y="284" text-anchor="middle">inadequate</text></g>
+  </g>
+</g>
+<g data-b="4" data-e="4" class="white">
+  <path class="ln thin" opacity=".3" d="M570 412L654 470M596 412L658 470M622 412L662 470M648 412L666 470M674 412L670 470M700 412L674 470M726 412L678 470M752 412L682 470"/>
+  <path class="ln" d="M560 404L650 470V520M770 404L690 470V520"/>
+  <g class="green"><path class="ln thick" d="M662 474V526M678 474V526" marker-end="url(#ah-g)"/></g>
+  <text class="t dim xs" x="560" y="396">rules</text>
+  <text class="t dim xs" x="665" y="396" text-anchor="middle">sections</text>
+  <text class="t dim xs" x="770" y="396" text-anchor="end">questions</text>
+  <text class="t sm" x="776" y="548" text-anchor="end">Structure narrows what comes next</text>
+</g>
+<g data-b="5">
+  <g class="blue pop"><rect class="ln fl glow" x="580" y="414" width="180" height="40" rx="20"/><text class="t c lg" x="670" y="440" text-anchor="middle">Plausible</text></g>
+  <text class="t dim sm" x="670" y="478" text-anchor="middle">is not the same as</text>
+  <g class="green pop" style="--d:.3s"><rect class="ln fl glow" x="580" y="494" width="180" height="40" rx="20"/><text class="t c lg" x="670" y="520" text-anchor="middle">Checked</text></g>
+</g>
+</svg>
+</template>
+
+<!-- ===================== 8. SOFT CALCULATORS ===================== -->
+<template id="scene-p8">
+<svg viewBox="0 0 800 560" role="img" aria-label="Left, a hard calculator computes cardiac power output and carries validation stamps. Right, a soft calculator reads note fragments through a lens of world knowledge, impact awareness and prioritizing, and outputs a ranked judgment. A benchmark shows about half right; handing arithmetic to calculators raises accuracy.">
+<rect width="800" height="560" fill="url(#vignette)"/><rect width="800" height="560" fill="url(#graticule)"/>
+<path class="ln thin dash mutedc" d="M400 64V524"/>
+<text class="t lg" x="200" y="46" text-anchor="middle">Hard calculator</text>
+<text class="t lg" x="600" y="46" text-anchor="middle">Soft calculator</text>
+<g data-b="0" class="green">
+  <g class="pop">
+    <rect class="ln fl glow" x="70" y="66" width="260" height="304" rx="22"/>
+    <rect class="ln thin" x="90" y="86" width="220" height="100" rx="10" style="fill:#061423"/>
+    <text class="t c mono" x="104" y="114" style="font-size:13px">CPO = MAP × CO ÷ 451</text>
+    <text class="t dim mono" x="104" y="136" style="font-size:12px">65 × 4.0 ÷ 451</text>
+    <text class="t c disp" x="296" y="174" text-anchor="end" style="font-size:38px">0.58 W</text>
+    <g opacity=".75">
+      <rect class="ln thin" x="98" y="206" width="42" height="36" rx="8"/><rect class="ln thin" x="152" y="206" width="42" height="36" rx="8"/><rect class="ln thin" x="206" y="206" width="42" height="36" rx="8"/><rect class="ln thin" x="260" y="206" width="42" height="36" rx="8"/>
+      <rect class="ln thin" x="98" y="254" width="42" height="36" rx="8"/><rect class="ln thin" x="152" y="254" width="42" height="36" rx="8"/><rect class="ln thin" x="206" y="254" width="42" height="36" rx="8"/><rect class="ln thin" x="260" y="254" width="42" height="36" rx="8"/>
+      <rect class="ln thin" x="98" y="302" width="42" height="36" rx="8"/><rect class="ln thin" x="152" y="302" width="42" height="36" rx="8"/><rect class="ln thin" x="206" y="302" width="42" height="36" rx="8"/>
+    </g>
+    <rect class="solid" x="260" y="302" width="42" height="36" rx="8"/>
+    <text class="t c sm" x="119" y="229" text-anchor="middle">7</text><text class="t c sm" x="173" y="229" text-anchor="middle">8</text><text class="t c sm" x="227" y="229" text-anchor="middle">9</text><text class="t c sm" x="281" y="229" text-anchor="middle">÷</text>
+    <text class="t c sm" x="119" y="277" text-anchor="middle">4</text><text class="t c sm" x="173" y="277" text-anchor="middle">5</text><text class="t c sm" x="227" y="277" text-anchor="middle">6</text><text class="t c sm" x="281" y="277" text-anchor="middle">×</text>
+    <text class="t c sm" x="119" y="325" text-anchor="middle">1</text><text class="t c sm" x="173" y="325" text-anchor="middle">2</text><text class="t c sm" x="227" y="325" text-anchor="middle">3</text><text class="t sm" x="281" y="325" text-anchor="middle" style="fill:#04261a;font-weight:700">=</text>
+  </g>
+</g>
+<g data-b="1" class="white">
+  <g class="pop"><circle cx="136" cy="436" r="46" class="ln thin dash"/><circle cx="136" cy="436" r="38" class="ln thin"/>
+    <text class="t sm" x="136" y="428" text-anchor="middle">SHOCK</text><text class="t sm" x="136" y="445" text-anchor="middle">registry</text><text class="t disp" x="136" y="467" text-anchor="middle" style="font-size:17px">2004</text></g>
+  <g class="pop" style="--d:.3s"><circle cx="264" cy="436" r="46" class="ln thin dash"/><circle cx="264" cy="436" r="38" class="ln thin"/>
+    <text class="t sm" x="264" y="428" text-anchor="middle">broader</text><text class="t sm" x="264" y="445" text-anchor="middle">cohort</text><text class="t disp" x="264" y="467" text-anchor="middle" style="font-size:17px">2007</text></g>
+  <text class="t sm" x="200" y="510" text-anchor="middle">The trust came from validation</text>
+</g>
+<g data-b="2" class="red">
+  <g class="drop" style="--d:0s"><rect class="ln thin fl" x="424" y="66" width="150" height="28" rx="7"/><text class="t c sm" x="436" y="85">lactate 4.2 → 6.1</text></g>
+  <g class="drop" style="--d:.1s"><rect class="ln thin fl" x="586" y="66" width="164" height="28" rx="7"/><text class="t c sm" x="598" y="85">MAP 58 on norepi</text></g>
+  <g class="drop" style="--d:.2s"><rect class="ln thin fl" x="424" y="104" width="76" height="28" rx="7"/><text class="t c sm" x="436" y="123">RA 18</text></g>
+  <g class="drop" style="--d:.3s"><rect class="ln thin fl" x="510" y="104" width="196" height="28" rx="7"/><text class="t c sm" x="522" y="123">Impella CP placed 02:10</text></g>
+  <g class="drop" style="--d:.4s"><rect class="ln thin fl" x="424" y="142" width="170" height="28" rx="7"/><text class="t c sm" x="436" y="161">urine output falling</text></g>
+  <g class="drop" style="--d:.5s"><rect class="ln thin fl" x="604" y="142" width="110" height="28" rx="7"/><text class="t c sm" x="616" y="161">LVEF 15%</text></g>
+  <text class="t dim xs" x="770" y="192" text-anchor="end">illustrative</text>
+</g>
+<g data-b="2" class="blue">
+  <path class="ln thin" opacity=".55" d="M500 174L584 216M600 174L600 208M660 174L616 216"/>
+  <circle cx="600" cy="252" r="42" class="ln fl glow"/><circle cx="600" cy="252" r="28" class="ln thin" opacity=".7"/><circle cx="600" cy="252" r="12" class="solid" opacity=".85"/>
+  <text class="t c xs" x="548" y="240" text-anchor="end">world knowledge</text>
+  <text class="t c xs" x="652" y="240">impact awareness</text>
+  <text class="t c xs" x="652" y="274">prioritizing</text>
+  <rect class="ln fl" x="436" y="304" width="330" height="138" rx="12"/>
+  <text class="t lg" x="454" y="333">Likely SCAI stage D</text>
+  <text class="t sm" x="454" y="362">1 Rising lactate despite support</text>
+  <text class="t sm" x="454" y="388">2 Possible RV involvement</text>
+  <text class="t sm" x="454" y="414">3 PA catheter data missing</text>
+  <text class="t dim xs" x="692" y="434">impact</text>
+</g>
+<g data-b="2">
+  <g class="red"><rect class="solid" x="692" y="352" width="64" height="12" rx="4"/></g>
+  <g class="yellow"><rect class="solid" x="692" y="378" width="44" height="12" rx="4"/></g>
+  <g class="white"><rect class="solid" x="692" y="404" width="30" height="12" rx="4" opacity=".8"/></g>
+</g>
+<g data-b="3" class="green">
+  <g class="pop"><rect class="solid" x="676" y="312" width="84" height="24" rx="12"/><text class="t" x="718" y="329" text-anchor="middle" style="fill:#04261a;font-weight:700;font-size:13px">Shock Bot</text></g>
+  <rect class="ln glow" x="430" y="298" width="342" height="150" rx="15" opacity=".9"/>
+</g>
+<g data-b="4" data-e="4">
+  <text class="t dim xs" x="436" y="474">MedCalc-Bench, 2024: over 1,000 calculations</text>
+  <rect class="meter-bg" x="436" y="484" width="330" height="14" rx="7"/>
+  <g class="red"><rect class="solid" x="436" y="484" width="168" height="14" rx="7"/></g>
+  <text class="t sm" x="436" y="524">Best model tested: about half right</text>
+  <text class="t c sm red" x="766" y="524" text-anchor="end">51%</text>
+</g>
+<g data-b="5">
+  <g class="green"><path class="ln draw" pathLength="1" d="M436 372C380 372 372 150 314 140" marker-end="url(#ah-g)"/></g>
+  <rect x="352" y="238" width="96" height="40" rx="8" style="fill:#0d2539"/>
+  <text class="t c xs green" x="400" y="254" text-anchor="middle">hand off the</text>
+  <text class="t c xs green" x="400" y="270" text-anchor="middle">arithmetic</text>
+  <text class="t dim xs" x="436" y="474">AgentMD, 2025: risk benchmark</text>
+  <text class="t sm" x="436" y="500">GPT-4 alone</text>
+  <rect class="meter-bg" x="556" y="490" width="170" height="12" rx="6"/>
+  <g class="red"><rect class="solid" x="556" y="490" width="70" height="12" rx="6"/></g>
+  <text class="t sm" x="766" y="500" text-anchor="end">41%</text>
+  <text class="t sm" x="436" y="526">with calculators</text>
+  <rect class="meter-bg" x="556" y="516" width="170" height="12" rx="6"/>
+  <g class="green"><rect class="solid" x="556" y="516" width="149" height="12" rx="6"/></g>
+  <text class="t c sm green" x="766" y="526" text-anchor="end">88%</text>
+  <text class="t lg" x="200" y="548" text-anchor="middle">Soft for judgment. Hard for arithmetic.</text>
+</g>
+</svg>
+</template>
+
+<!-- ===================== 9. VALIDATION ===================== -->
+<template id="scene-p9">
+<svg viewBox="0 0 800 560" role="img" aria-label="A validation cycle: known-answer cases, independent experts, compare and score, sort the misses, re-test after every change, with people deciding at the centre. A chart shows the same model name scoring 84 then 51 percent three months apart; badges for TRIPOD-LLM and the Joint Commission and CHAI guidance.">
+<rect width="800" height="560" fill="url(#vignette)"/><rect width="800" height="560" fill="url(#graticule)"/>
+<circle cx="330" cy="300" r="170" class="ln thin mutedc" opacity=".28"/>
+<g data-b="0" data-e="4">
+  <text class="t disp" x="330" y="294" text-anchor="middle" style="font-size:28px">Checked against</text>
+  <text class="t disp" x="330" y="326" text-anchor="middle" style="font-size:28px">reality</text>
+</g>
+<g data-b="1">
+  <g class="white"><path class="ln draw" pathLength="1" style="--d:.3s" d="M368 134A170 170 0 0 1 476 212" marker-end="url(#ah-w)"/>
+    <path class="ln draw" pathLength="1" style="--d:.7s" d="M499 285A170 170 0 0 1 458 412" marker-end="url(#ah-w)"/></g>
+  <g class="white pop"><circle cx="330" cy="130" r="36" class="ln fl glow"/>
+    <path class="ln thin" d="M312 118h12l4 5h16v20h-32z"/><path class="ln" d="M321 133l5 5 9-10"/></g>
+  <text class="t sm" x="330" y="82" text-anchor="middle">Known-answer cases</text>
+  <g class="white pop" style="--d:.3s"><circle cx="492" cy="248" r="36" class="ln fl glow"/>
+    <path class="ln thin" d="M474 248c8-10 28-10 36 0c-8 10-28 10-36 0z"/><circle cx="492" cy="248" r="5" class="solid"/><path class="ln" d="M476 262L508 234"/></g>
+  <text class="t sm" x="538" y="244">Independent experts</text>
+  <text class="t dim sm" x="538" y="262">blind to the AI</text>
+  <g class="green pop" style="--d:.7s"><circle cx="430" cy="438" r="36" class="ln fl glow"/>
+    <path class="ln thin" d="M415 423h30v30h-30zM425 423v30M435 423v30M415 433h30M415 443h30"/>
+    <rect class="solid" x="416" y="424" width="8" height="8"/><rect class="solid" x="426" y="434" width="8" height="8"/><rect class="solid" x="436" y="444" width="8" height="8"/></g>
+  <text class="t sm" x="476" y="446">Compare and score</text>
+  <text class="t dim sm" x="476" y="464">agreement on stage</text>
+</g>
+<g data-b="2">
+  <g class="white"><path class="ln draw" pathLength="1" d="M396 456A170 170 0 0 1 264 456" marker-end="url(#ah-w)"/></g>
+  <g class="red pop" style="--d:.3s"><circle cx="230" cy="438" r="36" class="ln fl glow"/>
+    <path class="ln thin" d="M214 430h24l8 8-8 8h-24z"/><circle cx="220" cy="438" r="2.5" class="solid"/></g>
+  <text class="t sm" x="184" y="446" text-anchor="end">Sort the misses</text>
+  <g class="red">
+    <g class="slide" style="--d:.5s"><rect class="ln thin fl" x="40" y="482" width="168" height="26" rx="13"/><text class="t c xs" x="124" y="499" text-anchor="middle">wrong source value</text></g>
+    <g class="slide" style="--d:.65s"><rect class="ln thin fl" x="40" y="514" width="184" height="26" rx="13"/><text class="t c xs" x="132" y="531" text-anchor="middle">unsupported citation</text></g>
+    <g class="slide" style="--d:.8s"><rect class="ln thin fl" x="232" y="514" width="164" height="26" rx="13"/><text class="t c xs" x="314" y="531" text-anchor="middle">gap filled silently</text></g>
+  </g>
+</g>
+<g data-b="3">
+  <g class="white"><path class="ln draw" pathLength="1" d="M202 412A170 170 0 0 1 161 285" marker-end="url(#ah-w)"/>
+    <path class="ln draw" pathLength="1" style="--d:.4s" d="M184 212A170 170 0 0 1 292 134" marker-end="url(#ah-w)"/></g>
+  <g class="blue pop" style="--d:.2s"><circle cx="168" cy="248" r="36" class="ln fl glow"/>
+    <path class="ln" d="M154 244a14 14 0 0 1 26-6M182 252a14 14 0 0 1-26 6"/><path class="ln thin" d="M181 230v8h-8M155 266v-8h8"/></g>
+  <text class="t sm" x="124" y="244" text-anchor="end">Re-test after</text>
+  <text class="t dim sm" x="124" y="262" text-anchor="end">every change</text>
+  <g class="white">
+    <rect class="ln thin dash" x="24" y="36" width="186" height="76" rx="8"/>
+    <text class="t mono" x="38" y="60" style="font-size:12px">wrapper v3.1</text>
+    <text class="t mono" x="38" y="80" style="font-size:12px">key v1.4</text>
+    <text class="t mono" x="38" y="100" style="font-size:12px">tested 2026-10-07</text>
+    <text class="t dim xs" x="24" y="130">example version stamp</text>
+  </g>
+  <g class="blue">
+    <text class="t sm" x="636" y="318">Same model name,</text>
+    <text class="t sm" x="636" y="336">three months apart</text>
+    <path class="ln thin mutedc" d="M636 500H780"/>
+    <g class="rise" style="--d:.3s"><rect class="solid" x="648" y="399" width="46" height="101" rx="4" opacity=".85"/></g>
+    <g class="rise" style="--d:.6s"><rect class="solid" x="718" y="439" width="46" height="61" rx="4" opacity=".55"/></g>
+    <text class="t c disp" x="671" y="392" text-anchor="middle" style="font-size:20px">84%</text>
+    <text class="t c disp" x="741" y="432" text-anchor="middle" style="font-size:20px">51%</text>
+    <text class="t dim xs" x="671" y="518" text-anchor="middle">Mar 2023</text>
+    <text class="t dim xs" x="741" y="518" text-anchor="middle">Jun 2023</text>
+    <text class="t dim xs" x="636" y="540">Chen, Zaharia, Zou, 2024</text>
+  </g>
+</g>
+<g data-b="4">
+  <g class="white pop"><rect class="ln thin fl" x="556" y="36" width="230" height="72" rx="10"/>
+    <text class="t lg" x="572" y="62">TRIPOD-LLM, 2025</text>
+    <text class="t dim xs" x="572" y="82">transparency, human oversight,</text>
+    <text class="t dim xs" x="572" y="97">task-specific performance</text></g>
+  <g class="white pop" style="--d:.25s"><rect class="ln thin fl" x="556" y="118" width="230" height="72" rx="10"/>
+    <text class="t" x="572" y="144" style="font-size:16px;font-weight:700">Joint Commission + CHAI</text>
+    <text class="t dim xs" x="572" y="164">local validation, ongoing</text>
+    <text class="t dim xs" x="572" y="179">monitoring, 2025</text></g>
+</g>
+<g data-b="5" class="white">
+  <path class="ln thin flow" d="M368 134A170 170 0 0 1 476 212M499 285A170 170 0 0 1 458 412M396 456A170 170 0 0 1 264 456M202 412A170 170 0 0 1 161 285M184 212A170 170 0 0 1 292 134" opacity=".8"/>
+  <g class="pop"><use href="#sym-person" x="282" y="252" width="34" height="48"/><use href="#sym-person" x="310" y="244" width="40" height="56"/><use href="#sym-person" x="344" y="252" width="34" height="48"/></g>
+  <text class="t lg" x="330" y="330" text-anchor="middle">People decide</text>
+  <circle cx="330" cy="292" r="96" class="ln thin breathe" opacity=".25"/>
+</g>
+</svg>
+</template>
+
+<!-- ===================== 10. RELATIONSHIPS ===================== -->
+<template id="scene-p10">
+<svg viewBox="0 0 800 560" role="img" aria-label="The easy part is complexity. The hard part is relationships. A constellation with Dr. Gavin Hickey at the centre, Ryan on a path toward the future, and the team's roles around them, connected by lines that pulse together.">
+<rect width="800" height="560" fill="url(#vignette)"/><rect width="800" height="560" fill="url(#graticule)"/>
+<g data-b="0">
+  <text class="t disp" x="40" y="66" style="font-size:34px;fill:var(--muted)">The easy part is complexity.</text>
+  <g data-b="0" data-e="0" class="mutedc"><path class="ln thin" opacity=".8" d="M540 60c30-40 60 40 90 0s40-50 70-10 20 40-10 30-50-40-80-10 10 40 40 30 60-60 90-20c20 30-30 40-60 20s-70-30-100 0"/></g>
+</g>
+<g data-b="1" class="white">
+  <text class="t disp glow" x="40" y="118" style="font-size:42px">The hard part is relationships.</text>
+</g>
+<g data-b="4" class="white">
+  <path class="ln thin draw slow" pathLength="1" d="M483 217L618 272L670 360L618 448L483 503L317 503L182 448L130 360L182 272L317 217Z" opacity=".55"/>
+  <g opacity=".38">
+    <path class="ln thin draw" pathLength="1" style="--d:.2s" d="M400 360L483 217"/><path class="ln thin draw" pathLength="1" style="--d:.3s" d="M400 360L618 272"/>
+    <path class="ln thin draw" pathLength="1" style="--d:.4s" d="M400 360L670 360"/><path class="ln thin draw" pathLength="1" style="--d:.5s" d="M400 360L618 448"/>
+    <path class="ln thin draw" pathLength="1" style="--d:.6s" d="M400 360L483 503"/><path class="ln thin draw" pathLength="1" style="--d:.7s" d="M400 360L317 503"/>
+    <path class="ln thin draw" pathLength="1" style="--d:.8s" d="M400 360L182 448"/><path class="ln thin draw" pathLength="1" style="--d:.9s" d="M400 360L130 360"/>
+    <path class="ln thin draw" pathLength="1" style="--d:1s" d="M400 360L182 272"/><path class="ln thin draw" pathLength="1" style="--d:1.1s" d="M400 360L317 217"/>
+  </g>
+  <path class="ln thin" opacity=".16" d="M483 217L182 448M182 272L670 360M317 217L618 448M483 503L130 360"/>
+</g>
+<g data-b="3" class="white">
+  <path class="ln thin draw slow" pathLength="1" d="M430 342C520 292 610 226 694 180"/>
+  <path class="ln" d="M738 152L798 112" style="stroke:url(#future);stroke-width:3"/>
+</g>
+<g data-b="2">
+  <circle cx="400" cy="360" r="74" fill="url(#halo)" class="hb"/>
+  <g class="white"><circle cx="400" cy="360" r="34" class="ln fl glow" style="stroke-width:2.4"/>
+    <text class="t disp" x="400" y="370" text-anchor="middle" style="font-size:26px">GH</text></g>
+  <text class="t lg knock" x="400" y="420" text-anchor="middle">Dr. Gavin Hickey</text>
+  <text class="t dim sm knock" x="400" y="440" text-anchor="middle">Saving lives in the hardest hours</text>
+  <text class="t dim sm knock" x="400" y="458" text-anchor="middle">and building a collaboration where every voice counts</text>
+</g>
+<g data-b="3" class="white">
+  <g class="pop"><circle cx="716" cy="166" r="22" class="ln fl glow"/>
+    <text class="t disp" x="716" y="174" text-anchor="middle" style="font-size:20px">R</text></g>
+  <text class="t lg knock" x="716" y="214" text-anchor="middle">Ryan</text>
+  <text class="t dim sm knock" x="716" y="233" text-anchor="middle">The future</text>
+</g>
+<g data-b="4" class="white">
+  <g class="pop" style="--d:.1s"><circle cx="483" cy="217" r="11" class="ln fl"/></g>
+  <g class="pop" style="--d:.2s"><circle cx="618" cy="272" r="11" class="ln fl"/></g>
+  <g class="pop" style="--d:.3s"><circle cx="670" cy="360" r="11" class="ln fl"/></g>
+  <g class="pop" style="--d:.4s"><circle cx="618" cy="448" r="11" class="ln fl"/></g>
+  <g class="pop" style="--d:.5s"><circle cx="483" cy="503" r="11" class="ln fl"/></g>
+  <g class="pop" style="--d:.6s"><circle cx="317" cy="503" r="11" class="ln fl"/></g>
+  <g class="pop" style="--d:.7s"><circle cx="182" cy="448" r="11" class="ln fl"/></g>
+  <g class="pop" style="--d:.8s"><circle cx="130" cy="360" r="11" class="ln fl"/></g>
+  <g class="pop" style="--d:.9s"><circle cx="182" cy="272" r="11" class="ln fl"/></g>
+  <g class="pop" style="--d:1s"><circle cx="317" cy="217" r="11" class="ln fl"/></g>
+  <text class="t sm knock" x="483" y="197" text-anchor="middle">Nurses</text>
+  <text class="t sm knock" x="638" y="268">Intensivists</text>
+  <text class="t sm knock" x="690" y="356">Interventional</text><text class="t sm knock" x="690" y="373">cardiology</text>
+  <text class="t sm knock" x="638" y="452">Heart failure</text><text class="t sm knock" x="638" y="469">cardiology</text>
+  <text class="t sm knock" x="483" y="532" text-anchor="middle">Cardiac surgery</text>
+  <text class="t sm knock" x="317" y="532" text-anchor="middle">Perfusion</text>
+  <text class="t sm knock" x="162" y="452" text-anchor="end">Pharmacy</text>
+  <text class="t sm knock" x="110" y="356" text-anchor="end">Respiratory</text><text class="t sm knock" x="110" y="373" text-anchor="end">therapy</text>
+  <text class="t sm knock" x="162" y="268" text-anchor="end">Fellows</text>
+  <text class="t sm knock" x="317" y="197" text-anchor="middle">Informatics</text>
+</g>
+<g data-b="5" class="white">
+  <circle r="3.5" class="solid glow"><animateMotion dur="1.6s" repeatCount="indefinite" path="M400 360L483 217"/></circle>
+  <circle r="3.5" class="solid glow"><animateMotion dur="1.6s" repeatCount="indefinite" path="M400 360L618 272"/></circle>
+  <circle r="3.5" class="solid glow"><animateMotion dur="1.6s" repeatCount="indefinite" path="M400 360L670 360"/></circle>
+  <circle r="3.5" class="solid glow"><animateMotion dur="1.6s" repeatCount="indefinite" path="M400 360L618 448"/></circle>
+  <circle r="3.5" class="solid glow"><animateMotion dur="1.6s" repeatCount="indefinite" path="M400 360L483 503"/></circle>
+  <circle r="3.5" class="solid glow"><animateMotion dur="1.6s" repeatCount="indefinite" path="M400 360L317 503"/></circle>
+  <circle r="3.5" class="solid glow"><animateMotion dur="1.6s" repeatCount="indefinite" path="M400 360L182 448"/></circle>
+  <circle r="3.5" class="solid glow"><animateMotion dur="1.6s" repeatCount="indefinite" path="M400 360L130 360"/></circle>
+  <circle r="3.5" class="solid glow"><animateMotion dur="1.6s" repeatCount="indefinite" path="M400 360L182 272"/></circle>
+  <circle r="3.5" class="solid glow"><animateMotion dur="1.6s" repeatCount="indefinite" path="M400 360L317 217"/></circle>
+  <circle r="3.5" class="solid glow"><animateMotion dur="1.6s" repeatCount="indefinite" path="M430 342C520 292 610 226 694 180"/></circle>
+  <path class="ln thin glow" opacity=".5" d="M483 217L618 272L670 360L618 448L483 503L317 503L182 448L130 360L182 272L317 217Z"/>
+</g>
+</svg>
+</template>
+
+<!-- ===================== 11. BUILD ONE ===================== -->
+<template id="scene-p11">
+<svg viewBox="0 0 800 560" role="img" aria-label="Six steps along a path: pick a recurring question, write the lenses, make one HTML page with a copy button, put the key in a Teams channel, use approved Copilot under local policy, then test and share the wrapper while keeping the key at home.">
+<rect width="800" height="560" fill="url(#vignette)"/><rect width="800" height="560" fill="url(#graticule)"/>
+<g data-b="0" class="mutedc"><path class="ln draw slow" pathLength="1" d="M120 140H680C770 140 770 330 680 330H120" opacity=".7"/></g>
+<g data-b="1">
+  <g class="white pop"><circle cx="120" cy="140" r="42" class="ln fl glow"/><use href="#sym-bubble" x="96" y="116" width="48" height="40"/>
+    <text class="t disp" x="120" y="142" text-anchor="middle" style="font-size:20px">?</text></g>
+  <g class="white"><circle cx="86" cy="106" r="14" style="fill:#0d2539"/><circle cx="86" cy="106" r="14" class="ln thin"/><text class="t disp" x="86" y="113" text-anchor="middle" style="font-size:18px">1</text></g>
+  <text class="t sm" x="120" y="206" text-anchor="middle">Pick a recurring</text>
+  <text class="t sm" x="120" y="224" text-anchor="middle">question</text>
+</g>
+<g data-b="2">
+  <g class="green pop"><circle cx="400" cy="140" r="42" class="ln fl glow"/><use href="#sym-list" x="378" y="113" width="44" height="54"/></g>
+  <g class="green"><circle cx="366" cy="106" r="14" style="fill:#0d2539"/><circle cx="366" cy="106" r="14" class="ln thin"/><text class="t c disp" x="366" y="113" text-anchor="middle" style="font-size:18px">2</text></g>
+  <text class="t sm" x="400" y="206" text-anchor="middle">Write the lenses</text>
+  <text class="t sm" x="400" y="224" text-anchor="middle">from your experts</text>
+</g>
+<g data-b="3">
+  <g class="green pop"><circle cx="680" cy="140" r="42" class="ln fl glow"/><use href="#sym-page" x="650" y="116" width="60" height="48"/></g>
+  <g class="green"><circle cx="646" cy="106" r="14" style="fill:#0d2539"/><circle cx="646" cy="106" r="14" class="ln thin"/><text class="t c disp" x="646" y="113" text-anchor="middle" style="font-size:18px">3</text></g>
+  <text class="t sm" x="680" y="206" text-anchor="middle">One HTML page</text>
+  <text class="t sm" x="680" y="224" text-anchor="middle">with a copy button</text>
+</g>
+<g data-b="4">
+  <g class="yellow pop"><circle cx="680" cy="330" r="42" class="ln fl glow"/><use href="#sym-key" x="658" y="302" width="44" height="56"/></g>
+  <g class="yellow"><circle cx="646" cy="296" r="14" style="fill:#0d2539"/><circle cx="646" cy="296" r="14" class="ln thin"/><text class="t c disp" x="646" y="303" text-anchor="middle" style="font-size:18px">4</text></g>
+  <text class="t sm" x="680" y="396" text-anchor="middle">Key in a Teams</text>
+  <text class="t sm" x="680" y="414" text-anchor="middle">channel you control</text>
+  <g class="blue pop" style="--d:.4s"><circle cx="400" cy="330" r="42" class="ln fl glow"/><use href="#sym-engine" x="372" y="302" width="52" height="52"/><use href="#sym-shield" x="408" y="326" width="22" height="26"/></g>
+  <g class="blue"><circle cx="366" cy="296" r="14" style="fill:#0d2539"/><circle cx="366" cy="296" r="14" class="ln thin"/><text class="t c disp" x="366" y="303" text-anchor="middle" style="font-size:18px">5</text></g>
+  <text class="t sm" x="400" y="396" text-anchor="middle">Approved Copilot</text>
+  <text class="t sm" x="400" y="414" text-anchor="middle">and local policy</text>
+</g>
+<g data-b="5">
+  <g class="green pop"><circle cx="120" cy="330" r="42" class="ln fl glow"/><use href="#sym-check" x="100" y="310" width="40" height="40"/></g>
+  <g class="white"><circle cx="86" cy="296" r="14" style="fill:#0d2539"/><circle cx="86" cy="296" r="14" class="ln thin"/><text class="t disp" x="86" y="303" text-anchor="middle" style="font-size:18px">6</text></g>
+  <text class="t sm" x="120" y="396" text-anchor="middle">Test, fix, then</text>
+  <text class="t sm" x="120" y="414" text-anchor="middle">share the wrapper</text>
+  <g class="green">
+    <g class="fly" style="--fx:60px;--fy:-110px;--d:.3s"><use href="#sym-env" x="48" y="458" width="54" height="36"/></g>
+    <g class="fly" style="--fx:10px;--fy:-130px;--d:.45s"><use href="#sym-env" x="112" y="474" width="54" height="36"/></g>
+    <g class="fly" style="--fx:-40px;--fy:-110px;--d:.6s"><use href="#sym-env" x="176" y="458" width="54" height="36"/></g>
+    <text class="t c sm" x="139" y="544" text-anchor="middle">Share the wrapper</text>
+  </g>
+  <g class="yellow">
+    <path class="ln thin" d="M276 490L314 458L352 490V524H276Z"/>
+    <use href="#sym-key" x="300" y="482" width="28" height="36"/>
+    <text class="t c sm" x="314" y="544" text-anchor="middle">Keep the key at home</text>
+  </g>
+</g>
+<g data-b="6" class="white">
+  <text class="t disp glow rise" x="440" y="474" style="font-size:30px">One page.</text>
+  <text class="t disp glow rise" x="440" y="508" style="font-size:30px;--d:.25s">One checklist.</text>
+  <text class="t disp glow rise" x="440" y="542" style="font-size:30px;--d:.5s">One honest test.</text>
+</g>
+</svg>
+</template>
+
+<script>
+(() => {
+'use strict';
+
+/* ---------------------------------------------------------------
+   helpers
+--------------------------------------------------------------- */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const mq = q => (window.matchMedia ? window.matchMedia(q) : { matches: false });
+const RM = mq('(prefers-reduced-motion: reduce)');
+const NARROW = mq('(max-width: 980px)');
+const synth = ('speechSynthesis' in window) ? window.speechSynthesis : null;
+const canSpeak = !!(synth && typeof window.SpeechSynthesisUtterance === 'function');
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+/* ---------------------------------------------------------------
+   the story
+--------------------------------------------------------------- */
+const PAGES = [
+  { id: 'p0', kind: 'cover', title: 'The Shock Bot', accent: 'pleth', ink: '#2a3a52', beats: [
+    'This is the story of the Shock Bot, a small, practical tool that helps a cardiogenic shock team look back at a case and learn from it together.',
+    'Each line on this monitor is one character in the story.',
+    'Red is the patient’s record.',
+    'Green is the wrapper, the page you open.',
+    'Yellow is the private key.',
+    'Blue is the engine that reads and reasons.',
+    'And white is the team, the people who make any of it matter. Let’s begin.'
+  ]},
+  { id: 'p1', title: 'Meet the Shock Bot', dek: 'Three parts and one loop', accent: 'pleth', ink: '#2a3a52', beats: [
+    'Picture a cardiogenic shock case after the fact. The shock log, the H&P, a stack of consult and progress notes, maybe a death summary. Hundreds of numbers and dozens of decisions, scattered across documents written by different people at different hours.',
+    'The Shock Bot helps a team read a case like that together. It has three simple parts.',
+    'First, a web page we call the wrapper. It turns your pasted notes into a carefully built request.',
+    'Second, a private key: a structured reference file kept inside the Shock Bot team in Microsoft Teams.',
+    'Third, an engine: your institution’s Microsoft 365 Copilot, which reads the request, follows the pointer to the key, and reasons through the case.',
+    'Paste, shape, send, read. That’s the whole loop. It’s built for understanding cases, for teaching, debriefs, and M&M, not for bedside decisions. The rest of this serial opens up each part.'
+  ]},
+  { id: 'p2', title: 'The wrapper', dek: 'One HTML file that builds a better question', accent: 'ecg', ink: '#11935b', deeper: true, beats: [
+    'The wrapper is a single HTML file. No server, no install, no database. It opens in any modern browser, and everything it does happens right there on your screen.',
+    'Step one is case data. You paste each document, give it a label, and add it. Each entry stays separate, so the AI can later cross-check the shock log against the consult note and point out where they disagree.',
+    'A token meter watches the size. It estimates about four characters per token against a budget of roughly twenty thousand, so you know before you send whether the request will fit.',
+    'Step two is emphasis and lenses. The AI infers the clinical details from your notes. The chips only tell it what to focus on: SCAI staging, etiology, devices, vasoactives, or a hemodynamic turning point you flag. Each lens adds a short set of expert questions tied to figures in the 2025 ACC guidance.',
+    'You also choose depth and audience. A fellow gets teaching. An attending gets precision. An M&M review gets systems thinking: honest, but not judgmental.',
+    'Step three assembles the payload: a header, the pointer to the private key, the analyst’s rules, your emphasis, the case itself, the lenses, and a required synthesis that ends with a concordance score and the questions still open. One click copies it. The page never sends your case anywhere. The clipboard is the only door.'
+  ]},
+  { id: 'p3', title: 'Why it matters', dek: 'The same questions, every case, in minutes', accent: 'art', ink: '#d63a54', beats: [
+    'Cardiogenic shock is one of the most time-critical syndromes in cardiology, and short-term mortality can reach fifty percent. The 2025 ACC guidance lays out roadmaps for the first hour and the first day, built around early recognition and a shock team.',
+    'Looking back at a case is hard for a different reason. The story is spread across documents, written by different people, at different hours, for different purposes.',
+    'A careful review asks the same questions every time. What stage was this, and when did it change? Was the device matched to the ventricle that was failing? Was escalation on time? Where did care follow the guidance, and where did it diverge?',
+    'The Shock Bot asks those questions consistently, against the same framework, in minutes instead of hours. That frees the people in the room for what only they can do: argue, teach, notice what the record leaves out, and decide what to change.',
+    'A review stops being a memory test and becomes a structured conversation. The team’s way of thinking becomes visible, teachable, and repeatable.'
+  ]},
+  { id: 'p4', title: 'Institutional knowledge', dek: 'Turning hallway wisdom into something the program owns', accent: 'pa', ink: '#a87d00', deeper: true, beats: [
+    'Every strong program carries knowledge that isn’t written in any single guideline. Which questions matter first. How this team defines a turning point. Which devices are on the shelf, and what they’re called in the notes.',
+    'Usually that knowledge lives in hallway conversations and in the heads of a few experienced people. It’s powerful, and it’s fragile. It walks out the door when people rotate off or move on.',
+    'The Shock Bot gives it two homes. The lenses hold the questions: the checklist an expert would walk through, written down once and reused every time.',
+    'The private key holds the vocabulary: field definitions, valid SCAI stages, etiology codes, a device taxonomy, and vasoactive categories, so every analysis uses the same words for the same things.',
+    'When the team learns something, they update a lens or the key, and every future review benefits. The knowledge stops being a conversation in a hallway and becomes something the whole program owns.'
+  ]},
+  { id: 'p5', title: 'The private pointer', dek: 'Share the envelope, keep the codebook', accent: 'pa', ink: '#a87d00', deeper: true, beats: [
+    'Here’s the quietly clever part. The payload doesn’t contain the key. It contains a pointer to it, a handle: the Shock Bot team, General channel, Files, shockjson.docx.',
+    'That separation matters. The wrapper can travel anywhere. Email it, post it, hand it to a colleague across the country. On its own, it gives away nothing private.',
+    'The key stays behind your institution’s sign-in. Files in a Teams channel live in SharePoint, and Copilot can only open what you already have permission to open. Someone outside the team can hold the very same wrapper, and the pointer simply leads nowhere.',
+    'And because it’s a pointer, the key can be exchanged. Update the schema, and every payload, everywhere, uses the new version the next time it runs, without changing a line of the wrapper.',
+    'Another program could keep this wrapper, change one line to point at their own key, and bring their own devices, their own definitions, their own house rules. Same envelope, different codebook.',
+    'Think of a lab requisition. The form can be standard and public. The reference ranges belong to the lab that runs the test.'
+  ]},
+  { id: 'p6', title: 'Following the handle', dek: 'What Copilot does after you press send', accent: 'cvp', ink: '#1b7fbf', deeper: true, beats: [
+    'So what happens when you paste the payload into Copilot and press send? Copilot doesn’t hand your text straight to a model. An orchestrator reads it first and works out what it needs in order to answer well.',
+    'Microsoft calls the next step grounding. With a Microsoft 365 Copilot license and work data turned on, Copilot can search Microsoft Graph, the map of your organization’s files, chats, and mail. A semantic index helps it match meaning rather than exact words. It reads the handle and goes looking for shockjson.',
+    'Every lookup is trimmed to your permissions: it sees what you can see, and nothing more. The relevant pieces of the file are pulled in and set beside your case, inside the model’s working context.',
+    'Then the model reasons over everything at once: your rules, the case, the key, the lenses. Afterward, Copilot runs further checks for responsible AI, security, and compliance, and returns the answer with references to what it used.',
+    'Two habits make this reliable. If your Copilot is web-only, or the search misses, attach the file yourself: type a forward slash in the prompt box and pick shockjson. And always look for the key in the answer’s references. If it isn’t cited, don’t assume it was read.',
+    'Finally, choose Think Deeper. It tells Copilot to use a reasoning model that takes its time to plan, gather context, and check its work. For a whole shock case, that’s worth the wait.'
+  ]},
+  { id: 'p7', title: 'How inference works', dek: 'A little look under the hood', accent: 'cvp', ink: '#1b7fbf', deeper: true, beats: [
+    'Under the hood, the model is an enormous network of numbers, called weights, trained on vast amounts of text. It doesn’t look facts up in those weights the way you’d look up a page in a book. It has compressed patterns of language and knowledge into them.',
+    'Your payload is first cut into tokens, small pieces of words. A word like lactate might become two or three of them. Each token becomes a long list of numbers that places it in a space of meaning.',
+    'Then the model reads all of the tokens together. A mechanism called attention lets every token weigh every other one, so a rising lactate is read in light of a device note three pages earlier.',
+    'Out the other end comes a probability for every possible next token. One is chosen, added to the text, and the cycle repeats, token by token, until the answer is written. Reasoning modes add a step: the model works through intermediate thoughts before it commits to an answer.',
+    'That’s why structure helps. Clear rules, labeled sections, and specific questions steer each next token toward careful, cited analysis and away from generic filler.',
+    'And it’s why validation matters. The model writes what is most plausible given its context. Plausible is usually right, but not always. A fluent sentence is not the same thing as a checked fact.'
+  ]},
+  { id: 'p8', title: 'Soft calculators', dek: 'Judgment that reads the whole record, arithmetic that never guesses', accent: 'cvp', ink: '#1b7fbf', deeper: true, beats: [
+    'Medicine runs on hard calculators. Cardiac power output is mean arterial pressure times cardiac output, divided by 451. Put the same numbers in and you get the same answer out, every time.',
+    'That formula earned its place. In the SHOCK trial registry, cardiac power was the strongest hemodynamic correlate of in-hospital mortality, and later work found it held up across a broader group of acutely ill cardiac patients. The math is simple. The trust came from validation.',
+    'A new kind of tool is arriving. Call it a soft calculator. Instead of a few tidy inputs, it reads the whole messy record. It brings world knowledge: the trials, the guidance, how devices behave. It’s aware of impact, which findings change the picture and which are noise. And it prioritizes, surfacing what deserves attention first.',
+    'The Shock Bot is an early soft calculator. Inferring a SCAI stage from free text is exactly that kind of judgment.',
+    'Soft calculators will keep improving as models gain better world knowledge, but they fail in different ways. In 2024, the MedCalc-Bench study found that the best model it tested got only about half of more than a thousand medical calculations right, often by pulling the wrong value from the note or applying the wrong rule.',
+    'The fix points to the future. AgentMD, a research agent that hands the arithmetic to curated, executable calculators, scored about eighty-eight percent on a risk benchmark, against about forty-one percent for GPT-4 reasoning on its own. Soft where judgment is needed. Hard where arithmetic is needed.'
+  ]},
+  { id: 'p9', title: 'Validation', dek: 'Trust is earned case by case', accent: 'pleth', ink: '#2a3a52', deeper: true, beats: [
+    'This may be the most important page. Every soft calculator, this one included, has to earn trust the way the hard ones did: by being checked against reality.',
+    'Start with cases where you already know the answer. Have experienced clinicians stage and review them independently, without seeing the AI’s output. Then compare. How often does the Shock Bot agree on stage, etiology, device choice, and the key decision points? Where it disagrees, who was right, and why?',
+    'Sort the misses by type. Was a value pulled from the wrong note? Was a guideline figure cited for something it doesn’t say? Was missing data quietly filled in instead of flagged?',
+    'Then keep checking. The models behind Copilot change over time, and you may not notice when they do. One study found that the same named model’s accuracy on a simple task fell from eighty-four to fifty-one percent in three months. Version the wrapper, version the key, write down the date, and rerun your test cases after any change.',
+    'The field is converging on this. TRIPOD-LLM, a reporting guideline for studies of large language models, emphasizes transparency, human oversight, and task-specific performance. The Joint Commission and the Coalition for Health AI now point health systems toward local validation and ongoing monitoring.',
+    'Until that work is done, the Shock Bot stays where it belongs: a teaching and review partner. The people in the room remain the decision-makers.'
+  ]},
+  { id: 'p10', title: 'The hard part is relationships', dek: 'For Dr. Hickey, for Ryan, and for the team', accent: 'pleth', ink: '#2a3a52', beats: [
+    'The easy part is complexity. Code, prompts, schemas, models: all of it can be learned, and it keeps getting easier.',
+    'The hard part is relationships. A tool like this works only because people trust each other enough to share how they think, to open up their cases, and to say out loud where things could have gone better.',
+    'At the center is Doctor Hickey, the physician whose work saves lives in the hardest hours of cardiogenic shock, and who builds an inclusive collaboration every day, where the nurse, the perfusionist, the fellow, and the engineer all have a voice.',
+    'Ryan is the future: the next generation carrying this work forward, asking the next questions, and building what comes after.',
+    'And around them is the team: nurses, intensivists, interventional and heart failure cardiologists, cardiac surgeons, perfusionists, pharmacists, respiratory therapists, fellows, and the informatics colleagues who keep the systems running. Every line in this picture is a relationship that someone built and kept.',
+    'That network is the real technology. The Shock Bot just helps it think out loud.'
+  ]},
+  { id: 'p11', title: 'You can build one', dek: 'If you can write a good checklist, you can do this', accent: 'ecg', ink: '#11935b', deeper: true, beats: [
+    'Here’s the encouraging part. Nothing in the Shock Bot needs a software team. If you can write a good checklist, you can build one.',
+    'One: pick a question your group asks again and again. A case review, a handoff, a consult triage, a quality audit.',
+    'Two: write down how your best people think about it. Those become your lenses: short, numbered questions tied to the guidance you trust.',
+    'Three: make a single HTML page that collects the inputs, adds your rules, and stitches everything into one block of text with a copy button. An AI assistant can draft it for you. Read every line before you use it. The core logic is only a few dozen lines.',
+    'Four: put your reference schema in a Teams channel your group controls, and point to it by name. Five: use your institution’s approved Copilot, and follow local policy on what data may go in.',
+    'Six: test it on cases you know, fix what breaks, and then share the wrapper. Keep the key at home.',
+    'Start small: one page, one checklist, one honest test. Then make it better together.'
+  ]},
+  { id: 'p12', kind: 'sources', title: 'Sources, errata and credits', dek: 'Check our work', accent: 'pleth', ink: '#2a3a52', beats: [
+    'That’s the Shock Bot. Every source behind this serial is listed here, along with the errata from an OpenEvidence review of its clinical claims. Check them, question them, and then go build something better.'
+  ]}
+];
+
+const SOURCES = [
+  { t: '2025 Concise Clinical Guidance: An ACC Expert Consensus Statement on the Evaluation and Management of Cardiogenic Shock', m: 'Sinha SS, Morrow DA, Kapur NK, Kataria R, Roswell RO. J Am Coll Cardiol. 2025;85(16):1618–1641.', u: 'https://doi.org/10.1016/j.jacc.2025.02.018', w: 'The framework the lenses are built on.' },
+  { t: 'Concise clinical guidance: evaluation and management of cardiogenic shock', m: 'Inova Newsroom, September 2025.', u: 'https://www.inovanewsroom.org/ihvi-2/2025/09/concise-clinical-guidance-evaluation-and-management-of-cardiogenic-shock/', w: 'Short-term mortality of up to fifty percent; one-hour and 24-hour roadmaps.' },
+  { t: 'SCAI SHOCK Stage Classification Expert Consensus Update: A Review and Incorporation of Validation Studies', m: 'Naidu SS, Baran DA, Jentzer JC, et al. J Soc Cardiovasc Angiogr Interv. 2022;1(1):100008.', u: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11308837', w: 'Stages A to E, refined after validation studies of 166 to 10,004 patients.' },
+  { t: 'Microaxial Flow Pump or Standard Care in Infarct-Related Cardiogenic Shock (DanGer Shock)', m: 'Møller JE, Engstrøm T, Jensen LO, et al. N Engl J Med. 2024;390(15):1382–1393.', u: 'https://research.regionh.dk/en/publications/microaxial-flow-pump-or-standard-care-in-infarct-related-cardioge/', w: 'The trial the device lens asks about.' },
+  { t: 'Cardiac power is the strongest hemodynamic correlate of mortality in cardiogenic shock: a report from the SHOCK trial registry', m: 'Fincke R, Hochman JS, Lowe AM, et al. J Am Coll Cardiol. 2004;44(2):340–348.', u: 'https://pubmed.ncbi.nlm.nih.gov/15261929', w: 'The hard calculator, and how it earned trust.' },
+  { t: 'Cardiac power output predicts mortality across a broad spectrum of patients with acute cardiac disease', m: 'Mendoza DD, Cooper HA, Panza JA. Am Heart J. 2007;153(3):366–370.', u: 'https://em-consulte.com/article/346624/cardiac-power-output-predicts-mortality-across-a-b', w: 'Cardiac power holding up beyond its original cohort.' },
+  { t: 'Microsoft Copilot overview', m: 'Microsoft Learn, updated October 2026.', u: 'https://learn.microsoft.com/en-us/microsoft-365/copilot/microsoft-365-copilot-overview', w: 'Licenses and grounding, permissions, enterprise data protection, Think Deeper.' },
+  { t: 'Semantic index for Copilot', m: 'Microsoft Learn.', u: 'https://learn.microsoft.com/en-ie/MicrosoftSearch/semantic-index-for-copilot', w: 'How Copilot matches meaning across Microsoft Graph.' },
+  { t: 'Refer to specific files and more in Microsoft 365 Copilot', m: 'Microsoft Support.', u: 'https://support.microsoft.com/en-us/Microsoft-365-Copilot/refer-to-specific-files-and-more-in-microsoft-365-copilot', w: 'Typing a forward slash to attach a file, including Teams channel files.' },
+  { t: 'Attention Is All You Need', m: 'Vaswani A, Shazeer N, Parmar N, et al. NeurIPS 2017.', u: 'https://arxiv.org/abs/1706.03762', w: 'The transformer and its attention mechanism.' },
+  { t: 'Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks', m: 'Lewis P, Perez E, Piktus A, et al. NeurIPS 2020.', u: 'https://arxiv.org/abs/2005.11401', w: 'The research idea behind grounding a model in retrieved documents.' },
+  { t: 'MedCalc-Bench: Evaluating Large Language Models for Medical Calculations', m: 'Khandekar N, Jin Q, Xiong G, et al. NeurIPS 2024 Datasets and Benchmarks.', u: 'https://arxiv.org/abs/2406.12036', w: 'More than 1,000 calculation tasks; the best model tested scored about 51 percent.' },
+  { t: 'AgentMD: Empowering language agents for risk prediction with large-scale clinical tool learning', m: 'Nature Communications, 2025.', u: 'https://www.nature.com/articles/s41467-025-64430-x', w: 'Handing arithmetic to executable calculators: 87.7 versus 40.9 percent on RiskQA.' },
+  { t: 'How Is ChatGPT’s Behavior Changing Over Time?', m: 'Chen L, Zaharia M, Zou J. Harvard Data Science Review. 2024;6(2).', u: 'https://hdsr.mitpress.mit.edu/pub/y95zitmz', w: 'The same named model, different behavior three months apart.' },
+  { t: 'The TRIPOD-LLM reporting guideline for studies using large language models', m: 'Gallifant J, Afshar M, Ameen S, et al. Nat Med. 2025;31(1):60–69.', u: 'https://pubmed.ncbi.nlm.nih.gov/39779929/', w: 'Transparency, human oversight, and task-specific performance.' },
+  { t: 'Guidance on the Responsible Use of AI in Healthcare', m: 'Joint Commission and Coalition for Health AI, September 2025.', u: 'https://www.chai.org/news/joint-commission-and-coalition-for-health-ai-chai-release-initial-guidance', w: 'Governance, local validation, and ongoing monitoring.' }
+];
+
+const ERRATA = [
+  ['Reviewed', 'The clinical and AI-research claims in this serial were checked with OpenEvidence on October 7, 2026. It confirmed every claim it could reach, and nothing in the narration needed correcting.'],
+  ['Stronger source', 'Short-term mortality approaching 50% (page 3) is also supported by a 2026 NEJM review (Thiele H, Hassager C) and a 2021 JAMA review (Samsky MD et al.), not only by the newsroom summary listed below.'],
+  ['Confirmed', 'The 0.53 W cardiac power cutoff (page 8) was derived by ROC analysis in the SHOCK trial registry (Fincke et al., 2004).'],
+  ['Context', 'The GPT-4 drift figures on page 9, 84% falling to 51%, come from the published study, which tested both prime and composite numbers. An earlier preprint used only primes and was criticized for measuring a shift in yes-or-no answers rather than ability.'],
+  ['Precision', 'MedCalc-Bench has 1,047 test instances (page 8). AgentMD passed 91.6% of its unit tests.'],
+  ['For the wrapper', 'The CS Case Analyzer’s device lens asks whether IABP was used “despite evidence no longer supporting it.” OpenEvidence judged that too absolute: randomized trials show no survival benefit from routine IABP in AMI-CS, but selected uses remain, such as mechanical complications.'],
+  ['Out of scope', 'OpenEvidence covers medical literature, so it could not check the Microsoft Copilot details, the description of the wrapper, or the illustrative values in the scenes.']
+];
+const ERRATA_HTML = `<section class="errata" aria-labelledby="errataTitle"><h3 id="errataTitle">Errata</h3><p class="errata-sub">From an OpenEvidence review of this serial, October 7, 2026</p><ul>${ERRATA.map(([k, v]) => `<li><strong>${esc(k)}.</strong> ${esc(v)}</li>`).join('')}</ul></section>`;
+
+/* how the voice should say tricky words (display text never changes) */
+const LEX = {
+  'SCAI': 'Sky', 'H&P': 'H and P', 'M&M': 'M and M', 'HTML': 'H T M L', 'ACC': 'A C C',
+  'AI': 'A I', 'AI’s': 'A I’s', 'shockjson.docx': 'shock Jason dot docks', 'shockjson': 'shock Jason',
+  '365': 'three sixty-five', 'MedCalc-Bench': 'Med Calc Bench', 'AgentMD': 'Agent M D',
+  'TRIPOD-LLM': 'Tripod L L M', 'SHOCK': 'shock', 'GPT-4': 'G P T 4', 'OpenEvidence': 'Open Evidence'
+};
+
+const STARTER = `<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Case review payload builder</title>
+<style>
+  body { font: 16px/1.5 system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; }
+  textarea { width: 100%; min-height: 9rem; font: inherit; }
+  label { display: block; margin: .35rem 0; }
+  pre { white-space: pre-wrap; background: #f3f4f6; padding: 1rem; border-radius: 8px; }
+</style>
+<h1>Case review payload builder</h1>
+<p>Paste the case, pick lenses, then copy the payload into your approved AI tool.</p>
+<textarea id="caseText" placeholder="Paste case notes here"></textarea>
+<fieldset>
+  <legend>Lenses</legend>
+  <label><input type="checkbox" checked value="Stage severity at each time point and explain why."> Severity and trajectory</label>
+  <label><input type="checkbox" checked value="List the key decisions and whether each matched the guidance, naming the section."> Guideline concordance</label>
+  <label><input type="checkbox" value="Say what data is missing and why it matters."> Missing data</label>
+</fieldset>
+<p><button id="build">Build and copy payload</button> <span id="status"></span></p>
+<pre id="out"></pre>
+<script>
+const RULES = [
+  "You are a careful case reviewer. This is for education, not treatment decisions.",
+  "Cite the case text or a named guideline section for every finding.",
+  "If something is missing or unclear, say so instead of guessing.",
+  "Use the reference file at: My Team > General > Files > reference.docx"
+];
+document.getElementById("build").addEventListener("click", async () => {
+  const lenses = [...document.querySelectorAll("fieldset input:checked")]
+    .map((box, i) => (i + 1) + ". " + box.value);
+  const payload = [
+    "--- RULES ---", ...RULES, "",
+    "--- CASE ---", document.getElementById("caseText").value.trim() || "(no case pasted)", "",
+    "--- QUESTIONS ---", ...lenses, "",
+    "--- END WITH ---", "A three-sentence summary, then a list of open questions."
+  ].join("\\n");
+  document.getElementById("out").textContent = payload;
+  const status = document.getElementById("status");
+  try { await navigator.clipboard.writeText(payload); status.textContent = "Copied."; }
+  catch (e) { status.textContent = "Copy was blocked. Select the text below and copy it."; }
+});
+<\/script>
+</html>`;
+
+/* ---------------------------------------------------------------
+   text preparation: words, spoken forms, sentences
+--------------------------------------------------------------- */
+function prepWord(w) {
+  const m = w.match(/^([^A-Za-z0-9&]*)(.*?)([^A-Za-z0-9&]*)$/);
+  const lead = m ? m[1] : '', core = m ? m[2] : w, trail = m ? m[3] : '';
+  const say = Object.prototype.hasOwnProperty.call(LEX, core) ? LEX[core] : core;
+  return { text: w, say: lead + say + trail };
+}
+function splitLong(words, a, b, out) {
+  if (b - a <= 30) { out.push([a, b]); return; }
+  const mid = (a + b) / 2; let best = -1, bestD = 1e9;
+  for (let i = a + 8; i < b - 8; i++) {
+    if (/[,;:]$/.test(words[i].text)) { const d = Math.abs(i - mid); if (d < bestD) { bestD = d; best = i; } }
+  }
+  if (best < 0) { out.push([a, b]); return; }
+  splitLong(words, a, best + 1, out); splitLong(words, best + 1, b, out);
+}
+function prepBeat(text) {
+  const words = text.trim().split(/\s+/).map(prepWord);
+  const raw = []; let start = 0;
+  words.forEach((w, i) => {
+    if (/[.!?]["”’)]*$/.test(w.text) || i === words.length - 1) { raw.push([start, i + 1]); start = i + 1; }
+  });
+  const ranges = []; raw.forEach(([a, b]) => splitLong(words, a, b, ranges));
+  const sentences = ranges.map(([a, b]) => {
+    let s = ''; const starts = [];
+    for (let i = a; i < b; i++) { if (s) s += ' '; starts.push(s.length); s += words[i].say; }
+    return { a, b, text: s, starts };
+  });
+  return { text, words, sentences };
+}
+
+/* ---------------------------------------------------------------
+   building pages
+--------------------------------------------------------------- */
+const ICON_DEEPER = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4l8 4-8 4-8-4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M4 12l8 4 8-4M4 16l8 4 8-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>';
+let main;
+
+function buildPageSection(p, i) {
+  const sec = document.createElement('section');
+  sec.className = 'page'; sec.id = p.id;
+  sec.setAttribute('aria-labelledby', p.id + '-title');
+  const head = `<header class="page-head"><div class="page-num" aria-hidden="true">${String(i).padStart(2, '0')}</div><div><h2 class="page-title" id="${p.id}-title" tabindex="-1">${esc(p.title)}</h2><p class="page-dek">${esc(p.dek)}</p></div></header>`;
+  let body;
+  if (p.kind === 'sources') {
+    const items = SOURCES.map(s => `<li><a href="${esc(s.u)}" target="_blank" rel="noopener">${esc(s.t)}</a><span class="meta">${esc(s.m)}</span><span class="why">${esc(s.w)}</span></li>`).join('');
+    body = `<div class="page-body solo"><div class="narration"><div class="trace-slot"></div><ol class="strips"></ol></div>
+      <div class="sources-wrap">${ERRATA_HTML}<ol class="sources">${items}</ol>
+      <div class="colophon"><p><strong>About this serial.</strong> The narration uses your browser’s built-in voices. When a voice reports word timing, the highlight follows it exactly; otherwise it follows a close estimate. Choose a voice and speed in Settings.</p>
+      <p>Values marked illustrative are examples, not patient data. This is educational material for teaching and case review. It is not for clinical decision-making.</p>
+      <p>Made for the Shock Bot team: Dr. Gavin Hickey, Ryan, and everyone in the circle.</p></div></div></div>`;
+  } else {
+    body = `<div class="page-body"><figure class="scene"></figure><div class="narration"><div class="trace-slot"></div><ol class="strips"></ol>${p.deeper ? `<button class="deeper-btn" type="button">${ICON_DEEPER}Go deeper</button>` : ''}</div></div>`;
+  }
+  sec.innerHTML = head + body;
+  const tpl = document.getElementById('scene-' + p.id);
+  if (tpl) sec.querySelector('.scene').appendChild(tpl.content.cloneNode(true));
+  return sec;
+}
+
+function buildStrips(ol, p) {
+  if (!ol) return;
+  ol.innerHTML = '';
+  p.prepped.forEach((beat, b) => {
+    const li = document.createElement('li');
+    li.className = 'strip'; li.dataset.beat = String(b); li.tabIndex = 0; li.title = 'Play from here';
+    const paper = document.createElement('div'); paper.className = 'paper';
+    beat.words.forEach((w, i) => {
+      const sp = document.createElement('span'); sp.className = 'w'; sp.textContent = w.text;
+      paper.appendChild(sp);
+      if (i < beat.words.length - 1) paper.appendChild(document.createTextNode(' '));
+    });
+    li.appendChild(paper); ol.appendChild(li);
+  });
+}
+
+/* ---------------------------------------------------------------
+   speech telemetry trace (one canvas, moved to the active page)
+--------------------------------------------------------------- */
+const Trace = (() => {
+  const wrap = document.createElement('div'); wrap.className = 'trace';
+  const cv = document.createElement('canvas'); cv.setAttribute('aria-hidden', 'true');
+  const read = document.createElement('div'); read.className = 'trace-read';
+  read.innerHTML = '<span class="trace-num">--</span><span class="trace-unit">words a minute</span>';
+  wrap.append(cv, read);
+  const numEl = read.firstChild;
+  const COLOR = '#5ef2a3', SPEED = 150;
+  let ctx = null, W = 0, H = 0, x = 0, lastY = null, lastT = 0, raf = 0, complexes = [], stamps = [];
+  const g = (t, m, s) => { const d = (t - m) / s; return Math.exp(-0.5 * d * d); };
+  function size() {
+    const r = wrap.getBoundingClientRect();
+    if (!r.width || !r.height) return false;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    W = r.width; H = r.height;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H); x = 0; lastY = null;
+    if (RM.matches) { ctx.strokeStyle = COLOR; ctx.globalAlpha = .6; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(0, H * .64); ctx.lineTo(W, H * .64); ctx.stroke(); ctx.globalAlpha = 1; }
+    return true;
+  }
+  function yAt(t) {
+    let v = 0;
+    for (const c of complexes) {
+      const s = t - c.t0; if (s < -.02 || s > .42) continue;
+      v += c.a * (-.14 * g(s, .026, .008) + g(s, .044, .0075) - .34 * g(s, .062, .009) + .2 * g(s, .2, .04));
+    }
+    return v + (Math.random() - .5) * .03;
+  }
+  function frame(ts) {
+    raf = requestAnimationFrame(frame);
+    if (!ctx && !size()) return;
+    const t = ts / 1000;
+    if (!lastT) { lastT = t; return; }
+    let dt = t - lastT; lastT = t; if (dt > .1) dt = .1;
+    complexes = complexes.filter(c => t - c.t0 < .5);
+    const steps = Math.max(1, Math.ceil(dt / .004));
+    ctx.lineWidth = 1.8; ctx.strokeStyle = COLOR; ctx.shadowColor = COLOR; ctx.shadowBlur = 6; ctx.lineJoin = 'round';
+    for (let i = 1; i <= steps; i++) {
+      const tt = t - dt + dt * i / steps;
+      const nx = x + SPEED * dt / steps;
+      const ny = H * .64 - yAt(tt) * H * .5;
+      ctx.clearRect(nx + 1, 0, 14, H);
+      if (lastY !== null) { ctx.beginPath(); ctx.moveTo(x, lastY); ctx.lineTo(nx, ny); ctx.stroke(); }
+      x = nx; lastY = ny;
+      if (x > W) { x = 0; lastY = null; ctx.clearRect(0, 0, 15, H); }
+    }
+    if (stamps.length && performance.now() - stamps[stamps.length - 1] > 3500) { numEl.textContent = '--'; stamps = []; }
+  }
+  return {
+    mount(sec) {
+      const slot = sec && sec.querySelector('.trace-slot');
+      if (slot) { slot.appendChild(wrap); ctx = null; this.start(); } else this.stop();
+    },
+    start() {
+      if (RM.matches) { requestAnimationFrame(() => size()); return; }
+      if (!raf) { lastT = 0; raf = requestAnimationFrame(frame); }
+    },
+    stop() { if (raf) cancelAnimationFrame(raf); raf = 0; },
+    beat(word) {
+      const len = word ? word.say.length : 4;
+      const now = performance.now();
+      complexes.push({ t0: now / 1000 + .005, a: clamp(.34 + len / 13, .38, 1) });
+      stamps.push(now); if (stamps.length > 14) stamps.shift();
+      if (stamps.length >= 4) {
+        const span = (stamps[stamps.length - 1] - stamps[0]) / 60000;
+        if (span > 0) numEl.textContent = String(Math.round((stamps.length - 1) / span));
+      }
+    },
+    idle() { stamps = []; numEl.textContent = '--'; },
+    resize() { ctx = null; }
+  };
+})();
+
+/* ---------------------------------------------------------------
+   cover monitor: five channels, one per character
+--------------------------------------------------------------- */
+const Cover = (() => {
+  const cv = $('#coverCanvas'), sec = $('#p0');
+  const rows = $$('.channels li', sec);
+  const colors = ['#ff5d73', '#5ef2a3', '#ffd25e', '#5bc8ff', '#eaf4ff'];
+  const HR = 72 / 60, SPEED = 170;
+  const g = (p, m, s) => { const d = (p - m) / s; return Math.exp(-0.5 * d * d); };
+  const ph = (t, off) => { const v = (t * HR + off) % 1; return v < 0 ? v + 1 : v; };
+  const fns = [
+    t => { const p = ph(t, -.17); let v = p < .1 ? Math.sin(p / .1 * Math.PI / 2) : Math.exp(-(p - .1) * 5.2); v += .12 * g(p, .36, .018) - .05 * g(p, .325, .012); return v - .38; },
+    t => { const p = ph(t, 0); return .12 * g(p, .12, .025) - .12 * g(p, .205, .008) + g(p, .225, .0085) - .28 * g(p, .245, .01) + .3 * g(p, .47, .045) - .1; },
+    t => { const p = ph(t, -.15); let v = p < .12 ? Math.sin(p / .12 * Math.PI / 2) : Math.exp(-(p - .12) * 4); v += .08 * g(p, .38, .02); return v * .7 - .3; },
+    t => { const p = ph(t, 0); return .55 * g(p, .1, .035) + .25 * g(p, .26, .03) + .5 * g(p, .6, .06) - .3; },
+    t => { const p = ph(t, -.3); return .95 * g(p, .32, .09) + .32 * g(p, .58, .07) - .42; }
+  ];
+  const amp = [.85, .9, .7, .7, .8];
+  let ctx = null, W = 0, H = 0, x = 0, last = [null, null, null, null, null], lastT = 0, raf = 0, alpha = [1, 1, 1, 1, 1];
+  function size() {
+    const r = cv.getBoundingClientRect(); if (!r.width || !r.height) return false;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    W = r.width; H = r.height; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+    x = 0; last = last.map(() => null);
+    return true;
+  }
+  const yOf = (i, tt) => { const rowH = H / 5; return rowH * i + rowH * .64 - fns[i](tt) * rowH * .36 * amp[i]; };
+  function drawStatic() {
+    if (!ctx && !size()) return;
+    ctx.lineWidth = 1.6;
+    for (let i = 0; i < 5; i++) {
+      ctx.strokeStyle = colors[i]; ctx.beginPath();
+      for (let px = 0; px <= W; px += 2) { const y = yOf(i, px / SPEED); if (px) ctx.lineTo(px, y); else ctx.moveTo(px, y); }
+      ctx.stroke();
+    }
+  }
+  function frame(ts) {
+    raf = requestAnimationFrame(frame);
+    if (!ctx && !size()) return;
+    const t = ts / 1000; if (!lastT) { lastT = t; return; }
+    const dt = Math.min(.1, t - lastT); lastT = t;
+    const any = sec.classList.contains('has-hl');
+    alpha = alpha.map((a, i) => { const tg = (!any || rows[i].classList.contains('hl')) ? 1 : .2; return a + (tg - a) * Math.min(1, dt * 4); });
+    const steps = Math.max(1, Math.ceil(dt / .005));
+    ctx.lineWidth = 1.7; ctx.lineJoin = 'round';
+    for (let k = 1; k <= steps; k++) {
+      const tt = t - dt + dt * k / steps; const nx = x + SPEED * dt / steps;
+      ctx.clearRect(nx + 1, 0, 18, H);
+      for (let i = 0; i < 5; i++) {
+        const ny = yOf(i, tt);
+        if (last[i] !== null) { ctx.globalAlpha = alpha[i]; ctx.strokeStyle = colors[i]; ctx.shadowColor = colors[i]; ctx.shadowBlur = 7; ctx.beginPath(); ctx.moveTo(x, last[i]); ctx.lineTo(nx, ny); ctx.stroke(); }
+        last[i] = ny;
+      }
+      x = nx;
+      if (x > W) { x = 0; last = last.map(() => null); ctx.clearRect(0, 0, 19, H); }
+    }
+    ctx.globalAlpha = 1;
+  }
+  return {
+    toggle(on) {
+      if (on) {
+        if (RM.matches) { ctx = null; requestAnimationFrame(drawStatic); }
+        else if (!raf) { lastT = 0; ctx = null; raf = requestAnimationFrame(frame); }
+      } else if (raf) { cancelAnimationFrame(raf); raf = 0; }
+    },
+    resize() { ctx = null; if (RM.matches) requestAnimationFrame(drawStatic); }
+  };
+})();
+
+/* ---------------------------------------------------------------
+   narration state machine
+--------------------------------------------------------------- */
+const S = {
+  page: 0, beat: 0, sent: 0, playing: false, mode: 'read', voiceOn: canSpeak, autoTurn: true, rate: 1,
+  voice: null, voices: [], gen: 0, timers: [], wordTimers: [], watchdog: 0,
+  boundaryOK: new Set(), noBoundary: new Set(), utt: null, started: false, done: false, lastIdx: -1
+};
+const pageEl = (i = S.page) => PAGES[i].el;
+const curBeat = () => PAGES[S.page].prepped[S.beat];
+const lastBeat = (i = S.page) => PAGES[i].kind === 'cover' ? -1 : PAGES[i].prepped.length - 1;
+
+function clearWordTimers() { S.wordTimers.forEach(clearTimeout); S.wordTimers = []; }
+function clearTimers() { S.timers.forEach(clearTimeout); S.timers = []; clearWordTimers(); clearTimeout(S.watchdog); S.watchdog = 0; }
+function later(fn, ms) { S.timers.push(setTimeout(fn, ms)); }
+function stopSpeech() {
+  S.gen++; clearTimers();
+  if (canSpeak && (synth.speaking || synth.pending)) { try { synth.cancel(); } catch (e) { /* ignore */ } }
+}
+
+function setScene(sec, beat) {
+  $$('[data-b]', sec).forEach(el => {
+    const b = +el.getAttribute('data-b');
+    const e = el.hasAttribute('data-e') ? +el.getAttribute('data-e') : Infinity;
+    el.classList.toggle('shown', beat >= b && beat <= e);
+  });
+  let any = false;
+  $$('[data-hl]', sec).forEach(el => {
+    const on = el.getAttribute('data-hl').split(/\s+/).map(Number).includes(beat);
+    el.classList.toggle('hl', on); if (on) any = true;
+  });
+  sec.classList.toggle('has-hl', any);
+}
+function resetInstant(sec, beat) {
+  const sc = sec.querySelector('.scene');
+  if (!sc) { setScene(sec, beat); return; }
+  sc.classList.add('no-anim'); setScene(sec, beat); void sc.getBoundingClientRect(); sc.classList.remove('no-anim');
+}
+function setStrips(sec, beat, mode) {
+  const ol = sec.querySelector('.strips'); if (!ol) return;
+  const playing = mode === 'play';
+  ol.classList.toggle('playing', playing);
+  if (!playing) ol.classList.remove('paused');
+  $$('.strip', ol).forEach((li, i) => {
+    li.classList.toggle('past', playing && i < beat);
+    li.classList.toggle('active', playing && i === beat);
+    li.classList.toggle('future', playing && i > beat);
+    if (!playing || i !== beat) $$('.w', li).forEach(w => w.classList.remove('now', 'done'));
+  });
+}
+function markWord(idx) {
+  const li = pageEl().querySelectorAll('.strip')[S.beat]; if (!li) return;
+  const ws = li.querySelectorAll('.w');
+  for (let i = 0; i < ws.length; i++) {
+    const c = ws[i].classList;
+    if (i < idx) { c.add('done'); c.remove('now'); }
+    else if (i === idx) { c.add('now'); c.remove('done'); }
+    else c.remove('now', 'done');
+  }
+  S.lastIdx = idx;
+  const p = PAGES[S.page];
+  updateTicks(p.totalWords ? (p.offsets[S.beat] + idx) / p.totalWords : 0);
+}
+function markThrough(end) {
+  const li = pageEl().querySelectorAll('.strip')[S.beat]; if (!li) return;
+  const ws = li.querySelectorAll('.w');
+  for (let i = 0; i < ws.length; i++) { ws[i].classList.remove('now'); if (i < end) ws[i].classList.add('done'); }
+}
+function scrollToStrip(li) {
+  const ol = li.parentElement; if (!ol || ol.classList.contains('subtitles')) return;
+  const behavior = RM.matches ? 'auto' : 'smooth';
+  if (!NARROW.matches) {
+    if (ol.scrollHeight <= ol.clientHeight + 2) return;
+    const top = li.offsetTop, bottom = top + li.offsetHeight;
+    if (top < ol.scrollTop || bottom > ol.scrollTop + ol.clientHeight) ol.scrollTo({ top: Math.max(0, top - 10), behavior });
+  } else {
+    const scene = pageEl().querySelector('.scene');
+    const offset = (scene ? scene.getBoundingClientRect().height : 0) + 14;
+    const r = li.getBoundingClientRect(), mr = main.getBoundingClientRect();
+    if (r.top < mr.top + offset || r.bottom > mr.bottom) main.scrollTo({ top: main.scrollTop + (r.top - mr.top) - offset, behavior });
+  }
+}
+
+function wordMs(w) { let ms = 92 + w.say.length * 56; if (/[,;:]$/.test(w.text)) ms += 170; return ms / S.rate; }
+function sentenceMs(beat, sent) { let t = 0; for (let i = sent.a; i < sent.b; i++) t += wordMs(beat.words[i]); return t; }
+function scheduleWords(beat, sent, gen) {
+  clearWordTimers();
+  let t = 0;
+  for (let i = sent.a; i < sent.b; i++) {
+    if (i > sent.a) {
+      const idx = i;
+      S.wordTimers.push(setTimeout(() => { if (gen === S.gen) { markWord(idx); Trace.beat(beat.words[idx]); } }, t));
+    }
+    t += wordMs(beat.words[i]);
+  }
+  return t;
+}
+
+function enterBeat() {
+  const sec = pageEl();
+  setScene(sec, S.beat);
+  setStrips(sec, S.beat, 'play');
+  const ol = sec.querySelector('.strips'); if (ol) ol.classList.remove('paused');
+  const li = sec.querySelectorAll('.strip')[S.beat]; if (li) scrollToStrip(li);
+  runSentence();
+}
+function runSentence() {
+  const gen = ++S.gen; clearTimers();
+  const beat = curBeat(); const sent = beat && beat.sentences[S.sent];
+  if (!sent) { afterBeat(gen); return; }
+  S.lastIdx = -1;
+  if (S.voiceOn && canSpeak) speakSentence(beat, sent, gen); else silentSentence(beat, sent, gen);
+}
+function silentSentence(beat, sent, gen) {
+  markWord(sent.a); Trace.beat(beat.words[sent.a]);
+  const total = scheduleWords(beat, sent, gen);
+  later(() => { if (gen === S.gen) finishSentence(gen); }, total + 240 / S.rate);
+}
+function speakSentence(beat, sent, gen) {
+  const u = new SpeechSynthesisUtterance(sent.text);
+  if (S.voice) { u.voice = S.voice; u.lang = S.voice.lang; } else u.lang = 'en-US';
+  u.rate = S.rate; u.pitch = 1; u.volume = 1;
+  const key = S.voice ? S.voice.voiceURI : 'default';
+  let boundary = S.boundaryOK.has(key), started = false, sawBoundary = false;
+  const est = sentenceMs(beat, sent);
+  const begin = () => {
+    if (started) return; started = true;
+    markWord(sent.a); Trace.beat(beat.words[sent.a]);
+    if (!boundary) scheduleWords(beat, sent, gen);
+  };
+  u.onstart = () => { if (gen === S.gen) begin(); };
+  u.onboundary = e => {
+    if (gen !== S.gen) return;
+    if (e.name && e.name !== 'word') return;
+    if (!started) begin();
+    sawBoundary = true;
+    if (!boundary) { boundary = true; S.boundaryOK.add(key); clearWordTimers(); voiceNote(); }
+    let ci = e.charIndex || 0;
+    while (ci < sent.text.length && sent.text[ci] === ' ') ci++;
+    let k = 0;
+    for (let i = 0; i < sent.starts.length; i++) { if (sent.starts[i] <= ci) k = i; else break; }
+    const idx = sent.a + k;
+    if (idx !== S.lastIdx) { markWord(idx); Trace.beat(beat.words[idx]); }
+  };
+  u.onend = () => {
+    if (gen !== S.gen) return;
+    if (!sawBoundary && !boundary) { S.noBoundary.add(key); voiceNote(); }
+    finishSentence(gen);
+  };
+  u.onerror = e => {
+    if (gen !== S.gen) return;
+    const err = e && e.error;
+    if (err === 'interrupted' || err === 'canceled') return;
+    S.voiceOn = false; updateControls();
+    voiceNote('The browser couldn’t start a voice, so the story continues silently. Press Voice to try again.');
+    S.gen++; clearTimers(); silentSentence(beat, sent, S.gen);
+  };
+  S.utt = u; // keep a reference so the utterance isn't garbage-collected mid-sentence
+  S.watchdog = setTimeout(() => { if (gen === S.gen) finishSentence(gen); }, est * 2.2 + 4500);
+  later(() => {
+    if (gen === S.gen && !started) {
+      begin(); clearTimeout(S.watchdog);
+      S.watchdog = setTimeout(() => { if (gen === S.gen) finishSentence(gen); }, est + 2200);
+    }
+  }, 1500);
+  try { synth.speak(u); } catch (err) { S.gen++; clearTimers(); silentSentence(beat, sent, S.gen); }
+}
+function finishSentence(gen) {
+  if (gen !== S.gen) return;
+  clearTimers();
+  const beat = curBeat(); const sent = beat.sentences[S.sent];
+  if (sent) markThrough(sent.b);
+  S.sent++;
+  if (S.sent < beat.sentences.length) later(() => { if (gen === S.gen) runSentence(); }, 90);
+  else afterBeat(gen);
+}
+function afterBeat(gen) {
+  const p = PAGES[S.page];
+  if (S.beat < p.prepped.length - 1) {
+    later(() => { if (gen !== S.gen) return; S.beat++; S.sent = 0; enterBeat(); }, 380);
+  } else {
+    updateTicks(1);
+    later(() => {
+      if (gen !== S.gen) return;
+      if (S.autoTurn && S.page < PAGES.length - 1) goPage(S.page + 1, { play: true });
+      else finishPage();
+    }, 1000);
+  }
+}
+function finishPage() {
+  S.playing = false; S.done = true; updateControls(); Trace.idle();
+  const sec = pageEl(); setStrips(sec, -1, 'read'); setScene(sec, lastBeat());
+}
+
+function play() {
+  if (S.page === 0 && !S.started) { startStory(); return; }
+  S.started = true; S.playing = true; updateControls();
+  const sec = pageEl();
+  if (S.mode === 'read' || S.done) { S.mode = 'play'; S.done = false; S.beat = 0; S.sent = 0; resetInstant(sec, 0); }
+  enterBeat();
+}
+function pause() {
+  if (!S.playing) return;
+  S.playing = false; stopSpeech(); updateControls(); Trace.idle();
+  const ol = pageEl().querySelector('.strips'); if (ol) ol.classList.add('paused');
+}
+function togglePlay() { if (S.playing) pause(); else play(); }
+function jumpTo(b) {
+  stopSpeech();
+  const sec = pageEl();
+  S.started = true; S.beat = clamp(b, 0, PAGES[S.page].prepped.length - 1); S.sent = 0; S.done = false;
+  $$('.w', sec).forEach(w => w.classList.remove('now', 'done'));
+  if (S.mode === 'read') { S.mode = 'play'; resetInstant(sec, S.beat); }
+  S.playing = true; updateControls();
+  enterBeat();
+}
+function startStory() {
+  S.started = true;
+  if (canSpeak) { S.voiceOn = true; loadVoices(); }
+  S.autoTurn = true; $('#autoTurn').checked = true;
+  goPage(0, { play: true });
+}
+
+function goPage(i, opts = {}) {
+  i = clamp(i, 0, PAGES.length - 1);
+  stopSpeech();
+  if (i !== S.page) pageEl().classList.remove('active');
+  S.page = i; S.beat = 0; S.sent = 0; S.done = false; S.lastIdx = -1;
+  const sec = pageEl();
+  sec.classList.add('active');
+  main.scrollTop = 0;
+  const ol = sec.querySelector('.strips'); if (ol) ol.scrollTop = 0;
+  Trace.mount(sec); Cover.toggle(i === 0);
+  closeDrawer(false); closeSettings();
+  updateFooter(); updateHash(); updateTicks(0);
+  if (opts.play) { S.playing = true; S.mode = 'play'; updateControls(); resetInstant(sec, 0); enterBeat(); }
+  else { S.playing = false; S.mode = 'read'; updateControls(); Trace.idle(); setStrips(sec, -1, 'read'); setScene(sec, lastBeat()); }
+  if (opts.focus) { const h = sec.querySelector('.page-title,.cover-title'); if (h) { try { h.focus({ preventScroll: true }); } catch (e) { h.focus(); } } }
+}
+
+/* ---------------------------------------------------------------
+   chrome: ticks, footer, controls, hash
+--------------------------------------------------------------- */
+function buildTicks() {
+  const nav = $('#ticks');
+  PAGES.forEach((p, i) => {
+    const b = document.createElement('button');
+    b.className = 'tick'; b.type = 'button';
+    b.setAttribute('aria-label', i === 0 ? 'Cover' : `Page ${i}: ${p.title}`);
+    b.title = i === 0 ? 'Cover' : `${i}. ${p.title}`;
+    b.style.setProperty('--c', `var(--${p.accent})`);
+    b.innerHTML = '<span class="fill"></span>';
+    b.addEventListener('click', () => goPage(i, { play: S.playing, focus: true }));
+    nav.appendChild(b);
+  });
+}
+function updateTicks(progress) {
+  $$('.tick').forEach((t, i) => {
+    t.classList.toggle('current', i === S.page);
+    const f = t.firstChild;
+    f.style.width = i < S.page ? '100%' : (i === S.page ? (clamp(progress, 0, 1) * 100).toFixed(1) + '%' : '0%');
+    if (i === S.page) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current');
+  });
+}
+function updateFooter() {
+  const prev = $('#btnPrev'), next = $('#btnNext');
+  prev.disabled = S.page === 0; next.disabled = S.page === PAGES.length - 1;
+  $('.nav-title', prev).textContent = S.page > 0 ? (S.page === 1 ? 'Cover' : PAGES[S.page - 1].title) : '';
+  $('.nav-title', next).textContent = S.page < PAGES.length - 1 ? PAGES[S.page + 1].title : '';
+  $('#deckCount').textContent = S.page === 0 ? 'Cover' : `Page ${S.page} of ${PAGES.length - 1}`;
+}
+function updateControls() {
+  const bp = $('#btnPlay');
+  bp.setAttribute('aria-label', S.playing ? 'Pause narration' : 'Play narration');
+  $('span', bp).textContent = S.playing ? 'Pause' : 'Play';
+  $('.i-play', bp).style.display = S.playing ? 'none' : '';
+  $('.i-pause', bp).style.display = S.playing ? '' : 'none';
+  const bv = $('#btnVoice');
+  bv.disabled = !canSpeak;
+  bv.setAttribute('aria-pressed', String(S.voiceOn));
+  $('span', bv).textContent = S.voiceOn ? 'Voice on' : 'Voice off';
+  $('.i-on', bv).style.display = S.voiceOn ? '' : 'none';
+  $('.i-off', bv).style.display = S.voiceOn ? 'none' : '';
+}
+function updateHash() {
+  const h = '#' + PAGES[S.page].id;
+  if (location.hash !== h) { try { history.replaceState(null, '', h); } catch (e) { /* sandboxed viewers */ } }
+}
+
+/* ---------------------------------------------------------------
+   voices
+--------------------------------------------------------------- */
+function scoreVoice(v) {
+  const n = (v.name || '').toLowerCase(), l = (v.lang || '').toLowerCase().replace('_', '-');
+  let s = 0;
+  if (l.startsWith('en-us')) s += 30; else if (l.startsWith('en-gb')) s += 26; else if (l.startsWith('en')) s += 20; else s -= 60;
+  if (/natural|neural/.test(n)) s += 40;
+  if (/premium|enhanced/.test(n)) s += 30;
+  if (/\b(aria|jenny|guy|ava|andrew|emma|brian|samantha|allison|serena|daniel|libby|sonia|michelle|christopher|eric|roger)\b/.test(n)) s += 12;
+  if (/google/.test(n)) s += 8;
+  if (v.localService) s += 4;
+  if (/compact|eloquence|albert|bad news|bahh|bells|boing|bubbles|cellos|deranged|good news|hysterical|jester|organ|superstar|trinoids|whisper|wobble|zarvox|junior|ralph|grandma|grandpa|rocko|shelley|\bflo\b|\breed\b|sandy/.test(n)) s -= 70;
+  if (v.default) s += 2;
+  return s;
+}
+function loadVoices() {
+  if (!canSpeak) return;
+  const vs = synth.getVoices() || [];
+  if (!vs.length) return;
+  let list = vs.filter(v => /^en/i.test(v.lang || ''));
+  if (!list.length) list = vs.slice();
+  list.sort((a, b) => scoreVoice(b) - scoreVoice(a));
+  S.voices = list;
+  const keep = S.voice && list.find(v => v.voiceURI === S.voice.voiceURI);
+  S.voice = keep || list[0];
+  const sel = $('#voiceSel'); sel.innerHTML = '';
+  list.forEach(v => { const o = document.createElement('option'); o.value = v.voiceURI; o.textContent = `${v.name} (${v.lang})`; sel.appendChild(o); });
+  sel.value = S.voice.voiceURI;
+  voiceNote();
+}
+function voiceNote(msg) {
+  const el = $('#voiceNote'); if (!el) return;
+  if (msg) { el.textContent = msg; return; }
+  const key = S.voice ? S.voice.voiceURI : 'default';
+  if (!canSpeak) el.textContent = 'This browser has no built-in voices, so the story plays silently with word highlighting.';
+  else if (S.boundaryOK.has(key)) el.textContent = 'This voice reports word timing, so the highlight follows it exactly.';
+  else if (S.noBoundary.has(key)) el.textContent = 'This voice doesn’t report word timing, so the highlight follows a close estimate. System voices, and voices marked Natural in Edge, usually report it.';
+  else el.textContent = 'The highlight follows the voice when it reports word timing, and a close estimate otherwise.';
+}
+
+/* ---------------------------------------------------------------
+   drawer and settings
+--------------------------------------------------------------- */
+let drawer, backdrop, settings;
+function openDrawer() {
+  const id = PAGES[S.page].id; let found = false;
+  $$('.pane', drawer).forEach(p => { const on = p.dataset.for === id; p.classList.toggle('active', on); if (on) found = true; });
+  if (!found) return;
+  $('#drawerTitle').textContent = PAGES[S.page].title;
+  drawer.inert = false; drawer.removeAttribute('inert');
+  drawer.classList.add('open'); drawer.setAttribute('aria-hidden', 'false'); backdrop.classList.add('open');
+  $('.drawer-body', drawer).scrollTop = 0;
+  setTimeout(() => $('#drawerClose').focus(), 60);
+}
+function closeDrawer(restore) {
+  if (!drawer.classList.contains('open')) return;
+  drawer.classList.remove('open'); backdrop.classList.remove('open');
+  drawer.setAttribute('aria-hidden', 'true'); drawer.inert = true; drawer.setAttribute('inert', '');
+  if (restore) { const b = pageEl().querySelector('.deeper-btn'); if (b) b.focus({ preventScroll: true }); }
+}
+function openSettings() { settings.hidden = false; $('#btnSettings').setAttribute('aria-expanded', 'true'); }
+function closeSettings() { if (!settings || settings.hidden) return; settings.hidden = true; $('#btnSettings').setAttribute('aria-expanded', 'false'); }
+
+/* ---------------------------------------------------------------
+   widgets in the drawer
+--------------------------------------------------------------- */
+async function copyText(text) {
+  try { if (navigator.clipboard && window.isSecureContext !== false) { await navigator.clipboard.writeText(text); return true; } } catch (e) { /* fall through */ }
+  try {
+    const ta = document.createElement('textarea'); ta.value = text; ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;left:-9999px;top:0'; document.body.appendChild(ta); ta.select();
+    const ok = document.execCommand('copy'); ta.remove(); return ok;
+  } catch (e) { return false; }
+}
+function initToy() {
+  if (!$('#toy')) return;
+  const C = [['inadequate', 2.3], ['ongoing', 1.6], ['persistent', 1.4], ['worsening', 1.1], ['that', 0.6], ['improved', -0.9]];
+  const slider = $('#toyTemp'), tv = $('#toyTempVal'), bars = $('#toyBars'), out = $('#toyOut');
+  let tally = C.map(() => 0), picked = -1;
+  const probs = T => { const ex = C.map(c => Math.exp(c[1] / T)); const s = ex.reduce((a, b) => a + b, 0); return ex.map(e => e / s); };
+  function render() {
+    const T = +slider.value; tv.textContent = T.toFixed(1);
+    const ps = probs(T), n = tally.reduce((a, b) => a + b, 0);
+    bars.innerHTML = C.map((c, i) => `<div class="toy-row${i === picked ? ' picked' : ''}"><span class="toy-w">${c[0]}</span><span class="toy-bar"><i style="width:${(ps[i] * 100).toFixed(1)}%"></i></span><span class="toy-p">${Math.round(ps[i] * 100)}%</span><span class="toy-n">${n ? '×' + tally[i] : ''}</span></div>`).join('');
+  }
+  function draw(k) {
+    const ps = probs(+slider.value);
+    for (let j = 0; j < k; j++) { let r = Math.random(), i = 0; while (i < ps.length - 1 && r >= ps[i]) { r -= ps[i]; i++; } tally[i]++; picked = i; }
+    out.innerHTML = 'Lactate kept rising despite the new device, suggesting <mark>' + C[picked][0] + '</mark>';
+    render();
+  }
+  $('#toyOne').addEventListener('click', () => draw(1));
+  $('#toyMany').addEventListener('click', () => draw(20));
+  $('#toyReset').addEventListener('click', () => { tally = C.map(() => 0); picked = -1; out.textContent = ''; render(); });
+  slider.addEventListener('input', render); render();
+}
+function initCPO() {
+  const m = $('#cpoMap'), c = $('#cpoCo'), o = $('#cpoOut'); if (!m) return;
+  const upd = () => { const a = parseFloat(m.value), b = parseFloat(c.value); o.textContent = (a > 0 && b > 0) ? (a * b / 451).toFixed(2) + ' W' : 'Enter both values'; };
+  m.addEventListener('input', upd); c.addEventListener('input', upd); upd();
+}
+function initChecklist() {
+  const list = $('#valList'); if (!list) return;
+  const boxes = $$('input', list), out = $('#valCount');
+  const upd = () => { out.textContent = `${boxes.filter(b => b.checked).length} of ${boxes.length} done`; };
+  boxes.forEach(b => b.addEventListener('change', upd)); upd();
+}
+function initStarter() {
+  const pre = $('#starterCode'), btn = $('#copyStarter'); if (!pre) return;
+  pre.textContent = STARTER;
+  btn.addEventListener('click', async () => {
+    const ok = await copyText(STARTER);
+    btn.textContent = ok ? 'Template copied' : 'Select the code to copy it';
+    setTimeout(() => { btn.textContent = 'Copy template'; }, 2400);
+  });
+}
+
+/* ---------------------------------------------------------------
+   start
+--------------------------------------------------------------- */
+function init() {
+  main = $('#stage'); drawer = $('#drawer'); backdrop = $('#backdrop'); settings = $('#settings');
+  PAGES.forEach((p, i) => {
+    p.prepped = p.beats.map(prepBeat);
+    p.offsets = []; let acc = 0;
+    p.prepped.forEach(b => { p.offsets.push(acc); acc += b.words.length; });
+    p.totalWords = acc;
+    p.el = p.kind === 'cover' ? $('#p0') : buildPageSection(p, i);
+    if (p.kind !== 'cover') main.appendChild(p.el);
+    p.el.style.setProperty('--accent', `var(--${p.accent})`);
+    p.el.style.setProperty('--accent-ink', p.ink);
+    buildStrips(p.el.querySelector('.strips'), p);
+  });
+  buildTicks();
+
+  $('#btnPlay').addEventListener('click', togglePlay);
+  $('#btnVoice').addEventListener('click', () => {
+    if (!canSpeak) return;
+    S.voiceOn = !S.voiceOn; updateControls();
+    if (S.voiceOn) loadVoices();
+    if (S.playing) { stopSpeech(); runSentence(); }
+  });
+  $('#btnSettings').addEventListener('click', e => { e.stopPropagation(); if (settings.hidden) openSettings(); else closeSettings(); });
+  document.addEventListener('click', e => { if (!settings.hidden && !settings.contains(e.target) && !e.target.closest('#btnSettings')) closeSettings(); });
+  $('#voiceSel').addEventListener('change', e => {
+    const v = S.voices.find(x => x.voiceURI === e.target.value); if (v) S.voice = v;
+    voiceNote(); if (S.playing && S.voiceOn) { stopSpeech(); runSentence(); }
+  });
+  $('#rateIn').addEventListener('input', e => { S.rate = +e.target.value; $('#rateOut').textContent = S.rate.toFixed(2).replace(/0$/, '') + '×'; });
+  $('#autoTurn').addEventListener('change', e => { S.autoTurn = e.target.checked; });
+  $('#btnPrev').addEventListener('click', () => goPage(S.page - 1, { play: S.playing }));
+  $('#btnNext').addEventListener('click', () => goPage(S.page + 1, { play: S.playing }));
+  $('#brand').addEventListener('click', e => { e.preventDefault(); goPage(0, { play: false, focus: true }); });
+  $('#startStory').addEventListener('click', startStory);
+  $('#readQuiet').addEventListener('click', () => { S.started = true; S.voiceOn = false; updateControls(); goPage(1, { play: false, focus: true }); });
+  main.addEventListener('click', e => {
+    if (e.target.closest('.deeper-btn')) { openDrawer(); return; }
+    const li = e.target.closest('.strip'); if (li && pageEl().contains(li)) jumpTo(+li.dataset.beat);
+  });
+  main.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    const li = e.target.closest && e.target.closest('.strip');
+    if (li) { e.preventDefault(); jumpTo(+li.dataset.beat); }
+  });
+  $('#drawerClose').addEventListener('click', () => closeDrawer(true));
+  backdrop.addEventListener('click', () => closeDrawer(true));
+  document.addEventListener('keydown', e => {
+    const tag = (e.target.tagName || '').toLowerCase();
+    if (e.key === 'Escape') { if (drawer.classList.contains('open')) closeDrawer(true); else closeSettings(); return; }
+    if (tag === 'input' || tag === 'select' || tag === 'textarea' || e.target.isContentEditable) return;
+    if (drawer.classList.contains('open') || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); goPage(S.page + 1, { play: S.playing }); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); goPage(S.page - 1, { play: S.playing }); }
+    else if (e.key === ' ' && tag !== 'button' && tag !== 'a') { e.preventDefault(); togglePlay(); }
+    else if (e.key === 'v' || e.key === 'V') { $('#btnVoice').click(); }
+  });
+  window.addEventListener('resize', () => { Trace.resize(); Cover.resize(); });
+  window.addEventListener('hashchange', () => {
+    const i = PAGES.findIndex(p => '#' + p.id === location.hash);
+    if (i >= 0 && i !== S.page) goPage(i, { play: false });
+  });
+
+  if (canSpeak) {
+    loadVoices();
+    try { synth.onvoiceschanged = loadVoices; } catch (e) { /* ignore */ }
+    [300, 1000, 2500].forEach(ms => setTimeout(loadVoices, ms));
+  } else { S.voiceOn = false; }
+  voiceNote();
+  initToy(); initCPO(); initChecklist(); initStarter();
+
+  const start = Math.max(0, PAGES.findIndex(p => '#' + p.id === location.hash));
+  S.page = start;
+  goPage(start, { play: false });
+  if (RM.matches) $$('svg').forEach(s => { try { if (s.pauseAnimations) s.pauseAnimations(); } catch (e) { /* ignore */ } });
+
+  window.ShockBot = { go: goPage, jump: jumpTo, state: S, pages: PAGES };
+}
+
+init();
+})();
+
+</script>
+</body>
+</html>
