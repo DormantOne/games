@@ -1,0 +1,502 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Three-Segment Pulse Curriculum — Evolution Lab</title>
+<style>
+:root{
+  --ink:#eef4ff;--muted:#91a2bb;--deep:#071018;--panel:#0d1823;--panel2:#101f2c;
+  --line:#24384b;--cyan:#54d8ff;--lime:#b8ff63;--coral:#ff6f61;--amber:#ffc857;
+  --shadow:0 18px 55px rgba(0,0,0,.34);--radius:22px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--deep);color:var(--ink);font:15px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;min-width:320px}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.24;background-image:linear-gradient(rgba(84,216,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(84,216,255,.045) 1px,transparent 1px);background-size:32px 32px;mask-image:linear-gradient(to bottom,black,transparent 72%)}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid rgba(84,216,255,.45);outline-offset:2px}
+.shell{width:min(1500px,calc(100% - 32px));margin:0 auto;padding:24px 0 56px;position:relative}
+.hero{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(320px,.55fr);gap:18px;align-items:stretch;margin-bottom:18px}
+.hero-main,.control-panel,.curriculum,.notes,.diag{border:1px solid var(--line);background:rgba(13,24,35,.94);box-shadow:var(--shadow)}
+.hero-main{border-radius:var(--radius);padding:34px;position:relative;overflow:hidden;min-height:260px;display:flex;flex-direction:column}
+.hero-main:after{content:"";position:absolute;width:240px;height:240px;border:42px solid rgba(84,216,255,.07);border-radius:50%;right:-72px;top:-92px}
+.eyebrow{display:flex;align-items:center;gap:10px;color:var(--cyan);font-weight:800;text-transform:uppercase;letter-spacing:.15em;font-size:12px}
+.eyebrow:before{content:"";width:34px;height:3px;background:var(--cyan);border-radius:3px}
+h1{margin:14px 0 12px;font-size:clamp(34px,5vw,72px);line-height:.95;letter-spacing:-.055em;max-width:900px}
+.hero p{max-width:760px;color:#b7c4d6;font-size:16px;margin:0}
+.feature-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto;padding-top:24px}
+.pill,.status-chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);background:#0a141e;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:750;color:#c9d7e8}
+.pill i,.status-chip i{width:7px;height:7px;border-radius:50%;background:var(--lime);box-shadow:0 0 0 4px rgba(184,255,99,.09)}
+.control-panel{border-radius:var(--radius);padding:22px;display:flex;flex-direction:column;gap:14px}
+.panel-title{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.panel-title h2{font-size:18px;margin:0;letter-spacing:-.02em}
+.config-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.09em;font-weight:800}
+.field input[type="number"],.field select{width:100%;border:1px solid var(--line);background:#08131d;color:var(--ink);border-radius:10px;padding:9px 10px}
+.range-wrap{display:grid;grid-template-columns:1fr 42px;gap:8px;align-items:center}
+input[type="range"]{accent-color:var(--cyan);width:100%;margin:0}
+.range-value{text-align:right;color:var(--cyan);font-size:12px;font-variant-numeric:tabular-nums}
+.switches{display:grid;gap:8px}
+.switch{display:flex;justify-content:space-between;align-items:center;gap:14px;border:1px solid var(--line);border-radius:12px;padding:9px 11px;background:#09141e}
+.switch span{display:block;font-size:13px;font-weight:700}.switch small{display:block;color:var(--muted);font-size:10px;font-weight:500}
+.toggle{appearance:none;width:42px;height:24px;border-radius:99px;background:#26394a;position:relative;transition:.2s;flex:0 0 auto}
+.toggle:after{content:"";position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;top:3px;left:3px;transition:.2s}
+.toggle:checked{background:var(--cyan)}.toggle:checked:after{left:21px;background:#031018}
+.toggle:disabled,input:disabled,select:disabled{opacity:.55;cursor:not-allowed}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:auto}
+.actions .sub{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr 1.25fr auto;gap:8px}
+.btn{border:1px solid var(--line);background:#132333;color:var(--ink);border-radius:11px;padding:10px 13px;font-weight:800;transition:transform .15s,background .15s,border .15s;white-space:nowrap}
+.btn:hover{transform:translateY(-1px);border-color:#45627b;background:#172c40}.btn:active{transform:none}
+.btn.primary{background:var(--cyan);border-color:var(--cyan);color:#06131d}.btn.primary:hover{background:#8ae6ff}
+.btn.warn{color:var(--amber)}
+.btn.bx{color:var(--lime);border-color:rgba(184,255,99,.45);background:#11231a}.btn.bx:hover{background:#163020;border-color:var(--lime)}
+.btn.icon{padding:10px 12px}
+.btn[disabled]{opacity:.45;cursor:not-allowed;transform:none}
+.run-strip{border:1px solid var(--line);background:#09141d;border-radius:14px;padding:10px 12px;display:grid;gap:8px}
+.run-line{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px;color:#bdcada}
+.run-meta{font:700 10px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted)}
+.progress{height:7px;background:#1b2b39;border-radius:99px;overflow:hidden}.progress>i{display:block;height:100%;width:0;background:var(--cyan);transition:width .2s}
+.progress.endless>i{width:28%!important;transition:none;animation:slide 1.3s linear infinite}
+@keyframes slide{from{transform:translateX(-100%)}to{transform:translateX(360%)}}
+.curricula{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;align-items:start}
+.curriculum{border-radius:var(--radius);overflow:hidden;min-width:0;position:relative}
+.curriculum[data-kind="standing"]{--accent:var(--cyan)}
+.curriculum[data-kind="bouncing"]{--accent:var(--lime)}
+.curriculum[data-kind="forward"]{--accent:var(--coral)}
+.card-head{padding:19px 20px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line)}
+.card-index{font:900 12px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--accent);letter-spacing:.08em}
+.card-head h2{font-size:24px;letter-spacing:-.04em;margin:5px 0 2px}
+.card-head p{margin:0;color:var(--muted);font-size:12px;max-width:280px}
+.live-tag{display:inline-flex;align-items:center;gap:6px;color:var(--accent);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}.live-tag:before{content:"";width:7px;height:7px;background:var(--accent);border-radius:50%;box-shadow:0 0 0 5px color-mix(in srgb,var(--accent) 13%,transparent);animation:breathe 1.7s infinite}
+@keyframes breathe{50%{opacity:.45;transform:scale(.75)}}
+.stage{position:relative;background:#07111a;border-bottom:1px solid var(--line)}
+.stage canvas{display:block;width:100%;aspect-ratio:16/11;min-height:238px}
+.stage-overlay{position:absolute;inset:12px 12px auto;display:flex;justify-content:space-between;pointer-events:none}
+.statlet{border:1px solid rgba(255,255,255,.11);background:rgba(3,10,16,.74);backdrop-filter:blur(8px);border-radius:9px;padding:6px 8px;font:800 10px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;color:#cdd8e7}
+.replay-actions{position:absolute;right:12px;bottom:12px;display:flex;gap:6px}.icon-btn{border:1px solid rgba(255,255,255,.16);background:rgba(4,13,20,.8);color:white;border-radius:9px;width:34px;height:34px;display:grid;place-items:center;font-weight:900}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border-bottom:1px solid var(--line)}
+.metric{background:var(--panel);padding:12px 13px}.metric span{display:block;color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.1em;font-weight:900}.metric strong{display:block;font-size:17px;margin-top:2px;font-variant-numeric:tabular-nums}
+.spark-wrap{padding:14px 16px 10px}.spark-title{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:900}.spark{display:block;width:100%;height:58px;margin-top:5px}
+.biopsy{margin:0 16px 16px;border:1px solid var(--line);border-radius:13px;background:#09141e;padding:11px}
+.biopsy-head{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#cbd7e6;font-size:11px;font-weight:850}.bx-readout{font:800 11px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--accent);text-align:right}
+.pulse-lanes{display:grid;gap:6px;margin-top:9px}.lane{display:grid;grid-template-columns:27px 1fr;gap:7px;align-items:center;color:var(--muted);font:800 9px ui-monospace,SFMono-Regular,Menlo,monospace}.lane-track{height:6px;background:#1b2b39;border-radius:9px;overflow:hidden}.lane-track i{display:block;width:100%;height:100%;background:var(--accent);transform-origin:left;transform:scaleX(0);transition:transform .06s linear}
+.diag{margin-top:18px;border-radius:18px;padding:13px 16px;display:flex;align-items:center;justify-content:space-between;gap:18px}.diag-copy{display:flex;align-items:center;gap:11px}.diag-mark{width:36px;height:36px;border-radius:11px;background:#102334;display:grid;place-items:center;font-weight:1000;color:var(--cyan);flex:0 0 auto}.diag strong{font-size:13px}.diag small{display:block;color:var(--muted)}
+.test-list{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}.test-badge{border:1px solid var(--line);border-radius:99px;padding:5px 8px;font-size:10px;color:#b9c8da}.test-badge.pass{border-color:rgba(184,255,99,.32);color:var(--lime)}.test-badge.fail{border-color:rgba(255,111,97,.4);color:var(--coral)}
+.notes{margin-top:18px;border-radius:var(--radius);padding:28px}.notes-head{display:grid;grid-template-columns:.65fr 1.35fr;gap:30px;border-bottom:1px solid var(--line);padding-bottom:22px;margin-bottom:22px}.notes h2{font-size:clamp(28px,3.2vw,46px);letter-spacing:-.045em;line-height:1;margin:6px 0}.notes-lede{color:#b6c4d5;font-size:16px;margin:0}.note-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.note-card{border:1px solid var(--line);border-radius:14px;padding:16px;background:#0a151f}.note-card b{color:var(--cyan);font-size:11px;text-transform:uppercase;letter-spacing:.1em}.note-card h3{margin:6px 0 7px;font-size:16px}.note-card p{margin:0;color:#9fb0c4;font-size:12px}.footnote{margin:18px 0 0;color:#758aa3;font-size:11px}
+.toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,24px);opacity:0;pointer-events:none;background:#eff7ff;color:#0a1722;border-radius:11px;padding:10px 14px;font-weight:800;font-size:12px;box-shadow:var(--shadow);transition:.25s;z-index:20;max-width:calc(100% - 32px);text-align:center}.toast.show{transform:translate(-50%,0);opacity:1}
+dialog{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:16px;padding:18px;width:min(720px,calc(100% - 24px));box-shadow:var(--shadow)}
+dialog::backdrop{background:rgba(2,6,10,.66)}
+dialog h3{margin:0 0 6px;font-size:16px}dialog p{margin:0 0 10px;color:var(--muted);font-size:12px}
+dialog textarea{width:100%;height:260px;background:#08131d;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px;font:11px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;resize:vertical}
+.dialog-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:10px}
+@media(max-width:1100px){.hero{grid-template-columns:1fr}.curricula{grid-template-columns:1fr 1fr}.curriculum:last-child{grid-column:1/-1}.curriculum:last-child .stage canvas{aspect-ratio:2.25/1}.note-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:760px){.shell{width:min(100% - 18px,1500px);padding-top:10px}.hero-main{padding:24px;min-height:auto}.control-panel{padding:17px}.curricula{grid-template-columns:1fr}.curriculum:last-child{grid-column:auto}.curriculum:last-child .stage canvas{aspect-ratio:16/11}.notes{padding:20px}.notes-head{grid-template-columns:1fr;gap:10px}.note-grid{grid-template-columns:1fr}.diag{align-items:flex-start;flex-direction:column}.test-list{justify-content:flex-start}.config-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:430px){.config-grid{grid-template-columns:1fr}.metrics{grid-template-columns:1fr 1fr}.metric:last-child{grid-column:1/-1}.card-head{padding:16px}.stage canvas{min-height:220px}.actions .sub{grid-template-columns:1fr 1fr}.btn{padding:10px 9px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}.live-tag:before,.progress.endless>i{animation:none}.lane-track i,.progress>i{transition:none}}
+</style>
+</head>
+<body>
+<main class="shell">
+  <section class="hero">
+    <div class="hero-main">
+      <div class="eyebrow">Evolution lab / self-contained build · v2.1</div>
+      <h1>Three-segment<br>pulse curriculum.</h1>
+      <p>Three populations evolve side-by-side—from balance, to vertical rebound, to forward travel—while every champion replays exactly as it was scored. One click hands the whole lab state to Claude as a compact biopsy.</p>
+      <div class="feature-row">
+        <span class="pill"><i></i>Momentum-conserving, strength-limited joints</span>
+        <span class="pill"><i></i>Pulse controller + BX ablation</span>
+        <span class="pill"><i></i>Neural or LUT genome</span>
+        <span class="pill"><i></i>Forward elite migration</span>
+        <span class="pill"><i></i>One-click biopsy</span>
+      </div>
+    </div>
+    <aside class="control-panel" aria-label="Evolution controls">
+      <div class="panel-title"><h2>Experiment setup</h2><span class="status-chip" id="engineChip"><i></i><span>Ready</span></span></div>
+      <div class="config-grid">
+        <div class="field"><label for="population">Population</label><div class="range-wrap"><input id="population" type="range" min="8" max="96" step="2" value="24"><span class="range-value" id="populationV">24</span></div></div>
+        <div class="field"><label for="generations">Generations</label><select id="generations"><option value="20">20</option><option value="60">60</option><option value="120" selected>120</option><option value="250">250</option><option value="500">500</option><option value="1000">1000</option><option value="2500">2500</option><option value="inf">Endless (until paused)</option></select></div>
+        <div class="field"><label for="trial">Trial duration</label><div class="range-wrap"><input id="trial" type="range" min="2" max="14" step="0.5" value="6"><span class="range-value" id="trialV">6s</span></div></div>
+        <div class="field"><label for="neurons">Hidden neurons</label><div class="range-wrap"><input id="neurons" type="range" min="2" max="16" step="1" value="7"><span class="range-value" id="neuronsV">7</span></div></div>
+        <div class="field"><label for="tilt">Initial tilt</label><div class="range-wrap"><input id="tilt" type="range" min="-25" max="25" step="1" value="7"><span class="range-value" id="tiltV">7°</span></div></div>
+        <div class="field"><label for="seed">Seed</label><input id="seed" type="number" value="3817" min="1" max="9999999" inputmode="numeric"></div>
+        <div class="field"><label for="strength">Joint strength</label><select id="strength" title="Most torque a joint's motor can apply, in body weight x segment length"><option value="0.4">Weak · 0.4</option><option value="0.7" selected>Walker-like · 0.7</option><option value="1.5">Strong · 1.5</option><option value="inf">Unlimited (v2)</option></select></div>
+      </div>
+      <div class="switches">
+        <label class="switch"><span>LUT controller<small>Replace neural pulse net with phase/contact table</small></span><input class="toggle" id="lut" type="checkbox"></label>
+        <label class="switch"><span>Forward migration<small>Inject elites Standing → Bounce → Forward</small></span><input class="toggle" id="migration" type="checkbox" checked></label>
+        <label class="switch"><span>Evolve without BX<small>Zero the impact-context input for the whole run</small></span><input class="toggle" id="biopsyToggle" type="checkbox"></label>
+      </div>
+      <div class="run-strip"><div class="run-line"><span id="runLabel">Awaiting experiment</span><b id="runPct">0%</b></div><div class="progress"><i id="runProgress"></i></div><div class="run-meta" id="runMeta">gen 0</div></div>
+      <div class="actions">
+        <button class="btn primary" id="runBtn">Run fresh</button>
+        <button class="btn" id="continueBtn" disabled>Continue +120</button>
+        <div class="sub">
+          <button class="btn" id="pauseBtn" disabled>Pause</button>
+          <button class="btn warn" id="resetBtn">Reset</button>
+          <button class="btn bx" id="biopsyBtn" title="Copy a compact JSON snapshot of the lab to paste to Claude">Biopsy ⧉</button>
+          <button class="btn icon" id="biopsyDl" title="Download the biopsy as a .json file" aria-label="Download biopsy JSON">⬇</button>
+        </div>
+      </div>
+    </aside>
+  </section>
+
+  <section class="curricula" aria-label="Simultaneous evolutionary curricula">
+    <article class="curriculum" data-kind="standing">
+      <header class="card-head"><div><div class="card-index">01 / STABILITY</div><h2>Standing</h2><p>Maximize survival, upright height and low tilt with restrained pulse energy.</p></div><span class="live-tag">live replay</span></header>
+      <div class="stage"><canvas id="canvas-standing" role="img" aria-label="Live replay of the best standing champion"></canvas><div class="stage-overlay"><span class="statlet" id="state-standing">starter · t 0.0s</span></div><div class="replay-actions"><button class="icon-btn" data-replay="standing" aria-label="Restart standing replay">↻</button><button class="icon-btn" data-pause-replay="standing" aria-label="Pause standing replay">Ⅱ</button></div></div>
+      <div class="metrics"><div class="metric"><span>Best fitness</span><strong id="fit-standing">—</strong></div><div class="metric"><span>Survival</span><strong id="surv-standing">—</strong></div><div class="metric"><span>Mean tilt</span><strong id="aux-standing">—</strong></div></div>
+      <div class="spark-wrap"><div class="spark-title"><span>Champion · median</span><span id="gen-standing">gen 0</span></div><canvas class="spark" id="spark-standing"></canvas></div>
+      <div class="biopsy"><div class="biopsy-head"><span>Pulse lanes · BX</span><span class="bx-readout" id="bx-standing">BX 0.00</span></div><div class="pulse-lanes"><div class="lane">J1<div class="lane-track"><i id="pulse-standing-0"></i></div></div><div class="lane">J2<div class="lane-track"><i id="pulse-standing-1"></i></div></div></div></div>
+    </article>
+
+    <article class="curriculum" data-kind="bouncing">
+      <header class="card-head"><div><div class="card-index">02 / ELASTICITY</div><h2>Bouncing</h2><p>Reward controlled vertical range, airborne time and repeatable touchdowns.</p></div><span class="live-tag">live replay</span></header>
+      <div class="stage"><canvas id="canvas-bouncing" role="img" aria-label="Live replay of the best bouncing champion"></canvas><div class="stage-overlay"><span class="statlet" id="state-bouncing">starter · t 0.0s</span></div><div class="replay-actions"><button class="icon-btn" data-replay="bouncing" aria-label="Restart bouncing replay">↻</button><button class="icon-btn" data-pause-replay="bouncing" aria-label="Pause bouncing replay">Ⅱ</button></div></div>
+      <div class="metrics"><div class="metric"><span>Best fitness</span><strong id="fit-bouncing">—</strong></div><div class="metric"><span>Survival</span><strong id="surv-bouncing">—</strong></div><div class="metric"><span>Vertical range</span><strong id="aux-bouncing">—</strong></div></div>
+      <div class="spark-wrap"><div class="spark-title"><span>Champion · median</span><span id="gen-bouncing">gen 0</span></div><canvas class="spark" id="spark-bouncing"></canvas></div>
+      <div class="biopsy"><div class="biopsy-head"><span>Pulse lanes · BX</span><span class="bx-readout" id="bx-bouncing">BX 0.00</span></div><div class="pulse-lanes"><div class="lane">J1<div class="lane-track"><i id="pulse-bouncing-0"></i></div></div><div class="lane">J2<div class="lane-track"><i id="pulse-bouncing-1"></i></div></div></div></div>
+    </article>
+
+    <article class="curriculum" data-kind="forward">
+      <header class="card-head"><div><div class="card-index">03 / MIGRATION</div><h2>Bouncing forward</h2><p>Convert rebound into net positive travel without surrendering stability.</p></div><span class="live-tag">live replay</span></header>
+      <div class="stage"><canvas id="canvas-forward" role="img" aria-label="Live replay of the best forward-bouncing champion"></canvas><div class="stage-overlay"><span class="statlet" id="state-forward">starter · t 0.0s</span></div><div class="replay-actions"><button class="icon-btn" data-replay="forward" aria-label="Restart forward replay">↻</button><button class="icon-btn" data-pause-replay="forward" aria-label="Pause forward replay">Ⅱ</button></div></div>
+      <div class="metrics"><div class="metric"><span>Best fitness</span><strong id="fit-forward">—</strong></div><div class="metric"><span>Survival</span><strong id="surv-forward">—</strong></div><div class="metric"><span>Distance</span><strong id="aux-forward">—</strong></div></div>
+      <div class="spark-wrap"><div class="spark-title"><span>Champion · median</span><span id="gen-forward">gen 0</span></div><canvas class="spark" id="spark-forward"></canvas></div>
+      <div class="biopsy"><div class="biopsy-head"><span>Pulse lanes · BX</span><span class="bx-readout" id="bx-forward">BX 0.00</span></div><div class="pulse-lanes"><div class="lane">J1<div class="lane-track"><i id="pulse-forward-0"></i></div></div><div class="lane">J2<div class="lane-track"><i id="pulse-forward-1"></i></div></div></div></div>
+    </article>
+  </section>
+
+  <section class="diag" aria-live="polite"><div class="diag-copy"><div class="diag-mark">✓</div><div><strong>Built-in verification</strong><small id="testSummary">Running deterministic simulation and control checks…</small></div></div><div class="test-list" id="testList"></div></section>
+
+  <section class="notes">
+    <div class="notes-head"><div><div class="eyebrow">Technical thoughts</div><h2>What this model can—and cannot—teach.</h2></div><p class="notes-lede">This is deliberately a compact evolutionary mechanics sandbox, not a validated biomechanical model. Its value is in making the curriculum, controller ablation and transfer dynamics legible in one file.</p></div>
+    <div class="note-grid">
+      <article class="note-card"><b>01 · Mechanics</b><h3>Constraint-based body</h3><p>Four particles form three fixed-length segments; iterative distance constraints keep the rods rigid and ground projection supplies contact and friction. Joint pulses are applied along the joint angle's gradient, so they are internal torques: they bend the body but cannot push its centre of mass. v1 rotated the outer particles about a pinned middle one, which leaked momentum on every pulse—evolution learned to fly.</p></article>
+      <article class="note-card"><b>02 · Controller</b><h3>Pulse, not continuous torque</h3><p>The neural genome maps phase, tilt, joint state, vertical velocity, contact and BX impact context into two gated joint targets. The LUT alternative bins phase, lean and contact. The gate windows are fixed, so both joints are passive for about a third of every phase cycle—quiet standing on a point foot is hard, and hopping in place is a common answer.</p></article>
+      <article class="note-card"><b>03 · BX biopsy</b><h3>A causal ablation</h3><p>BX is contact multiplied by downward centre-of-mass speed, clipped to a unit impact signal. Each card re-scores its champion with BX zeroed (ablate Δ); "Evolve without BX" instead trains a whole run without it. Contact and vertical speed are still separate inputs, so a small Δ does not prove impact context is unused, and the LUT controller never sees BX.</p></article>
+      <article class="note-card"><b>04 · Curriculum</b><h3>Transfer is useful, not free</h3><p>With forward migration enabled, elites flow only Standing → Bouncing → Bouncing forward and still compete under the destination objective. The biopsy reports each champion's migrant ancestry, so a destination champion that is just an imported clone shows up as one.</p></article>
+      <article class="note-card"><b>05 · Fitness</b><h3>Multi-term objectives need care</h3><p>Standing credits height only up to upright posture (1.17 m), so flight earns nothing there. Bounce adds vertical range, airborne fraction and touchdowns—a touchdown counts only after three airborne steps, so contact chatter can't be farmed. Forward adds signed displacement. Scores are comparable within a column, not across columns.</p></article>
+      <article class="note-card"><b>06 · Limitations</b><h3>Where to go next</h3><p>Each joint's motor is now capped like the MuJoCo walker's (0.7 × body weight × segment length by default; its motors are 0.6–0.8 on that scale). Unlimited is v2's joint, which reached any bend under any load and let bodies jump metres. Rigid-body impulses, randomized starts and replicated seeds still come before attributing performance to BX or migration.</p></article>
+    </div>
+    <p class="footnote">v2.1 · Joint strength is part of the run's settings and the biopsy; Unlimited reproduces v2 bit for bit. Deterministic: a run continued in chunks is bit-identical to one long run, and replays step at the same fixed 1/60 s as scoring. Evolution yields to the page every ~12 ms. Biopsy copies a compact JSON (config, champions with exact genes, histories, ablations, trajectory probes); ⬇ saves the same JSON as a file. No network access or external libraries.</p>
+  </section>
+</main>
+<dialog id="bxDialog" aria-labelledby="bxTitle">
+  <h3 id="bxTitle">Biopsy JSON</h3>
+  <p>The browser blocked clipboard access. Copy it from here, or download it and attach the file.</p>
+  <textarea id="bxText" readonly spellcheck="false"></textarea>
+  <div class="dialog-actions"><button class="btn" id="bxCopy">Copy</button><button class="btn" id="bxSave">Download</button><button class="btn primary" id="bxClose">Close</button></div>
+</dialog>
+<div class="toast" id="toast" role="status"></div>
+<script>
+(()=>{'use strict';
+const APP_VERSION='2.1.0',PHYSICS='pbd-internal-torque/3-strength';
+const KINDS=['standing','bouncing','forward'];
+const LABEL={standing:'Standing',bouncing:'Bouncing',forward:'Bouncing forward'};
+const COLORS={standing:'#54d8ff',bouncing:'#b8ff63',forward:'#ff6f61'};
+const DT=1/60,STAND_H=1.17,TD_MIN_AIR=3,SLICE_MS=12,DEG=180/Math.PI;
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const wrap=a=>{while(a>Math.PI)a-=Math.PI*2;while(a<-Math.PI)a+=Math.PI*2;return a};
+const mix=(a,b,t)=>a+(b-a)*t;
+const r3=v=>Number.isFinite(v)?Math.round(v*1000)/1000:null;
+// mulberry32 with an explicit int32 state: the same stream as v1 for its first ~4.9M draws, after which
+// v1's ever-growing double state starts dropping low bits (~400 generations at the default settings).
+function mulberry32(seed){let s=seed|0;const r=()=>{let t=s=(s+0x6D2B79F5)|0;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296};r.state=()=>s;return r}
+function gaussian(rng){let u=0,v=0;while(!u)u=rng();while(!v)v=rng();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+function finiteBody(b){return b.p.every(n=>Number.isFinite(n.x)&&Number.isFinite(n.y)&&Number.isFinite(n.px)&&Number.isFinite(n.py))}
+
+class PulseController{
+  constructor(genes,cfg){this.g=genes;this.cfg=cfg;this.phase=0;this.last={targets:[0,0],pulses:[0,0],bx:0,rawBx:0}}
+  reset(){this.phase=0;this.last={targets:[0,0],pulses:[0,0],bx:0,rawBx:0}}
+  step(obs,dt,biopsy){
+    const rawBx=clamp(obs.contact*Math.max(0,-obs.vy/3.2),0,1), bx=biopsy?0:rawBx;
+    const freq=.72+Math.abs(this.g[this.g.length-1]||0)*.72;
+    this.phase=(this.phase+dt*freq*Math.PI*2)%(Math.PI*2);
+    let raw=[0,0];
+    if(this.cfg.lut){
+      const pb=Math.floor((this.phase/(Math.PI*2))*8)%8;
+      const tb=obs.tilt<-.12?0:obs.tilt>.12?2:1;
+      const cb=obs.contact>.5?1:0;
+      const base=(((pb*3+tb)*2+cb)*2);
+      raw[0]=Math.tanh(this.g[base]||0);raw[1]=Math.tanh(this.g[base+1]||0);
+    }else{
+      const inp=[Math.sin(this.phase),Math.cos(this.phase),clamp(obs.tilt,-1,1),clamp(obs.q[0],-1,1),clamp(obs.q[1],-1,1),clamp(obs.dq[0]*.25,-1,1),clamp(obs.dq[1]*.25,-1,1),clamp(obs.vy*.25,-1,1),obs.contact,bx,1];
+      const h=this.cfg.neurons;let o=0;const hidden=new Array(h);
+      for(let i=0;i<h;i++){let s=0;for(let j=0;j<inp.length;j++)s+=inp[j]*(this.g[o++]||0);hidden[i]=Math.tanh(s)}
+      for(let k=0;k<2;k++){let s=0;for(let i=0;i<h;i++)s+=hidden[i]*(this.g[o++]||0);s+=(this.g[o++]||0);raw[k]=Math.tanh(s)}
+    }
+    const pulses=raw.map((v,i)=>Math.abs(v)>.22 && Math.sin(this.phase+i*1.31)>.05?Math.abs(v):0);
+    const targets=raw.map((v,i)=>pulses[i]?v*.82:0);
+    return this.last={targets,pulses,bx,rawBx};
+  }
+}
+function genomeSize(cfg){return cfg.lut?8*3*2*2+1:cfg.neurons*11+2*(cfg.neurons+1)+1}
+function randomGenome(cfg,rng){return Array.from({length:genomeSize(cfg)},()=>gaussian(rng)*.52)}
+
+class ThreeSegmentBody{
+  /* strength: the most torque each joint's motor can apply, in units of body weight x segment length
+   * (4 unit masses x 9.3 x 0.72). Infinity is v2's joint, bit for bit. The MuJoCo walker's motors are
+   * about 0.6-0.8 on this scale (28 N.m hip, 20 N.m knee on an 11 kg body with 0.33 m legs). */
+  constructor(tiltDeg=7,strength=Infinity){this.L=.72;this.r=.085;this.strength=strength;this.sMax=Number.isFinite(strength)?Math.max(0,strength)*4*9.3*this.L*DT*DT:Infinity;this.jAcc=[0,0];this.reset(tiltDeg)}
+  reset(tiltDeg=7){
+    const a=tiltDeg*Math.PI/180;this.p=[];let x=0,y=this.r+.005;
+    for(let i=0;i<4;i++){this.p.push({x,y,px:x,py:y});x+=Math.sin(a)*this.L;y+=Math.cos(a)*this.L}
+    this.time=0;this.energy=0;this.prevQ=this.jointAngles();this.startX=this.com().x;this.trail=[];this.contact=1;this.touchdowns=0;this.airSteps=0;this.fallen=false;this.end=null;
+  }
+  com(){return this.p.reduce((a,n)=>({x:a.x+n.x/4,y:a.y+n.y/4}),{x:0,y:0})}
+  jointAngles(){const out=[];for(let j=1;j<=2;j++){const a=this.p[j-1],b=this.p[j],c=this.p[j+1];out.push(wrap(Math.atan2(c.y-b.y,c.x-b.x)-Math.atan2(b.y-a.y,b.x-a.x)))}return out}
+  tilt(){const a=this.p[0],d=this.p[3];return Math.atan2(d.x-a.x,d.y-a.y)}
+  observe(dt){const c=this.com(),q=this.jointAngles();return{tilt:this.tilt(),q,dq:q.map((v,i)=>wrap(v-this.prevQ[i])/dt),vy:this.p.reduce((s,n)=>s+(n.y-n.py)/dt,0)/4,contact:this.contact,com:c}}
+  // Internal joint torque: a position correction along the joint angle's gradient. The three gradients sum
+  // to zero (no net force) and the angle is rotation-invariant (no net torque), so a pulse bends the body
+  // without pushing or spinning it as a whole. Same bend per iteration as v1 (0.46 + 0.46 of the command).
+  solveJoint(j,target,active){
+    const a=this.p[j-1],b=this.p[j],c=this.p[j+1];
+    const ux=b.x-a.x,uy=b.y-a.y,vx=c.x-b.x,vy=c.y-b.y,lu=ux*ux+uy*uy||1e-9,lv=vx*vx+vy*vy||1e-9;
+    const q=wrap(Math.atan2(vy,vx)-Math.atan2(uy,ux));
+    const gax=-uy/lu,gay=ux/lu,gcx=-vy/lv,gcy=vx/lv,gbx=-gax-gcx,gby=-gay-gcy,den=gax*gax+gay*gay+gbx*gbx+gby*gby+gcx*gcx+gcy*gcy;
+    let s;
+    if(this.sMax===Infinity){const dq=(-q*.0024+clamp(wrap(target-q)*active,-.042,.042))*.92;s=dq/den}   // v2, bit for bit
+    else{
+      /* v2.1: with unit masses, a correction s along the angle's gradient is a torque of s/dt^2 for one step.
+       * The motor's share is capped so its total over the step's iterations never exceeds the joint's strength;
+       * the weak passive spring is not a motor and is not capped. */
+      const acc=this.jAcc[j-1],sd=clamp(clamp(wrap(target-q)*active,-.042,.042)*.92/den,-this.sMax-acc,this.sMax-acc);
+      this.jAcc[j-1]=acc+sd;s=-q*.0024*.92/den+sd;
+    }
+    a.x+=s*gax;a.y+=s*gay;b.x+=s*gbx;b.y+=s*gby;c.x+=s*gcx;c.y+=s*gcy;
+  }
+  solveDistance(a,b){const dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1,err=(d-this.L)/d*.5;a.x+=dx*err;a.y+=dy*err;b.x-=dx*err;b.y-=dy*err}
+  ground(){let hit=false;for(const n of this.p){if(n.y<this.r){n.y=this.r;const vx=n.x-n.px;n.px=n.x-vx*.74;if(n.py>n.y)n.py=n.y+(n.py-n.y)*.08;hit=true}}return hit}
+  step(targets,pulses,dt){
+    this.prevQ=this.jointAngles();this.jAcc[0]=0;this.jAcc[1]=0;const damping=.997,gravity=9.3;
+    for(const n of this.p){const vx=(n.x-n.px)*damping,vy=(n.y-n.py)*damping;n.px=n.x;n.py=n.y;n.x+=vx;n.y+=vy-gravity*dt*dt}
+    let hit=false;
+    for(let k=0;k<6;k++){this.solveDistance(this.p[0],this.p[1]);this.solveDistance(this.p[1],this.p[2]);this.solveDistance(this.p[2],this.p[3]);this.solveJoint(1,targets[0],pulses[0]?0.075:0);this.solveJoint(2,targets[1],pulses[1]?0.075:0);hit=this.ground()||hit}
+    this.contact=hit?1:0;if(hit&&this.airSteps>=TD_MIN_AIR)this.touchdowns++;this.airSteps=hit?0:this.airSteps+1;
+    this.energy+=(Math.abs(targets[0])*pulses[0]+Math.abs(targets[1])*pulses[1])*dt;this.time+=dt;
+    const c=this.com();if(this.trail.length===0||this.time-this.trail[this.trail.length-1].t>.08)this.trail.push({x:c.x,y:c.y,t:this.time});if(this.trail.length>180)this.trail.shift();
+    this.end=!finiteBody(this)?'nonfinite':this.p.some(n=>Math.abs(n.x)>500||n.y>50)?'escaped':c.y<.31?'collapsed':Math.abs(this.tilt())>1.42?'tipped':null;
+    this.fallen=this.end!==null;
+  }
+}
+
+function probeRow(b){const c=b.com(),q=b.jointAngles();return[r3(b.time),r3(c.x),r3(c.y),Math.round(b.tilt()*DEG),Math.round(q[0]*DEG),Math.round(q[1]*DEG),b.contact]}
+function evaluate(genes,kind,cfg,ablate=false,detail=null){
+  const body=new ThreeSegmentBody(cfg.tilt,cfg.strength),ctrl=new PulseController(genes,cfg),steps=Math.round(cfg.trial/DT);let minY=Infinity,maxY=-Infinity,sumY=0,sumYs=0,sumTilt=0,air=0,n=0,pc=body.com();
+  for(let i=0;i<steps;i++){
+    const obs=body.observe(DT),act=ctrl.step(obs,DT,ablate);body.step(act.targets,act.pulses,DT);
+    const c=body.com();minY=Math.min(minY,c.y);maxY=Math.max(maxY,c.y);sumY+=c.y;sumYs+=Math.min(c.y,STAND_H);sumTilt+=Math.abs(body.tilt());air+=1-body.contact;n++;
+    if(detail){const v=Math.hypot(c.x-pc.x,c.y-pc.y)/DT;pc=c;detail.steps++;if(v>detail.maxSpeed)detail.maxSpeed=v;if(c.y>detail.maxComY)detail.maxComY=c.y;if(act.rawBx>0)detail.bxOn++;if(act.pulses[0])detail.duty[0]++;if(act.pulses[1])detail.duty[1]++;if(body.contact)detail.contact++;if((i+1)%15===0||body.fallen)detail.probe.push(probeRow(body))}
+    if(body.fallen)break;
+  }
+  const c=body.com(),survival=body.time/cfg.trial,avgY=sumY/Math.max(1,n),standY=sumYs/Math.max(1,n),tilt=sumTilt/Math.max(1,n),range=Math.max(0,maxY-minY),distance=c.x-body.startX,airFrac=air/Math.max(1,n);let fitness;
+  if(kind==='standing')fitness=survival*7+standY*3.2-tilt*2.5-Math.abs(distance)*.35-body.energy*.025;
+  else if(kind==='bouncing')fitness=survival*4.6+avgY*1.5+range*6.2+airFrac*2.2+body.touchdowns*.16-tilt*1.5-body.energy*.02;
+  else fitness=survival*3.4+Math.max(0,distance)*6.5-Math.max(0,-distance)*4.2+avgY*1.1+range*2.2+airFrac*.7-tilt*1.3-body.energy*.018;
+  if(!Number.isFinite(fitness))fitness=-1e6;
+  return{fitness,metrics:{survival,avgY,tilt,range,distance,airFrac,touchdowns:body.touchdowns,energy:body.energy,end:body.end||'timeout'}}
+}
+
+function tournament(scored,rng){let best=null;for(let i=0;i<3;i++){const c=scored[Math.floor(rng()*scored.length)];if(!best||c.score>best.score)best=c}return best}
+// Same selection, crossover and mutation (and RNG draw order) as v1; additionally tracks each genome's
+// migrant ancestry: the share of its genes that entered this population by migration (migrants = 1).
+function breed(scored,cfg,rng,count,migrants=[]){
+  const genes=[],anc=[],eliteN=Math.max(2,Math.round(count*.12));
+  for(let i=0;i<eliteN&&i<scored.length;i++){genes.push(scored[i].genes.slice());anc.push(scored[i].anc)}
+  for(const m of migrants.slice(0,2))if(genes.length<count){genes.push(m.genes.slice());anc.push(1)}
+  while(genes.length<count){
+    const A=tournament(scored,rng),B=tournament(scored,rng);let fromA=0;
+    const child=A.genes.map((v,i)=>{if(rng()<.5){fromA++;return v}return B.genes[i]});
+    const rate=.12+(.04*(1-genes.length/count));for(let i=0;i<child.length;i++)if(rng()<rate)child[i]+=gaussian(rng)*.23;
+    if(rng()<.08){const i=Math.floor(rng()*child.length);child[i]=gaussian(rng)*.7}
+    genes.push(child);anc.push((fromA*A.anc+(child.length-fromA)*B.anc)/child.length);
+  }
+  return{genes,anc};
+}
+function seedStarter(cfg,kind){const rng=mulberry32(cfg.seed+KINDS.indexOf(kind)*7919);const g=randomGenome(cfg,rng);if(!cfg.lut){g[g.length-1]=kind==='standing'?.92:kind==='bouncing'?1.18:1.32}else{for(let i=0;i<g.length-1;i++)g[i]*=.65}return g}
+function freshStates(cfg){const out={};KINDS.forEach((k,ki)=>{const rng=mulberry32(cfg.seed+ki*104729),pop=Array.from({length:cfg.population},()=>randomGenome(cfg,rng));pop[0]=seedStarter(cfg,k);out[k]={population:pop,anc:new Array(cfg.population).fill(0),champion:{genes:pop[0].slice(),fitness:-Infinity,metrics:null,bornGen:0,anc:0},history:[],scored:[],generation:0}});return out}
+
+// ---- run engine: one run = config + populations + GA RNG; every generation is committed atomically ----
+function createRun(cfg){return{cfg:{...cfg},rng:mulberry32(cfg.seed^0xA53C9E1B),states:freshStates(cfg),gen:0,evals:0,wallMs:0}}
+function scoreIndividual(run,kind,i){const s=run.states[kind],r=evaluate(s.population[i],kind,run.cfg,run.cfg.biopsy);run.evals++;return{genes:s.population[i],score:r.fitness,metrics:r.metrics,anc:s.anc[i]}}
+function finishGeneration(run,scored){
+  const g=run.gen+1,improved=[];
+  for(const kind of KINDS){const s=run.states[kind],sc=scored[kind];sc.sort((a,b)=>b.score-a.score);s.scored=sc;s.generation=g;
+    if(sc[0].score>s.champion.fitness){s.champion={genes:sc[0].genes.slice(),fitness:sc[0].score,metrics:sc[0].metrics,bornGen:g,anc:sc[0].anc};improved.push(kind)}
+    s.history.push([s.champion.fitness,sc[sc.length>>1].score])}
+  const mig={standing:[],bouncing:[],forward:[]};
+  if(run.cfg.migration){mig.bouncing=run.states.standing.scored.slice(0,2);mig.forward=run.states.bouncing.scored.slice(0,2)}
+  for(const kind of KINDS){const s=run.states[kind],b=breed(s.scored,run.cfg,run.rng,run.cfg.population,mig[kind]);s.population=b.genes;s.anc=b.anc}
+  run.gen=g;return improved;
+}
+function runSync(run,n){for(let k=0;k<n;k++){const sc={};for(const kind of KINDS){sc[kind]=[];for(let i=0;i<run.states[kind].population.length;i++)sc[kind].push(scoreIndividual(run,kind,i))}finishGeneration(run,sc)}return run}
+function makeReplay(genes,cfg){return{body:new ThreeSegmentBody(cfg.tilt,cfg.strength),ctrl:new PulseController(genes.slice(),cfg),cfg,steps:Math.round(cfg.trial/DT),n:0,acc:0,cool:0,paused:false,scale:0,lastAct:{targets:[0,0],pulses:[0,0],bx:0,rawBx:0}}}
+function replayStep(r){const obs=r.body.observe(DT),act=r.ctrl.step(obs,DT,r.cfg.biopsy);r.body.step(act.targets,act.pulses,DT);r.lastAct=act;r.n++}
+
+// ---- biopsy: compact, reproducible snapshot for Claude ----
+function b64FromGenes(g){const u=new Uint8Array(new Float64Array(g).buffer);let s='';for(let i=0;i<u.length;i++)s+=String.fromCharCode(u[i]);return btoa(s)}
+function genesFromB64(b){const s=atob(b),u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return Array.from(new Float64Array(u.buffer))}
+function downsample(h,max){const N=h.length,M=Math.min(N,max),out=[];for(let k=0;k<M;k++){const i=M===1?N-1:Math.round(k*(N-1)/(M-1));out.push([i+1,r3(h[i][0]),r3(h[i][1])])}return out}
+function popStats(sc){const n=sc.length;if(!n)return null;const G=sc[0].genes.length;let sd=0;for(let j=0;j<G;j++){let m=0;for(const x of sc)m+=x.genes[j];m/=n;let v=0;for(const x of sc)v+=(x.genes[j]-m)**2;sd+=Math.sqrt(v/n)}
+  return{best:r3(sc[0].score),median:r3(sc[n>>1].score),worst:r3(sc[n-1].score),meanSurv:r3(sc.reduce((s,x)=>s+x.metrics.survival,0)/n),fallen:r3(sc.filter(x=>x.metrics.end!=='timeout').length/n),geneSD:r3(sd/G),migrantAnc:r3(sc.reduce((s,x)=>s+x.anc,0)/n)}}
+function champBiopsy(run,kind){
+  const cfg=run.cfg,s=run.states[kind],c=s.champion;if(!Number.isFinite(c.fitness))return{champ:null,flags:['no-run-yet']};
+  const d={steps:0,maxSpeed:0,maxComY:0,bxOn:0,duty:[0,0],contact:0,probe:[]},ev=evaluate(c.genes,kind,cfg,cfg.biopsy,d),m=ev.metrics,n=Math.max(1,d.steps);
+  const abl=!cfg.lut&&!cfg.biopsy?evaluate(c.genes,kind,cfg,true).fitness-ev.fitness:null,flags=[];
+  if(m.end!=='timeout')flags.push(`falls:${m.end}@${(m.survival*cfg.trial).toFixed(2)}s`);
+  if(m.airFrac>.6)flags.push('airborne>60%');
+  if(c.anc>=.99)flags.push('migrant-clone');
+  if(abl!==null&&Math.abs(abl)<1e-9)flags.push('bx-unused');
+  if(run.gen-c.bornGen>=Math.max(30,run.gen*.5))flags.push(`stalled:${run.gen-c.bornGen}g`);
+  if(ev.fitness!==c.fitness)flags.push('REPLAY-MISMATCH');
+  return{champ:{fit:r3(c.fitness),bornGen:c.bornGen,end:m.end,surv:r3(m.survival),avgY:r3(m.avgY),tiltDeg:r3(m.tilt*DEG),range:r3(m.range),dist:r3(m.distance),air:r3(m.airFrac),touchdowns:m.touchdowns,energy:r3(m.energy),maxSpeed:r3(d.maxSpeed),maxComY:r3(d.maxComY),contact:r3(d.contact/n),bxActive:r3(d.bxOn/n),duty:[r3(d.duty[0]/n),r3(d.duty[1]/n)],bxAblateDelta:r3(abl),migrantAnc:r3(c.anc)},
+    flags,pop:popStats(s.scored),hist:downsample(s.history,40),probe:d.probe,genes:b64FromGenes(c.genes)};
+}
+function buildBiopsy(run,meta={}){
+  const cfg=run.cfg,o={schema:'pulse-curriculum-biopsy/2',app:APP_VERSION,physics:PHYSICS,at:new Date().toISOString(),
+    cfg:{seed:cfg.seed,pop:cfg.population,trialSec:cfg.trial,tiltDeg:cfg.tilt,controller:cfg.lut?'lut':'neural-'+cfg.neurons,migration:cfg.migration,evolveWithoutBx:cfg.biopsy,jointStrength:Number.isFinite(cfg.strength)?cfg.strength:'unlimited'},
+    run:{gen:run.gen,status:meta.status||'',evals:run.evals,wallSec:r3(run.wallMs/1000),genPerSec:run.wallMs?r3(run.gen/(run.wallMs/1000)):null,rngState:run.rng.state()},
+    selfTest:meta.selfTest||'',ua:meta.ua||'',
+    legend:{hist:'[gen, champion fitness, population median]',probe:'champion every 0.25 s: [t s, comX m, comY m, tilt deg, q1 deg, q2 deg, contact]',genes:'base64 little-endian float64'}};
+  for(const k of KINDS)o[k]=champBiopsy(run,k);
+  return o;
+}
+
+const app={run:null,token:0,running:false,paused:false,target:0,chunkStart:0,replays:{},ablate:{},ui:{},lastFrame:performance.now(),lastUi:0,tests:[]};
+const yieldTask=(()=>{const ch=new MessageChannel(),q=[];ch.port1.onmessage=()=>{const f=q.shift();if(f)f()};return()=>new Promise(r=>{q.push(r);ch.port2.postMessage(0)})})();
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function readCfg(){const g=$('#generations').value,st=$('#strength').value;return{strength:st==='inf'?Infinity:+st,population:+$('#population').value,generations:g==='inf'?Infinity:+g,trial:+$('#trial').value,neurons:+$('#neurons').value,tilt:+$('#tilt').value,seed:clamp(Math.floor(+$('#seed').value||1),1,9999999),lut:$('#lut').checked,migration:$('#migration').checked,biopsy:$('#biopsyToggle').checked}}
+function differs(a,b){return['population','trial','tilt','seed','lut','migration','biopsy','strength'].some(k=>a[k]!==b[k])||(!a.lut&&a.neurons!==b.neurons)}
+function toast(msg,ms=2200){const t=$('#toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._id);t._id=setTimeout(()=>t.classList.remove('show'),ms)}
+function setEngine(label,busy=false){$('#engineChip span').textContent=label;$('#engineChip i').style.background=busy?'var(--amber)':'var(--lime)'}
+function chunkLabel(){const g=$('#generations').value;$('#continueBtn').textContent=g==='inf'?'Continue ∞':'Continue +'+g}
+function setControlsLocked(v){['population','generations','trial','tilt','seed','strength','lut','migration','biopsyToggle'].forEach(id=>$('#'+id).disabled=v);$('#neurons').disabled=v||$('#lut').checked;$('#runBtn').disabled=v;$('#continueBtn').disabled=v||!app.run||app.run.gen===0;$('#pauseBtn').disabled=!v;if(!v)$('#pauseBtn').textContent='Pause'}
+function genRate(){const r=app.run;return r.wallMs>0?r.gen/(r.wallMs/1000):0}
+function updateMeta(){const r=app.run;$('#runMeta').textContent=`gen ${r.gen} · ${genRate().toFixed(1)} gen/s · ${r.evals.toLocaleString()} evals · seed ${r.cfg.seed}`}
+function showProgress(ki,frac){const run=app.run,inf=!Number.isFinite(app.target);if(!inf){const p=clamp((run.gen-app.chunkStart+(ki+frac)/3)/Math.max(1,app.target-app.chunkStart)*100,0,100);$('#runProgress').style.width=p+'%';$('#runPct').textContent=Math.floor(p)+'%'}else $('#runPct').textContent='∞';$('#runLabel').textContent=`Generation ${run.gen+1}${inf?' · endless':' / '+app.target} · ${LABEL[KINDS[ki]]}`;updateMeta()}
+function updateCard(kind){const s=app.run.states[kind],c=s.champion,m=c.metrics,has=Number.isFinite(c.fitness);$('#fit-'+kind).textContent=has?c.fitness.toFixed(2):'—';$('#surv-'+kind).textContent=m?(m.survival*100).toFixed(0)+'%':'—';$('#aux-'+kind).textContent=!m?'—':kind==='standing'?(m.tilt*DEG).toFixed(1)+'°':kind==='bouncing'?m.range.toFixed(2)+'m':m.distance.toFixed(2)+'m';$('#gen-'+kind).textContent='gen '+s.generation+(has?' · champ '+c.bornGen:'');drawSpark(kind)}
+function drawSpark(kind){
+  const c=$('#spark-'+kind),r=c.getBoundingClientRect(),d=Math.min(2,devicePixelRatio||1),W=Math.max(1,Math.round(r.width*d)),Hh=Math.max(1,Math.round(r.height*d));if(c.width!==W||c.height!==Hh){c.width=W;c.height=Hh}
+  const x=c.getContext('2d');x.setTransform(d,0,0,d,0,0);x.clearRect(0,0,r.width,r.height);x.strokeStyle='#24384b';x.lineWidth=1;x.beginPath();x.moveTo(0,r.height-1);x.lineTo(r.width,r.height-1);x.stroke();
+  const hist=app.run?app.run.states[kind].history:[],N=hist.length;if(N<2)return;
+  const M=Math.min(N,Math.max(2,Math.floor(r.width))),at=k=>hist[Math.round(k*(N-1)/(M-1))];
+  let lo=Infinity,hi=-Infinity,mlo=Infinity;for(const v of hist){if(v[0]<lo)lo=v[0];if(v[0]>hi)hi=v[0];if(v[1]<mlo)mlo=v[1]}
+  lo=Math.max(Math.min(lo,mlo),lo-(hi-lo+1)*.8);if(hi<=lo)hi=lo+1;
+  const px=k=>k/(M-1)*r.width,py=v=>r.height-5-(clamp(v,lo,hi)-lo)/(hi-lo)*(r.height-11);
+  x.strokeStyle=COLORS[kind];x.globalAlpha=.35;x.lineWidth=1;x.beginPath();for(let k=0;k<M;k++){const p=py(at(k)[1]);k?x.lineTo(px(k),p):x.moveTo(px(k),p)}x.stroke();x.globalAlpha=1;
+  x.lineWidth=2;x.beginPath();for(let k=0;k<M;k++){const p=py(at(k)[0]);k?x.lineTo(px(k),p):x.moveTo(px(k),p)}x.stroke();x.lineTo(r.width,r.height-1);x.lineTo(0,r.height-1);x.closePath();x.globalAlpha=.08;x.fillStyle=COLORS[kind];x.fill();x.globalAlpha=1;
+}
+function refreshAblation(kind){const run=app.run,cfg=run.cfg,c=run.states[kind].champion;if(cfg.lut){app.ablate[kind]='no BX input (LUT)';return}if(cfg.biopsy){app.ablate[kind]='evolved without BX';return}if(!Number.isFinite(c.fitness)){app.ablate[kind]='ablate Δ —';return}const d=evaluate(c.genes,kind,cfg,true).fitness-c.fitness;app.ablate[kind]='ablate Δ '+(d>=0?'+':'−')+Math.abs(d).toFixed(2)}
+function restartReplay(kind){const run=app.run,s=run.states[kind],prev=app.replays[kind],r=makeReplay(s.champion.genes,run.cfg);r.paused=!!(prev&&prev.paused);r.scale=prev?prev.scale:0;r.isChamp=Number.isFinite(s.champion.fitness);app.replays[kind]=r}
+function resizeCanvas(c){const r=c.getBoundingClientRect(),d=Math.min(2,devicePixelRatio||1),w=Math.round(r.width*d),h=Math.round(r.height*d);if(c.width!==w||c.height!==h){c.width=w;c.height=h}return{w:r.width,h:r.height,d}}
+function drawWorld(kind,rp){
+  const c=app.ui[kind].canvas,{w,h,d}=resizeCanvas(c),x=c.getContext('2d');x.setTransform(d,0,0,d,0,0);x.clearRect(0,0,w,h);
+  const body=rp.body,com=body.com(),ground=h*.83;let top=0;for(const n of body.p)top=Math.max(top,n.y);
+  const want=Math.min(112,ground/Math.max(2.5,top+.45));rp.scale=rp.scale?mix(rp.scale,want,.12):want;const scale=rp.scale;
+  const cameraX=kind==='forward'?com.x:mix(0,com.x,.18),half=w/scale/2;
+  const sx=wx=>w*.5+(wx-cameraX)*scale, sy=wy=>ground-wy*scale;
+  x.strokeStyle='rgba(145,162,187,.12)';x.lineWidth=1;const start=Math.floor((cameraX-half)/.5)*.5;for(let wx=start;wx<cameraX+half;wx+=.5){x.beginPath();x.moveTo(sx(wx),0);x.lineTo(sx(wx),ground);x.stroke()}for(let wy=0;wy<ground/scale;wy+=.5){x.beginPath();x.moveTo(0,sy(wy));x.lineTo(w,sy(wy));x.stroke()}
+  x.strokeStyle='rgba(238,244,255,.27)';x.lineWidth=2;x.beginPath();x.moveTo(0,ground);x.lineTo(w,ground);x.stroke();
+  x.fillStyle='rgba(238,244,255,.22)';for(let wx=start;wx<cameraX+half;wx+=.5){x.fillRect(sx(wx)-1,ground+6,2,(Math.round(wx*2)%2?4:8))}
+  if(body.trail.length>1){x.strokeStyle=COLORS[kind]+'78';x.lineWidth=2;x.beginPath();body.trail.forEach((p,i)=>{i?x.lineTo(sx(p.x),sy(p.y)):x.moveTo(sx(p.x),sy(p.y))});x.stroke()}
+  const pts=body.p;x.lineCap='round';x.lineJoin='round';x.strokeStyle='rgba(0,0,0,.42)';x.lineWidth=18;x.beginPath();pts.forEach((p,i)=>i?x.lineTo(sx(p.x),sy(p.y)):x.moveTo(sx(p.x),sy(p.y)));x.stroke();x.strokeStyle=COLORS[kind];x.lineWidth=11;x.beginPath();pts.forEach((p,i)=>i?x.lineTo(sx(p.x),sy(p.y)):x.moveTo(sx(p.x),sy(p.y)));x.stroke();
+  pts.forEach((p,i)=>{x.beginPath();x.arc(sx(p.x),sy(p.y),i===0?8:7,0,Math.PI*2);x.fillStyle=i===0?'#eef4ff':'#0a151f';x.fill();x.lineWidth=3;x.strokeStyle=COLORS[kind];x.stroke()});
+  x.fillStyle='rgba(238,244,255,.72)';x.font='700 10px ui-monospace,monospace';x.fillText('0 m',sx(0)+5,ground+18);
+}
+function animate(now){
+  const raw=Math.min(.05,Math.max(0,(now-app.lastFrame)/1000));app.lastFrame=now;
+  for(const kind of KINDS){
+    let r=app.replays[kind];if(!r){restartReplay(kind);r=app.replays[kind]}
+    if(!r.paused){
+      if(r.cool>0){r.cool-=raw;if(r.cool<=0){restartReplay(kind);r=app.replays[kind]}}
+      else{r.acc+=raw;while(r.acc>=DT){replayStep(r);r.acc-=DT;if(r.body.fallen||r.n>=r.steps){r.cool=.6;r.acc=0;break}}}
+    }
+    drawWorld(kind,r);const u=app.ui[kind];
+    u.state.textContent=`${r.isChamp?'champion':'starter'} · t ${r.body.time.toFixed(1)}s${r.cool>0?' · '+(r.body.end||'trial end'):''}`;
+    u.bx.textContent=`BX ${r.lastAct.bx.toFixed(2)} · ${app.ablate[kind]||''}`;
+    for(let i=0;i<2;i++)u.pulse[i].style.transform=`scaleX(${clamp(r.lastAct.pulses[i],0,1)})`;
+  }
+  requestAnimationFrame(animate);
+}
+
+async function drive(target){
+  const run=app.run,token=++app.token,bar=$('#runProgress').parentElement;
+  app.running=true;app.paused=false;app.target=target;app.chunkStart=run.gen;bar.classList.toggle('endless',!Number.isFinite(target));
+  setControlsLocked(true);setEngine('Evolving',true);
+  let mark=performance.now(),sliceEnd=mark+SLICE_MS;const tick=()=>{const t=performance.now();run.wallMs+=t-mark;mark=t};
+  try{
+    while(run.gen<target){
+      const sc={};
+      for(let ki=0;ki<KINDS.length;ki++){const kind=KINDS[ki],n=run.states[kind].population.length;sc[kind]=[];
+        for(let i=0;i<n;i++){sc[kind].push(scoreIndividual(run,kind,i));
+          if(performance.now()>=sliceEnd){tick();showProgress(ki,(i+1)/n);await yieldTask();if(token!==app.token)return;sliceEnd=performance.now()+SLICE_MS}}}
+      const improved=finishGeneration(run,sc);improved.forEach(k=>{refreshAblation(k);restartReplay(k)});
+      const now=performance.now();if(improved.length||now-app.lastUi>150){KINDS.forEach(updateCard);app.lastUi=now}
+      if(app.paused){tick();setEngine('Paused');$('#runLabel').textContent=`Paused after generation ${run.gen}`;updateMeta();while(app.paused&&token===app.token)await sleep(90);if(token!==app.token)return;setEngine('Evolving',true);mark=performance.now();sliceEnd=mark+SLICE_MS}
+    }
+  }finally{
+    if(token===app.token){tick();app.running=false;app.paused=false;setControlsLocked(false);bar.classList.remove('endless');KINDS.forEach(updateCard);$('#runProgress').style.width='100%';$('#runPct').textContent='100%';$('#runLabel').textContent=`Generation ${run.gen} complete`;setEngine('Gen '+run.gen);updateMeta();toast(`Generation ${run.gen} — champions replaying`)}
+  }
+}
+function adoptRun(run){app.run=run;KINDS.forEach(k=>{refreshAblation(k);updateCard(k);restartReplay(k)});updateMeta()}
+function runFresh(){if(app.running)return;const cfg=readCfg();adoptRun(createRun(cfg));drive(cfg.generations)}
+function continueRun(){if(app.running||!app.run||!app.run.gen)return;const ui=readCfg();if(differs(ui,app.run.cfg))toast('Continue keeps this run’s settings — Run fresh applies your changes',3600);drive(Number.isFinite(ui.generations)?app.run.gen+ui.generations:Infinity)}
+function togglePause(){if(!app.running)return;app.paused=!app.paused;$('#pauseBtn').textContent=app.paused?'Resume':'Pause';setEngine(app.paused?'Pausing…':'Evolving',!app.paused)}
+function resetExperiment(){app.token++;app.running=false;app.paused=false;adoptRun(createRun(readCfg()));setControlsLocked(false);setEngine('Ready');const bar=$('#runProgress');bar.parentElement.classList.remove('endless');bar.style.width='0%';$('#runPct').textContent='0%';$('#runLabel').textContent='Awaiting experiment';toast('Experiment reset')}
+
+function selfTestSummary(){const t=app.tests,p=t.filter(x=>x.ok).length,f=t.filter(x=>!x.ok).map(x=>x.name);return`${p}/${t.length}`+(f.length?' fail: '+f.join(', '):'')}
+function biopsyText(){const run=app.run;return JSON.stringify(buildBiopsy(run,{status:app.running?(app.paused?'paused':'running'):run.gen?'complete':'idle',selfTest:selfTestSummary(),ua:navigator.userAgent}))}
+function biopsyName(){return`pulse-biopsy-s${app.run.cfg.seed}-g${app.run.gen}.json`}
+const kb=t=>(t.length/1024).toFixed(1)+' KB';
+async function copyText(t){try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(t);return true}}catch(e){}try{const ta=document.createElement('textarea');ta.value=t;ta.setAttribute('readonly','');ta.style.cssText='position:fixed;left:-9999px;top:0;opacity:0';document.body.appendChild(ta);ta.select();const ok=document.execCommand('copy');ta.remove();return ok}catch(e){return false}}
+function downloadText(name,t){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([t],{type:'application/json'}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},800)}
+async function biopsy(save){const t=biopsyText();app.lastBiopsy=t;if(save){downloadText(biopsyName(),t);toast('Biopsy saved · '+kb(t));return}if(await copyText(t)){toast(`Biopsy copied · ${kb(t)} — paste it to Claude`,3200);return}const dl=$('#bxDialog');$('#bxText').value=t;if(dl.showModal){dl.showModal();$('#bxText').select()}else downloadText(biopsyName(),t)}
+
+function bind(){
+  for(const [id,fmt] of [['population',v=>v],['trial',v=>v+'s'],['neurons',v=>v],['tilt',v=>v+'°']]){const el=$('#'+id),out=$('#'+id+'V');const sync=()=>out.textContent=fmt(el.value);el.addEventListener('input',sync);sync()}
+  $('#generations').addEventListener('change',chunkLabel);chunkLabel();
+  $('#runBtn').addEventListener('click',runFresh);$('#continueBtn').addEventListener('click',continueRun);$('#pauseBtn').addEventListener('click',togglePause);$('#resetBtn').addEventListener('click',resetExperiment);
+  $('#biopsyBtn').addEventListener('click',()=>biopsy(false));$('#biopsyDl').addEventListener('click',()=>biopsy(true));
+  $('#bxCopy').addEventListener('click',async()=>{const ok=await copyText($('#bxText').value);toast(ok?'Copied — paste it to Claude':'Select the text and copy it by hand')});$('#bxSave').addEventListener('click',()=>downloadText(biopsyName(),$('#bxText').value));$('#bxClose').addEventListener('click',()=>$('#bxDialog').close());
+  $('#biopsyToggle').addEventListener('change',()=>toast($('#biopsyToggle').checked?'Run fresh will evolve with BX zeroed':'Run fresh will evolve with BX available'));
+  $('#strength').addEventListener('change',()=>toast('Joint strength applies on Run fresh'));
+  $('#lut').addEventListener('change',()=>{const off=$('#lut').checked;$('#neurons').disabled=off;toast((off?'LUT controller':'Neural pulse controller')+' — applies on Run fresh')});
+  $$('[data-replay]').forEach(b=>b.addEventListener('click',()=>restartReplay(b.dataset.replay)));
+  $$('[data-pause-replay]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.pauseReplay,r=app.replays[k];r.paused=!r.paused;b.textContent=r.paused?'▶':'Ⅱ';b.setAttribute('aria-label',(r.paused?'Resume ':'Pause ')+k+' replay')}));
+  addEventListener('resize',()=>KINDS.forEach(drawSpark));
+}
+function test(name,fn){try{app.tests.push({name,ok:!!fn()})}catch(e){app.tests.push({name,ok:false,error:e.message})}}
+function runSelfTests(){
+  app.tests=[];
+  test('seeded RNG',()=>{const v1=(s=>()=>{let t=s+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296})(3817^0xA53C9E1B),a=mulberry32(3817^0xA53C9E1B),b=mulberry32(3817^0xA53C9E1B);for(let i=0;i<2000;i++){const x=a();if(x!==b()||x!==v1())return false}const s=a.state();return s===(s|0)});
+  test('genome dimensions',()=>genomeSize({lut:true,neurons:7})===97&&genomeSize({lut:false,neurons:7})===7*11+2*8+1);
+  test('finite physics',()=>{const b=new ThreeSegmentBody(7);for(let i=0;i<240;i++)b.step([0,0],[0,0],DT);return finiteBody(b)});
+  test('joints conserve momentum',()=>[Infinity,.7].every(st=>{const b=new ThreeSegmentBody(30,st);for(const n of b.p){n.y+=30;n.py+=30}b.prevQ=b.jointAngles();const v=()=>[b.p.reduce((s,n)=>s+n.x-n.px,0)/4/DT,b.p.reduce((s,n)=>s+n.y-n.py,0)/4/DT];let worst=0;for(let i=0;i<90;i++){const v0=v(),s=i%20<10?1:-1;b.step([s*.9,-s*.9],[1,1],DT);const v1=v();worst=Math.max(worst,Math.abs(v1[0]-.997*v0[0]),Math.abs(v1[1]-(.997*v0[1]-9.3*DT)))}return worst<1e-9&&!b.contact}));
+  test('joint strength capped',()=>{const b=new ThreeSegmentBody(7,.7);let worst=0;for(let i=0;i<120;i++){const s=i%30<15?1:-1;b.step([s,-s],[1,1],DT);worst=Math.max(worst,Math.abs(b.jAcc[0]),Math.abs(b.jAcc[1]))}return Number.isFinite(b.sMax)&&worst>0&&worst<=b.sMax*(1+1e-12)});
+  test('BX ablation',()=>{const cfg={lut:false,neurons:3},g=new Array(genomeSize(cfg)).fill(.1),c=new PulseController(g,cfg),o={tilt:0,q:[0,0],dq:[0,0],vy:-2,contact:1};const a=c.step(o,DT,false),z=c.step(o,DT,true);return a.bx>0&&z.bx===0});
+  test('fitness finite',()=>{const cfg={population:8,trial:2,neurons:4,tilt:7,seed:2,lut:false,migration:true,biopsy:false};return KINDS.every(k=>Number.isFinite(evaluate(seedStarter(cfg,k),k,cfg).fitness))});
+  test('replay = scoring',()=>{const cfg={trial:3,neurons:5,tilt:7,seed:11,lut:false,biopsy:false};return KINDS.every(k=>{const g=seedStarter(cfg,k),r=makeReplay(g,cfg);while(!(r.body.fallen||r.n>=r.steps))replayStep(r);const m=evaluate(g,k,cfg).metrics;return r.body.com().x-r.body.startX===m.distance&&r.body.time/cfg.trial===m.survival})});
+  test('continue = one long run',()=>{const cfg={population:8,trial:1,neurons:3,tilt:7,seed:5,lut:false,migration:true,biopsy:false},a=runSync(createRun(cfg),4),b=runSync(runSync(createRun(cfg),2),2);return a.rng.state()===b.rng.state()&&KINDS.every(k=>a.states[k].champion.fitness===b.states[k].champion.fitness&&a.states[k].population.every((g,i)=>g.every((v,j)=>v===b.states[k].population[i][j])))});
+  test('biopsy genes exact',()=>{const g=randomGenome({lut:false,neurons:7},mulberry32(1)),back=genesFromB64(b64FromGenes(g));return back.length===g.length&&back.every((v,i)=>v===g[i])});
+  test('controls wired',()=>['runBtn','continueBtn','pauseBtn','resetBtn','biopsyBtn','biopsyDl','population','generations','trial','neurons','tilt','seed','lut','migration','biopsyToggle'].every(id=>!!document.getElementById(id)));
+  test('three live canvases',()=>KINDS.every(k=>!!document.getElementById('canvas-'+k)));
+  const list=$('#testList');list.innerHTML='';app.tests.forEach(t=>{const s=document.createElement('span');s.className='test-badge '+(t.ok?'pass':'fail');s.textContent=(t.ok?'✓ ':'× ')+t.name;if(t.error)s.title=t.error;list.appendChild(s)});
+  const pass=app.tests.filter(t=>t.ok).length,all=pass===app.tests.length;$('#testSummary').textContent=`${pass}/${app.tests.length} checks passed: momentum conservation, determinism, replay fidelity, continuation and biopsy round-trip.`;$('.diag-mark').textContent=all?'✓':'!';$('.diag-mark').style.color=all?'var(--lime)':'var(--coral)';document.documentElement.dataset.selfTest=all?'pass':'fail';
+}
+function init(){
+  KINDS.forEach(k=>{app.ui[k]={canvas:$('#canvas-'+k),state:$('#state-'+k),bx:$('#bx-'+k),pulse:[$('#pulse-'+k+'-0'),$('#pulse-'+k+'-1')]}});
+  bind();adoptRun(createRun(readCfg()));setControlsLocked(false);runSelfTests();requestAnimationFrame(animate);
+  window.__pulseLab={app,readCfg,evaluate,createRun,runSync,finishGeneration,buildBiopsy,biopsyText,genesFromB64,b64FromGenes,makeReplay,replayStep,ThreeSegmentBody,PulseController,runSelfTests,restartReplay,mulberry32,seedStarter,KINDS};
+}
+init();
+})();
+</script>
+</body>
+</html>
