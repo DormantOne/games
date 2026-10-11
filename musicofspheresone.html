@@ -1,0 +1,289 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4D Gravity Melody</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #020205; color: #fff; font-family: sans-serif; }
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.85); z-index: 10; cursor: pointer; }
+        h1 { margin: 0 0 10px 0; color: #00d4ff; text-shadow: 0 0 15px rgba(0, 212, 255, 0.6); }
+        p { margin: 0; color: #aaa; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+    </style>
+</head>
+<body>
+
+    <div id="overlay" onclick="startMelody()">
+        <h1>4D Orbital Melody</h1>
+        <p>Click to spawn the gravitational sequencer</p>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script>
+        let audioCtx, canvas, ctx;
+        let isPlaying = false;
+        
+        const G = 0.6;           
+        const SOFTENING = 120;   
+        const CENTER_PULL = 0.0008; 
+        
+        const bodies = [];
+        const numBodies = 6;
+
+        // 3-Octave C-Major Pentatonic Scale
+        const scale = [
+            130.81, 146.83, 164.81, 196.00, 220.00, // Octave 1
+            261.63, 293.66, 329.63, 392.00, 440.00, // Octave 2
+            523.25, 587.33, 659.25, 783.99, 880.00, // Octave 3
+            1046.50 // High C
+        ];
+
+        class Body {
+            constructor(id) {
+                this.id = id;
+                this.mass = Math.random() * 40 + 20; 
+                
+                this.p = {
+                    x: (Math.random() - 0.5) * 400,
+                    y: (Math.random() - 0.5) * 400,
+                    z: (Math.random() - 0.5) * 400,
+                    w: (Math.random() - 0.5) * 400
+                };
+                
+                this.v = {
+                    x: (Math.random() - 0.5) * 1.5,
+                    y: (Math.random() - 0.5) * 1.5,
+                    z: (Math.random() - 0.5) * 1.5,
+                    w: (Math.random() - 0.5) * 1.5
+                };
+
+                this.color = `hsl(${(id * 360) / numBodies}, 85%, 65%)`;
+                this.flash = 0; // Visual pulse when a note plays
+
+                // Audio Setup
+                this.osc = audioCtx.createOscillator();
+                this.filter = audioCtx.createBiquadFilter();
+                this.panner = audioCtx.createStereoPanner();
+                this.gain = audioCtx.createGain();
+
+                const types = ['sine', 'triangle', 'sine', 'square'];
+                this.osc.type = types[id % types.length];
+                this.filter.type = 'lowpass';
+                
+                this.osc.connect(this.filter);
+                this.filter.connect(this.panner);
+                this.panner.connect(this.gain);
+                this.gain.connect(audioCtx.destination);
+                
+                this.gain.gain.value = 0; // Starts completely silent
+                this.osc.start();
+
+                // Stagger initial play times so they don't all hit at once
+                this.nextPlayTime = audioCtx.currentTime + Math.random() * 2;
+            }
+
+            playNote(time) {
+                // 1. Calculate Pitch (Y-axis maps to scale array)
+                let normalizedY = Math.max(0, Math.min(1, (this.p.y + 250) / 500));
+                let scaleIndex = Math.floor(normalizedY * (scale.length - 1));
+                this.osc.frequency.setValueAtTime(scale[scaleIndex], time);
+
+                // 2. Calculate Panning (X-axis)
+                let panVal = Math.max(-1, Math.min(1, this.p.x / 250));
+                this.panner.pan.setValueAtTime(panVal, time);
+
+                // 3. Calculate Timbre/Filter (W-axis)
+                let cutoff = Math.max(200, Math.min(6000, 1000 + (this.p.w + 200) * 15));
+                this.filter.frequency.setValueAtTime(cutoff, time);
+
+                // 4. Calculate Volume (Z-axis)
+                let zVol = Math.max(0.02, Math.min(0.4, (this.p.z + 300) / 1000));
+                
+                // 5. Trigger the ADSR Envelope (Pluck sound)
+                this.gain.gain.cancelScheduledValues(time);
+                this.gain.gain.setValueAtTime(0, time);
+                this.gain.gain.linearRampToValueAtTime(zVol, time + 0.05); // Quick attack
+                this.gain.gain.exponentialRampToValueAtTime(0.001, time + 0.8); // Long decay tail
+
+                // Trigger visual flash
+                this.flash = 1.0;
+            }
+
+            updateAudio() {
+                // If it's time to play a note...
+                if (audioCtx.currentTime >= this.nextPlayTime) {
+                    this.playNote(audioCtx.currentTime);
+                    
+                    // Rhythm is dictated by velocity! 
+                    // High velocity = short interval (fast notes). Low velocity = long interval.
+                    let speed = Math.sqrt(this.v.x**2 + this.v.y**2 + this.v.z**2 + this.v.w**2);
+                    let interval = Math.max(0.1, 1.5 - (speed * 0.3)); 
+                    
+                    this.nextPlayTime = audioCtx.currentTime + interval;
+                }
+
+                // Decay the visual flash over time
+                if (this.flash > 0) this.flash -= 0.03;
+            }
+        }
+
+        function startMelody() {
+            if (isPlaying) return;
+            document.getElementById('overlay').style.display = 'none';
+            
+            canvas = document.getElementById('canvas');
+            ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+            for (let i = 0; i < numBodies; i++) {
+                bodies.push(new Body(i));
+            }
+
+            isPlaying = true;
+            requestAnimationFrame(animate);
+        }
+
+        function animate() {
+            ctx.fillStyle = 'rgba(2, 2, 5, 0.2)'; // Motion blur tail
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+
+            // Physics calculation
+            for (let i = 0; i < bodies.length; i++) {
+                let b1 = bodies[i];
+                
+                b1.v.x -= b1.p.x * CENTER_PULL;
+                b1.v.y -= b1.p.y * CENTER_PULL;
+                b1.v.z -= b1.p.z * CENTER_PULL;
+                b1.v.w -= b1.p.w * CENTER_PULL;
+
+                for (let j = i + 1; j < bodies.length; j++) {
+                    let b2 = bodies[j];
+                    
+                    let dx = b2.p.x - b1.p.x;
+                    let dy = b2.p.y - b1.p.y;
+                    let dz = b2.p.z - b1.p.z;
+                    let dw = b2.p.w - b1.p.w;
+                    
+                    let distSq = dx*dx + dy*dy + dz*dz + dw*dw + SOFTENING;
+                    let dist = Math.sqrt(distSq);
+                    
+                    let force = (G * b1.mass * b2.mass) / distSq;
+                    
+                    let fx = force * (dx / dist);
+                    let fy = force * (dy / dist);
+                    let fz = force * (dz / dist);
+                    let fw = force * (dw / dist);
+                    
+                    b1.v.x += fx / b1.mass;
+                    b1.v.y += fy / b1.mass;
+                    b1.v.z += fz / b1.mass;
+                    b1.v.w += fw / b1.mass;
+                    
+                    b2.v.x -= fx / b2.mass;
+                    b2.v.y -= fy / b2.mass;
+                    b2.v.z -= fz / b2.mass;
+                    b2.v.w -= fw / b2.mass;
+                }
+            }
+
+            // Update, Draw, and Sonify
+            bodies.forEach((b) => {
+                b.p.x += b.v.x;
+                b.p.y += b.v.y;
+                b.p.z += b.v.z;
+                b.p.w += b.v.w;
+
+                b.updateAudio();
+
+                const distance4D = 600; 
+                const wProj = distance4D / Math.max(10, (distance4D - b.p.w)); 
+                
+                const x3 = b.p.x * wProj;
+                const y3 = b.p.y * wProj;
+                const z3 = b.p.z * wProj;
+
+                const distance3D = 700;
+                const zProj = distance3D / Math.max(10, (distance3D - z3));
+                
+                const screenX = cx + (x3 * zProj);
+                const screenY = cy + (y3 * zProj);
+
+                // Body visually expands based on 'flash' when a note is struck
+                const radius = Math.max(1, (b.mass / 12) * zProj * wProj);
+                const activeRadius = radius * (1 + (b.flash * 0.8));
+                
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, activeRadius, 0, Math.PI * 2);
+                
+                // When flashing, blend color toward white
+                if (b.flash > 0.1) {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.shadowBlur = 30 * zProj;
+                } else {
+                    ctx.fillStyle = b.color;
+                    ctx.shadowBlur = 10 * zProj;
+                }
+                
+                ctx.shadowColor = b.color;
+                ctx.fill();
+                ctx.shadowBlur = 0; 
+            });
+
+            // Draw gravitational tethers
+            ctx.lineWidth = 1.5;
+            for (let i = 0; i < bodies.length; i++) {
+                for (let j = i + 1; j < bodies.length; j++) {
+                    let b1 = bodies[i];
+                    let b2 = bodies[j];
+                    
+                    let dx = b2.p.x - b1.p.x;
+                    let dy = b2.p.y - b1.p.y;
+                    let dz = b2.p.z - b1.p.z;
+                    let dw = b2.p.w - b1.p.w;
+                    let dist = Math.sqrt(dx*dx + dy*dy + dz*dz + dw*dw);
+                    
+                    if (dist < 180) {
+                        let proj = (body) => {
+                            let wp = 600 / Math.max(10, 600 - body.p.w);
+                            let zp = 700 / Math.max(10, 700 - (body.p.z * wp));
+                            return { x: cx + body.p.x * wp * zp, y: cy + body.p.y * wp * zp };
+                        };
+                        let p1 = proj(b1);
+                        let p2 = proj(b2);
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(p1.x, p1.y);
+                        ctx.lineTo(p2.x, p2.y);
+                        
+                        // Tether brightens if either body just plucked a note
+                        let activeFlash = Math.max(b1.flash, b2.flash);
+                        let opacity = (1 - (dist / 180)) * (0.2 + (activeFlash * 0.8));
+                        
+                        ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', () => {
+            if (canvas) {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+        });
+    </script>
+</body>
+</html>
