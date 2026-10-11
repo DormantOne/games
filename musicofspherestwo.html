@@ -1,0 +1,2612 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Music of the Spheres</title>
+<style>
+:root {
+  --ink: #0a1030; --ink-2: #121b44; --vellum: #ece5d1; --mist: #a3abc8; --faint: #737c9e;
+  --brass: #d4b26a; --brass-2: #f1dba6; --kata: #60aaff; --ana: #ff7096;
+  --stable: #66c6ae; --mostly: #e4bf6f; --chaotic: #ee7f96; --disrupted: #f2a65a;
+  --hair: rgba(212, 178, 106, 0.22);
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", "URW Palladio L", P052, Georgia, serif;
+  --panel-w: 372px; --dock-h: 250px;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; height: 100%; overflow: hidden; }
+body { background: var(--ink); color: var(--vellum); font-family: var(--serif); font-size: 15px; line-height: 1.45; -webkit-font-smoothing: antialiased; }
+#sky, #view { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+#view { touch-action: none; cursor: grab; }
+#view.dragging { cursor: grabbing; }
+button { font: inherit; font-size: 14px; line-height: 1.3; color: var(--vellum); background: transparent; border: 1px solid rgba(212, 178, 106, 0.42); border-radius: 4px; padding: 5px 12px; cursor: pointer; }
+button:hover { border-color: var(--brass); background: rgba(212, 178, 106, 0.08); }
+button[aria-pressed="true"] { background: rgba(212, 178, 106, 0.2); border-color: var(--brass); color: var(--brass-2); }
+button.primary { background: var(--brass); border-color: var(--brass); color: #121838; }
+button.primary:hover { background: var(--brass-2); }
+:focus-visible { outline: 2px solid var(--brass-2); outline-offset: 2px; }
+sup { font-size: 0.68em; line-height: 0; }
+kbd { font-family: inherit; font-size: 12px; border: 1px solid rgba(163, 171, 200, 0.45); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; }
+
+/* heads-up display */
+#hud { position: fixed; top: 18px; left: 22px; z-index: 12; max-width: min(430px, calc(100vw - 44px)); pointer-events: none; transition: opacity .6s; }
+#hud h1 { margin: 0 0 10px; font-weight: 400; font-style: italic; font-size: 27px; line-height: 1.1; text-shadow: 0 1px 14px rgba(6, 10, 28, 0.85); }
+.status { display: inline-flex; align-items: center; gap: 9px; padding: 4px 13px 4px 10px; border: 1px solid currentColor; border-radius: 999px; font-size: 14.5px; background: rgba(9, 14, 40, 0.62); pointer-events: auto; cursor: help; }
+.status .lamp { width: 9px; height: 9px; border-radius: 50%; background: currentColor; box-shadow: 0 0 10px currentColor; }
+#megno { color: var(--vellum); opacity: .72; font-size: 13px; font-variant-numeric: tabular-nums lining-nums; }
+.status.stable { color: var(--stable); }
+.status.mostly { color: var(--mostly); }
+.status.chaotic { color: var(--chaotic); }
+.status.disrupted { color: var(--disrupted); }
+.status.settling { color: var(--mist); }
+.status.settling .lamp { animation: breathe 1.8s ease-in-out infinite; }
+.status.signal .lamp { animation: ring 1.3s ease-out 2; }
+@keyframes ring { from { box-shadow: 0 0 0 0 currentColor; } to { box-shadow: 0 0 0 16px rgba(0, 0, 0, 0); } }
+@keyframes breathe { 50% { opacity: .3; } }
+#status-note { margin: 7px 0 12px; max-width: 36em; font-size: 13px; color: var(--mist); text-shadow: 0 1px 8px rgba(6, 10, 28, 0.9); }
+#quick { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; pointer-events: auto; }
+#quick button, #b-panel { border-radius: 999px; background: rgba(9, 14, 40, 0.62); font-size: 13.5px; padding: 4px 13px; }
+#quick button[aria-pressed="true"], #b-panel[aria-pressed="true"] { background: rgba(212, 178, 106, 0.22); border-color: var(--brass); color: var(--brass-2); }
+#quick button:hover, #b-panel:hover { border-color: var(--brass); }
+#readouts { display: grid; grid-template-columns: auto 1fr; gap: 2px 14px; margin: 0; font-size: 13px; text-shadow: 0 1px 8px rgba(6, 10, 28, 0.9); }
+#readouts > div { display: contents; }
+#readouts dt { color: var(--faint); }
+#readouts dd { margin: 0; font-variant-numeric: tabular-nums lining-nums; }
+#b-panel { position: fixed; top: 16px; right: 16px; z-index: 18; }
+body.panel-open #b-panel { display: none; }
+body.intro #hud, body.intro #b-panel { opacity: 0; pointer-events: none; }
+body.intro #hud * { pointer-events: none; }
+
+/* controls panel */
+#panel { position: fixed; top: 0; right: 0; bottom: 0; width: var(--panel-w); z-index: 20; display: flex; flex-direction: column; background: rgba(9, 14, 38, 0.9); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-left: 1px solid var(--hair); transform: translateX(100%); visibility: hidden; transition: transform .28s ease, visibility 0s .28s; }
+body.panel-open #panel { transform: none; visibility: visible; transition: transform .28s ease; }
+#panel-head { display: flex; align-items: stretch; padding: 0 4px 0 8px; border-bottom: 1px solid var(--hair); }
+#tabs { display: flex; flex: 1; min-width: 0; }
+#tabs button { border: 0; border-radius: 0; background: none; color: var(--mist); padding: 15px 8px 11px; border-bottom: 2px solid transparent; font-size: 14.5px; }
+#tabs button:hover { color: var(--vellum); }
+#tabs button[aria-selected="true"] { color: var(--vellum); border-bottom-color: var(--brass); }
+#panel-head .close { border: 0; border-radius: 0; background: none; color: var(--mist); font-size: 13px; padding: 0 10px; }
+#panel-head .close:hover { color: var(--vellum); }
+#panel-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.tabpane { padding: 18px 22px 52px; }
+.tabpane h3 { margin: 26px 0 8px; padding-top: 16px; border-top: 1px solid rgba(212, 178, 106, 0.14); font-weight: 400; font-style: italic; font-size: 17px; color: var(--brass-2); }
+.ctl { margin: 0 0 15px; }
+.ctl-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.ctl label, .ctl .lbl { font-size: 14px; }
+.ctl output { font-size: 13px; text-align: right; color: var(--brass-2); font-variant-numeric: tabular-nums lining-nums; }
+.hint { margin: 5px 0 0; font-size: 12.8px; line-height: 1.5; color: var(--mist); font-variant-numeric: oldstyle-nums; }
+.tabpane > .hint { margin: 0 0 14px; }
+.tabpane > .hint.tight { margin: -8px 0 16px; }
+.info { margin: 4px 0 18px; font-size: 14px; line-height: 1.55; font-variant-numeric: oldstyle-nums; }
+.readout { font-size: 13px; color: var(--mist); }
+.ctl.toggle { display: grid; grid-template-columns: auto 1fr; column-gap: 10px; align-items: center; }
+.ctl.toggle .hint { grid-column: 2; }
+input[type="checkbox"] { accent-color: var(--brass); width: 15px; height: 15px; margin: 0; }
+.ctl.select { display: grid; gap: 5px; }
+select { font: inherit; font-size: 14px; width: 100%; color: var(--vellum); background: var(--ink-2); border: 1px solid rgba(212, 178, 106, 0.35); border-radius: 4px; padding: 6px 8px; }
+.ctl.buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.seg { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.seg button { font-size: 13px; padding: 4px 10px; }
+input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 20px; margin: 3px 0 0; background: transparent; cursor: pointer; }
+input[type="range"]::-webkit-slider-runnable-track { height: 2px; border-radius: 1px; background: linear-gradient(90deg, var(--brass) var(--fill, 0%), rgba(163, 171, 200, 0.3) var(--fill, 0%)); }
+input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; margin-top: -6px; border-radius: 50%; background: var(--ink); border: 2px solid var(--brass); }
+input[type="range"]::-moz-range-track { height: 2px; background: rgba(163, 171, 200, 0.3); }
+input[type="range"]::-moz-range-progress { height: 2px; background: var(--brass); }
+input[type="range"]::-moz-range-thumb { width: 11px; height: 11px; border-radius: 50%; background: var(--ink); border: 2px solid var(--brass); }
+input[type="range"]:focus-visible { outline: none; }
+input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px rgba(241, 219, 166, 0.35); }
+input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 4px rgba(241, 219, 166, 0.35); }
+.voices { margin-top: 6px; }
+.voice { display: grid; grid-template-columns: 11px minmax(0, 1fr) 4.6em auto auto; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(163, 171, 200, 0.1); font-size: 14px; }
+.voice .swatch { width: 10px; height: 10px; border-radius: 50%; }
+.voice .v-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.voice .v-note { text-align: right; color: var(--brass-2); font-variant-numeric: tabular-nums lining-nums; }
+.voice.gone { opacity: .45; }
+button.mini { font-size: 12px; padding: 2px 8px; }
+.stats { display: grid; grid-template-columns: 1fr auto; gap: 3px 12px; margin: 16px 0 12px; font-size: 13.5px; }
+.stats dt { color: var(--mist); }
+.stats dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums lining-nums; }
+.champ { margin: 0 0 8px; padding: 12px 0; border-top: 1px solid rgba(212, 178, 106, 0.14); border-bottom: 1px solid rgba(212, 178, 106, 0.14); }
+.champ-score { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+.champ-score span { font-style: italic; color: var(--brass-2); }
+.champ-score b { font-weight: 400; font-size: 30px; line-height: 1; color: var(--brass-2); font-variant-numeric: tabular-nums lining-nums; }
+.meter-row { display: grid; grid-template-columns: minmax(0, 1fr) 84px 3em; gap: 8px; align-items: center; margin: 5px 0; font-size: 13px; }
+.meter { height: 4px; border-radius: 2px; overflow: hidden; background: rgba(163, 171, 200, 0.18); }
+.meter i { display: block; height: 100%; }
+.mv { text-align: right; color: var(--mist); font-variant-numeric: tabular-nums lining-nums; }
+.hall-row { display: grid; grid-template-columns: 3.1em minmax(0, 1fr) auto; column-gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(163, 171, 200, 0.1); }
+.hall-row b { grid-column: 1; grid-row: 1 / 3; font-weight: 400; font-size: 20px; color: var(--brass-2); font-variant-numeric: tabular-nums lining-nums; }
+.hall-row .hall-desc { grid-column: 2; grid-row: 1; font-size: 13.5px; }
+.hall-row small { grid-column: 2; grid-row: 2; font-size: 12px; color: var(--mist); }
+.hall-row button { grid-column: 3; grid-row: 1 / 3; }
+.wlegend { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; margin: -6px 0 16px; font-size: 12px; color: var(--mist); }
+.wlegend i { height: 6px; border-radius: 3px; background: linear-gradient(90deg, var(--kata), var(--ana)); }
+.keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 4px 0 0; font-size: 13px; }
+.keys dt { color: var(--brass-2); white-space: nowrap; }
+.keys dd { margin: 0; color: var(--mist); }
+
+/* optimizer graphs */
+#dock { position: fixed; left: 0; right: 0; bottom: 0; height: var(--dock-h); z-index: 15; display: grid; grid-template-columns: 1fr 1.3fr 1fr; background: rgba(9, 14, 38, 0.9); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-top: 1px solid var(--hair); transition: right .28s ease; }
+body.panel-open #dock { right: var(--panel-w); }
+#dock figure { margin: 0; min-width: 0; display: flex; flex-direction: column; padding: 10px 14px 6px; border-left: 1px solid rgba(212, 178, 106, 0.12); }
+#dock figure:first-child { border-left: 0; }
+#dock figcaption { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-style: italic; font-size: 14px; color: var(--brass-2); }
+#dock figcaption small { font-style: normal; font-size: 11.5px; text-align: right; color: var(--mist); }
+#dock canvas { flex: 1; min-height: 0; width: 100%; display: block; margin-top: 4px; }
+#g-land { cursor: crosshair; }
+
+#toast { position: fixed; left: 50%; bottom: 26px; z-index: 40; max-width: min(520px, 86vw); padding: 9px 16px; border: 1px solid rgba(212, 178, 106, 0.4); border-radius: 6px; background: rgba(9, 14, 38, 0.94); font-size: 14px; opacity: 0; pointer-events: none; transform: translate(-50%, 10px); transition: opacity .25s, transform .25s; }
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+body.dock-open #toast { bottom: calc(var(--dock-h) + 18px); }
+@media (min-width: 761px) { body.panel-open #toast { left: calc((100% - var(--panel-w)) / 2); } }
+
+/* opening */
+#intro { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; padding: 6vh 8vw; background: radial-gradient(ellipse 50% 62% at 69% 50%, rgba(10, 16, 48, 0.05), rgba(6, 9, 28, 0.9) 78%); transition: opacity .7s ease; }
+#intro.gone { opacity: 0; pointer-events: none; }
+.intro-inner { max-width: 33em; }
+#intro h2 { margin: 0 0 .32em; font-weight: 400; font-style: italic; font-size: clamp(46px, 7.2vw, 100px); line-height: .96; letter-spacing: -0.012em; }
+.lede { margin: 0 0 1.7em; max-width: 30em; font-size: clamp(16px, 1.45vw, 19px); line-height: 1.6; font-variant-numeric: oldstyle-nums; }
+.intro-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.intro-actions button { border-radius: 999px; font-size: 16px; padding: 9px 22px; }
+.intro-hint { margin: 1.8em 0 0; font-size: 14px; color: var(--mist); }
+
+@media (max-width: 760px) {
+  #hud { top: 12px; left: 14px; max-width: calc(100vw - 120px); }
+  #hud h1 { font-size: 21px; margin-bottom: 8px; }
+  #readouts, #status-note { display: none; }
+  #b-panel { top: 12px; right: 12px; }
+  #panel { top: auto; left: 0; width: auto; height: 62vh; border-left: 0; border-top: 1px solid var(--hair); transform: translateY(100%); }
+  #dock { grid-template-columns: repeat(3, 88vw); overflow-x: auto; scroll-snap-type: x mandatory; }
+  #dock figure { scroll-snap-align: start; }
+  body.panel-open #dock { right: 0; }
+  #intro { align-items: flex-end; padding: 8vh 7vw; background: linear-gradient(180deg, rgba(6, 9, 28, 0.05), rgba(6, 9, 28, 0.9) 52%); }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body class="intro">
+<canvas id="sky" aria-hidden="true"></canvas>
+<canvas id="view" aria-label="Four-dimensional orbit view. Drag to turn it, shift-drag to turn it through the fourth dimension, scroll to zoom."></canvas>
+
+<header id="hud">
+  <h1>Music of the Spheres</h1>
+  <div id="status" class="status settling" title="⟨Y⟩ is MEGNO, a chaos indicator. It settles near 2 for regular orbits and keeps climbing for chaotic ones.">
+    <span class="lamp" aria-hidden="true"></span><span id="status-text">Measuring stability</span><span id="megno"></span>
+  </div>
+  <p id="status-note"></p>
+  <div id="quick" role="toolbar" aria-label="Quick controls">
+    <button type="button" id="b-pause">Pause</button>
+    <button type="button" id="b-sound" aria-pressed="false">Sound</button>
+    <button type="button" id="b-wturn" aria-pressed="false" title="When on, dragging turns the view through the fourth dimension">Turn through W</button>
+    <button type="button" id="b-graphs" aria-pressed="false">Graphs</button>
+  </div>
+  <dl id="readouts">
+    <div><dt>System</dt><dd id="r-system"></dd></div>
+    <div><dt>Elapsed</dt><dd id="r-time"></dd></div>
+    <div><dt>Energy drift</dt><dd id="r-energy"></dd></div>
+    <div id="r-chord-row" hidden><dt>Chord</dt><dd id="r-chord"></dd></div>
+    <div id="r-opt-row" hidden><dt>Optimizer</dt><dd id="r-opt"></dd></div>
+  </dl>
+</header>
+<button type="button" id="b-panel" aria-pressed="false" aria-controls="panel">Controls</button>
+
+<aside id="panel" aria-label="Controls"><div id="panel-head"></div><div id="panel-body"></div></aside>
+
+<section id="dock" hidden aria-label="Optimizer graphs">
+  <figure><figcaption>Fitness climb <small>Bright: champion. Faint: each climber.</small></figcaption><canvas id="g-climb"></canvas></figure>
+  <figure><figcaption>Every system tried <small>Seven traits and the score</small></figcaption><canvas id="g-par"></canvas></figure>
+  <figure><figcaption><span id="land-title">Search map</span> <small>Click a point to hear it</small></figcaption><canvas id="g-land"></canvas></figure>
+</section>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<div id="intro" role="dialog" aria-modal="true" aria-labelledby="intro-title">
+  <div class="intro-inner">
+    <h2 id="intro-title">Music of the Spheres</h2>
+    <p class="lede">Our solar system, and stranger ones, orbiting in four dimensions. Every body is a voice in a shared scale. An optimizer hunts for orbits that hold together, and a chime tells you when the sky settles into stability.</p>
+    <div class="intro-actions">
+      <button type="button" id="go-sound" class="primary">Begin with sound</button>
+      <button type="button" id="go-silent">Begin in silence</button>
+    </div>
+    <p class="intro-hint">Drag to turn. Shift-drag to turn through the fourth dimension. Scroll to zoom.</p>
+  </div>
+</div>
+
+<script id="core-src">'use strict';
+/* ==================================================================
+   MUSIC OF THE SPHERES - core: 4D N-body physics, presets, optimizer
+   ================================================================== */
+const TAU = Math.PI * 2;
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const lerp = (a, b, t) => a + (b - a) * t;
+const nowMs = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+
+function mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function gauss(rng) {
+  let u = 0;
+  while (u === 0) u = rng();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(TAU * rng());
+}
+
+/* Force law: a = G m r / (r^2 + eps^2)^((p+1)/2).  p = 2 is our universe, p = 3 is true 4D (Gauss). */
+function circSpeed(ph, M, r) {
+  const s2 = r * r + ph.eps2;
+  return r * Math.sqrt(ph.G * M * Math.pow(s2, -(ph.p + 1) / 2));
+}
+function potPhi(ph, s2) { // pair potential U = -G mi mj * phi
+  if (Math.abs(ph.p - 1) < 1e-9) return -0.5 * Math.log(s2);
+  return Math.pow(s2, -(ph.p - 1) / 2) / (ph.p - 1);
+}
+
+class Sim {
+  constructor(n) {
+    this.n = n;
+    this.m = new Float64Array(n);
+    this.x = new Float64Array(n * 4);
+    this.v = new Float64Array(n * 4);
+    this.a = new Float64Array(n * 4);
+    this.alive = new Uint8Array(n).fill(1);
+    this.t = 0; this.minTau2 = 1; this.minR2 = Infinity; this.pi = -1; this.pj = -1;
+  }
+  clone() { const s = new Sim(this.n); s.copyFrom(this); return s; }
+  copyFrom(o) {
+    this.m.set(o.m); this.x.set(o.x); this.v.set(o.v); this.a.set(o.a); this.alive.set(o.alive);
+    this.t = o.t; this.minTau2 = o.minTau2; this.minR2 = o.minR2; this.pi = o.pi; this.pj = o.pj;
+  }
+  computeAcc(ph) {
+    const n = this.n, x = this.x, v = this.v, a = this.a, m = this.m, al = this.alive;
+    const G = ph.G, eps2 = ph.eps2, p = ph.p, k = ph.tether || 0;
+    const mode = Math.abs(p - 2) < 1e-9 ? 2 : Math.abs(p - 3) < 1e-9 ? 3 : 0;
+    const half = -(p + 1) / 2;
+    a.fill(0);
+    let minT2 = Infinity, minR2 = Infinity, pi = -1, pj = -1;
+    for (let i = 0; i < n; i++) {
+      if (!al[i]) continue;
+      const i4 = i << 2, mi = m[i];
+      const xi = x[i4], yi = x[i4 + 1], zi = x[i4 + 2], wi = x[i4 + 3];
+      const vxi = v[i4], vyi = v[i4 + 1], vzi = v[i4 + 2], vwi = v[i4 + 3];
+      let ax = a[i4], ay = a[i4 + 1], az = a[i4 + 2], aw = a[i4 + 3];
+      for (let j = i + 1; j < n; j++) {
+        if (!al[j]) continue;
+        const j4 = j << 2;
+        const dx = x[j4] - xi, dy = x[j4 + 1] - yi, dz = x[j4 + 2] - zi, dw = x[j4 + 3] - wi;
+        const r2 = dx * dx + dy * dy + dz * dz + dw * dw, s2 = r2 + eps2;
+        let inv;
+        if (mode === 2) inv = 1 / (s2 * Math.sqrt(s2));
+        else if (mode === 3) inv = 1 / (s2 * s2);
+        else inv = Math.pow(s2, half);
+        const gi = G * m[j] * inv, gj = G * mi * inv;
+        ax += gi * dx; ay += gi * dy; az += gi * dz; aw += gi * dw;
+        a[j4] -= gj * dx; a[j4 + 1] -= gj * dy; a[j4 + 2] -= gj * dz; a[j4 + 3] -= gj * dw;
+        const gm = gi + gj;
+        if (gm > 0) { const t2 = 1 / gm; if (t2 < minT2) minT2 = t2; }
+        const ux = v[j4] - vxi, uy = v[j4 + 1] - vyi, uz = v[j4 + 2] - vzi, uw = v[j4 + 3] - vwi;
+        const u2 = ux * ux + uy * uy + uz * uz + uw * uw;
+        if (u2 > 0) { const t2 = s2 / u2; if (t2 < minT2) minT2 = t2; }
+        if (r2 < minR2) { minR2 = r2; pi = i; pj = j; }
+      }
+      if (k > 0) { ax -= k * xi; ay -= k * yi; az -= k * zi; aw -= k * wi; }
+      a[i4] = ax; a[i4 + 1] = ay; a[i4 + 2] = az; a[i4 + 3] = aw;
+    }
+    if (k > 0 && 1 / k < minT2) minT2 = 1 / k;
+    if (!(minT2 < Infinity)) minT2 = 1;
+    this.minTau2 = minT2; this.minR2 = minR2; this.pi = pi; this.pj = pj;
+  }
+  step(dt, ph) { // kick-drift-kick leapfrog (symplectic)
+    const n4 = this.n * 4, x = this.x, v = this.v, a = this.a, h = 0.5 * dt;
+    for (let k = 0; k < n4; k++) { v[k] += a[k] * h; x[k] += v[k] * dt; }
+    this.computeAcc(ph);
+    for (let k = 0; k < n4; k++) v[k] += a[k] * h;
+    this.t += dt;
+  }
+  com(out) {
+    for (let k = 0; k < 8; k++) out[k] = 0;
+    let M = 0;
+    const n = this.n, m = this.m, x = this.x, v = this.v, al = this.alive;
+    for (let i = 0; i < n; i++) {
+      if (!al[i]) continue;
+      const mi = m[i], i4 = i << 2; M += mi;
+      for (let k = 0; k < 4; k++) { out[k] += mi * x[i4 + k]; out[4 + k] += mi * v[i4 + k]; }
+    }
+    if (M > 0) for (let k = 0; k < 8; k++) out[k] /= M;
+    return M;
+  }
+  energy(ph) {
+    const n = this.n, m = this.m, x = this.x, v = this.v, al = this.alive, k = ph.tether || 0;
+    let ke = 0, pe = 0;
+    for (let i = 0; i < n; i++) {
+      if (!al[i]) continue;
+      const i4 = i << 2;
+      ke += 0.5 * m[i] * (v[i4] ** 2 + v[i4 + 1] ** 2 + v[i4 + 2] ** 2 + v[i4 + 3] ** 2);
+      if (k > 0) pe += 0.5 * k * m[i] * (x[i4] ** 2 + x[i4 + 1] ** 2 + x[i4 + 2] ** 2 + x[i4 + 3] ** 2);
+      for (let j = i + 1; j < n; j++) {
+        if (!al[j]) continue;
+        const j4 = j << 2;
+        const r2 = (x[j4] - x[i4]) ** 2 + (x[j4 + 1] - x[i4 + 1]) ** 2 + (x[j4 + 2] - x[i4 + 2]) ** 2 + (x[j4 + 3] - x[i4 + 3]) ** 2;
+        pe -= ph.G * m[i] * m[j] * potPhi(ph, r2 + ph.eps2);
+      }
+    }
+    return { E: ke + pe, ke, pe };
+  }
+  merge(i, j) {
+    if (this.m[j] > this.m[i]) { const t = i; i = j; j = t; }
+    const mi = this.m[i], mj = this.m[j], M = mi + mj, i4 = i << 2, j4 = j << 2;
+    for (let k = 0; k < 4; k++) {
+      this.x[i4 + k] = (mi * this.x[i4 + k] + mj * this.x[j4 + k]) / M;
+      this.v[i4 + k] = (mi * this.v[i4 + k] + mj * this.v[j4 + k]) / M;
+      this.v[j4 + k] = 0; this.a[j4 + k] = 0;
+    }
+    this.m[i] = M; this.m[j] = 0; this.alive[j] = 0;
+    return { keep: i, gone: j };
+  }
+}
+
+/* Fixed base step keeps leapfrog symplectic; it only shrinks during genuine close encounters. */
+function chooseDt(sim, dtBase, eta) {
+  const dtAdapt = 2.5 * eta * Math.sqrt(sim.minTau2);
+  return dtAdapt < dtBase ? dtAdapt : dtBase;
+}
+
+/* ---------------- 4D geometry ---------------- */
+function dot4(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3]; }
+function normalize4(q) { const L = Math.hypot(q[0], q[1], q[2], q[3]) || 1; for (let k = 0; k < 4; k++) q[k] /= L; return q; }
+function rot4(q, a, b, ang) { const c = Math.cos(ang), s = Math.sin(ang), qa = q[a], qb = q[b]; q[a] = qa * c - qb * s; q[b] = qa * s + qb * c; }
+function planeFromTilts(t) { // orbital 2-plane: start in xy, tilt through xz, xw, yz, yw
+  const u = [1, 0, 0, 0], w = [0, 1, 0, 0];
+  for (const q of [u, w]) { rot4(q, 0, 2, t[0]); rot4(q, 0, 3, t[1]); rot4(q, 1, 2, t[2]); rot4(q, 1, 3, t[3]); }
+  return [u, w];
+}
+function orthoPlane(a, b) {
+  const u = normalize4(a.slice()), d = dot4(b, u);
+  return [u, normalize4(b.map((bv, k) => bv - d * u[k]))];
+}
+function complementPlane(u, w) { // the plane absolutely perpendicular to (u,w): only exists in 4D
+  const out = [];
+  for (const e of [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]) {
+    const q = e.slice();
+    for (const b of [u, w, ...out]) { const d = dot4(q, b); for (let k = 0; k < 4; k++) q[k] -= d * b[k]; }
+    const L = Math.hypot(q[0], q[1], q[2], q[3]);
+    if (L > 0.3) { out.push(q.map(c => c / L)); if (out.length === 2) break; }
+  }
+  return out;
+}
+function hopfPlane(eta, xi1, xi2) { // plane of a Hopf fibre: Clifford-parallel planes never share a line
+  const c = Math.cos(eta / 2), s = Math.sin(eta / 2);
+  return [[c * Math.cos(xi1), c * Math.sin(xi1), s * Math.cos(xi2), s * Math.sin(xi2)],
+          [-c * Math.sin(xi1), c * Math.cos(xi1), -s * Math.sin(xi2), s * Math.cos(xi2)]];
+}
+function zeroMomentum(sim) {
+  const c = new Float64Array(8); sim.com(c);
+  for (let i = 0; i < sim.n; i++) for (let k = 0; k < 4; k++) { sim.x[i * 4 + k] -= c[k]; sim.v[i * 4 + k] -= c[4 + k]; }
+}
+function placeTwoBody(ph, m1, m2, r, plane, phase, k = 1) {
+  const Mt = m1 + m2, vc = circSpeed(ph, Mt, r) * k, [u, w] = plane, c = Math.cos(phase), s = Math.sin(phase);
+  const o = { x1: [], v1: [], x2: [], v2: [] };
+  for (let q = 0; q < 4; q++) {
+    const rel = r * (c * u[q] + s * w[q]), relv = vc * (-s * u[q] + c * w[q]);
+    o.x1.push(-m2 / Mt * rel); o.v1.push(-m2 / Mt * relv); o.x2.push(m1 / Mt * rel); o.v2.push(m1 / Mt * relv);
+  }
+  return o;
+}
+
+/* ---------------- configuration builders ---------------- */
+// Hierarchical (Jacobi) builder: body i orbits the centre of mass of bodies 0..i-1.
+function buildHier(masses, orbits, ph) {
+  const n = masses.length, sim = new Sim(n), er = [0, 0, 0, 0], et = [0, 0, 0, 0];
+  for (let i = 0; i < n; i++) sim.m[i] = masses[i];
+  let M = masses[0];
+  for (let i = 1; i < n; i++) {
+    const o = orbits[i - 1], mi = masses[i], Mt = M + mi;
+    const vc = circSpeed(ph, Mt, o.r), [u, w] = o.plane, c = Math.cos(o.phase || 0), s = Math.sin(o.phase || 0);
+    const fIn = mi / Mt, fOut = M / Mt, kk = o.k == null ? 1 : o.k, kick = o.kick || 0;
+    for (let q = 0; q < 4; q++) { er[q] = c * u[q] + s * w[q]; et[q] = -s * u[q] + c * w[q]; }
+    for (let q = 0; q < 4; q++) {
+      const rho = o.r * er[q], rhod = vc * (kk * et[q] + kick * er[q]);
+      for (let j = 0; j < i; j++) { sim.x[j * 4 + q] -= fIn * rho; sim.v[j * 4 + q] -= fIn * rhod; }
+      sim.x[i * 4 + q] = fOut * rho; sim.v[i * 4 + q] = fOut * rhod;
+    }
+    M = Mt;
+  }
+  return sim;
+}
+
+// name, mass (solar masses), a (AU), e, i, node, arg. perihelion, mean anomaly (deg, J2000), colour
+const SOLAR = [
+  ['Mercury', 1.6601e-7, 0.387098, 0.205630, 7.005, 48.331, 29.124, 174.796, '#b9b1a7'],
+  ['Venus', 2.4478e-6, 0.723332, 0.006772, 3.395, 76.680, 54.884, 50.115, '#f0d08f'],
+  ['Earth', 3.0404e-6, 1.000000, 0.016709, 0.000, 348.739, 114.208, 358.617, '#69b7ff'],
+  ['Mars', 3.2272e-7, 1.523679, 0.093400, 1.850, 49.558, 286.502, 19.412, '#ff8357'],
+  ['Jupiter', 9.5479e-4, 5.2044, 0.0489, 1.303, 100.464, 273.867, 20.020, '#e2ab70'],
+  ['Saturn', 2.8589e-4, 9.5826, 0.0565, 2.485, 113.665, 339.392, 317.020, '#ecd9a5'],
+  ['Uranus', 4.3662e-5, 19.2184, 0.046381, 0.773, 74.006, 96.998, 142.2386, '#a2e9ee'],
+  ['Neptune', 5.1514e-5, 30.110, 0.009456, 1.770, 131.784, 273.187, 256.228, '#7092ff'],
+  ['Pluto', 6.58e-9, 39.482, 0.2488, 17.16, 110.299, 113.834, 14.53, '#cfae95'],
+];
+function keplerToState(G, Mc, a, e, iDeg, OmDeg, omDeg, MDeg) {
+  const d = Math.PI / 180, inc = iDeg * d, Om = OmDeg * d, om = omDeg * d, M = MDeg * d;
+  let E = M;
+  for (let k = 0; k < 40; k++) E -= (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
+  const n = Math.sqrt(G * Mc / (a * a * a)), cE = Math.cos(E), sE = Math.sin(E), b = Math.sqrt(1 - e * e);
+  const px = a * (cE - e), py = a * b * sE, Ed = n / (1 - e * cE), vx = -a * sE * Ed, vy = a * b * cE * Ed;
+  const cO = Math.cos(Om), sO = Math.sin(Om), ci = Math.cos(inc), si = Math.sin(inc), co = Math.cos(om), so = Math.sin(om);
+  const R11 = cO * co - sO * so * ci, R12 = -cO * so - sO * co * ci;
+  const R21 = sO * co + cO * so * ci, R22 = -sO * so + cO * co * ci;
+  const R31 = so * si, R32 = co * si;
+  return { x: [R11 * px + R12 * py, R21 * px + R22 * py, R31 * px + R32 * py, 0],
+           v: [R11 * vx + R12 * vy, R21 * vx + R22 * vy, R31 * vx + R32 * vy, 0] };
+}
+function tiltInto(vec, d, beta) { // rotate in the plane spanned by unit d (in xyz) and the W axis
+  const a = vec[0] * d[0] + vec[1] * d[1] + vec[2] * d[2], b = vec[3], c = Math.cos(beta), s = Math.sin(beta);
+  const a2 = a * c - b * s;
+  vec[0] += (a2 - a) * d[0]; vec[1] += (a2 - a) * d[1]; vec[2] += (a2 - a) * d[2]; vec[3] = a * s + b * c;
+}
+function buildSolar(opt, ph) {
+  const list = SOLAR.filter(p => opt.pluto || p[0] !== 'Pluto');
+  const sim = new Sim(list.length + 1), meta = [{ name: 'Sun', color: '#ffd27a', primary: true }];
+  sim.m[0] = 1;
+  list.forEach((pl, k) => {
+    const [name, mass, a, e, inc, Om, om, M0, color] = pl, mm = mass * opt.massMul;
+    const st = keplerToState(ph.G, 1 + mm, a, e, inc, Om, om, M0);
+    // hyper-inclination: each planet's real inclination is mirrored into the 4th dimension
+    const beta = (k % 2 ? -1 : 1) * Math.min(80, opt.tiltDeg * (inc + 2) / 7) * Math.PI / 180;
+    const OmR = Om * Math.PI / 180, dir = [-Math.sin(OmR), Math.cos(OmR), 0];
+    tiltInto(st.x, dir, beta); tiltInto(st.v, dir, beta);
+    sim.m[k + 1] = mm;
+    for (let q = 0; q < 4; q++) { sim.x[(k + 1) * 4 + q] = st.x[q]; sim.v[(k + 1) * 4 + q] = st.v[q]; }
+    meta.push({ name, color });
+  });
+  zeroMomentum(sim);
+  return { sim, meta };
+}
+function buildFigure8() { // Chenciner-Montgomery choreography (G = m = 1), laid in a tilted 4D plane
+  const sim = new Sim(3); sim.m.fill(1);
+  const P = [[0.97000436, -0.24308753], [-0.97000436, 0.24308753], [0, 0]];
+  const V = [[0.466203685, 0.43236573], [0.466203685, 0.43236573], [-0.93240737, -0.86473146]];
+  const [u, w] = orthoPlane([1, 0, 0.35, 0.55], [0, 1, -0.45, 0.3]);
+  for (let i = 0; i < 3; i++) for (let q = 0; q < 4; q++) {
+    sim.x[i * 4 + q] = P[i][0] * u[q] + P[i][1] * w[q]; sim.v[i * 4 + q] = V[i][0] * u[q] + V[i][1] * w[q];
+  }
+  return sim;
+}
+function buildLagrange(ph) { // star, planet, Trojans at L4/L5, and a guardian in the perpendicular plane
+  const ms = 1, mp = 1e-3, mt = 2e-7, d = 2, sim = new Sim(5), M = ms + mp;
+  const [u, w] = orthoPlane([1, 0, 0.25, 0.45], [0, 1, 0.5, -0.2]);
+  const om = Math.sqrt(ph.G * M * Math.pow(d * d + ph.eps2, -(ph.p + 1) / 2)), sx = -mp / M * d, h = d * Math.sqrt(3) / 2;
+  const pts = [[sx, 0], [sx + d, 0], [sx + d / 2, h], [sx + d / 2, -h]], mm = [ms, mp, mt, mt];
+  for (let i = 0; i < 4; i++) {
+    sim.m[i] = mm[i];
+    const [px, py] = pts[i];
+    for (let q = 0; q < 4; q++) { sim.x[i * 4 + q] = px * u[q] + py * w[q]; sim.v[i * 4 + q] = om * (-py * u[q] + px * w[q]); }
+  }
+  const [u2, w2] = complementPlane(u, w), r = 5.2, mo = 6e-5, vc = circSpeed(ph, M + mo, r);
+  sim.m[4] = mo;
+  for (let q = 0; q < 4; q++) { sim.x[16 + q] = r * u2[q]; sim.v[16 + q] = vc * w2[q]; }
+  zeroMomentum(sim);
+  return sim;
+}
+function buildTatooine(ph) {
+  return buildHier([1, 0.5, 3e-4, 1e-4, 2e-4], [
+    { r: 1.0, plane: planeFromTilts([0, 0, 0, 0]), phase: 0 },
+    { r: 3.4, plane: planeFromTilts([0.25, 0.55, 0.1, 0.2]), phase: 1.2 },
+    { r: 5.1, plane: planeFromTilts([-0.3, -0.9, 0.35, 0.4]), phase: 2.7 },
+    { r: 7.6, plane: planeFromTilts([0.5, 0.35, -0.4, -1.1]), phase: 4.4 }], ph);
+}
+function buildHopf(nb, ph) { // planets on Hopf fibres: their orbits are linked circles that can never cross
+  const K = Math.max(2, nb - 1), masses = [1], orbits = [], golden = Math.PI * (3 - Math.sqrt(5));
+  for (let k = 0; k < K; k++) {
+    masses.push(1.5e-4);
+    orbits.push({ r: 1.6 * Math.pow(1.24, k), plane: hopfPlane(Math.acos(1 - 2 * (k + 0.5) / K), 0, k * golden), phase: k * 2.2 });
+  }
+  return buildHier(masses, orbits, ph);
+}
+function buildQuad(ph) { // two binaries, in absolutely perpendicular planes, orbiting each other
+  const A = placeTwoBody(ph, 1, 0.8, 0.5, planeFromTilts([0, 0, 0, 0]), 0);
+  const B = placeTwoBody(ph, 0.7, 0.6, 0.42, [[0, 0, 1, 0], [0, 0, 0, 1]], 1.3);
+  const O = placeTwoBody(ph, 1.8, 1.3, 5.5, orthoPlane([1, 0, 0.6, 0.3], [0, 0.5, -0.3, 1]), 0.4);
+  const sim = new Sim(4), ms = [1, 0.8, 0.7, 0.6];
+  const parts = [[O.x1, O.v1, A.x1, A.v1], [O.x1, O.v1, A.x2, A.v2], [O.x2, O.v2, B.x1, B.v1], [O.x2, O.v2, B.x2, B.v2]];
+  for (let i = 0; i < 4; i++) {
+    sim.m[i] = ms[i];
+    const [cx, cv, rx, rv] = parts[i];
+    for (let q = 0; q < 4; q++) { sim.x[i * 4 + q] = cx[q] + rx[q]; sim.v[i * 4 + q] = cv[q] + rv[q]; }
+  }
+  return sim;
+}
+function buildCluster(nb, rng, ph) {
+  const sim = new Sim(nb);
+  for (let i = 0; i < nb; i++) {
+    sim.m[i] = 0.4 + 1.2 * rng();
+    const q = normalize4([gauss(rng), gauss(rng), gauss(rng), gauss(rng)]), r = 2.5 * Math.pow(rng(), 0.25);
+    for (let k = 0; k < 4; k++) { sim.x[i * 4 + k] = q[k] * r; sim.v[i * 4 + k] = gauss(rng); }
+  }
+  zeroMomentum(sim);
+  const e = sim.energy(ph), f = Math.sqrt(0.35 * Math.abs(e.pe) / Math.max(e.ke, 1e-12));
+  for (let k = 0; k < nb * 4; k++) sim.v[k] *= f;
+  return sim;
+}
+function buildOriginal(nb, rng) { // the first "4D Gravity Melody": a tethered, softened 4D swarm
+  const sim = new Sim(nb);
+  for (let i = 0; i < nb; i++) {
+    sim.m[i] = rng() * 40 + 20;
+    for (let k = 0; k < 4; k++) { sim.x[i * 4 + k] = (rng() - 0.5) * 400; sim.v[i * 4 + k] = (rng() - 0.5) * 1.5; }
+  }
+  return sim;
+}
+function systemScales(sim, Tpreset) {
+  const c = new Float64Array(8); sim.com(c);
+  const rs = [], vs = [];
+  let ext = 0;
+  for (let i = 0; i < sim.n; i++) {
+    if (!sim.alive[i]) { rs.push(0); vs.push(0); continue; }
+    let r2 = 0, v2 = 0;
+    for (let k = 0; k < 4; k++) { r2 += (sim.x[i * 4 + k] - c[k]) ** 2; v2 += (sim.v[i * 4 + k] - c[4 + k]) ** 2; }
+    rs.push(Math.sqrt(r2)); vs.push(Math.sqrt(v2)); ext = Math.max(ext, rs[i]);
+  }
+  let Tfast = Infinity, Rfast = ext || 1;
+  for (let i = 0; i < sim.n; i++) {
+    if (sim.alive[i] && rs[i] > 0.03 * ext) {
+      const T = TAU * rs[i] / Math.max(vs[i], 1e-12);
+      if (T < Tfast) { Tfast = T; Rfast = rs[i]; }
+    }
+  }
+  if (!(Tfast < Infinity)) Tfast = Tpreset;
+  return { R: ext || 1, Tfast: Math.min(Tfast, Tpreset), Rfast };
+}
+
+/* ---------------- optimizer parameter space ---------------- */
+const OPT_K = 9, OPT_A_MAX = 8;
+const PARAM_NAMES = ['mass', 'orbit radius', 'speed', 'radial kick', 'phase', 'tilt x-z', 'tilt x-w', 'tilt y-z', 'tilt y-w'];
+const FEATURES = [
+  { label: 'mass', min: -4, max: 0, desc: 'mean log10 mass ratio' },
+  { label: 'mass spread', min: 0, max: 2, desc: 'spread of log masses' },
+  { label: 'span', min: 0, max: Math.log(OPT_A_MAX), desc: 'ln(outer / inner orbit)' },
+  { label: 'gap', min: 0, max: Math.log(OPT_A_MAX), desc: 'ln(tightest neighbour ratio)' },
+  { label: 'speed', min: 0.6, max: 1.4, desc: 'mean speed / circular speed' },
+  { label: 'eccentric', min: 0, max: 0.7, desc: 'departure from circular' },
+  { label: 'into W', min: 0, max: 1, desc: 'how far orbit planes lean into the 4th axis' },
+];
+function optDim(nb) { return (nb - 1) * OPT_K; }
+function isPeriodicParam(i) { return i % OPT_K === 4; }
+function randomTheta(D) { const t = new Array(D); for (let i = 0; i < D; i++) t[i] = Math.random(); return t; }
+function decodeTheta(th, nb) {
+  const items = [];
+  for (let b = 0; b < nb - 1; b++) {
+    const o = b * OPT_K, logmu = -4 + 4 * th[o];
+    items.push({
+      slot: b, logmu, mu: Math.pow(10, logmu), a: Math.pow(OPT_A_MAX, th[o + 1]),
+      k: 0.6 + 0.8 * th[o + 2], kick: -0.3 + 0.6 * th[o + 3], phase: TAU * th[o + 4],
+      tilts: [(th[o + 5] - 0.5) * Math.PI, (th[o + 6] - 0.5) * Math.PI, (th[o + 7] - 0.5) * Math.PI, (th[o + 8] - 0.5) * Math.PI],
+    });
+  }
+  items.sort((p, q) => p.a - q.a);
+  const masses = [1], orbits = [];
+  for (const it of items) { masses.push(it.mu); orbits.push({ r: it.a, k: it.k, kick: it.kick, phase: it.phase, plane: planeFromTilts(it.tilts) }); }
+  const mean = arr => arr.reduce((s, v) => s + v, 0) / arr.length, nI = items.length;
+  const lm = items.map(i => i.logmu), mlm = mean(lm);
+  let gap = OPT_A_MAX;
+  for (let i = 1; i < nI; i++) gap = Math.min(gap, items[i].a / items[i - 1].a);
+  const features = [mlm, Math.sqrt(mean(lm.map(v => (v - mlm) ** 2))), Math.log(items[nI - 1].a / items[0].a),
+    Math.log(nI > 1 ? gap : OPT_A_MAX), mean(items.map(i => i.k)), mean(items.map(i => Math.abs(i.k - 1) + Math.abs(i.kick))),
+    mean(orbits.map(o => Math.min(1, Math.hypot(o.plane[0][3], o.plane[1][3]))))];
+  return { masses, orbits, items, features };
+}
+function buildFromTheta(theta, nb, ph) { const d = decodeTheta(theta, nb); return { sim: buildHier(d.masses, d.orbits, ph), dec: d }; }
+
+const CONSONANCES = [[1, 1], [2, 1], [1.5, 0.95], [4 / 3, 0.85], [1.25, 0.75], [5 / 3, 0.75], [1.2, 0.7], [1.6, 0.65], [1.75, 0.4], [1.125, 0.3], [1.875, 0.3]];
+function consonance(ratio) { // how close a frequency ratio sits to a just interval, octave-folded
+  let r = ratio;
+  while (r >= 2) r /= 2;
+  while (r < 1) r *= 2;
+  let best = 0;
+  for (const [c, wt] of CONSONANCES) { const d = 1200 * Math.log2(r / c) / 20; best = Math.max(best, wt * Math.exp(-d * d)); }
+  return best;
+}
+function det4(A) {
+  const M = A.map(r => r.slice());
+  let det = 1;
+  for (let c = 0; c < 4; c++) {
+    let p = c;
+    for (let r = c + 1; r < 4; r++) if (Math.abs(M[r][c]) > Math.abs(M[p][c])) p = r;
+    if (Math.abs(M[p][c]) < 1e-300) return 0;
+    if (p !== c) { const t = M[p]; M[p] = M[c]; M[c] = t; det = -det; }
+    det *= M[c][c];
+    for (let r = c + 1; r < 4; r++) { const f = M[r][c] / M[c][c]; for (let k = c; k < 4; k++) M[r][k] -= f * M[c][k]; }
+  }
+  return det;
+}
+function spread4(c) { // geometric / arithmetic mean of covariance eigenvalues: 1 = fills all four dimensions
+  const A = [[c[0], c[1], c[2], c[3]], [c[1], c[5], c[6], c[7]], [c[2], c[6], c[10], c[11]], [c[3], c[7], c[11], c[15]]];
+  const tr = A[0][0] + A[1][1] + A[2][2] + A[3][3];
+  if (!(tr > 0)) return 0;
+  return clamp(Math.pow(Math.max(det4(A), 0), 0.25) / (tr / 4), 0, 1);
+}
+
+/* ---------------- evaluation of one candidate (resumable) ---------------- */
+class Evaluation {
+  constructor(theta, nb, ph, opt) {
+    this.nb = nb; this.ph = ph; this.opt = opt;
+    const dec = this.dec = decodeTheta(theta, nb);
+    const A = this.A = buildHier(dec.masses, dec.orbits, ph);
+    A.computeAcc(ph);
+    const r0 = this.r0 = dec.orbits[0].r, rMax = dec.orbits[dec.orbits.length - 1].r;
+    const vc = Math.max(1e-9, circSpeed(ph, dec.masses[0] + dec.masses[1], r0));
+    this.vs = vc; this.Pin = TAU * r0 / vc; this.T = opt.depth * this.Pin;
+    this.rEsc2 = (3 * rMax + 2 * r0) ** 2; this.rColl2 = (0.05 * r0) ** 2;
+    this.sampleDt = this.Pin / 6; this.nextSample = this.sampleDt;
+    if (opt.chaos) { // shadow twin displaced by one part in a billion: a Lyapunov probe
+      const B = this.B = A.clone(), d = 1e-9 * r0;
+      B.x[4] += d; B.x[5] -= 0.6 * d; B.x[6] += 0.3 * d; B.computeAcc(ph);
+      this.d0 = Math.hypot(1, 0.6, 0.3) * 1e-9; this.Yint = 0; this.Ybint = 0;
+    }
+    const e0 = A.energy(ph);
+    this.E0 = e0.E; this.Escale = Math.abs(e0.E) + 0.5 * e0.ke;
+    const k = nb - 1;
+    this.eps0 = new Float64Array(k).fill(NaN); this.escale = new Float64Array(k); this.drift = new Float64Array(k);
+    this.omSum = new Float64Array(k); this.cov = new Float64Array(16);
+    this.fracSum = 0; this.samples = 0; this.steps = 0; this.fail = null; this.done = false;
+    this.sample();
+  }
+  sample() {
+    const A = this.A, ph = this.ph, n = A.n, x = A.x, v = A.v, m = A.m, G = ph.G, cov = this.cov;
+    for (let i = 0; i < n; i++) {
+      const i4 = i << 2, r2 = x[i4] ** 2 + x[i4 + 1] ** 2 + x[i4 + 2] ** 2 + x[i4 + 3] ** 2;
+      if (!(r2 <= this.rEsc2)) { this.fail = 'ejection'; return; }
+    }
+    let M = m[0], sx = m[0] * x[0], sy = m[0] * x[1], sz = m[0] * x[2], sw = m[0] * x[3];
+    let tx = m[0] * v[0], ty = m[0] * v[1], tz = m[0] * v[2], tw = m[0] * v[3];
+    const c = [0, 0, 0, 0];
+    for (let i = 1; i < n; i++) {
+      const i4 = i << 2, mi = m[i];
+      const rx = x[i4] - sx / M, ry = x[i4 + 1] - sy / M, rz = x[i4 + 2] - sz / M, rw = x[i4 + 3] - sw / M;
+      const ux = v[i4] - tx / M, uy = v[i4 + 1] - ty / M, uz = v[i4 + 2] - tz / M, uw = v[i4 + 3] - tw / M;
+      const r2 = rx * rx + ry * ry + rz * rz + rw * rw, u2 = ux * ux + uy * uy + uz * uz + uw * uw;
+      const ru = rx * ux + ry * uy + rz * uz + rw * uw, Mt = M + mi, j = i - 1;
+      const eps = 0.5 * u2 - G * Mt * potPhi(ph, r2 + ph.eps2); // Jacobi orbital energy
+      if (this.eps0[j] !== this.eps0[j]) { this.eps0[j] = eps; this.escale[j] = Math.abs(eps) + 0.25 * u2 + 1e-30; }
+      else { const d = Math.abs(eps - this.eps0[j]) / this.escale[j]; if (d > this.drift[j]) this.drift[j] = d; }
+      const rr = Math.max(r2, 1e-30);
+      this.omSum[j] += Math.sqrt(Math.max(0, r2 * u2 - ru * ru)) / rr; // 4D angular speed |r^v|/r^2
+      c[0] = rx; c[1] = ry; c[2] = rz; c[3] = rw;
+      for (let a = 0; a < 4; a++) for (let b = a; b < 4; b++) cov[a * 4 + b] += c[a] * c[b] / rr;
+      sx += mi * x[i4]; sy += mi * x[i4 + 1]; sz += mi * x[i4 + 2]; sw += mi * x[i4 + 3];
+      tx += mi * v[i4]; ty += mi * v[i4 + 1]; tz += mi * v[i4 + 2]; tw += mi * v[i4 + 3];
+      M = Mt;
+    }
+    let ft = 0;
+    const half = -(ph.p + 1) / 2;
+    for (let i = 1; i < n; i++) { // does each body feel more than one master?
+      let fmax = 0, fsum = 0;
+      const i4 = i << 2;
+      for (let k = 0; k < n; k++) {
+        if (k === i) continue;
+        const k4 = k << 2;
+        const r2 = (x[k4] - x[i4]) ** 2 + (x[k4 + 1] - x[i4 + 1]) ** 2 + (x[k4 + 2] - x[i4 + 2]) ** 2 + (x[k4 + 3] - x[i4 + 3]) ** 2;
+        const f = m[k] * Math.sqrt(r2) * Math.pow(r2 + ph.eps2, half);
+        fsum += f; if (f > fmax) fmax = f;
+      }
+      ft += fsum > 0 ? 1 - fmax / fsum : 0;
+    }
+    this.fracSum += ft / (n - 1);
+    this.samples++;
+    if ((this.samples & 7) === 0) {
+      const E = A.energy(ph).E;
+      if (!(Math.abs(E - this.E0) <= 0.05 * this.Escale)) this.fail = 'numerics';
+    }
+  }
+  run(budget) {
+    const A = this.A, B = this.B, ph = this.ph, eta = this.opt.eta, dtMin = this.Pin * 1e-6;
+    if (!this.dtBase) this.dtBase = Math.min(this.Pin / 40, eta * Math.sqrt(A.minTau2));
+    for (let k = 0; k < budget && !this.done; k++) {
+      const dt = chooseDt(A, this.dtBase, eta);
+      if (dt < dtMin) { this.fail = 'encounter'; this.done = true; break; }
+      A.step(dt, ph);
+      if (B) {
+        B.step(dt, ph);
+        const r = megnoRate(A, B, this.r0, this.vs);
+        if (r.d > 0 && isFinite(r.d)) {
+          this.Yint += r.rate * A.t * dt;
+          this.Ybint += 2 * this.Yint / A.t * dt;
+          if (r.d > 1e-6) renormShadow(A, B, this.d0 / r.d, ph);
+        }
+      }
+      this.steps++;
+      if (A.minR2 < this.rColl2) { this.fail = 'collision'; this.done = true; break; }
+      if (A.t >= this.nextSample) { this.nextSample += this.sampleDt; this.sample(); if (this.fail) { this.done = true; break; } }
+      if (A.t >= this.T) { this.done = true; break; }
+      if (this.steps >= (this.opt.maxSteps || 150000)) { this.fail = 'stiff'; this.done = true; break; }
+    }
+    return this.done;
+  }
+  result() {
+    const A = this.A, k = this.nb - 1, o = this.opt, w = o.weights, tFrac = clamp(A.t / this.T, 0, 1);
+    let reg = 0;
+    for (let j = 0; j < k; j++) reg += 1 / (1 + this.drift[j] / 0.04);
+    reg /= k;
+    let chaos = 0, megno = 0;
+    if (this.B && A.t > 0) {
+      megno = this.Ybint / A.t;
+      if (!(megno === megno)) megno = 99;
+      chaos = clamp((megno - 2.12) / 1.5, 0, 1);
+    }
+    const ok = !this.fail;
+    const stab = ok ? 0.45 + 0.30 * reg + 0.25 * (this.B ? 1 - chaos : reg) : 0.45 * tFrac;
+    const ns = Math.max(1, this.samples), q4 = spread4(this.cov), qI = 1 - Math.exp(-(this.fracSum / ns) / 0.1);
+    let harm = 0, np = 0;
+    for (let i = 0; i < k; i++) for (let j = i + 1; j < k; j++) {
+      const a = this.omSum[i] / ns, b = this.omSum[j] / ns;
+      if (a > 0 && b > 0) { harm += consonance(Math.max(a, b) / Math.min(a, b)); np++; }
+    }
+    harm = np ? harm / np : 0;
+    const flavor = (1 + w.d4 * q4 + w.inter * qI + w.harm * harm) / (1 + w.d4 + w.inter + w.harm);
+    return { score: 100 * stab * flavor, stab, ok, tFrac, reg, chaos, megno, q4, qI, harm, fail: this.fail,
+             features: this.dec.features, orbitsSurvived: tFrac * o.depth };
+  }
+}
+
+/* ---------------- the climber ensemble ---------------- */
+class Optimizer {
+  constructor() { this.opts = null; this.onBest = null; this.reset(4, 4); }
+  configure(opts) { this.opts = opts; }
+  reset(nb, nClimbers) {
+    this.nb = nb; this.D = optDim(nb); this.evals = 0; this.history = []; this.bestTrace = []; this.best = null;
+    this.hall = []; this.hallVersion = 0; this.restarts = 0; this.rr = 0; this.slice = null; this.climbers = [];
+    this.verify = null; this.pending = null; this.verified = 0; this.rejected = 0;
+    for (let c = 0; c < nClimbers; c++) this.climbers.push(this.makeClimber(c, randomTheta(this.D)));
+    this.rateT = nowMs(); this.rateN = 0; this.rate = 0; this.version = 0;
+  }
+  makeClimber(id, theta) { return { id, theta, score: -1, res: null, sigma: 0.08, trials: 0, succ: 0, since: 0, job: null, cand: null, trace: [], path: [theta.slice()] }; }
+  setClimbers(k) {
+    while (this.climbers.length < k) this.climbers.push(this.makeClimber(this.climbers.length, this.best ? this.mutate(this.best.theta, 0.15) : randomTheta(this.D)));
+    if (this.climbers.length > k) this.climbers.length = k;
+  }
+  rebase() { // the objective changed: keep positions, forget scores
+    for (const c of this.climbers) { c.score = -1; c.job = null; c.trace.push([this.evals, NaN]); }
+    if (this.best && this.climbers[0]) this.climbers[0].theta = this.best.theta.slice();
+    this.best = null; this.hall = []; this.hallVersion++; this.bestTrace.push([this.evals, NaN]); this.slice = null; this.verify = null; this.pending = null;
+  }
+  mutate(theta, sigma) {
+    const D = this.D, out = theta.slice();
+    if (Math.random() < 0.3) { // reshape a single body
+      const b = Math.floor(Math.random() * (this.nb - 1));
+      for (let k = 0; k < OPT_K; k++) out[b * OPT_K + k] += 2 * sigma * gauss(Math.random);
+    } else for (let i = 0; i < D; i++) out[i] += sigma * gauss(Math.random);
+    for (let i = 0; i < D; i++) {
+      if (isPeriodicParam(i)) out[i] -= Math.floor(out[i]);
+      else { let v = out[i]; for (let g = 0; g < 4 && (v < 0 || v > 1); g++) v = v < 0 ? -v : 2 - v; out[i] = clamp(v, 0, 1); }
+    }
+    return out;
+  }
+  tick(budgetMs) {
+    const t0 = nowMs();
+    let guard = 0;
+    while (nowMs() - t0 < budgetMs && guard++ < 20000) {
+      if (this.verify) { // long confirmation run for a would-be champion
+        const v = this.verify;
+        if (!v.job) v.job = new Evaluation(v.theta, this.nb, this.opts.ph, Object.assign({}, this.opts, { depth: this.opts.depth * 4 }));
+        if (v.job.run(400)) {
+          const r = v.job.result(); r.verified = true; r.quick = v.quick; this.verified++;
+          if (r.score < v.quick.score * 0.8) this.rejected++;
+          this.considerBest(v.theta, r);
+          const p = this.pending; this.pending = null;
+          this.verify = p && p.quick.score > (this.best ? this.best.score : 0) + 0.3 ? p : null;
+        }
+        continue;
+      }
+      if (this.slice && !this.slice.done) { this.sliceStep(); continue; }
+      const c = this.climbers[this.rr % this.climbers.length];
+      if (!c.job) {
+        c.cand = c.score < 0 ? c.theta.slice() : this.mutate(c.theta, c.sigma);
+        c.job = new Evaluation(c.cand, this.nb, this.opts.ph, this.opts);
+      }
+      if (c.job.run(250)) { this.finish(c); this.rr++; }
+    }
+    const t = nowMs();
+    if (t - this.rateT > 1000) { this.rate = this.rateN * 1000 / (t - this.rateT); this.rateN = 0; this.rateT = t; }
+  }
+  finish(c) {
+    const res = c.job.result(), theta = c.cand;
+    c.job = null; this.evals++; this.rateN++; this.version++; c.trials++;
+    this.history.push({ e: this.evals, c: c.id, s: res.score, st: res.stab, theta, f: res.features });
+    if (this.history.length > 1500) this.history.shift();
+    if (res.score >= c.score) {
+      if (res.score > c.score + 1e-9) c.since = 0; else c.since++;
+      c.succ++; c.theta = theta; c.score = res.score; c.res = res;
+      c.trace.push([this.evals, res.score]); if (c.trace.length > 600) c.trace.shift();
+      c.path.push(theta); if (c.path.length > 80) c.path.shift();
+    } else c.since++;
+    if (c.trials % 12 === 0) { // 1/5th success rule
+      c.sigma = clamp(c.sigma * (c.succ / 12 > 0.2 ? 1.25 : 0.82), 0.004, 0.35); c.succ = 0;
+    }
+    this.propose(theta, res);
+    if (c.since > 70 || c.sigma <= 0.0041) this.restart(c);
+  }
+  propose(theta, res) { // quick result good enough to challenge the champion? queue a long verification
+    const bar = this.best ? this.best.score : 0;
+    if (res.score <= bar + 0.3) return;
+    const cand = { theta: theta.slice(), quick: res, job: null };
+    if (!this.verify) this.verify = cand;
+    else if (!this.pending || res.score > this.pending.quick.score) this.pending = cand;
+  }
+  considerBest(theta, res) {
+    if (!this.best || res.score > this.best.score) {
+      this.best = { theta: theta.slice(), score: res.score, res, nb: this.nb, at: this.evals };
+      this.bestTrace.push([this.evals, res.score]);
+      if (this.onBest) this.onBest(this.best);
+    }
+    this.updateHall(theta, res);
+  }
+  updateHall(theta, res) {
+    if (res.score <= 0) return;
+    const h = this.hall;
+    for (let i = 0; i < h.length; i++) {
+      let d2 = 0;
+      for (let k = 0; k < theta.length; k++) d2 += (theta[k] - h[i].theta[k]) ** 2;
+      if (d2 < 0.15 * 0.15 * theta.length / 9) { // same family
+        if (res.score > h[i].score) { h[i] = { theta: theta.slice(), score: res.score, res, nb: this.nb }; h.sort((a, b) => b.score - a.score); this.hallVersion++; }
+        return;
+      }
+    }
+    if (h.length >= 6 && res.score <= h[h.length - 1].score) return;
+    h.push({ theta: theta.slice(), score: res.score, res, nb: this.nb });
+    h.sort((a, b) => b.score - a.score);
+    if (h.length > 6) h.length = 6;
+    this.hallVersion++;
+  }
+  restart(c) {
+    this.restarts++;
+    c.theta = this.best && Math.random() < 0.5 ? this.mutate(this.best.theta, 0.12) : randomTheta(this.D);
+    c.score = -1; c.sigma = 0.1; c.since = 0; c.trials = 0; c.succ = 0;
+    c.trace.push([this.evals, NaN]); c.path = [c.theta.slice()];
+  }
+  startSlice(ix, iy, grid = 15, span = 0.25) {
+    if (!this.best) return false;
+    const ctr = this.best.theta.slice();
+    const x0 = clamp(ctr[ix] - span, 0, 1 - 2 * span), y0 = clamp(ctr[iy] - span, 0, 1 - 2 * span);
+    this.slice = { ix, iy, grid, center: ctr, x0, x1: x0 + 2 * span, y0, y1: y0 + 2 * span, nb: this.nb,
+      vals: new Float32Array(grid * grid).fill(NaN), stabs: new Float32Array(grid * grid).fill(NaN), idx: 0, job: null, done: false };
+    return true;
+  }
+  sliceTheta(gx, gy) {
+    const s = this.slice, th = s.center.slice();
+    th[s.ix] = s.x0 + (s.x1 - s.x0) * gx / (s.grid - 1);
+    th[s.iy] = s.y0 + (s.y1 - s.y0) * gy / (s.grid - 1);
+    return th;
+  }
+  sliceStep() {
+    const s = this.slice;
+    if (!s.job) { s.theta = this.sliceTheta(s.idx % s.grid, Math.floor(s.idx / s.grid)); s.job = new Evaluation(s.theta, this.nb, this.opts.ph, this.opts); }
+    if (s.job.run(250)) {
+      const r = s.job.result();
+      s.vals[s.idx] = r.score; s.stabs[s.idx] = r.stab; s.job = null; s.idx++;
+      this.evals++; this.rateN++; this.version++;
+      this.propose(s.theta, r);
+      if (s.idx >= s.grid * s.grid) s.done = true;
+    }
+  }
+}
+
+function pca2(vectors, prev) { // top two principal axes of the explored parameter cloud
+  const n = vectors.length, D = vectors[0].length, mean = new Float64Array(D);
+  for (const v of vectors) for (let i = 0; i < D; i++) mean[i] += v[i] / n;
+  const C = new Float64Array(D * D);
+  for (const v of vectors) for (let i = 0; i < D; i++) { const di = v[i] - mean[i]; for (let j = i; j < D; j++) C[i * D + j] += di * (v[j] - mean[j]); }
+  for (let i = 0; i < D; i++) for (let j = 0; j < i; j++) C[i * D + j] = C[j * D + i];
+  const pcs = [];
+  for (let c = 0; c < 2; c++) {
+    let v = prev && prev[c] && prev[c].length === D ? Float64Array.from(prev[c]) : Float64Array.from({ length: D }, () => Math.random() - 0.5);
+    for (let it = 0; it < 40; it++) {
+      const nv = new Float64Array(D);
+      for (let i = 0; i < D; i++) { let s = 0; for (let j = 0; j < D; j++) s += C[i * D + j] * v[j]; nv[i] = s; }
+      for (const p of pcs) { let d = 0; for (let i = 0; i < D; i++) d += nv[i] * p[i]; for (let i = 0; i < D; i++) nv[i] -= d * p[i]; }
+      let L = 0; for (let i = 0; i < D; i++) L += nv[i] * nv[i];
+      L = Math.sqrt(L) || 1;
+      for (let i = 0; i < D; i++) nv[i] /= L;
+      v = nv;
+    }
+    if (prev && prev[c] && prev[c].length === D) { let d = 0; for (let i = 0; i < D; i++) d += v[i] * prev[c][i]; if (d < 0) for (let i = 0; i < D; i++) v[i] = -v[i]; }
+    pcs.push(v);
+  }
+  return { mean, pcs };
+}
+
+/* ---------------- live stability monitor: MEGNO via a renormalised shadow orbit ----------------
+   <Y> -> 0 for stable periodic orbits, -> 2 for quasi-periodic (regular) motion, grows ~ lambda*t/2 under chaos. */
+function megnoRate(A, B, R, V) { // d/dt ln|delta| in normalised phase space
+  let num = 0, den = 0;
+  const n4 = A.n * 4, iR2 = 1 / (R * R), iV2 = 1 / (V * V);
+  for (let q = 0; q < n4; q++) {
+    if (!A.alive[q >> 2]) continue;
+    const dx = B.x[q] - A.x[q], dv = B.v[q] - A.v[q], da = B.a[q] - A.a[q];
+    num += dx * dv * iR2 + dv * da * iV2; den += dx * dx * iR2 + dv * dv * iV2;
+  }
+  return den > 0 ? { rate: num / den, d: Math.sqrt(den) } : { rate: 0, d: 0 };
+}
+function renormShadow(A, B, f, ph) {
+  for (let q = 0; q < A.n * 4; q++) { B.x[q] = A.x[q] + (B.x[q] - A.x[q]) * f; B.v[q] = A.v[q] + (B.v[q] - A.v[q]) * f; }
+  B.alive.set(A.alive); B.m.set(A.m); B.t = A.t; B.computeAcc(ph);
+}
+class Monitor {
+  constructor() { this.status = 'SETTLING'; this.onChange = null; this.megno = null; }
+  reset(sim, ph, sc) {
+    this.ph = ph; this.R = sc.R; this.Tf = sc.Tfast; this.Vs = TAU * sc.Rfast / sc.Tfast;
+    this.excl = new Uint8Array(sim.n); this.disruptedAt = -Infinity; this.kind = '';
+    this.extent0 = this.extent(sim); this.lastEval = sim.t;
+    this.initShadow(sim); this.status = 'SETTLING';
+  }
+  initShadow(sim) {
+    const B = this.shadow = sim.clone(), d = 1e-8 * this.R;
+    for (let i = 0; i < sim.n; i++) if (sim.alive[i]) B.x[i * 4 + (i % 4)] += d * (i % 2 ? -1 : 1);
+    B.computeAcc(this.ph);
+    this.t0 = sim.t; this.Yint = 0; this.Ybint = 0; this.megno = null; this.d0 = 1e-8;
+  }
+  setPhysics(sim, ph) { this.ph = ph; this.initShadow(sim); this.setStatus('SETTLING'); }
+  step(sim, dt) {
+    const B = this.shadow;
+    B.step(dt, this.ph);
+    const s = sim.t - this.t0;
+    const r = megnoRate(sim, B, this.R, this.Vs);
+    if (!(r.d > 0) || !isFinite(r.d)) { this.initShadow(sim); return; }
+    this.Yint += r.rate * s * dt;
+    const Y = s > 0 ? 2 * this.Yint / s : 0;
+    this.Ybint += Y * dt;
+    if (r.d > 1e-5) renormShadow(sim, B, this.d0 / r.d, this.ph);
+  }
+  extent(sim) {
+    const c = new Float64Array(8); sim.com(c);
+    let e = 0;
+    for (let i = 0; i < sim.n; i++) {
+      if (!sim.alive[i] || this.excl[i]) continue;
+      let r2 = 0; for (let k = 0; k < 4; k++) r2 += (sim.x[i * 4 + k] - c[k]) ** 2;
+      e = Math.max(e, Math.sqrt(r2));
+    }
+    return e;
+  }
+  check(sim) {
+    if (sim.t - this.lastEval < 0.5 * this.Tf) return;
+    this.lastEval = sim.t;
+    const s = sim.t - this.t0;
+    this.megno = s > 0 ? this.Ybint / s : null;
+    let st;
+    const age = s / this.Tf;
+    if (sim.t - this.disruptedAt < 8 * this.Tf) st = 'DISRUPTED';
+    else if (age < 6 || this.megno === null) st = 'SETTLING';
+    else if (this.extent(sim) > 2.5 * this.extent0) st = 'CHAOTIC';
+    else if (this.megno < Monitor.TH_STABLE) st = 'STABLE';
+    else if (this.megno < Monitor.TH_MOSTLY) st = 'MOSTLY STABLE';
+    else st = age < 14 && this.megno < 2 * Monitor.TH_MOSTLY ? 'SETTLING' : 'CHAOTIC';
+    this.setStatus(st);
+  }
+  setStatus(st) { if (st !== this.status) { const old = this.status; this.status = st; if (this.onChange) this.onChange(old, st); } }
+  disrupt(sim, kind) { this.disruptedAt = sim.t; this.kind = kind; this.initShadow(sim); this.setStatus('DISRUPTED'); }
+}
+Monitor.TH_STABLE = 2.6;
+Monitor.TH_MOSTLY = 4.5;
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { chooseDt, buildFromTheta, Sim, buildHier, buildSolar, buildFigure8, buildLagrange, buildTatooine, buildHopf, buildQuad, buildCluster,
+    buildOriginal, systemScales, decodeTheta, Evaluation, Optimizer, Monitor, pca2, consonance, spread4, circSpeed, mulberry32, optDim, randomTheta };
+}
+</script>
+<script>'use strict';
+/* ==================================================================
+   MUSIC OF THE SPHERES - app A: settings, presets, harmony, audio
+   ================================================================== */
+const S = {
+  preset: 'solar', nBodies: 7, seed: 7, solarTilt: 20, solarMass: 1, pluto: true,
+  gMul: 1, p: 2, soft: 0, tether: 0, merge: false, eta: 0.02, speed: 0.4, paused: false,
+  sound: true, volume: 0.75, mode: 'bells', pitchSrc: 'kepler', scale: 'justMajor', root: 0, quantize: true,
+  voicing: 'single', decay: 1.4, reverb: 0.35, bpm: 84, rhythmQuant: true, spatial: 'stereo', strings: false, signals: true,
+  optN: 4, optClimbers: 4, optDepth: 60, optChaos: true, optP: 2, optSoft: 0.02, w4d: 0.6, wInter: 0.25, wHarm: 0.4,
+  optBudget: 10, optAuto: true, optRunning: false, sliceX: 1, sliceY: 2, landMode: 'pca',
+  rot4: 0.06, rot3: 0.03, zoom: 1, compress: 0.42, colorMode: 'body', trails: true, trailLen: 900, tethers: false,
+  tetherDist: 0.3, tesseract: true, axes: true, labels: true, followCom: true, showDock: false,
+};
+
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+function genericMeta(n, prefix, primary) {
+  const meta = [];
+  for (let i = 0; i < n; i++) {
+    const h = (i * 360 / n + 200) % 360;
+    meta.push({ name: primary && i === 0 ? primary : prefix + ' ' + ROMAN[primary ? i - 1 : i], color: `hsl(${h},75%,68%)`, primary: !!(primary && i === 0) });
+  }
+  return meta;
+}
+
+const PRESETS = {
+  solar: {
+    label: 'Our solar system, hyper-inclined', G: 4 * Math.PI * Math.PI, R: 1, T: 1, unit: 'yr',
+    defaults: { p: 2, soft: 0, tether: 0, speed: 0.4, compress: 0.42, mode: 'bells', pitchSrc: 'kepler', scale: 'justMajor', tethers: false, labels: true, rot4: 0.05, trailLen: 900 },
+    info: 'Real masses, orbits and J2000 positions. Each planet\'s true inclination is mirrored into the fourth dimension, scaled by the 4D tilt. Set the tilt to zero for the real, flat-3D solar system.',
+    build(ph) { const b = buildSolar({ tiltDeg: S.solarTilt, massMul: S.solarMass, pluto: S.pluto }, ph); return { sim: b.sim, meta: b.meta, viewR: S.pluto ? 41 : 31.5 }; },
+  },
+  original: {
+    label: 'The original 4D melody', G: 0.6, R: 200, T: 222.1, unit: 'T',
+    defaults: { p: 2, soft: 0.0548, tether: 1, speed: 0.27, compress: 1, mode: 'seq', pitchSrc: 'y', scale: 'pentatonic', tethers: true, labels: false, rot4: 0.03, trailLen: 260, rhythmQuant: false },
+    info: 'Your first sequencer, rebuilt: six softened bodies on an elastic tether to the centre. Height sets pitch, side-to-side sets pan, depth sets volume, and the W axis opens the filter.',
+    build(ph) { const n = S.nBodies; return { sim: buildOriginal(n, mulberry32(S.seed)), meta: genericMeta(n, 'Voice'), viewR: 330 }; },
+  },
+  figure8: {
+    label: 'Figure-eight choreography', G: 1, R: 1, T: 6.3259, unit: 'T',
+    defaults: { p: 2, soft: 0, tether: 0, speed: 0.3, compress: 1, mode: 'seq', pitchSrc: 'dist', scale: 'pentatonic', tethers: true, labels: false, rot4: 0.08, trailLen: 600, rhythmQuant: true },
+    info: 'Three equal suns chasing each other on one figure-eight (Chenciner and Montgomery, 2000). The orbit is periodic, so the melody loops. Rotate through W to see that its plane leans into the fourth axis.',
+    build() { return { sim: buildFigure8(), meta: genericMeta(3, 'Sun'), viewR: 1.25 }; },
+  },
+  lagrange: {
+    label: 'Trojans at L4 and L5', G: 1, R: 1, T: 6, unit: 'T',
+    defaults: { p: 2, soft: 0, tether: 0, speed: 0.35, compress: 0.8, mode: 'bells', pitchSrc: 'kepler', scale: 'pentatonic', tethers: false, labels: true, rot4: 0.07, trailLen: 900 },
+    info: 'A star and a giant planet with two Trojans riding 60° ahead and behind. A fifth world circles in the plane absolutely perpendicular to theirs, a geometry that only exists in 4D.',
+    build(ph) {
+      const m = genericMeta(5, 'World', 'Star');
+      m[1].name = 'Giant'; m[2].name = 'L4 Trojan'; m[3].name = 'L5 Trojan'; m[4].name = 'Perpendicular world';
+      return { sim: buildLagrange(ph), meta: m, viewR: 5.6 };
+    },
+  },
+  tatooine: {
+    label: 'Binary star with circumbinary planets', G: 1, R: 1, T: 6, unit: 'T',
+    defaults: { p: 2, soft: 0, tether: 0, speed: 0.3, compress: 0.75, mode: 'both', pitchSrc: 'kepler', scale: 'dorian', tethers: false, labels: true, rot4: 0.06, trailLen: 900 },
+    info: 'Two suns in a tight dance, three planets orbiting the pair on planes tilted through all four dimensions.',
+    build(ph) { const m = genericMeta(5, 'Planet', 'Sun A'); m[1].name = 'Sun B'; m[1].color = '#ffb36b'; m[1].primary = false; return { sim: buildTatooine(ph), meta: m, viewR: 8.4 }; },
+  },
+  hopf: {
+    label: 'Hopf fibration rings', G: 1, R: 1, T: 6, unit: 'T',
+    defaults: { p: 2, soft: 0, tether: 0, speed: 0.35, compress: 0.8, mode: 'bells', pitchSrc: 'kepler', scale: 'harmonic', tethers: false, labels: false, rot4: 0.1, trailLen: 1100 },
+    info: 'Planets on Hopf fibres: every pair of orbital planes meets only at the star, so these linked rings can never cross. In 3D any two planes through a point share a line, so this is impossible there.',
+    build(ph) { const n = Math.max(3, S.nBodies); return { sim: buildHopf(n, ph), meta: genericMeta(n, 'Ring', 'Star'), viewR: 1.6 * Math.pow(1.24, n - 2) * 1.15 }; },
+  },
+  quad: {
+    label: 'Two binaries in perpendicular planes', G: 1, R: 1, T: 6, unit: 'T',
+    defaults: { p: 2, soft: 0, tether: 0, speed: 0.25, compress: 0.85, mode: 'seq', pitchSrc: 'w', scale: 'lydian', tethers: true, labels: false, rot4: 0.08, trailLen: 800, rhythmQuant: true },
+    info: 'A 2+2 quadruple star. Each binary spins in a plane the other cannot see, and the pairs orbit each other on a third, tilted plane.',
+    build(ph) { return { sim: buildQuad(ph), meta: genericMeta(4, 'Star'), viewR: 4.4 }; },
+  },
+  cluster: {
+    label: 'Random 4D cluster (chaotic)', G: 1, R: 1, T: 6, unit: 'T',
+    defaults: { p: 2, soft: 0.05, tether: 0, speed: 0.25, compress: 1, mode: 'seq', pitchSrc: 'y', scale: 'pentatonic', tethers: true, labels: false, rot4: 0.05, trailLen: 400, rhythmQuant: true, merge: false },
+    info: 'Equal-ish masses thrown together at random. Expect chaos, slingshots and ejections. Watch the stability lamp.',
+    build(ph) { const n = S.nBodies; return { sim: buildCluster(n, mulberry32(S.seed), ph), meta: genericMeta(n, 'Body'), viewR: 3.4 }; },
+  },
+  best: {
+    label: 'Optimizer champion', G: 1, R: 1, T: 6, unit: 'T',
+    defaults: { tether: 0, speed: 0.3, compress: 0.8, mode: 'both', pitchSrc: 'kepler', scale: 'justMajor', tethers: false, labels: true, rot4: 0.07, trailLen: 900 },
+    info: 'The best verified configuration found by the hill climber, in the climber\'s own physics.',
+    build(ph) {
+      const src = App.loadTheta || (Opt.best && { theta: Opt.best.theta, nb: Opt.best.nb });
+      if (!src) return null;
+      const { sim, dec } = buildFromTheta(src.theta, src.nb, ph);
+      return { sim, meta: genericMeta(src.nb, 'World', 'Primary'), viewR: dec.orbits[dec.orbits.length - 1].r * 1.35 };
+    },
+  },
+};
+const PRESET_ORDER = ['solar', 'original', 'figure8', 'lagrange', 'tatooine', 'hopf', 'quad', 'cluster', 'best'];
+
+/* ---------------- harmony ---------------- */
+const cents = r => 1200 * Math.log2(r);
+const SCALES = {
+  pentatonic: { label: 'Pentatonic major', c: [0, 200, 400, 700, 900] },
+  major: { label: 'Major (Ionian)', c: [0, 200, 400, 500, 700, 900, 1100] },
+  minor: { label: 'Natural minor', c: [0, 200, 300, 500, 700, 800, 1000] },
+  dorian: { label: 'Dorian', c: [0, 200, 300, 500, 700, 900, 1000] },
+  lydian: { label: 'Lydian', c: [0, 200, 400, 600, 700, 900, 1100] },
+  justMajor: { label: 'Just intonation major', c: [1, 9 / 8, 5 / 4, 4 / 3, 3 / 2, 5 / 3, 15 / 8].map(cents) },
+  harmonic: { label: 'Harmonic series (partials 8 to 15)', c: [8, 9, 10, 11, 12, 13, 14, 15].map(n => cents(n / 8)) },
+  pythag: { label: 'Pythagorean pentatonic', c: [1, 9 / 8, 81 / 64, 3 / 2, 27 / 16].map(cents) },
+  progression: { label: 'Chord progression I, V, vi, IV', chords: [[0, 400, 700], [200, 700, 1100], [0, 400, 900], [0, 500, 900]], names: ['I', 'V', 'vi', 'IV'] },
+};
+const NOTE_NAMES = ['C', 'C♯', 'D', 'E♭', 'E', 'F', 'F♯', 'G', 'A♭', 'A', 'B♭', 'B'];
+const rootF = () => 130.8128 * Math.pow(2, S.root / 12);
+function chordIndex(t) { return Math.floor(t / (8 * 60 / S.bpm)) % 4; }
+function degrees(t) { const sc = SCALES[S.scale]; return sc.chords ? sc.chords[chordIndex(t)] : sc.c; }
+function quantizeF(f, t) {
+  if (!S.quantize || !(f > 0)) return f;
+  const base = rootF(), c = cents(f / base), oct = Math.floor(c / 1200), within = c - oct * 1200;
+  let best = 0, bd = 1e9;
+  for (const d of degrees(t)) for (const dd of [d - 1200, d, d + 1200]) { const e = Math.abs(within - dd); if (e < bd) { bd = e; best = dd; } }
+  return base * Math.pow(2, (oct * 1200 + best) / 1200);
+}
+function noteName(f) {
+  if (!(f > 0)) return '';
+  const midi = Math.round(69 + 12 * Math.log2(f / 440));
+  return NOTE_NAMES[((midi % 12) + 12) % 12] + (Math.floor(midi / 12) - 1);
+}
+function voicingFreqs(f, t) {
+  const q = x => S.quantize ? quantizeF(x, t) : x, out = [f];
+  if (S.voicing === 'octave') out.push(f * 2);
+  if (S.voicing === 'fifth') out.push(q(f * 1.5));
+  if (S.voicing === 'triad') { out.push(q(f * 1.25)); out.push(q(f * 1.5)); }
+  return out.filter((v, i, a) => a.findIndex(w => Math.abs(w / v - 1) < 0.01) === i);
+}
+
+/* ---------------- audio engine: one spatial channel per body ---------------- */
+const Audio = {
+  ctx: null, ready: false, channels: [], voices: 0,
+  init() {
+    if (this.ready) return true;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return false;
+    const ctx = this.ctx = new AC();
+    this.master = ctx.createGain(); this.master.gain.value = 0;
+    this.comp = ctx.createDynamicsCompressor();
+    this.comp.threshold.value = -16; this.comp.knee.value = 14; this.comp.ratio.value = 4; this.comp.attack.value = 0.004; this.comp.release.value = 0.3;
+    this.bus = ctx.createGain(); this.dry = ctx.createGain(); this.wet = ctx.createGain();
+    this.conv = ctx.createConvolver(); this.conv.buffer = this.impulse(3.6, 2.4);
+    this.bus.connect(this.dry); this.bus.connect(this.conv); this.conv.connect(this.wet);
+    this.dry.connect(this.comp); this.wet.connect(this.comp); this.comp.connect(this.master); this.master.connect(ctx.destination);
+    this.sig = ctx.createGain(); this.sig.gain.value = 0.55; this.sig.connect(this.bus);
+    this.ready = true; this.apply();
+    return true;
+  },
+  impulse(sec, decay) {
+    const ctx = this.ctx, len = Math.floor(ctx.sampleRate * sec), buf = ctx.createBuffer(2, len, ctx.sampleRate);
+    for (let ch = 0; ch < 2; ch++) {
+      const d = buf.getChannelData(ch);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay) * (i < 90 ? i / 90 : 1);
+    }
+    return buf;
+  },
+  apply() {
+    if (!this.ready) return;
+    const t = this.ctx.currentTime;
+    this.master.gain.setTargetAtTime(S.sound ? S.volume * 0.9 : 0, t, 0.08);
+    this.wet.gain.setTargetAtTime(S.reverb * 1.1, t, 0.1);
+    this.dry.gain.setTargetAtTime(1 - S.reverb * 0.45, t, 0.1);
+    if (S.sound && this.ctx.state === 'suspended') this.ctx.resume();
+  },
+  setupBodies(meta) {
+    if (!this.ready) return;
+    for (const ch of this.channels) this.killChannel(ch);
+    const ctx = this.ctx, waves = ['triangle', 'sine', 'sawtooth', 'triangle', 'square', 'sine'];
+    this.channels = meta.map((m, i) => {
+      const input = ctx.createGain(), filter = ctx.createBiquadFilter(), out = ctx.createGain();
+      filter.type = 'lowpass'; filter.Q.value = 0.8; filter.frequency.value = 2400;
+      let pan;
+      if (S.spatial === 'hrtf' && ctx.createPanner) {
+        pan = ctx.createPanner(); pan.panningModel = 'HRTF'; pan.distanceModel = 'inverse'; pan.refDistance = 1.2; pan.rolloffFactor = 0.7;
+      } else if (ctx.createStereoPanner) pan = ctx.createStereoPanner();
+      else { pan = ctx.createPanner(); pan.panningModel = 'equalpower'; }
+      input.connect(filter); filter.connect(pan); pan.connect(out); out.connect(this.bus);
+      return { input, filter, pan, out, wave: waves[i % waves.length], drone: null, hrtf: S.spatial === 'hrtf' };
+    });
+    if (S.spatial === 'hrtf') {
+      const L = ctx.listener;
+      if (L.positionX) { L.positionX.value = 0; L.positionY.value = 0; L.positionZ.value = 2.2; L.forwardZ.value = -1; L.upY.value = 1; }
+      else if (L.setPosition) { L.setPosition(0, 0, 2.2); L.setOrientation(0, 0, -1, 0, 1, 0); }
+    }
+  },
+  killChannel(ch) {
+    if (ch.drone) this.stopDrone(ch);
+    const t = this.ctx.currentTime;
+    ch.out.gain.setTargetAtTime(0, t, 0.05);
+    setTimeout(() => { try { ch.out.disconnect(); } catch (e) { } }, 600);
+  },
+  place(ch, o, gainZ) { // o: projected coordinates of the body
+    if (!(isFinite(o.x3) && isFinite(o.y3) && isFinite(o.z3) && isFinite(o.W) && isFinite(gainZ))) return;
+    const t = this.ctx.currentTime;
+    if (ch.hrtf) {
+      const X = o.x3 * 2.2, Y = o.y3 * 2.2, Z = o.z3 * 2.2;
+      if (ch.pan.positionX) { ch.pan.positionX.setTargetAtTime(X, t, 0.05); ch.pan.positionY.setTargetAtTime(Y, t, 0.05); ch.pan.positionZ.setTargetAtTime(Z, t, 0.05); }
+      else ch.pan.setPosition(X, Y, Z);
+      ch.out.gain.setTargetAtTime(ch.mute || !(gainZ > 0) ? 0 : 1, t, 0.1);
+    } else {
+      if (ch.pan.pan) ch.pan.pan.setTargetAtTime(clamp(o.x3 * 0.85, -1, 1), t, 0.05);
+      else ch.pan.setPosition(clamp(o.x3, -1, 1), 0, 1 - Math.abs(clamp(o.x3, -1, 1)));
+      ch.out.gain.setTargetAtTime(ch.mute ? 0 : gainZ, t, 0.1);
+    }
+    ch.filter.frequency.setTargetAtTime(280 * Math.pow(2, clamp((o.W + 1) / 2, 0, 1) * 5.4), t, 0.06); // ana bright, kata dark
+  },
+  canPlay() { return this.ready && S.sound && this.voices < 90; },
+  env(g, t, peak, attack, decay) {
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(Math.max(peak, 0.0002), t + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + decay);
+  },
+  track(nodes, stopAt) {
+    this.voices++;
+    nodes[0].onended = () => { this.voices--; for (const n of nodes) { try { n.disconnect(); } catch (e) { } } };
+    for (const n of nodes) if (n.stop) n.stop(stopAt);
+  },
+  pluck(ch, f, vel, t) {
+    if (!this.canPlay() || !(f > 20 && f < 20000 && vel > 0 && isFinite(t))) return;
+    const ctx = this.ctx, o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = ch.wave; o.frequency.value = f; g.gain.value = 0;
+    this.env(g, t, vel, 0.012, S.decay);
+    o.connect(g); g.connect(ch.input); o.start(t);
+    this.track([o, g], t + S.decay + 0.1);
+  },
+  bell(dest, f, vel, t, decay) { // FM bell, carrier : modulator = 1 : 1.4
+    if (!this.canPlay() || !(f > 20 && f < 20000 && vel > 0 && decay > 0 && isFinite(t))) return;
+    const ctx = this.ctx, car = ctx.createOscillator(), mod = ctx.createOscillator(), mg = ctx.createGain(), g = ctx.createGain();
+    car.type = 'sine'; mod.type = 'sine'; car.frequency.value = f; mod.frequency.value = f * 1.4;
+    mg.gain.setValueAtTime(f * 2.4, t); mg.gain.exponentialRampToValueAtTime(f * 0.04, t + decay * 0.6);
+    g.gain.value = 0; this.env(g, t, vel, 0.004, decay * 1.5);
+    mod.connect(mg); mg.connect(car.frequency); car.connect(g); g.connect(dest);
+    car.start(t); mod.start(t);
+    this.track([car, mod, mg, g], t + decay * 1.5 + 0.1);
+  },
+  startDrone(ch) {
+    const ctx = this.ctx, o1 = ctx.createOscillator(), o2 = ctx.createOscillator(), g = ctx.createGain();
+    const lfo = ctx.createOscillator(), lg = ctx.createGain();
+    o1.type = 'triangle'; o2.type = 'sine'; o2.detune.value = 7; g.gain.value = 0;
+    lfo.frequency.value = 0.12 + Math.random() * 0.2; lg.gain.value = 0.25;
+    lfo.connect(lg); lg.connect(g.gain);
+    o1.connect(g); o2.connect(g); g.connect(ch.input);
+    o1.start(); o2.start(); lfo.start();
+    ch.drone = { o1, o2, g, lfo, lg, amp: 0 };
+  },
+  setDrone(ch, f, amp) {
+    if (!ch.drone) this.startDrone(ch);
+    const d = ch.drone, t = this.ctx.currentTime;
+    if (f > 0) { d.o1.frequency.setTargetAtTime(f, t, 0.07); d.o2.frequency.setTargetAtTime(f * 2, t, 0.07); }
+    d.g.gain.setTargetAtTime(amp, t, 0.25); d.lg.gain.setTargetAtTime(amp * 0.3, t, 0.25); d.amp = amp;
+  },
+  stopDrone(ch) {
+    const d = ch.drone; if (!d) return;
+    ch.drone = null;
+    const t = this.ctx.currentTime;
+    d.g.gain.setTargetAtTime(0, t, 0.15);
+    setTimeout(() => { for (const n of [d.o1, d.o2, d.lfo]) { try { n.stop(); } catch (e) { } } for (const n of [d.o1, d.o2, d.g, d.lfo, d.lg]) { try { n.disconnect(); } catch (e) { } } }, 900);
+  },
+  chime(kind) { // stability signals: their own non-spatial voice
+    if (!this.ready || !S.sound || !S.signals) return;
+    const r = rootF(), t = this.ctx.currentTime + 0.03;
+    const seq = {
+      mostly: [[4, 0], [5, 0.13], [6, 0.26]],
+      stable: [[2, 0], [3, 0.09], [4, 0.18], [5, 0.27], [6, 0.36], [8, 0.5]],
+      found: [[6, 0], [8, 0.08], [10, 0.16], [12, 0.24]],
+      chaos: [[3.2, 0], [3, 0.22]],
+      disrupt: [[1.5, 0], [1.414, 0.18], [1.333, 0.36]],
+    }[kind] || [];
+    for (const [mul, dt] of seq) this.bell(this.sig, r * mul, kind === 'stable' ? 0.22 : 0.16, t + dt, kind === 'stable' ? 2.6 : 1.6);
+  },
+};
+
+/* ==================================================================
+   MUSIC OF THE SPHERES - app B: simulation, music mapping, rendering
+   ================================================================== */
+const Opt = new Optimizer();
+const App = {
+  sim: null, ph: null, P: null, meta: [], viewR: 1, E0: 1, monitor: new Monitor(), simDebt: 0, dtBase: 0.01,
+  trails: [], music: [], rv: null, events: [], strings: [], flash: null, proj: [], com: new Float64Array(8),
+  ejected: null, lag: false, loadTheta: null, rgb: [], baseR: [], massAmp: [], primary: -1, omRef: 1,
+  rLo: 1, rHi: 2, vRef: 1, collR: [], nextToll: 0, tetherOn: new Set(), lastStringT: new Map(), lastAutoLoad: 0,
+};
+const CLIMBER_COLORS = ['#9fc4e8', '#5fb8a5', '#e07a8f', '#d4b26a', '#b7a3e0', '#f2a65a'];
+
+function toRGB(c) {
+  if (c[0] === '#') { const h = c.slice(1); return [0, 2, 4].map(k => parseInt(h.substr(k, 2), 16)); }
+  const m = c.match(/hsl\(([\d.]+),\s*([\d.]+)%,\s*([\d.]+)%\)/);
+  if (!m) return [200, 200, 220];
+  const h = +m[1] / 360, s = +m[2] / 100, l = +m[3] / 100;
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+  const f = t => { t = (t + 1) % 1; return t < 1 / 6 ? p + (q - p) * 6 * t : t < 0.5 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p; };
+  return [f(h + 1 / 3), f(h), f(h - 1 / 3)].map(v => Math.round(v * 255));
+}
+function makePhys(P) {
+  return { G: P.G * S.gMul, p: S.p, eps2: (S.soft * P.R) ** 2, tether: S.tether * (TAU / P.T) ** 2 };
+}
+function optPhys() { return { G: 1, p: S.optP, eps2: S.optSoft * S.optSoft, tether: 0 }; }
+function configureOpt() {
+  Opt.configure({ ph: optPhys(), depth: S.optDepth, chaos: S.optChaos, eta: 0.05, weights: { d4: S.w4d, inter: S.wInter, harm: S.wHarm } });
+}
+
+function loadPreset(key, applyDefaults = true) {
+  const P = PRESETS[key];
+  if (key === 'best' && !(App.loadTheta || Opt.best)) { toast('No champion yet. Start the optimizer and it will appear here.'); refreshUI(); return false; }
+  if (applyDefaults) Object.assign(S, P.defaults);
+  if (key === 'best') { const lp = App.loadTheta; S.p = lp && lp.p != null ? lp.p : S.optP; S.soft = lp && lp.soft != null ? lp.soft : S.optSoft; S.gMul = 1; S.tether = 0; }
+  const ph = makePhys(P), b = P.build(ph);
+  App.loadTheta = null;
+  if (!b) return false;
+  S.preset = key; App.P = P; App.key = key; App.ph = ph; App.sim = b.sim; App.meta = b.meta; App.viewR = b.viewR;
+  const sim = App.sim;
+  sim.computeAcc(ph);
+  App.dtBase = Math.min(P.T / 200, S.eta * Math.sqrt(sim.minTau2));
+  App.E0 = sim.energy(ph).E;
+  App.scales = systemScales(sim, P.T);
+  App.monitor.reset(sim, ph, App.scales);
+  App.rgb = App.meta.map(m => toRGB(m.color));
+  let lmin = Infinity, lmax = -Infinity;
+  for (let i = 0; i < sim.n; i++) { const l = Math.log10(sim.m[i]); lmin = Math.min(lmin, l); lmax = Math.max(lmax, l); }
+  const span = lmax - lmin;
+  App.baseR = Array.from(sim.m, m => span > 0.01 ? 2.6 + 8.5 * Math.pow((Math.log10(m) - lmin) / span, 0.85) : 6);
+  App.massAmp = Array.from(sim.m, m => span > 0.01 ? 0.55 + 0.45 * (Math.log10(m) - lmin) / span : 1);
+  App.collR = Array.from(sim.m, m => 0.012 * App.viewR * Math.cbrt(m / sim.m.reduce((a, b) => Math.max(a, b), 0)));
+  initTrails(); initMusic();
+  if (Audio.ready) Audio.setupBodies(App.meta);
+  App.simDebt = 0; App.tetherOn.clear();
+  if (typeof onSystemLoaded === 'function') onSystemLoaded();
+  return true;
+}
+function applyPhysics() {
+  App.ph = makePhys(App.P);
+  App.sim.computeAcc(App.ph);
+  App.dtBase = Math.min(App.P.T / 200, S.eta * Math.sqrt(App.sim.minTau2));
+  App.E0 = App.sim.energy(App.ph).E;
+  App.monitor.setPhysics(App.sim, App.ph);
+}
+
+/* ---------------- trails ---------------- */
+const TRAIL_CAP = 1500;
+function initTrails() {
+  App.trails = [];
+  for (let i = 0; i < App.sim.n; i++) {
+    const t = { buf: new Float64Array(TRAIL_CAP * 4), head: 0, count: 0, last: [0, 0, 0, 0] };
+    for (let k = 0; k < 4; k++) t.last[k] = App.sim.x[i * 4 + k];
+    App.trails.push(t);
+  }
+}
+function pushTrail(t, x, i4) {
+  const h = t.head * 4;
+  for (let k = 0; k < 4; k++) { t.buf[h + k] = x[i4 + k]; t.last[k] = x[i4 + k]; }
+  t.head = (t.head + 1) % TRAIL_CAP; if (t.count < TRAIL_CAP) t.count++;
+}
+
+/* ---------------- music state ---------------- */
+function bodyKinematics(sim, i, c) {
+  let r2 = 0, v2 = 0, rv = 0;
+  for (let k = 0; k < 4; k++) {
+    const dx = sim.x[i * 4 + k] - c[k], dv = sim.v[i * 4 + k] - c[4 + k];
+    r2 += dx * dx; v2 += dv * dv; rv += dx * dv;
+  }
+  return { r: Math.sqrt(r2), v: Math.sqrt(v2), rv, om: Math.sqrt(Math.max(0, r2 * v2 - rv * rv)) / Math.max(r2, 1e-30) };
+}
+function initMusic() {
+  const sim = App.sim, n = sim.n, c = new Float64Array(8);
+  sim.com(c);
+  App.rv = new Int8Array(n); App.flash = new Float32Array(n); App.ejected = new Uint8Array(n); App.music = [];
+  let Mt = 0, iMax = 0;
+  for (let i = 0; i < n; i++) { Mt += sim.m[i]; if (sim.m[i] > sim.m[iMax]) iMax = i; }
+  App.primary = sim.m[iMax] > 0.5 * Mt ? iMax : -1;
+  App.meta.forEach((m, i) => { m.primary = i === App.primary; });
+  const kin = [];
+  for (let i = 0; i < n; i++) kin.push(bodyKinematics(sim, i, c));
+  const voices = [...Array(n).keys()].filter(i => i !== App.primary && kin[i].om > 0).sort((a, b) => kin[b].om - kin[a].om);
+  App.omRef = voices.length ? kin[voices[0]].om : 1;
+  const kOct = new Array(n).fill(0);
+  voices.forEach((i, rank) => { // Kepler's registers: faster worlds sing higher, ratios kept exact within each octave
+    const target = 2.6 - 2.3 * rank / Math.max(1, voices.length - 1);
+    kOct[i] = Math.round(target - Math.log2(kin[i].om / App.omRef));
+  });
+  const rs = voices.map(i => kin[i].r).filter(r => r > 0);
+  App.rLo = rs.length ? Math.min(...rs) * 0.8 : 1; App.rHi = rs.length ? Math.max(...rs) * 1.2 : 2;
+  if (App.rHi < App.rLo * 1.05) App.rHi = App.rLo * 1.5;
+  const vs = kin.map(k => k.v).sort((a, b) => a - b);
+  App.vRef = vs[Math.floor(vs.length / 2)] || 1;
+  for (let i = 0; i < n; i++) App.music.push({ kOct: kOct[i], next: 0, last: -1, f: 0, r: kin[i].r, om: kin[i].om, v: kin[i].v });
+  App.nextToll = 0;
+}
+function keplerF(i, om) { return rootF() * (om / App.omRef) * Math.pow(2, App.music[i].kOct); }
+function bodyPitch(i, t) {
+  const o = App.proj[i], mb = App.music[i], lo = rootF();
+  let f;
+  if (!o) return lo;
+  if (App.meta[i].primary && S.pitchSrc === 'kepler') f = lo / 2;
+  else if (S.pitchSrc === 'y') f = lo * Math.pow(2, 3 * clamp((o.Y + 1) / 2, 0, 1));
+  else if (S.pitchSrc === 'w') f = lo * Math.pow(2, 3 * clamp((o.W + 1) / 2, 0, 1));
+  else if (S.pitchSrc === 'dist') f = lo * Math.pow(2, 3 * (1 - clamp(Math.log(mb.r / App.rLo) / Math.log(App.rHi / App.rLo), 0, 1)));
+  else f = keplerF(i, mb.om);
+  return quantizeF(clamp(f, 40, 5000), t);
+}
+
+/* ---------------- stepping ---------------- */
+function advance(dtReal) {
+  const sim = App.sim, ph = App.ph, simPerSec = S.speed * App.P.T;
+  App.simDebt = Math.min(App.simDebt + simPerSec * dtReal, simPerSec * 0.1);
+  const t0 = nowMs(), tStart = sim.t;
+  let steps = 0;
+  App.lag = false;
+  while (App.simDebt > 0) {
+    const dt = chooseDt(sim, App.dtBase, S.eta);
+    sim.step(dt, ph); App.monitor.step(sim, dt);
+    App.simDebt -= dt; steps++;
+    postStep(sim, tStart, simPerSec);
+    if ((steps & 15) === 0 && nowMs() - t0 > 12) { App.lag = true; App.simDebt = 0; break; }
+  }
+  App.monitor.check(sim);
+  checkEjections(sim);
+}
+function postStep(sim, tStart, simPerSec) {
+  const c = App.com;
+  sim.com(c);
+  if (S.merge && sim.pi >= 0) {
+    const rc = App.collR[sim.pi] + App.collR[sim.pj];
+    if (sim.minR2 < rc * rc) { const r = sim.merge(sim.pi, sim.pj); sim.computeAcc(App.ph); onMerge(r); }
+  }
+  for (let i = 0; i < sim.n; i++) {
+    if (!sim.alive[i]) continue;
+    const i4 = i * 4;
+    let r2 = 0, rv = 0;
+    for (let k = 0; k < 4; k++) { const dx = sim.x[i4 + k] - c[k]; r2 += dx * dx; rv += dx * (sim.v[i4 + k] - c[4 + k]); }
+    const s = rv >= 0 ? 1 : -1;
+    if (App.rv[i] && s !== App.rv[i] && i !== App.primary) { // periapsis (s>0) or apoapsis (s<0)
+      const kin = bodyKinematics(sim, i, c);
+      App.events.push({ i, peri: s > 0, at: (sim.t - tStart) / simPerSec, om: kin.om });
+    }
+    App.rv[i] = s;
+    const t = App.trails[i], sp = 0.018 * Math.max(Math.sqrt(r2), 0.04 * App.viewR);
+    let d2 = 0;
+    for (let k = 0; k < 4; k++) d2 += (sim.x[i4 + k] - t.last[k]) ** 2;
+    if (d2 > sp * sp) pushTrail(t, sim.x, i4);
+  }
+}
+function onMerge(r) {
+  App.flash[r.keep] = 1.5;
+  App.monitor.disrupt(App.sim, 'merger'); App.E0 = App.sim.energy(App.ph).E;
+  if (Audio.ready && Audio.channels[r.gone]) Audio.killChannel(Audio.channels[r.gone]);
+  toast(`${App.meta[r.gone].name} merged into ${App.meta[r.keep].name}.`);
+  Audio.chime('disrupt');
+}
+function checkEjections(sim) {
+  const c = App.com, lim = 4 * App.monitor.extent0;
+  sim.com(c);
+  for (let i = 0; i < sim.n; i++) {
+    if (!sim.alive[i] || App.ejected[i]) continue;
+    const k = bodyKinematics(sim, i, c);
+    if (k.r > lim && k.rv > 0) {
+      App.ejected[i] = 1; App.monitor.excl[i] = 1; App.monitor.disrupt(sim, 'ejection');
+      toast(`${App.meta[i].name} was flung out of the system.`);
+      Audio.chime('disrupt');
+    }
+  }
+}
+
+/* ---------------- sonification ---------------- */
+function updateMusic() {
+  const sim = App.sim, c = App.com;
+  sim.com(c);
+  for (let i = 0; i < sim.n; i++) { const k = bodyKinematics(sim, i, c), mb = App.music[i]; mb.r = k.r; mb.om = k.om; mb.v = k.v; }
+  if (!Audio.ready || !S.sound || S.paused) {
+    App.events.length = 0; App.strings.length = 0;
+    if (Audio.ready) for (const ch of Audio.channels) if (ch.drone) Audio.stopDrone(ch);
+    return;
+  }
+  const now = Audio.ctx.currentTime, beat = 60 / S.bpm;
+  const doSeq = S.mode === 'seq', doBells = S.mode === 'bells' || S.mode === 'both', doDrone = S.mode === 'drone' || S.mode === 'both';
+  for (let i = 0; i < sim.n; i++) {
+    const ch = Audio.channels[i], o = App.proj[i], mb = App.music[i];
+    if (!ch || !o) continue;
+    const alive = sim.alive[i] && !App.ejected[i];
+    Audio.place(ch, o, alive ? clamp(0.55 + 0.4 * o.z3, 0.15, 1.15) : 0);
+    if (doDrone && alive) {
+      const f = bodyPitch(i, now);
+      Audio.setDrone(ch, f, (App.meta[i].primary ? 0.05 : 0.035) * App.massAmp[i]); mb.f = f;
+    } else if (ch.drone) Audio.stopDrone(ch);
+    if (doSeq && alive) {
+      if (mb.next < now - 0.2) mb.next = now + 0.05 + Math.random() * 0.4;
+      if (now + 0.1 >= mb.next) {
+        const t = Math.max(mb.next, now + 0.01), f = bodyPitch(i, t), fs = voicingFreqs(f, t);
+        const vel = (0.06 + 0.12 * clamp((o.z3 + 1) / 2, 0, 1)) * App.massAmp[i] / Math.sqrt(fs.length);
+        for (const ff of fs) Audio.pluck(ch, ff, vel, t);
+        mb.f = f; App.flash[i] = 1;
+        const sp = mb.v / App.vRef; // rhythm from speed: faster bodies play faster
+        if (S.rhythmQuant) {
+          const div = [4, 2, 1, 0.5, 0.25][clamp(Math.round(2 + 1.6 * Math.log2(Math.max(sp, 0.05))), 0, 4)];
+          mb.next = Math.ceil((t + div * beat - 1e-4) / (beat / 4)) * (beat / 4);
+        } else mb.next = t + clamp(1.5 - sp * 0.45, 0.12, 2.2);
+      }
+    }
+  }
+  if (doBells) {
+    for (const e of App.events) {
+      const i = e.i, mb = App.music[i], ch = Audio.channels[i];
+      if (!ch || !sim.alive[i] || App.ejected[i]) continue;
+      const t = now + 0.06 + e.at;
+      if (t - mb.last < 0.075) continue;
+      mb.last = t;
+      const f = S.pitchSrc === 'kepler' ? quantizeF(clamp(keplerF(i, e.om), 40, 5000), t) : bodyPitch(i, t);
+      for (const ff of voicingFreqs(f, t)) Audio.bell(ch.input, ff, (e.peri ? 0.2 : 0.12) * App.massAmp[i], t, S.decay * (e.peri ? 1.3 : 0.9));
+      mb.f = f; App.flash[i] = e.peri ? 1.2 : 0.8;
+    }
+    if (App.primary >= 0 && Audio.channels[App.primary]) { // the sun tolls the tonic every two bars
+      const bar = 8 * beat;
+      if (App.nextToll < now) App.nextToll = Math.ceil(now / bar) * bar + bar;
+      if (now + 0.1 >= App.nextToll) {
+        Audio.bell(Audio.channels[App.primary].input, quantizeF(rootF() / 2, App.nextToll), 0.13, App.nextToll, 3.2);
+        App.music[App.primary].f = rootF() / 2; App.flash[App.primary] = 0.7; App.nextToll += bar;
+      }
+    }
+  }
+  App.events.length = 0;
+  if (S.strings) for (const s of App.strings) { // a gravitational string plucks when two bodies draw close
+    const ch = Audio.channels[s.i];
+    if (!ch) continue;
+    const t = now + 0.02, f = quantizeF(rootF() * Math.pow(2, 1 + 2.5 * (1 - s.d)), t);
+    Audio.pluck(ch, f, 0.07, t); Audio.pluck(ch, f * 2, 0.03, t);
+  }
+  App.strings.length = 0;
+}
+
+/* ---------------- 4D view & projection ---------------- */
+const View = { a: { xy: 0, xz: 0.5, yz: -0.38, xw: 0, yw: 0, zw: 0 }, M: new Float64Array(16), c: [0, 0, 0, 0], invR: 1, cx: 0, cy: 0, scale: 1, W: 0, H: 0, dpr: 1 };
+const D4 = 3.0, D3 = 4.2;
+const PLANES = [[0, 1, 'xy'], [0, 2, 'xz'], [1, 2, 'yz'], [0, 3, 'xw'], [1, 3, 'yw'], [2, 3, 'zw']];
+function buildM() {
+  const M = View.M;
+  M.fill(0); M[0] = M[5] = M[10] = M[15] = 1;
+  for (const [i, j, key] of PLANES) {
+    const c = Math.cos(View.a[key]), s = Math.sin(View.a[key]);
+    for (let col = 0; col < 4; col++) { const mi = M[i * 4 + col], mj = M[j * 4 + col]; M[i * 4 + col] = c * mi - s * mj; M[j * 4 + col] = s * mi + c * mj; }
+  }
+}
+function projQ(qx, qy, qz, qw, o) {
+  const M = View.M;
+  const X = M[0] * qx + M[1] * qy + M[2] * qz + M[3] * qw, Y = M[4] * qx + M[5] * qy + M[6] * qz + M[7] * qw;
+  const Z = M[8] * qx + M[9] * qy + M[10] * qz + M[11] * qw, W = M[12] * qx + M[13] * qy + M[14] * qz + M[15] * qw;
+  const fw = D4 / Math.max(0.25, D4 - W), x3 = X * fw, y3 = Y * fw, z3 = Z * fw, fz = D3 / Math.max(0.25, D3 - z3);
+  o.sx = View.cx + x3 * fz * View.scale; o.sy = View.cy - y3 * fz * View.scale;
+  o.k = fw * fz; o.X = X; o.Y = Y; o.Z = Z; o.W = W; o.x3 = x3; o.y3 = y3; o.z3 = z3;
+  return o;
+}
+function proj(x, y, z, w, o) {
+  let qx = (x - View.c[0]) * View.invR, qy = (y - View.c[1]) * View.invR, qz = (z - View.c[2]) * View.invR, qw = (w - View.c[3]) * View.invR;
+  if (S.compress < 0.999) {
+    const r2 = qx * qx + qy * qy + qz * qz + qw * qw;
+    if (r2 > 1e-24) { const f = Math.pow(r2, (S.compress - 1) / 2); qx *= f; qy *= f; qz *= f; qw *= f; }
+  }
+  return projQ(qx, qy, qz, qw, o);
+}
+const W_KATA = [96, 170, 255], W_ANA = [255, 112, 150];
+function wRGB(W) { const t = clamp((W + 1) / 2, 0, 1); return [0, 1, 2].map(k => Math.round(lerp(W_KATA[k], W_ANA[k], t))); }
+function colorOf(i, W) { return S.colorMode === 'w' ? wRGB(W) : App.rgb[i]; }
+
+function render(ctx) {
+  const sim = App.sim, W = View.W, H = View.H;
+  ctx.clearRect(0, 0, W, H);
+  if (S.followCom) { sim.com(App.com); View.c = [App.com[0], App.com[1], App.com[2], App.com[3]]; } else View.c = [0, 0, 0, 0];
+  View.invR = 1 / App.viewR;
+  const pw = UI.pw, dh = UI.dh;
+  View.cx = (W - pw) / 2 + UI.introShift; View.cy = (H - dh) / 2 + 8; View.scale = Math.min(W - pw, H - dh) * 0.4 * S.zoom;
+  buildM();
+  if (S.tesseract) drawTesseract(ctx);
+  if (S.trails) drawTrails(ctx);
+  for (let i = 0; i < sim.n; i++) {
+    if (!App.proj[i]) App.proj[i] = {};
+    proj(sim.x[i * 4], sim.x[i * 4 + 1], sim.x[i * 4 + 2], sim.x[i * 4 + 3], App.proj[i]);
+  }
+  if (S.tethers || S.strings) drawTethers(ctx);
+  drawBodies(ctx);
+  if (S.axes) drawAxes(ctx);
+}
+function drawTesseract(ctx) {
+  const v = [], o = {}, s = 0.55;
+  for (let k = 0; k < 16; k++) { projQ((k & 1 ? 1 : -1) * s, (k & 2 ? 1 : -1) * s, (k & 4 ? 1 : -1) * s, (k & 8 ? 1 : -1) * s, o); v.push([o.sx, o.sy]); }
+  ctx.lineWidth = 1;
+  for (let a = 0; a < 16; a++) for (let bit = 0; bit < 4; bit++) {
+    const b = a ^ (1 << bit);
+    if (b < a) continue;
+    ctx.strokeStyle = bit === 3 ? 'rgba(224,122,143,0.13)' : 'rgba(159,196,232,0.09)';
+    ctx.beginPath(); ctx.moveTo(v[a][0], v[a][1]); ctx.lineTo(v[b][0], v[b][1]); ctx.stroke();
+  }
+}
+function drawTrails(ctx) {
+  const o = {}, chunk = 14;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  for (let i = 0; i < App.trails.length; i++) {
+    const tr = App.trails[i], L = Math.min(tr.count, S.trailLen);
+    if (L < 2) continue;
+    const start = (tr.head - L + TRAIL_CAP) % TRAIL_CAP;
+    ctx.lineWidth = App.meta[i].primary ? 1 : 1.3;
+    for (let s = 0; s < L - 1; s += chunk) {
+      const e = Math.min(s + chunk, L - 1);
+      let wsum = 0;
+      ctx.beginPath();
+      for (let k = s; k <= e; k++) {
+        const idx = ((start + k) % TRAIL_CAP) * 4;
+        proj(tr.buf[idx], tr.buf[idx + 1], tr.buf[idx + 2], tr.buf[idx + 3], o);
+        if (k === s) ctx.moveTo(o.sx, o.sy); else ctx.lineTo(o.sx, o.sy);
+        wsum += o.W;
+      }
+      const age = (s + e) / 2 / L, [r, g, b] = colorOf(i, wsum / (e - s + 1));
+      ctx.strokeStyle = `rgba(${r},${g},${b},${(0.03 + 0.55 * age * age).toFixed(3)})`;
+      ctx.stroke();
+    }
+  }
+}
+function drawTethers(ctx) {
+  const sim = App.sim, thr = S.tetherDist * App.viewR, now = new Set();
+  for (let i = 0; i < sim.n; i++) for (let j = i + 1; j < sim.n; j++) {
+    if (!sim.alive[i] || !sim.alive[j]) continue;
+    let d2 = 0;
+    for (let k = 0; k < 4; k++) d2 += (sim.x[i * 4 + k] - sim.x[j * 4 + k]) ** 2;
+    const d = Math.sqrt(d2);
+    if (d >= thr) continue;
+    const key = i * 64 + j;
+    now.add(key);
+    if (S.strings && !App.tetherOn.has(key)) {
+      const last = App.lastStringT.get(key) || 0, t = nowMs();
+      if (t - last > 300) { App.strings.push({ i, j, d: d / thr }); App.lastStringT.set(key, t); }
+    }
+    if (!S.tethers) continue;
+    const a = App.proj[i], b = App.proj[j], fl = Math.max(App.flash[i], App.flash[j]);
+    ctx.strokeStyle = `rgba(232,220,190,${((1 - d / thr) * (0.12 + 0.6 * Math.min(1, fl))).toFixed(3)})`;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy); ctx.stroke();
+  }
+  App.tetherOn = now;
+}
+function drawBodies(ctx) {
+  const sim = App.sim, order = [];
+  for (let i = 0; i < sim.n; i++) if (sim.alive[i]) order.push(i);
+  order.sort((a, b) => App.proj[a].z3 - App.proj[b].z3);
+  for (const i of order) {
+    const o = App.proj[i], fl = Math.min(1.5, App.flash[i]), [r, g, b] = colorOf(i, o.W);
+    const rad = App.baseR[i] * clamp(o.k, 0.45, 2.4) * (1 + 0.55 * fl), glow = rad * (App.meta[i].primary ? 4.2 : 3.4);
+    const dim = App.ejected[i] ? 0.35 : 1;
+    ctx.globalCompositeOperation = 'lighter';
+    const gr = ctx.createRadialGradient(o.sx, o.sy, 0, o.sx, o.sy, glow);
+    gr.addColorStop(0, `rgba(${r},${g},${b},${(0.55 * dim + 0.3 * fl).toFixed(3)})`);
+    gr.addColorStop(0.35, `rgba(${r},${g},${b},${(0.16 * dim).toFixed(3)})`);
+    gr.addColorStop(1, `rgba(${r},${g},${b},0)`);
+    ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(o.sx, o.sy, glow, 0, TAU); ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+    const core = ctx.createRadialGradient(o.sx - rad * 0.3, o.sy - rad * 0.3, 0, o.sx, o.sy, rad);
+    const wh = Math.min(1, 0.35 + 0.6 * fl);
+    core.addColorStop(0, `rgba(255,255,255,${wh.toFixed(3)})`);
+    core.addColorStop(0.5, `rgba(${r},${g},${b},${dim})`);
+    core.addColorStop(1, `rgba(${Math.round(r * 0.55)},${Math.round(g * 0.55)},${Math.round(b * 0.55)},${dim})`);
+    ctx.fillStyle = core; ctx.beginPath(); ctx.arc(o.sx, o.sy, rad, 0, TAU); ctx.fill();
+    if (S.labels) {
+      const mb = App.music[i], nn = mb && mb.f && S.sound ? '  ' + noteName(mb.f) : '';
+      ctx.font = '12px "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif';
+      ctx.fillStyle = `rgba(226,222,208,${(0.5 + 0.4 * Math.min(1, fl)).toFixed(3)})`;
+      ctx.fillText(App.meta[i].name + nn, o.sx + rad + 6, o.sy - rad * 0.4);
+    }
+    App.flash[i] = Math.max(0, App.flash[i] - 0.035);
+  }
+}
+function drawAxes(ctx) {
+  const M = View.M, x0 = 46, y0 = View.H - 46 - UI.dh, L = 26;
+  const names = ['x', 'y', 'z', 'w'], cols = ['#d98f7e', '#8fcf9a', '#9fc4e8', '#e07a8f'];
+  ctx.font = 'italic 12px "Iowan Old Style", Palatino, Georgia, serif';
+  for (let k = 0; k < 4; k++) {
+    const dx = M[k], dy = M[4 + k], depth = M[8 + k] * 0.3 + M[12 + k] * 0.3;
+    ctx.strokeStyle = cols[k]; ctx.globalAlpha = 0.45 + 0.35 * clamp(depth + 0.5, 0, 1); ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 + dx * L, y0 - dy * L); ctx.stroke();
+    ctx.fillStyle = cols[k]; ctx.fillText(names[k], x0 + dx * (L + 9) - 3, y0 - dy * (L + 9) + 4);
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* ---------------- optimizer graphs ---------------- */
+const CMAP = [[0, [28, 26, 66]], [0.4, [58, 92, 170]], [0.65, [70, 178, 165]], [0.85, [214, 178, 106]], [1, [255, 244, 214]]];
+function cmap(t) {
+  t = clamp(t, 0, 1);
+  for (let k = 1; k < CMAP.length; k++) if (t <= CMAP[k][0]) {
+    const [a, ca] = CMAP[k - 1], [b, cb] = CMAP[k], u = (t - a) / (b - a);
+    return `rgb(${ca.map((c, j) => Math.round(lerp(c, cb[j], u))).join(',')})`;
+  }
+  return 'rgb(255,244,214)';
+}
+function prepCanvas(cv) {
+  const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
+  return { ctx, w, h };
+}
+function frameText(ctx, txt, x, y, color = 'rgba(200,205,225,0.6)', size = 11) {
+  ctx.fillStyle = color; ctx.font = `${size}px "Iowan Old Style", Palatino, Georgia, serif`; ctx.fillText(txt, x, y);
+}
+function drawClimb(cv) {
+  const { ctx, w, h } = prepCanvas(cv), L = 30, R = 8, T = 10, B = 20, pw = w - L - R, ph = h - T - B;
+  const maxE = Math.max(40, Opt.evals), X = e => L + pw * e / maxE, Y = s => T + ph * (1 - s / 100);
+  ctx.strokeStyle = 'rgba(159,196,232,0.1)'; ctx.lineWidth = 1;
+  for (const s of [0, 25, 50, 75, 100]) { ctx.beginPath(); ctx.moveTo(L, Y(s)); ctx.lineTo(w - R, Y(s)); ctx.stroke(); frameText(ctx, String(s), 4, Y(s) + 4, 'rgba(200,205,225,0.4)', 10); }
+  for (const hh of Opt.history) { ctx.fillStyle = CLIMBER_COLORS[hh.c % 6]; ctx.globalAlpha = 0.28; ctx.fillRect(X(hh.e) - 1, Y(hh.s) - 1, 2, 2); }
+  ctx.globalAlpha = 1;
+  const stepLine = (trace, color, lw) => {
+    ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.beginPath();
+    let pen = false, ly = 0;
+    for (const [e, s] of trace) {
+      if (!(s === s)) { pen = false; continue; }
+      if (!pen) { ctx.moveTo(X(e), Y(s)); pen = true; } else { ctx.lineTo(X(e), ly); ctx.lineTo(X(e), Y(s)); }
+      ly = Y(s);
+    }
+    if (pen) ctx.lineTo(X(Opt.evals), ly);
+    ctx.stroke();
+  };
+  Opt.climbers.forEach(c => stepLine(c.trace, CLIMBER_COLORS[c.id % 6], 1.1));
+  stepLine(Opt.bestTrace, '#fff4d6', 2);
+  frameText(ctx, `${Opt.evals.toLocaleString()} configurations tried`, L, h - 5);
+}
+function drawParallel(cv) {
+  const { ctx, w, h } = prepCanvas(cv), axes = [...FEATURES, { label: 'score', min: 0, max: 100 }];
+  const L = 14, R = 14, T = 10, B = 26, pw = w - L - R, ph = h - T - B, n = axes.length;
+  const ax = k => L + pw * k / (n - 1), ay = (k, v) => T + ph * (1 - clamp((v - axes[k].min) / (axes[k].max - axes[k].min), 0, 1));
+  const items = Opt.history.slice(-320).slice().sort((a, b) => a.s - b.s);
+  const line = (vals, s) => { ctx.beginPath(); vals.forEach((v, k) => k ? ctx.lineTo(ax(k), ay(k, v)) : ctx.moveTo(ax(k), ay(k, v))); ctx.stroke(); };
+  ctx.lineWidth = 1;
+  for (const it of items) { ctx.strokeStyle = cmap(it.s / 100); ctx.globalAlpha = 0.16 + 0.5 * (it.s / 100) ** 2; line([...it.f, it.s]); }
+  ctx.globalAlpha = 1;
+  if (Opt.best) { ctx.strokeStyle = '#fff4d6'; ctx.lineWidth = 2.2; line([...Opt.best.res.features, Opt.best.score]); }
+  for (let k = 0; k < n; k++) {
+    ctx.strokeStyle = 'rgba(159,196,232,0.28)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(ax(k), T); ctx.lineTo(ax(k), T + ph); ctx.stroke();
+    ctx.save(); ctx.font = '10px "Iowan Old Style", Palatino, Georgia, serif'; ctx.fillStyle = 'rgba(210,212,226,0.7)';
+    const tw = ctx.measureText(axes[k].label).width;
+    ctx.fillText(axes[k].label, clamp(ax(k) - tw / 2, 0, w - tw), h - 8); ctx.restore();
+  }
+}
+const Land = { pcs: null, mean: null, lastPCA: 0, pts: [] };
+function drawLandscape(cv) {
+  const { ctx, w, h } = prepCanvas(cv), pad = 14;
+  Land.pts = [];
+  if (S.landMode === 'slice' && Opt.slice) {
+    const s = Opt.slice, g = s.grid, cw = (w - 2 * pad) / g, chh = (h - 2 * pad - 14) / g;
+    for (let gy = 0; gy < g; gy++) for (let gx = 0; gx < g; gx++) {
+      const v = s.vals[gy * g + gx], x = pad + gx * cw, y = pad + (g - 1 - gy) * chh;
+      ctx.fillStyle = v === v ? cmap(v / 100) : 'rgba(80,90,120,0.18)';
+      ctx.fillRect(x, y, cw + 0.5, chh + 0.5);
+      Land.pts.push({ x: x + cw / 2, y: y + chh / 2, slice: [gx, gy], r: Math.max(cw, chh) / 2 });
+    }
+    const cx = pad + (s.center[s.ix] - s.x0) / (s.x1 - s.x0) * (w - 2 * pad), cy = pad + (1 - (s.center[s.iy] - s.y0) / (s.y1 - s.y0)) * (h - 2 * pad - 14);
+    ctx.strokeStyle = '#fff4d6'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(cx, cy, 5, 0, TAU); ctx.stroke();
+    const pname = i => `planet ${'ABCDEFGHIJK'[Math.floor(i / OPT_K)]} ${PARAM_NAMES[i % OPT_K]}`;
+    frameText(ctx, `x: ${pname(s.ix)}   y: ${pname(s.iy)}   ${s.done ? 'click a cell to hear it' : Math.round(100 * s.idx / (g * g)) + '% mapped'}`, pad, h - 4);
+    return;
+  }
+  const hist = Opt.history.slice(-600);
+  if (hist.length < 12) { frameText(ctx, 'The search map appears once the climbers have explored a little.', pad, h / 2); return; }
+  const t = nowMs();
+  if (!Land.pcs || t - Land.lastPCA > 2000 || Land.pcs[0].length !== hist[0].theta.length) {
+    const r = pca2(hist.map(x => x.theta), Land.pcs && Land.pcs[0].length === hist[0].theta.length ? Land.pcs : null);
+    Land.pcs = r.pcs; Land.mean = r.mean; Land.lastPCA = t;
+  }
+  const P = th => { let a = 0, b = 0; for (let i = 0; i < th.length; i++) { const d = th[i] - Land.mean[i]; a += d * Land.pcs[0][i]; b += d * Land.pcs[1][i]; } return [a, b]; };
+  const pts = hist.map(x => ({ p: P(x.theta), s: x.s, theta: x.theta }));
+  let ax0 = Infinity, ax1 = -Infinity, ay0 = Infinity, ay1 = -Infinity;
+  for (const q of pts) { ax0 = Math.min(ax0, q.p[0]); ax1 = Math.max(ax1, q.p[0]); ay0 = Math.min(ay0, q.p[1]); ay1 = Math.max(ay1, q.p[1]); }
+  const sx = v => pad + (w - 2 * pad) * (v - ax0) / ((ax1 - ax0) || 1), sy = v => h - pad - 14 - (h - 2 * pad - 14) * (v - ay0) / ((ay1 - ay0) || 1);
+  pts.sort((a, b) => a.s - b.s);
+  for (const q of pts) { const x = sx(q.p[0]), y = sy(q.p[1]); ctx.fillStyle = cmap(q.s / 100); ctx.globalAlpha = 0.75; ctx.beginPath(); ctx.arc(x, y, 2.2, 0, TAU); ctx.fill(); Land.pts.push({ x, y, theta: q.theta, r: 5 }); }
+  ctx.globalAlpha = 1;
+  for (const c of Opt.climbers) {
+    ctx.strokeStyle = CLIMBER_COLORS[c.id % 6]; ctx.lineWidth = 1.2; ctx.beginPath();
+    c.path.forEach((th, k) => { const [a, b] = P(th); k ? ctx.lineTo(sx(a), sy(b)) : ctx.moveTo(sx(a), sy(b)); });
+    ctx.stroke();
+  }
+  if (Opt.best && Opt.best.theta.length === Land.mean.length) {
+    const [a, b] = P(Opt.best.theta), x = sx(a), y = sy(b);
+    ctx.fillStyle = '#fff4d6'; ctx.beginPath();
+    for (let k = 0; k < 10; k++) { const r = k % 2 ? 3 : 7, an = -Math.PI / 2 + k * Math.PI / 5; ctx.lineTo(x + r * Math.cos(an), y + r * Math.sin(an)); }
+    ctx.fill();
+  }
+  frameText(ctx, 'Every system tried, on the two directions where they differ most', pad, h - 4);
+}
+
+/* ==================================================================
+   MUSIC OF THE SPHERES - app C: interface, optimizer bridge, main loop
+   ================================================================== */
+const $ = id => document.getElementById(id);
+const UI = {
+  panelOpen: false, tab: 'system', binds: [], wTurn: false, reduced: false, dragging: false, needRefresh: false,
+  pw: 0, dh: 0, introShift: 0, introTarget: 0, hudT: 0, graphT: 0, liveT: 0, refreshT: 0, hallSig: '',
+  voiceRows: [], tabs: [], panes: [], signalUntil: 0, lastSignal: 0, lastLevel: 0, lastChaos: 0, lastFound: 0, errT: 0,
+};
+Object.assign(App, { voice: [], follow: false, pendingChampion: false, champ: null });
+let viewCanvas = null, viewCtx = null, toastTimer = 0, lastTs = 0;
+
+const STATUS = {
+  'SETTLING': { text: 'Measuring stability', cls: 'settling', note: 'Comparing the system with a shadow copy nudged by a hundred-millionth of its width.' },
+  'STABLE': { text: 'Stable', cls: 'stable', note: 'The shadow copy is keeping pace, so neighbouring orbits stay together.' },
+  'MOSTLY STABLE': { text: 'Mostly stable', cls: 'mostly', note: 'The orbits are holding, with a slow drift away from the shadow copy.' },
+  'CHAOTIC': { text: 'Chaotic', cls: 'chaotic', note: 'The shadow copy is racing away. Tiny differences now grow fast.' },
+  'DISRUPTED': { text: 'Disrupted', cls: 'disrupted', note: 'A collision or an ejection restarted the measurement.' },
+};
+const MODE_HINTS = {
+  bells: 'Each body rings a bell at its closest and farthest point from the centre. The sun tolls the key note every two bars.',
+  seq: 'The original sequencer: each body plucks note after note, faster when it moves faster.',
+  drone: 'Each body hums continuously, gliding in pitch as it moves.',
+  both: 'Bells at every turning point, over a slow hum from each body.',
+};
+const PITCH_HINTS = {
+  kepler: 'Kepler\'s idea: faster orbits sing higher. Orbits in resonance turn at simple ratios like 2:1 or 3:2, and those come out as octaves and fifths.',
+  y: 'Higher in the view is higher in pitch.',
+  w: 'Pitch follows each body along the hidden fourth axis.',
+  dist: 'Closer to the centre is higher in pitch.',
+};
+const KEYS = [
+  ['Drag', 'Turn in 3D'], ['Shift-drag', 'Turn through the fourth dimension'], ['Scroll or pinch', 'Zoom'], ['Double-click', 'Reset the view'],
+  ['<kbd>Space</kbd>', 'Pause or play'], ['<kbd>M</kbd>', 'Sound on or off'], ['<kbd>O</kbd>', 'Start or pause the optimizer'],
+  ['<kbd>G</kbd>', 'Show or hide the graphs'], ['<kbd>C</kbd>', 'Show or hide the controls'], ['<kbd>W</kbd>', 'Make dragging turn through W'],
+  ['<kbd>R</kbd>', 'Restart the system'], ['<kbd>1</kbd> to <kbd>9</kbd>', 'Choose a system'], ['Arrow keys', 'Nudge the view through W'],
+];
+
+/* ---------------- formatting ---------------- */
+function sci(x) {
+  if (!isFinite(x)) return 'unbounded';
+  if (!(x > 0)) return '0';
+  if (x >= 0.01) return x.toFixed(x >= 1 ? 1 : 3);
+  const e = Math.floor(Math.log10(x)), m = x / Math.pow(10, e);
+  return `${m.toFixed(1)} × 10<sup>−${-e}</sup>`;
+}
+const pct = v => Math.round(100 * v) + '%';
+const supLaw = p => '1/r<sup>' + (Math.abs(p - Math.round(p)) < 1e-6 ? Math.round(p) : p.toFixed(2)) + '</sup>';
+const lawText = p => Math.abs(p - 2) < 1e-6 ? '1/r²' : Math.abs(p - 3) < 1e-6 ? '1/r³' : '1/r^' + p.toFixed(2);
+function fmtNum(x) { if (!isFinite(x)) return '–'; const a = Math.abs(x); return a >= 100 ? x.toFixed(0) : a >= 1 ? x.toFixed(2) : a >= 0.01 ? x.toFixed(3) : x.toExponential(1); }
+function setText(id, s) { const e = $(id); if (e && e.textContent !== s) e.textContent = s; }
+function setHTML(id, s) { const e = $(id); if (e && e._html !== s) { e.innerHTML = s; e._html = s; } }
+function energyDrift() { const e = App.sim.energy(App.ph).E; return Math.abs(e - App.E0) / (Math.abs(App.E0) || 1); }
+
+/* ---------------- a tiny DOM kit ---------------- */
+function el(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  if (attrs) for (const k in attrs) {
+    const v = attrs[k];
+    if (v == null || v === false) continue;
+    if (k === 'class') e.className = v;
+    else if (k === 'text') e.textContent = v;
+    else if (k === 'html') e.innerHTML = v;
+    else if (k.slice(0, 2) === 'on' && typeof v === 'function') e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? '' : String(v));
+  }
+  for (const c of kids) if (c != null && c !== false) e.append(c);
+  return e;
+}
+function fill(p, ...kids) { for (const k of kids) if (k != null && k !== false) p.append(k); }
+function bind(row, sync, show) { UI.binds.push({ row, sync, show }); return row; }
+let uidN = 0;
+const nextId = () => 'c' + (++uidN);
+function slider(o) {
+  const id = o.id || nextId(), lg = !!o.log, out = el('output', { for: id });
+  const toPos = v => lg ? 1000 * Math.log(v / o.min) / Math.log(o.max / o.min) : v;
+  const fromPos = p => lg ? o.min * Math.pow(o.max / o.min, p / 1000) : p;
+  const inp = el('input', { type: 'range', id, min: lg ? 0 : o.min, max: lg ? 1000 : o.max, step: lg ? 1 : (o.step || 'any') });
+  const paint = v => {
+    const s = o.fmt ? o.fmt(v) : String(v);
+    if (o.html) out.innerHTML = s; else out.textContent = s;
+    const lo = +inp.min, hi = +inp.max;
+    inp.style.setProperty('--fill', (100 * (+inp.value - lo) / ((hi - lo) || 1)).toFixed(1) + '%');
+  };
+  inp.addEventListener('input', () => {
+    let v = fromPos(+inp.value);
+    if (o.step && !lg) v = +(Math.round(v / o.step) * o.step).toFixed(6);
+    S[o.key] = v; paint(v);
+    if (o.live) o.live(v);
+  });
+  inp.addEventListener('change', () => { if (o.on) o.on(S[o.key]); UI.needRefresh = true; });
+  const row = el('div', { class: 'ctl slider' },
+    el('div', { class: 'ctl-head' }, el('label', { for: id, text: o.label }), out), inp,
+    o.hint ? el('p', { class: 'hint', text: o.hint }) : null);
+  return bind(row, () => { inp.value = String(clamp(toPos(S[o.key]), +inp.min, +inp.max)); paint(S[o.key]); }, o.show);
+}
+function toggle(o) {
+  const id = nextId(), inp = el('input', { type: 'checkbox', id });
+  inp.addEventListener('change', () => { S[o.key] = inp.checked; if (o.on) o.on(inp.checked); refreshUI(); });
+  const row = el('div', { class: 'ctl toggle' }, inp, el('label', { for: id, text: o.label }), o.hint ? el('p', { class: 'hint', text: o.hint }) : null);
+  return bind(row, () => { inp.checked = !!S[o.key]; }, o.show);
+}
+function choice(o) {
+  const btns = o.options.map(([v, t]) => el('button', { type: 'button', 'aria-pressed': 'false', text: t,
+    onclick: () => { S[o.key] = v; sync(); if (o.on) o.on(v); refreshUI(); } }));
+  const sync = () => btns.forEach((b, k) => b.setAttribute('aria-pressed', String(o.options[k][0] === S[o.key])));
+  const row = el('div', { class: 'ctl choice', role: 'group', 'aria-label': o.label },
+    el('div', { class: 'ctl-head' }, el('span', { class: 'lbl', text: o.label })), el('div', { class: 'seg' }, ...btns),
+    o.hint ? el('p', { class: 'hint', text: o.hint }) : null);
+  return bind(row, sync, o.show);
+}
+function selectCtl(o) {
+  const id = o.id || nextId(), sel = el('select', { id });
+  const fill = () => {
+    const opts = typeof o.options === 'function' ? o.options() : o.options;
+    sel.innerHTML = '';
+    for (const [v, t] of opts) sel.append(el('option', { value: v, text: t }));
+  };
+  fill();
+  sel.addEventListener('change', () => { const v = o.num ? +sel.value : sel.value; if (o.assign !== false) S[o.key] = v; if (o.on) o.on(v); refreshUI(); });
+  const row = el('div', { class: 'ctl select' }, el('label', { for: id, text: o.label }), sel, o.hint ? el('p', { class: 'hint', text: o.hint }) : null);
+  return bind(row, () => { if (o.dynamic) fill(); sel.value = String(S[o.key]); }, o.show);
+}
+function btn(text, fn, attrs) { return el('button', Object.assign({ type: 'button', text, onclick: fn }, attrs || {})); }
+function rowOf(kids, show) { return bind(el('div', { class: 'ctl buttons' }, ...kids), null, show); }
+const h3 = t => el('h3', { text: t });
+const note = (t, attrs) => el('p', Object.assign({ class: 'hint', text: t }, attrs || {}));
+
+/* ---------------- champions saved between visits ---------------- */
+function thetaClose(a, b) {
+  if (!a || !b || a.length !== b.length) return false;
+  let d = 0;
+  for (let i = 0; i < a.length; i++) d += (a[i] - b[i]) ** 2;
+  return d < 0.0225 * a.length / 9;
+}
+const Saved = {
+  list: [], key: 'mos-champions', timer: 0,
+  ok() { return typeof window !== 'undefined' && !!window.storage && typeof window.storage.get === 'function'; },
+  async load() {
+    if (!this.ok()) return;
+    try {
+      const r = await window.storage.get(this.key, false);
+      if (r && r.value) {
+        const v = JSON.parse(r.value);
+        if (Array.isArray(v)) this.list = v.filter(e => e && Array.isArray(e.theta) && e.nb >= 3 && e.theta.length === optDim(e.nb) && isFinite(e.score));
+      }
+    } catch (e) { /* nothing saved yet */ }
+  },
+  offer(b) {
+    if (!this.ok() || !b) return;
+    const e = { theta: Array.from(b.theta), nb: b.nb, score: b.score, p: S.optP, soft: S.optSoft, at: Date.now() };
+    const i = this.list.findIndex(s => s.nb === e.nb && Math.abs(s.p - e.p) < 1e-6 && Math.abs(s.soft - e.soft) < 1e-6 && thetaClose(s.theta, e.theta));
+    if (i >= 0) { if (this.list[i].score >= e.score) return; this.list[i] = e; } else this.list.push(e);
+    this.list.sort((a, c) => c.score - a.score);
+    if (this.list.length > 8) this.list.length = 8;
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => this.save(), 2500);
+  },
+  async save() { try { await window.storage.set(this.key, JSON.stringify(this.list), false); } catch (e) { /* storage full or unavailable */ } },
+};
+
+/* ---------------- optimizer bridge: a background thread, with an in-page fallback ---------------- */
+function workerMain() { // runs inside the worker, after the core source
+  const opt = new Optimizer();
+  let running = false, gen = 0, sentE = 0, full = true, lastPost = 0, lastHall = -1;
+  function snap() {
+    const h = opt.history, add = [];
+    for (let k = h.length - 1; k >= 0 && h[k].e > sentE; k--) add.push(h[k]);
+    add.reverse();
+    if (add.length) sentE = add[add.length - 1].e;
+    const s = opt.slice, v = opt.verify;
+    const msg = {
+      type: 'snap', gen, full, add, running, evals: opt.evals, rate: opt.rate, restarts: opt.restarts,
+      verified: opt.verified, rejected: opt.rejected, nb: opt.nb, bestTrace: opt.bestTrace, best: opt.best,
+      climbers: opt.climbers.map(c => ({ id: c.id, score: c.score, sigma: c.sigma, trace: c.trace, path: c.path })),
+      verifying: v ? { quick: v.quick.score, progress: v.job ? Math.min(1, v.job.A.t / v.job.T) : 0 } : null,
+      hallVersion: opt.hallVersion,
+      slice: s ? { ix: s.ix, iy: s.iy, grid: s.grid, center: s.center, x0: s.x0, x1: s.x1, y0: s.y0, y1: s.y1, nb: s.nb, vals: s.vals, idx: s.idx, done: s.done } : null,
+    };
+    if (full || opt.hallVersion !== lastHall) { msg.hall = opt.hall; lastHall = opt.hallVersion; }
+    full = false;
+    self.postMessage(msg);
+  }
+  self.onmessage = ev => {
+    const m = ev.data;
+    if (m.cmd === 'hello') { self.postMessage({ type: 'hello' }); return; }
+    if (m.gen != null) gen = m.gen;
+    if (m.cmd === 'reset') { opt.configure(m.opts); opt.reset(m.nb, m.k); running = !!m.running; sentE = 0; full = true; }
+    else if (m.cmd === 'rebase') { opt.configure(m.opts); opt.rebase(); sentE = 0; full = true; }
+    else if (m.cmd === 'climbers') opt.setClimbers(m.k);
+    else if (m.cmd === 'run') running = !!m.on;
+    else if (m.cmd === 'slice') opt.startSlice(m.ix, m.iy, m.grid, m.span);
+    if (opt.opts) snap();
+  };
+  function loop() {
+    const busy = !!opt.opts && (running || (opt.slice && !opt.slice.done) || !!opt.verify);
+    if (busy) opt.tick(35);
+    const t = nowMs();
+    if (opt.opts && t - lastPost > 220) { lastPost = t; snap(); }
+    setTimeout(loop, busy ? 0 : 120);
+  }
+  loop();
+}
+const Bridge = {
+  mode: 'local', worker: null, gen: 0, alive: false, timer: 0,
+  opts() { return { ph: optPhys(), depth: S.optDepth, chaos: S.optChaos, eta: 0.05, weights: { d4: S.w4d, inter: S.wInter, harm: S.wHarm } }; },
+  start() {
+    Opt.onBest = b => onNewBest(b);
+    try {
+      const src = $('core-src').textContent + '\n;(' + workerMain.toString() + ')();';
+      const url = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
+      const w = new Worker(url);
+      w.onmessage = ev => this.onMsg(ev.data);
+      w.onerror = ev => { if (ev && ev.preventDefault) ev.preventDefault(); this.fallback(); };
+      this.worker = w; this.mode = 'worker';
+      w.postMessage({ cmd: 'hello' });
+      this.timer = setTimeout(() => { if (!this.alive) this.fallback(); }, 3000);
+    } catch (err) { this.worker = null; this.mode = 'local'; }
+    this.reset();
+  },
+  fallback() {
+    if (!this.worker) return;
+    try { this.worker.terminate(); } catch (e) { /* already gone */ }
+    this.worker = null; this.mode = 'local'; clearTimeout(this.timer);
+    this.reset(); refreshUI();
+  },
+  post(m) {
+    if (this.mode === 'worker' && this.worker) { m.gen = this.gen; this.worker.postMessage(m); return; }
+    if (m.cmd === 'reset') { Opt.configure(m.opts); Opt.reset(m.nb, m.k); }
+    else if (m.cmd === 'rebase') { Opt.configure(m.opts); Opt.rebase(); }
+    else if (m.cmd === 'climbers') Opt.setClimbers(m.k);
+    else if (m.cmd === 'slice') Opt.startSlice(m.ix, m.iy, m.grid, m.span);
+  },
+  reset() {
+    this.gen++;
+    const D = optDim(S.optN);
+    S.sliceX = Math.min(S.sliceX, D - 1); S.sliceY = Math.min(S.sliceY, D - 1);
+    if (S.sliceX === S.sliceY) S.sliceY = (S.sliceX + 1) % D;
+    if (this.mode === 'worker') { Opt.reset(S.optN, S.optClimbers); Opt.configure(this.opts()); }
+    this.post({ cmd: 'reset', opts: this.opts(), nb: S.optN, k: S.optClimbers, running: S.optRunning });
+    Land.pcs = null; UI.hallSig = '';
+  },
+  rebase() {
+    this.gen++;
+    if (this.mode === 'worker') { Opt.best = null; Opt.hall = []; Opt.slice = null; Opt.bestTrace = Opt.bestTrace.concat([[Opt.evals, NaN]]); }
+    this.post({ cmd: 'rebase', opts: this.opts() });
+    UI.hallSig = '';
+  },
+  climbers(k) { this.post({ cmd: 'climbers', k }); },
+  run(on) { this.post({ cmd: 'run', on }); },
+  slice(ix, iy) { this.post({ cmd: 'slice', ix, iy, grid: 15, span: 0.25 }); },
+  onMsg(d) {
+    if (!d) return;
+    this.alive = true;
+    if (d.type !== 'snap' || d.gen !== this.gen) return;
+    if (d.full) Opt.history = d.add; else for (const h of d.add) Opt.history.push(h);
+    if (Opt.history.length > 1500) Opt.history.splice(0, Opt.history.length - 1500);
+    Object.assign(Opt, { evals: d.evals, rate: d.rate, restarts: d.restarts, verified: d.verified, rejected: d.rejected,
+      nb: d.nb, climbers: d.climbers, bestTrace: d.bestTrace, slice: d.slice, verifyInfo: d.verifying });
+    if (d.hall) { Opt.hall = d.hall; Opt.hallVersion = d.hallVersion; }
+    const prev = Opt.best;
+    Opt.best = d.best;
+    if (d.best && (!prev || prev.at !== d.best.at || prev.score !== d.best.score)) onNewBest(d.best);
+  },
+};
+function verifyState() {
+  if (Bridge.mode === 'worker') return Opt.verifyInfo || null;
+  const v = Opt.verify;
+  return v ? { quick: v.quick.score, progress: v.job ? Math.min(1, v.job.A.t / v.job.T) : 0 } : null;
+}
+
+/* ---------------- actions ---------------- */
+function toast(msg) {
+  const t = $('toast');
+  if (!t) return;
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 4200);
+}
+function reportError(err) {
+  console.error(err);
+  const t = nowMs();
+  if (t - UI.errT > 5000) { UI.errT = t; toast('Something went wrong: ' + (err && err.message ? err.message : String(err))); }
+}
+function setSound(on) {
+  if (on && !Audio.ready) {
+    if (!Audio.init()) { S.sound = false; toast('This browser has no Web Audio, so the spheres stay silent.'); refreshUI(); return; }
+    Audio.setupBodies(App.meta);
+  }
+  S.sound = !!on; Audio.apply(); refreshUI();
+}
+function toggleSound() { setSound(!(S.sound && Audio.ready)); }
+function togglePause() { S.paused = !S.paused; App.simDebt = 0; refreshUI(); }
+function toggleOptimizer() {
+  S.optRunning = !S.optRunning;
+  Bridge.run(S.optRunning);
+  if (S.optRunning) {
+    if (!S.showDock) { S.showDock = true; applyDock(); }
+    App.follow = S.optAuto;
+    if (Opt.best && App.follow) App.pendingChampion = true;
+  }
+  refreshUI();
+}
+function sizeDock() { document.documentElement.style.setProperty('--dock-h', Math.round(Math.min(250, View.H * 0.36)) + 'px'); }
+function applyDock() {
+  $('dock').hidden = !S.showDock;
+  document.body.classList.toggle('dock-open', S.showDock);
+  sizeDock(); UI.graphT = 0;
+}
+function toggleDock() { S.showDock = !S.showDock; applyDock(); refreshUI(); }
+function setPanel(open) { UI.panelOpen = !!open; document.body.classList.toggle('panel-open', UI.panelOpen); refreshUI(); }
+function setTab(t) {
+  UI.tab = t;
+  UI.tabs.forEach(b => { const on = b.dataset.tab === t; b.setAttribute('aria-selected', String(on)); b.tabIndex = on ? 0 : -1; });
+  UI.panes.forEach(p => { p.hidden = p.id !== 'tab-' + t; });
+  UI.liveT = 0; UI.hallSig = '';
+}
+function resetView() { Object.assign(View.a, { xy: 0, xz: 0.5, yz: -0.38, xw: 0, yw: 0, zw: 0 }); S.zoom = 1; UI.needRefresh = true; }
+function currentBestSrc() { const b = Opt.best; return b ? { theta: Array.from(b.theta), nb: b.nb, score: b.score, p: S.optP, soft: S.optSoft } : null; }
+function playChampion(src, follow) {
+  if (!src) { toast('No champion yet. Start the optimizer and the best orbit it finds will play here.'); refreshUI(); return false; }
+  App.follow = !!follow && S.optAuto;
+  App.loadTheta = src; App.champ = src;
+  return loadPreset('best', App.key !== 'best');
+}
+function selectPreset(key) {
+  if (key === 'best') return playChampion(currentBestSrc(), true);
+  App.follow = false; App.pendingChampion = false;
+  return loadPreset(key, true);
+}
+function restartSystem() { if (App.key === 'best' && App.champ) App.loadTheta = App.champ; loadPreset(App.key, false); }
+function setLaw(p) { S.p = p; applyPhysics(); refreshUI(); }
+function mapSlice() {
+  if (!Opt.best) { toast('Run the optimizer first. The slice is centred on its champion.'); return; }
+  const D = optDim(Opt.nb);
+  if (S.sliceX === S.sliceY) { toast('Choose two different settings to sweep.'); return; }
+  if (S.sliceX >= D || S.sliceY >= D) { toast('Choose settings that exist for the current number of bodies.'); return; }
+  Bridge.slice(S.sliceX, S.sliceY);
+  S.landMode = 'slice';
+  if (!S.showDock) { S.showDock = true; applyDock(); }
+  refreshUI();
+}
+function sliceOptions() {
+  const out = [];
+  for (let b = 0; b < Opt.nb - 1; b++) for (let k = 0; k < OPT_K; k++) out.push([b * OPT_K + k, `Planet ${'ABCDEFGHIJK'[b]}: ${PARAM_NAMES[k]}`]);
+  return out;
+}
+function onNewBest(b) {
+  Saved.offer(b);
+  const t = nowMs();
+  if (t - UI.lastFound > 8000) { UI.lastFound = t; Audio.chime('found'); }
+  if (S.optAuto && App.follow) App.pendingChampion = true;
+  UI.hallSig = '';
+}
+function maybeAutoLoad() {
+  if (!App.pendingChampion || !S.optAuto || !App.follow || !Opt.best) return;
+  const t = nowMs(), since = t - App.lastAutoLoad;
+  // let each champion play long enough to earn its stability verdict before the next one takes over
+  if (App.key === 'best' && !((App.monitor.status !== 'SETTLING' && since > 6000) || since > 30000)) return;
+  App.pendingChampion = false; App.lastAutoLoad = t;
+  const first = App.key !== 'best';
+  playChampion(currentBestSrc(), true);
+  if (first) toast('Playing the optimizer\'s champion. Each new champion takes over as it is found.');
+}
+function onStatusChange(old, st) {
+  const t = nowMs(), level = st === 'STABLE' ? 2 : st === 'MOSTLY STABLE' ? 1 : 0;
+  if (level > 0) {
+    if (level > UI.lastLevel || t - UI.lastSignal > 20000) {
+      UI.lastSignal = t; UI.signalUntil = t + 2700;
+      Audio.chime(level === 2 ? 'stable' : 'mostly');
+      toast(level === 2 ? 'Stable. Neighbouring orbits are staying together.' : 'Mostly stable. The orbits are holding, with a slow drift.');
+    }
+    UI.lastLevel = Math.max(UI.lastLevel, level);
+  } else if (st === 'CHAOTIC') {
+    UI.lastLevel = 0;
+    if (t - UI.lastChaos > 15000) { UI.lastChaos = t; Audio.chime('chaos'); toast('Chaotic. Neighbouring orbits are flying apart.'); }
+  } else if (st === 'DISRUPTED') UI.lastLevel = 0;
+  UI.hudT = 0;
+}
+function onSystemLoaded() {
+  if (UI.reduced) { S.rot4 = 0; S.rot3 = 0; }
+  UI.lastLevel = 0; UI.lastSignal = 0;
+  buildVoices();
+  refreshUI();
+  if (viewCtx) updateHUD();
+}
+function begin(withSound) {
+  if (withSound) setSound(true); else S.sound = false;
+  document.body.classList.remove('intro');
+  const intro = $('intro');
+  intro.classList.add('gone');
+  setTimeout(() => { intro.hidden = true; }, 750);
+  UI.introTarget = 0;
+  if (View.W > 760) setPanel(true);
+  refreshUI();
+}
+
+/* ---------------- the controls panel ---------------- */
+function buildPanel() {
+  const tabs = [['system', 'System'], ['physics', 'Physics'], ['sound', 'Sound'], ['optimizer', 'Optimizer'], ['view', 'View']];
+  const list = el('div', { id: 'tabs', role: 'tablist', 'aria-label': 'Control sections' });
+  for (const [k, t] of tabs) {
+    const b = el('button', { type: 'button', role: 'tab', id: 'tab-b-' + k, 'aria-controls': 'tab-' + k, 'aria-selected': 'false', text: t, onclick: () => setTab(k) });
+    b.dataset.tab = k; UI.tabs.push(b); list.append(b);
+  }
+  list.addEventListener('keydown', e => {
+    const i = UI.tabs.indexOf(e.target);
+    if (i < 0) return;
+    const n = UI.tabs.length;
+    const j = e.key === 'ArrowRight' ? (i + 1) % n : e.key === 'ArrowLeft' ? (i - 1 + n) % n : e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : -1;
+    if (j >= 0) { e.preventDefault(); setTab(UI.tabs[j].dataset.tab); UI.tabs[j].focus(); }
+  });
+  $('panel-head').append(list, btn('Close', () => setPanel(false), { class: 'close', 'aria-label': 'Close the controls' }));
+  const body = $('panel-body');
+  for (const [k] of tabs) {
+    const p = el('section', { id: 'tab-' + k, class: 'tabpane', role: 'tabpanel', 'aria-labelledby': 'tab-b-' + k });
+    UI.panes.push(p); body.append(p);
+  }
+  buildSystemTab(UI.panes[0]); buildPhysicsTab(UI.panes[1]); buildSoundTab(UI.panes[2]); buildOptTab(UI.panes[3]); buildViewTab(UI.panes[4]);
+}
+function buildSystemTab(p) {
+  const solar = () => S.preset === 'solar';
+  fill(p,
+    selectCtl({ key: 'preset', id: 'preset-select', label: 'System', assign: false, options: PRESET_ORDER.map(k => [k, PRESETS[k].label]), on: v => selectPreset(v) }),
+    el('p', { id: 'preset-info', class: 'info' }),
+    slider({ key: 'solarTilt', label: 'Tilt into the fourth dimension', min: 0, max: 60, step: 1, fmt: v => Math.round(v) + '°', on: () => loadPreset('solar', false), show: solar,
+      hint: 'Each planet\'s real inclination, mirrored into W. Zero gives the real, flat solar system.' }),
+    slider({ key: 'solarMass', label: 'Planet masses', min: 1, max: 1000, log: true, fmt: v => '×' + (v < 9.95 ? v.toFixed(1) : Math.round(v)), on: () => loadPreset('solar', false), show: solar,
+      hint: 'Heavier planets pull on each other harder. Somewhere past ×100 the solar system turns chaotic.' }),
+    toggle({ key: 'pluto', label: 'Include Pluto', on: () => loadPreset('solar', false), show: solar }),
+    slider({ key: 'nBodies', label: 'Bodies', min: 3, max: 12, step: 1, fmt: v => String(Math.round(v)), on: () => loadPreset(S.preset, false), show: () => ['original', 'hopf', 'cluster'].includes(S.preset) }),
+    rowOf([btn('New arrangement', () => { S.seed = (Math.random() * 1e9) >>> 0; loadPreset(S.preset, false); })], () => ['original', 'cluster'].includes(S.preset)),
+    rowOf([btn('Play the latest champion', () => playChampion(currentBestSrc(), true))], () => S.preset === 'best'),
+    slider({ key: 'speed', label: 'Speed', min: 0.02, max: 4, log: true, fmt: v => v.toFixed(2) + (S.preset === 'solar' ? ' years per second' : ' orbits per second') }),
+    rowOf([btn('Pause', togglePause, { id: 'b-pause2' }), btn('Restart', restartSystem)]),
+    h3('What you are seeing'),
+    note('Every body moves in four dimensions: x, y, z and w. The view folds w into perspective, then z, so a body swells as it comes toward you along either one. Colour by depth in W, on the View tab, to see the hidden axis.'),
+    note('The lamp at the top left races the system against a shadow copy nudged by a hundred-millionth of its width. If the two stay together the orbits are stable, and a chime sounds when they settle.'),
+  );
+}
+function buildPhysicsTab(p) {
+  fill(p,
+    slider({ key: 'gMul', label: 'Strength of gravity', min: 0.25, max: 4, log: true, fmt: v => '×' + v.toFixed(2), live: () => applyPhysics() }),
+    slider({ key: 'p', label: 'How gravity fades', min: 1, max: 3, step: 0.05, html: true, fmt: supLaw, live: () => applyPhysics(),
+      hint: 'Our universe is 1/r². Gravity spreading through four dimensions would fade as 1/r³, and under 1/r³ no orbit is stable.' }),
+    rowOf([btn('Our universe, 1/r²', () => setLaw(2)), btn('True 4D, 1/r³', () => setLaw(3))]),
+    rowOf([btn('Re-balance orbits for this law', restartSystem)]),
+    note('Changing the law mid-flight keeps the old speeds. Re-balancing restarts the system with speeds that suit the new law.'),
+    slider({ key: 'soft', label: 'Softening', min: 0, max: 0.2, step: 0.002, fmt: v => v < 1e-9 ? 'none' : v.toFixed(3), live: () => applyPhysics(),
+      hint: 'Rounds gravity off at close range so near misses stay gentle, measured as a fraction of the system\'s size. With softening, even 1/r³ gravity can hold an orbit.' }),
+    slider({ key: 'tether', label: 'Spring to the centre', min: 0, max: 2, step: 0.01, fmt: v => v < 1e-9 ? 'off' : v.toFixed(2), live: () => applyPhysics(),
+      hint: 'The elastic pull from the original melody. At 1, a lone body swings back once per reference orbit.' }),
+    toggle({ key: 'merge', label: 'Merge bodies that collide' }),
+    slider({ key: 'eta', label: 'Step size', min: 0.004, max: 0.06, log: true, fmt: v => v.toFixed(3), on: () => applyPhysics(),
+      hint: 'Smaller is more accurate and slower. The step stays fixed except during close passes, which keeps energy from drifting.' }),
+    el('p', { id: 'phys-readout', class: 'readout' }),
+  );
+}
+function buildSoundTab(p) {
+  fill(p,
+    toggle({ key: 'sound', label: 'Sound', on: v => setSound(v) }),
+    slider({ key: 'volume', label: 'Volume', min: 0, max: 1, step: 0.01, fmt: pct, live: () => Audio.apply() }),
+    choice({ key: 'mode', label: 'What the bodies play', options: [['bells', 'Orbital bells'], ['seq', 'Sequencer'], ['drone', 'Drones'], ['both', 'Bells and drones']] }),
+    el('p', { id: 'mode-hint', class: 'hint tight' }),
+    choice({ key: 'pitchSrc', label: 'Pitch comes from', options: [['kepler', 'Orbital speed'], ['y', 'Height'], ['w', 'Fourth axis'], ['dist', 'Distance']] }),
+    el('p', { id: 'pitch-hint', class: 'hint tight' }),
+    selectCtl({ key: 'scale', label: 'Scale', options: Object.keys(SCALES).map(k => [k, SCALES[k].label]) }),
+    selectCtl({ key: 'root', label: 'Key', num: true, options: NOTE_NAMES.map((n, i) => [i, n]) }),
+    toggle({ key: 'quantize', label: 'Snap every note to the scale' }),
+    choice({ key: 'voicing', label: 'Each body sings', options: [['single', 'One note'], ['octave', 'Octaves'], ['fifth', 'Fifths'], ['triad', 'Triads']] }),
+    slider({ key: 'bpm', label: 'Tempo', min: 40, max: 160, step: 1, fmt: v => Math.round(v) + ' beats per minute' }),
+    toggle({ key: 'rhythmQuant', label: 'Lock the sequencer to the beat', show: () => S.mode === 'seq' }),
+    slider({ key: 'decay', label: 'Ring time', min: 0.3, max: 4, step: 0.05, fmt: v => v.toFixed(1) + ' s' }),
+    slider({ key: 'reverb', label: 'Reverb', min: 0, max: 1, step: 0.01, fmt: pct, live: () => Audio.apply() }),
+    choice({ key: 'spatial', label: 'Placement', options: [['stereo', 'Stereo'], ['hrtf', '3D, for headphones']], on: () => { if (Audio.ready) Audio.setupBodies(App.meta); } }),
+    toggle({ key: 'strings', label: 'Pluck a string when two bodies pass close' }),
+    toggle({ key: 'signals', label: 'Chime when the orbits settle' }),
+    h3('Voices'),
+    note('Every body is its own sound source, placed where you see it. They all share one scale, so they harmonize. Bodies on the near side of W sound brighter.'),
+    el('div', { id: 'voices', class: 'voices' }),
+  );
+}
+function buildOptTab(p) {
+  fill(p,
+    note('A team of climbers searches for 4D systems that hold together. Each one nudges masses, distances, speeds and orbital tilts, keeps the changes that score better, and starts afresh somewhere new when it gets stuck. A challenger that beats the champion is re-tested on a run four times longer before it is crowned.'),
+    rowOf([btn('Start optimizer', toggleOptimizer, { id: 'b-opt', class: 'primary' }), btn('Reset search', () => { Bridge.reset(); refreshUI(); })]),
+    rowOf([btn('Play champion', () => playChampion(currentBestSrc(), true)), btn('Show graphs', toggleDock, { id: 'b-graphs2' })]),
+    el('dl', { id: 'o-stats', class: 'stats' }),
+    el('div', { id: 'o-champ', class: 'champ' }),
+    el('p', { id: 'o-verify', class: 'hint' }),
+    toggle({ key: 'optAuto', label: 'Play each new champion as it is found', on: v => { if (v) { App.follow = true; if (Opt.best) App.pendingChampion = true; } } }),
+    h3('What to search'),
+    slider({ key: 'optN', label: 'Bodies in each system', min: 3, max: 8, step: 1, fmt: v => `${Math.round(v)}: a sun and ${Math.round(v) - 1} worlds`, on: () => { Bridge.reset(); refreshUI(); } }),
+    slider({ key: 'optClimbers', label: 'Climbers', min: 1, max: 6, step: 1, fmt: v => String(Math.round(v)), on: v => Bridge.climbers(Math.round(v)) }),
+    slider({ key: 'optDepth', label: 'Test length', min: 20, max: 240, step: 10, fmt: v => Math.round(v) + ' inner orbits', on: () => Bridge.rebase(),
+      hint: 'Longer tests catch slow chaos, but try fewer systems per second.' }),
+    toggle({ key: 'optChaos', label: 'Race a shadow copy to detect chaos', on: () => Bridge.rebase() }),
+    slider({ key: 'optP', label: 'Gravity for the search', min: 2, max: 3, step: 0.05, html: true, fmt: supLaw, on: () => Bridge.rebase(),
+      hint: 'Stable orbits grow rare as the law approaches 1/r³. Add softening to give them somewhere to live.' }),
+    slider({ key: 'optSoft', label: 'Softening for the search', min: 0, max: 0.6, step: 0.01, fmt: v => v < 1e-9 ? 'none' : v.toFixed(2), on: () => Bridge.rebase() }),
+    h3('What counts as beautiful'),
+    note('Stability always comes first. These add a bonus for the kinds of system you would like to hear.'),
+    slider({ key: 'w4d', label: 'Uses all four dimensions', min: 0, max: 1.5, step: 0.05, fmt: v => v.toFixed(2), on: () => Bridge.rebase() }),
+    slider({ key: 'wInter', label: 'Bodies pull on each other', min: 0, max: 1.5, step: 0.05, fmt: v => v.toFixed(2), on: () => Bridge.rebase() }),
+    slider({ key: 'wHarm', label: 'Orbits in consonant ratios', min: 0, max: 1.5, step: 0.05, fmt: v => v.toFixed(2), on: () => Bridge.rebase() }),
+    slider({ key: 'optBudget', label: 'Share of each frame for the search', min: 2, max: 14, step: 1, fmt: v => Math.round(v) + ' ms', show: () => Bridge.mode === 'local' }),
+    el('p', { id: 'o-thread', class: 'hint' }),
+    h3('Best configurations'),
+    el('div', { id: 'hall', class: 'hall' }),
+    Saved.ok() ? note('Your best finds are saved in this browser for next time.') : null,
+    h3('Map the landscape'),
+    note('The search map squashes every system tried onto the two directions in which they differ most. A slice holds the champion fixed and sweeps two of its settings across a 15 by 15 grid.'),
+    choice({ key: 'landMode', label: 'The third graph shows', options: [['pca', 'Search map'], ['slice', 'Slice']], on: () => { if (!S.showDock) { S.showDock = true; applyDock(); } } }),
+    selectCtl({ key: 'sliceX', label: 'Sweep across', num: true, dynamic: true, options: sliceOptions }),
+    selectCtl({ key: 'sliceY', label: 'Sweep up', num: true, dynamic: true, options: sliceOptions }),
+    rowOf([btn('Map this slice', mapSlice)]),
+  );
+}
+function buildViewTab(p) {
+  fill(p,
+    slider({ key: 'rot4', label: 'Turning through W', min: -0.3, max: 0.3, step: 0.005, fmt: v => Math.abs(v) < 1e-9 ? 'still' : v.toFixed(3) }),
+    slider({ key: 'rot3', label: 'Turntable', min: -0.3, max: 0.3, step: 0.005, fmt: v => Math.abs(v) < 1e-9 ? 'still' : v.toFixed(3) }),
+    slider({ key: 'zoom', label: 'Zoom', min: 0.2, max: 8, log: true, fmt: v => '×' + v.toFixed(2) }),
+    slider({ key: 'compress', label: 'Fit wide orbits', min: 0.3, max: 1, step: 0.01, fmt: v => v > 0.995 ? 'true scale' : v.toFixed(2),
+      hint: 'Squeezes distances so the outer planets fit on screen without shrinking the inner ones. One is true scale.' }),
+    choice({ key: 'colorMode', label: 'Colour', options: [['body', 'By body'], ['w', 'By depth in W']] }),
+    el('div', { class: 'wlegend', 'aria-hidden': 'true' }, el('span', { text: 'Away in W' }), el('i'), el('span', { text: 'Toward you in W' })),
+    toggle({ key: 'trails', label: 'Trails' }),
+    slider({ key: 'trailLen', label: 'Trail length', min: 50, max: 1500, step: 10, fmt: v => String(Math.round(v)), show: () => S.trails }),
+    toggle({ key: 'tethers', label: 'Draw a line between close bodies' }),
+    slider({ key: 'tetherDist', label: 'Close means within', min: 0.05, max: 1, step: 0.01, fmt: v => Math.round(v * 100) + '% of the system radius', show: () => S.tethers || S.strings }),
+    toggle({ key: 'tesseract', label: 'Tesseract frame' }),
+    toggle({ key: 'axes', label: 'Axis compass' }),
+    toggle({ key: 'labels', label: 'Names and notes' }),
+    toggle({ key: 'followCom', label: 'Follow the centre of mass' }),
+    rowOf([btn('Reset view', resetView)]),
+    h3('Moving around'),
+    el('dl', { class: 'keys' }, ...KEYS.flatMap(([k, t]) => [el('dt', { html: k }), el('dd', { text: t })])),
+  );
+}
+function buildVoices() {
+  const box = $('voices');
+  if (!box) return;
+  box.innerHTML = ''; UI.voiceRows = [];
+  App.voice = App.meta.map(() => 'on');
+  App.meta.forEach((m, i) => {
+    const mute = btn('Mute', () => setVoice(i, App.voice[i] === 'mute' ? 'on' : 'mute'), { class: 'mini', 'aria-pressed': 'false', 'aria-label': 'Mute ' + m.name });
+    const solo = btn('Solo', () => setVoice(i, App.voice[i] === 'solo' ? 'on' : 'solo'), { class: 'mini', 'aria-pressed': 'false', 'aria-label': 'Solo ' + m.name });
+    const noteEl = el('span', { class: 'v-note', text: '–' });
+    const row = el('div', { class: 'voice' }, el('span', { class: 'swatch', style: 'background:' + m.color }), el('span', { class: 'v-name', text: m.name }), noteEl, mute, solo);
+    UI.voiceRows.push({ row, note: noteEl, mute, solo });
+    box.append(row);
+  });
+}
+function setVoice(i, st) {
+  App.voice[i] = st;
+  UI.voiceRows.forEach((r, k) => {
+    r.mute.setAttribute('aria-pressed', String(App.voice[k] === 'mute'));
+    r.solo.setAttribute('aria-pressed', String(App.voice[k] === 'solo'));
+  });
+}
+function applyVoiceStates() {
+  if (!Audio.ready) return;
+  const v = App.voice, anySolo = v.includes('solo');
+  Audio.channels.forEach((ch, i) => { ch.mute = v[i] === 'mute' || (anySolo && v[i] !== 'solo'); });
+}
+
+/* ---------------- live readouts ---------------- */
+function champLine() {
+  if (App.key !== 'best' || !App.champ) return '';
+  const c = App.champ;
+  return ` This one has ${c.nb} bodies under ${lawText(c.p)} gravity` + (c.score != null ? ` and scored ${c.score.toFixed(1)}.` : '.');
+}
+function syncButtons() {
+  const pressed = (id, on) => { const b = $(id); if (b) b.setAttribute('aria-pressed', String(!!on)); };
+  const label = (id, s) => { const b = $(id); if (b && b.textContent !== s) b.textContent = s; };
+  label('b-pause', S.paused ? 'Play' : 'Pause'); label('b-pause2', S.paused ? 'Play' : 'Pause');
+  pressed('b-sound', S.sound && Audio.ready); pressed('b-wturn', UI.wTurn); pressed('b-graphs', S.showDock); pressed('b-panel', UI.panelOpen);
+  label('b-opt', S.optRunning ? 'Pause optimizer' : 'Start optimizer');
+  label('b-graphs2', S.showDock ? 'Hide graphs' : 'Show graphs');
+}
+function refreshUI() {
+  for (const b of UI.binds) { if (b.sync) b.sync(); if (b.show) b.row.hidden = !b.show(); }
+  syncButtons();
+  if (App.P) setText('preset-info', App.P.info + champLine());
+  setText('mode-hint', MODE_HINTS[S.mode] || '');
+  setText('pitch-hint', PITCH_HINTS[S.pitchSrc] || '');
+  setText('land-title', S.landMode === 'slice' && Opt.slice ? 'Slice through the champion' : 'Search map');
+  setText('o-thread', Bridge.mode === 'worker' ? 'The search runs in a background thread, so it will not slow the animation.' : 'The search is sharing time with the animation in this tab.');
+  UI.refreshT = nowMs(); UI.needRefresh = false;
+}
+function updateHUD() {
+  const mon = App.monitor, st = STATUS[mon.status] || STATUS.SETTLING, t = nowMs(), pill = $('status');
+  const cls = 'status ' + st.cls + (t < UI.signalUntil ? ' signal' : '');
+  if (pill.className !== cls) pill.className = cls;
+  setText('status-text', st.text);
+  const y = mon.megno;
+  setText('megno', y != null && isFinite(y) && mon.status !== 'SETTLING' ? '⟨Y⟩ ' + (y < 100 ? y.toFixed(2) : 'over 100') : '');
+  let noteTxt = st.note;
+  if (mon.status === 'SETTLING' && mon.Tf > 0) {
+    const age = Math.floor((App.sim.t - mon.t0) / mon.Tf);
+    noteTxt = age < 6 ? `Racing a shadow copy nudged by a hundred-millionth of the system's width: ${Math.max(0, age)} of 6 orbits so far.`
+      : 'Still deciding. The shadow copy is drifting away, but slowly.';
+  }
+  setText('status-note', App.lag ? 'The simulation is falling behind the chosen speed. Lower the speed, or raise the step size under Physics.' : noteTxt);
+  const sim = App.sim;
+  setText('r-system', App.P.label);
+  setText('r-time', App.key === 'solar' ? sim.t.toFixed(1) + ' years' : Math.floor(sim.t / App.scales.Tfast).toLocaleString() + ' inner orbits');
+  setHTML('r-energy', sci(energyDrift()));
+  const prog = S.scale === 'progression' && Audio.ready;
+  $('r-chord-row').hidden = !prog;
+  if (prog) setText('r-chord', SCALES.progression.names[chordIndex(Audio.ctx.currentTime)] + ' in ' + NOTE_NAMES[S.root]);
+  const showOpt = Opt.evals > 0 || S.optRunning;
+  $('r-opt-row').hidden = !showOpt;
+  if (showOpt) setText('r-opt', `${S.optRunning ? 'Searching' : 'Paused'}, ${Opt.evals.toLocaleString()} tried` + (Opt.best ? `, champion ${Opt.best.score.toFixed(1)}` : ''));
+}
+function updatePanelLive() {
+  if (UI.tab === 'physics') setHTML('phys-readout', `Base time step ${fmtNum(App.dtBase)} ${App.key === 'solar' ? 'years' : 'time units'}, shrinking during close passes. Energy drift so far ${sci(energyDrift())}.`);
+  else if (UI.tab === 'sound') updateVoiceNotes();
+  else if (UI.tab === 'optimizer') updateOptPanel();
+}
+function updateVoiceNotes() {
+  const sim = App.sim;
+  UI.voiceRows.forEach((r, i) => {
+    const mb = App.music[i], gone = !sim.alive[i] || !!App.ejected[i];
+    const txt = !sim.alive[i] ? 'merged' : App.ejected[i] ? 'flung out' : mb && mb.f && S.sound ? noteName(mb.f) : '–';
+    if (r.note.textContent !== txt) r.note.textContent = txt;
+    r.row.classList.toggle('gone', gone);
+  });
+}
+function updateOptPanel() {
+  const st = $('o-stats'), passed = Math.max(0, Opt.verified - Opt.rejected);
+  st.innerHTML = '';
+  for (const [k, v] of [['Systems tried', Opt.evals.toLocaleString()], ['Per second', Math.round(Opt.rate || 0).toLocaleString()],
+    ['Passed the long re-test', `${passed} of ${Opt.verified}`], ['Fresh starts', String(Opt.restarts)]]) st.append(el('dt', { text: k }), el('dd', { text: v }));
+  const ch = $('o-champ'), b = Opt.best;
+  ch.innerHTML = '';
+  if (!b) ch.append(note(S.optRunning ? 'Searching. The first champion usually appears within a few seconds.' : 'No champion yet. Start the optimizer to begin the search.'));
+  else {
+    const r = b.res;
+    ch.append(el('div', { class: 'champ-score' }, el('span', { text: `Champion with ${b.nb} bodies` }), el('b', { text: b.score.toFixed(1) })));
+    for (const [label, v, color] of [['Stability', r.stab, 'var(--stable)'], ['Uses four dimensions', r.q4, 'var(--ana)'],
+      ['Bodies pull on each other', r.qI, 'var(--brass)'], ['Consonant orbit ratios', r.harm, 'var(--kata)']]) {
+      const f = clamp(v || 0, 0, 1);
+      ch.append(el('div', { class: 'meter-row' }, el('span', { text: label }),
+        el('span', { class: 'meter' }, el('i', { style: `width:${(100 * f).toFixed(1)}%;background:${color}` })), el('span', { class: 'mv', text: pct(f) })));
+    }
+    ch.append(note(`Survived ${Math.round(r.orbitsSurvived)} inner orbits` + (r.megno ? `, with ⟨Y⟩ = ${r.megno.toFixed(2)}.` : '.')));
+  }
+  const v = verifyState();
+  setText('o-verify', v ? `Re-testing a challenger that scored ${v.quick.toFixed(1)} on the short test: ${Math.round(100 * v.progress)}% through a run four times longer.` : '');
+  renderHall();
+}
+function hallEntries() {
+  const out = (Opt.hall || []).map(h => ({ theta: h.theta, nb: h.nb, score: h.score, p: S.optP, soft: S.optSoft, when: 'Found this session' }));
+  for (const s of Saved.list) {
+    if (!out.some(o => o.nb === s.nb && Math.abs(o.p - s.p) < 1e-6 && thetaClose(o.theta, s.theta)))
+      out.push(Object.assign({}, s, { when: 'Saved ' + new Date(s.at).toLocaleDateString() }));
+  }
+  return out.sort((a, c) => c.score - a.score).slice(0, 8);
+}
+function renderHall() {
+  const list = hallEntries(), sig = list.map(e => e.score.toFixed(2) + ':' + e.nb + ':' + e.when).join('|');
+  if (sig === UI.hallSig) return;
+  UI.hallSig = sig;
+  const box = $('hall');
+  box.innerHTML = '';
+  if (!list.length) { box.append(note('Nothing yet. Distinct families of stable systems will collect here.')); return; }
+  for (const e of list) {
+    box.append(el('div', { class: 'hall-row' }, el('b', { text: e.score.toFixed(1) }),
+      el('span', { class: 'hall-desc', text: `${e.nb} bodies, ${lawText(e.p)} gravity` }), el('small', { text: e.when }),
+      btn('Play', () => playChampion({ theta: Array.from(e.theta), nb: e.nb, p: e.p, soft: e.soft, score: e.score }, false), { 'aria-label': `Play the system that scored ${e.score.toFixed(1)}` })));
+  }
+}
+function drawGraphs() { drawClimb($('g-climb')); drawParallel($('g-par')); drawLandscape($('g-land')); }
+
+/* ---------------- input ---------------- */
+function wirePointer(cv) {
+  const pts = new Map();
+  let pinch = 0, zoom0 = 1;
+  cv.addEventListener('pointerdown', e => {
+    try { cv.setPointerCapture(e.pointerId); } catch (err) { /* not capturable */ }
+    pts.set(e.pointerId, { x: e.clientX, y: e.clientY, b: e.button });
+    if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = Math.hypot(a.x - b.x, a.y - b.y); zoom0 = S.zoom; }
+    UI.dragging = true; cv.classList.add('dragging');
+  });
+  cv.addEventListener('pointermove', e => {
+    const p = pts.get(e.pointerId);
+    if (!p) return;
+    const dx = e.clientX - p.x, dy = e.clientY - p.y;
+    p.x = e.clientX; p.y = e.clientY;
+    if (pts.size >= 2) {
+      const [a, b] = [...pts.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (pinch > 0) { S.zoom = clamp(zoom0 * d / pinch, 0.2, 8); UI.needRefresh = true; }
+      return;
+    }
+    if (e.shiftKey || p.b === 2 || UI.wTurn) { View.a.xw += dx * 0.006; View.a.yw += dy * 0.006; }
+    else { View.a.xz -= dx * 0.006; View.a.yz += dy * 0.006; }
+  });
+  const up = e => { pts.delete(e.pointerId); if (pts.size < 2) pinch = 0; if (!pts.size) { UI.dragging = false; cv.classList.remove('dragging'); } };
+  cv.addEventListener('pointerup', up);
+  cv.addEventListener('pointercancel', up);
+  cv.addEventListener('contextmenu', e => e.preventDefault());
+  cv.addEventListener('wheel', e => { e.preventDefault(); S.zoom = clamp(S.zoom * Math.exp(-e.deltaY * 0.0012), 0.2, 8); UI.needRefresh = true; }, { passive: false });
+  cv.addEventListener('dblclick', resetView);
+}
+function onKey(e) {
+  if (e.metaKey || e.ctrlKey || e.altKey || document.body.classList.contains('intro')) return;
+  const tg = e.target, tag = tg && tg.tagName ? tg.tagName.toLowerCase() : '', type = tg && tg.type;
+  if (e.key === 'Escape') { if (UI.panelOpen && View.W <= 760) setPanel(false); return; }
+  if (tag === 'select' || tag === 'textarea' || (tag === 'input' && type !== 'checkbox' && type !== 'range')) return;
+  if ((e.key === ' ' || e.key === 'Enter') && (tag === 'button' || tag === 'input')) return;
+  if (tag === 'input' && /^(Arrow|Home|End|Page)/.test(e.key)) return;
+  const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  let used = true;
+  if (k === ' ') togglePause();
+  else if (k === 'm') toggleSound();
+  else if (k === 'o') toggleOptimizer();
+  else if (k === 'g') toggleDock();
+  else if (k === 'c') setPanel(!UI.panelOpen);
+  else if (k === 'r') restartSystem();
+  else if (k === 'w') { UI.wTurn = !UI.wTurn; refreshUI(); }
+  else if (k.length === 1 && k >= '1' && k <= '9') selectPreset(PRESET_ORDER[+k - 1]);
+  else if (k === '+' || k === '=') { S.zoom = clamp(S.zoom * 1.15, 0.2, 8); UI.needRefresh = true; }
+  else if (k === '-' || k === '_') { S.zoom = clamp(S.zoom / 1.15, 0.2, 8); UI.needRefresh = true; }
+  else if (k === 'ArrowLeft') View.a.xw -= 0.08;
+  else if (k === 'ArrowRight') View.a.xw += 0.08;
+  else if (k === 'ArrowUp') View.a.yw -= 0.08;
+  else if (k === 'ArrowDown') View.a.yw += 0.08;
+  else used = false;
+  if (used) e.preventDefault();
+}
+function onLandClick(ev) {
+  const r = ev.currentTarget.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top;
+  let best = null, bd = Infinity;
+  for (const p of Land.pts) { const d = Math.hypot(p.x - x, p.y - y); if (d < bd) { bd = d; best = p; } }
+  if (!best || bd > best.r + 6) return;
+  if (best.slice) {
+    if (!Opt.slice) return;
+    playChampion({ theta: Opt.sliceTheta(best.slice[0], best.slice[1]), nb: Opt.slice.nb, p: S.optP, soft: S.optSoft }, false);
+  } else playChampion({ theta: Array.from(best.theta), nb: Opt.nb, p: S.optP, soft: S.optSoft }, false);
+  toast('Playing the system at that point. “Play champion” goes back to the best.');
+}
+function drawSky() {
+  const c = $('sky'), dpr = View.dpr || 1, w = View.W, h = View.H;
+  c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
+  const g = c.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const grd = g.createRadialGradient(w * 0.55, h * 0.46, 0, w * 0.55, h * 0.46, Math.hypot(w, h) * 0.62);
+  grd.addColorStop(0, '#17234f'); grd.addColorStop(0.5, '#0d1538'); grd.addColorStop(1, '#060a1e');
+  g.fillStyle = grd; g.fillRect(0, 0, w, h);
+  const rng = mulberry32(1619), n = Math.round(w * h / 2400); // 1619: the year of Kepler's Harmonices Mundi
+  for (let i = 0; i < n; i++) {
+    const x = rng() * w, y = rng() * h, big = rng() < 0.06, rad = big ? 0.9 + rng() * 0.7 : 0.35 + rng() * 0.5;
+    g.fillStyle = `rgba(236,229,209,${(big ? 0.35 + rng() * 0.35 : 0.1 + rng() * 0.3).toFixed(3)})`;
+    g.beginPath(); g.arc(x, y, rad, 0, TAU); g.fill();
+  }
+}
+function resize() {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  View.W = window.innerWidth; View.H = window.innerHeight; View.dpr = dpr;
+  viewCanvas.width = Math.round(View.W * dpr); viewCanvas.height = Math.round(View.H * dpr);
+  viewCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  drawSky(); sizeDock();
+  if (document.body.classList.contains('intro')) UI.introTarget = UI.introShift = View.W > 760 ? View.W * 0.17 : 0;
+  UI.graphT = 0;
+}
+function wireStatic() {
+  $('b-pause').addEventListener('click', togglePause);
+  $('b-sound').addEventListener('click', toggleSound);
+  $('b-wturn').addEventListener('click', () => { UI.wTurn = !UI.wTurn; refreshUI(); });
+  $('b-graphs').addEventListener('click', toggleDock);
+  $('b-panel').addEventListener('click', () => setPanel(!UI.panelOpen));
+  $('go-sound').addEventListener('click', () => begin(true));
+  $('go-silent').addEventListener('click', () => begin(false));
+  $('g-land').addEventListener('click', onLandClick);
+  wirePointer(viewCanvas);
+  window.addEventListener('keydown', onKey);
+  window.addEventListener('resize', resize);
+}
+
+/* ---------------- main loop ---------------- */
+function frame(ts) {
+  requestAnimationFrame(frame);
+  const dt = lastTs ? clamp((ts - lastTs) / 1000, 0, 0.05) : 1 / 60;
+  lastTs = ts;
+  try {
+    const ease = rate => UI.reduced ? 1 : Math.min(1, dt * rate);
+    UI.pw += ((UI.panelOpen && View.W > 760 ? 372 : 0) - UI.pw) * ease(7);
+    UI.dh += ((S.showDock ? Math.min(250, View.H * 0.36) : 0) - UI.dh) * ease(7);
+    UI.introShift += (UI.introTarget - UI.introShift) * ease(2.4);
+    if (!S.paused) advance(dt);
+    if (!UI.dragging) { View.a.xw += S.rot4 * dt; View.a.yw += S.rot4 * 0.618 * dt; View.a.xz += S.rot3 * dt; }
+    render(viewCtx);
+    applyVoiceStates();
+    updateMusic();
+    if (Bridge.mode === 'local' && (S.optRunning || (Opt.slice && !Opt.slice.done) || Opt.verify)) Opt.tick(S.optBudget);
+    maybeAutoLoad();
+    const t = nowMs();
+    if (S.showDock && t - UI.graphT > 125) { UI.graphT = t; drawGraphs(); }
+    if (t - UI.hudT > 160) { UI.hudT = t; updateHUD(); }
+    if (UI.panelOpen && t - UI.liveT > 300) { UI.liveT = t; updatePanelLive(); }
+    if (UI.needRefresh && t - UI.refreshT > 250) refreshUI();
+  } catch (err) { reportError(err); }
+}
+function init() {
+  UI.reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  if (UI.reduced) { S.rot4 = 0; S.rot3 = 0; }
+  viewCanvas = $('view'); viewCtx = viewCanvas.getContext('2d');
+  document.body.classList.add('intro');
+  App.monitor.onChange = onStatusChange;
+  buildPanel();
+  wireStatic();
+  resize();
+  loadPreset('solar');
+  setTab('system');
+  setPanel(false);
+  Bridge.start();
+  Saved.load().then(() => { UI.hallSig = ''; });
+  refreshUI();
+  requestAnimationFrame(frame);
+}
+init();
+</script>
+</body>
+</html>
