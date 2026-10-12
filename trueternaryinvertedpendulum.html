@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ternary Triple-Pendulum — Structural Learning Lab</title>
+<style>
+:root{color-scheme:dark;--bg:#07111e;--panel:#101f32;--panel2:#0b192b;--line:#29425c;--fg:#e9f4ff;--sub:#a4b5ca;--cyan:#65dbf6;--green:#67e4aa;--gold:#ffcb70;--red:#ff7c8c;--purple:#bba9fb}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 35% -25%,#1a3552,#07111e 64%);font:14px/1.45 system-ui,-apple-system,Segoe UI,Arial;color:var(--fg)}main{max-width:1480px;padding:19px;margin:auto}h1{font-size:28px;letter-spacing:-.55px;margin:0 0 5px}h2{font-size:16px;margin:0 0 10px}h3{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--cyan);margin:0 0 9px}.tag{font-size:11px;font-weight:800;letter-spacing:1.6px;color:var(--cyan);margin-bottom:7px}p{margin:6px 0}.muted,.note{color:var(--sub)}.intro{max-width:1050px;line-height:1.55;margin-bottom:15px}.grid{display:grid;grid-template-columns:1.16fr .84fr;gap:13px}.two{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-top:13px}.panel{background:rgba(15,30,48,.98);border:1px solid var(--line);border-radius:13px;padding:14px;min-width:0}.controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}.metrics{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin:13px 0}.metric{padding:10px;background:#0b192b;border:1px solid var(--line);border-radius:9px;min-width:0}.metric span{display:block;color:var(--sub);font-size:11px}.metric b{font-size:21px;font-variant-numeric:tabular-nums}button,input,select,textarea{background:#1a304c;color:var(--fg);border:1px solid #426180;border-radius:7px;font:inherit}button{padding:9px 12px;cursor:pointer;font-weight:700}button:hover{filter:brightness(1.14)}button:disabled{opacity:.45;cursor:not-allowed}.primary{background:var(--cyan);color:#062032;border-color:var(--cyan)}.good{background:#2c8766;border-color:#61c9a6}.gold{background:var(--gold);color:#251b05;border-color:var(--gold)}.smallbtn{padding:7px 9px;font-size:12px}input,select{padding:7px}input[type=number]{width:77px}label{font-size:12px;color:var(--sub);display:inline-flex;align-items:center;gap:6px}label input[type=checkbox]{accent-color:var(--cyan)}.status{background:#09192b;border:1px solid var(--line);border-radius:9px;padding:10px 12px;min-height:38px;line-height:1.5;margin-top:10px}.status strong{color:var(--green)}.callout{padding:9px 11px;border-left:3px solid var(--gold);background:#392d1b55;font-size:12px;line-height:1.55;margin:10px 0}.rule{border-top:1px solid var(--line);margin:13px 0}.formline{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:6px 0}.muted{font-size:12px}canvas{display:block;width:100%;height:auto;background:#081525;border:1px solid #29425c;border-radius:8px}#world{aspect-ratio:2.14}#plot{aspect-ratio:3.1}#netview{aspect-ratio:1.65}#result{font-variant-numeric:tabular-nums}.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--sub);margin:8px 0 1px}.swatch{display:inline-block;width:12px;height:3px;vertical-align:middle;margin-right:4px}.s1{background:var(--cyan)}.s2{background:var(--gold)}.s3{background:var(--purple)}pre{margin:0;max-height:240px;overflow:auto;background:#081525;border:1px solid #29425c;border-radius:8px;padding:11px;font:11px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap}textarea{width:100%;min-height:110px;max-height:270px;resize:vertical;padding:9px;font:11px/1.4 ui-monospace,Consolas,monospace;background:#081525}.batterybar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px}.batterybar button{padding:9px 12px}.testscroll{overflow:auto;max-height:560px;border:1px solid var(--line);border-radius:9px}.testtable{width:100%;border-collapse:collapse;min-width:770px;font-size:12px;font-variant-numeric:tabular-nums}.testtable th{position:sticky;top:0;background:#1a314a;color:var(--fg);text-align:right;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}.testtable td{text-align:right;padding:8px 10px;border-bottom:1px solid #274056}.testtable th:first-child,.testtable td:first-child{text-align:left}.testtable tr:hover td{background:#1b334a}.testtable tr.goodrow td:first-child{color:var(--green)}.testtable tr.proberow td:first-child{color:var(--gold)}.testtable td.subhead{font-weight:700;color:var(--cyan);background:#0b1a2b}.testtable small{display:block;color:var(--sub);font-size:10px;line-height:1.35}.testnote{color:var(--sub);font-size:12px;line-height:1.6;margin-top:9px}.miniStatus{color:var(--sub);font-size:12px}.btnrow{display:flex;flex-wrap:wrap;gap:7px}.trail{font-size:12px;color:var(--sub);padding:14px 0}.badge{color:var(--gold);font-size:11px}.failure{color:var(--red)}.success{color:var(--green)}@media(max-width:1040px){.grid,.two{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(3,1fr)}}@media(max-width:560px){main{padding:10px}.metrics{grid-template-columns:repeat(2,1fr)}h1{font-size:23px}}
+</style></head><body><main>
+<div class="tag">ONE BRAIN · FIXED UNIT-STRENGTH WIRES · LEARNING BY RECONNECTION</div>
+<h1>Ternary Triple-Pendulum · Structural Learning Lab</h1>
+<p class="intro muted">A three-link inverted pendulum under the full coupled point-mass equations. A single undifferentiated recurrent brain of ternary neurons learns to balance by <b>rewiring addresses</b>. Each neuron receives exactly three distinct unit-strength inputs, emits −1, 0, or +1, and has <b>no trainable weights, gains, or biases</b>. Fixed +1, −1, and 0 tonic signals are available. Nine readout neurons are grouped into three fixed motor sums.</p>
+<div class="panel">
+ <div class="controls">
+  <button id="learn" class="primary">▶ Start learning</button><button id="pause">Pause</button><button id="one">One rewire trial</button>
+  <button id="freeze" class="good">Freeze &amp; test</button><button id="batteryTop" class="good">⚗ Run test battery</button><button id="biopsyTop" class="smallbtn">Copy BX + tests</button><button id="resume">Resume learning</button><button id="kick">Kick pendulum</button><button id="reset" class="gold">New brain</button>
+ </div>
+ <div class="formline">
+  <label>Seed <input type="number" id="seed" value="47017"></label>
+  <label>Neurons <input type="number" id="neurons" value="24" min="9" max="96" step="1"></label>
+  <label>Trials/s <select id="speed"><option>30</option><option>150</option><option selected>600</option><option>1500</option></select></label>
+  <label>Start tilt ±° <input id="startDeg" type="number" value="5.4" min="1" max="25" step=".2"></label>
+  <label>Motor max <input id="torque" type="number" value="18" min="4" max="40" step="1"></label>
+  <label>Training cases <input id="cases" type="number" value="5" min="3" max="20"></label>
+  <label>Case rotation <select id="rotate"><option value="0" selected>Off</option><option value="300">Every 300 trials</option><option value="900">Every 900 trials</option></select></label>
+ </div>
+ <div class="status" id="status">Press <strong>Start learning</strong>. The initial motor neurons are silent; the network must discover stabilizing connections.</div>
+</div>
+<div class="metrics">
+ <div class="metric"><span>Rewire trials</span><b id="trials">0</b></div>
+ <div class="metric"><span>Accepted changes</span><b id="accepts">0</b></div>
+ <div class="metric"><span>Training mean</span><b id="trainMean">—</b></div>
+ <div class="metric"><span>Unseen mean</span><b id="valMean">—</b></div>
+ <div class="metric"><span>Unseen worst</span><b id="valWorst">—</b></div>
+ <div class="metric"><span>Unseen full 5 s</span><b id="valFull">—</b></div>
+</div>
+<div class="grid">
+ <div class="panel"><h2>Physical triple pendulum</h2><canvas id="world" width="900" height="420"></canvas><div class="legend"><span><i class="swatch s1"></i>Current rewired brain</span><span><i class="swatch s2"></i>Model upright axis</span></div><p id="worldLabel" class="muted">Live preview repeats independent initial conditions. Freeze &amp; test to stop all rewiring and inspect one uninterrupted episode.</p><div class="controls"><button class="smallbtn" id="freshTest">Replay new frozen case</button><button class="smallbtn" id="evaluate">Evaluate 30 new cases</button><button class="smallbtn" id="reference">Compare fixed PD reference</button></div><div class="callout" id="result">No evaluations yet. Tests do not change the brain.</div></div>
+ <div class="panel"><h2>Connectome · actual source addresses</h2><canvas id="netview" width="640" height="388"></canvas><p class="muted">Blue wires start at a fixed ternary sensor/tonic; purple wires are recurrent. Every wire has strength +1. Green-rimmed cells N0–N8 feed the motors in groups of three. Gray cells are available as recurrent intermediates.</p><div class="rule"></div><h3>Neuronal rule</h3><pre>Nᵢ(t+1) = sign(Sₐ(t) + Sᵦ(t) + S𝒸(t))
+
+Each source is one of:
+  • quantized angle / angular velocity signals
+  • fixed tonic +1, −1, or 0
+  • another neuron (possibly recurrent)
+
+τⱼ = torqueMax × (N₃ⱼ + N₃ⱼ₊₁ + N₃ⱼ₊₂) / 3
+
+Learning changes only the 3 source indices.</pre></div>
+</div>
+<div class="panel" id="batteryPanel" style="margin-top:13px">
+ <h2>Frozen-brain stress battery <span class="badge">NO LEARNING DURING TESTS</span></h2>
+ <p class="muted">Every condition uses the same fresh, seeded starting cases. The wiring is copied and frozen for the entire battery. The baseline tests whether it balances; the ablations test <b>why</b>. Changing sensors in a test never changes the stored brain.</p>
+ <div class="batterybar"><button id="batteryRun" class="good">⚗ Run full battery</button><label>Cases per test <select id="batteryN"><option>12</option><option selected>30</option><option>60</option></select></label><label><input id="includePD" type="checkbox" checked> Include PD reference</label><button id="batteryCopy" class="smallbtn">Copy BX + test results</button><button id="batteryCsv" class="smallbtn">Export results CSV</button><button id="batteryJson" class="smallbtn">Download BX JSON</button></div>
+ <div id="batteryStatus" class="status">Not run yet. Press <b>Run full battery</b> after the brain has learned, then paste its BX report back into chat.</div>
+ <div class="testscroll"><table class="testtable"><thead><tr><th>Condition</th><th>Mean</th><th>Worst</th><th>Full survival</th><th>RMS tilt</th><th>Avg |motor|</th></tr></thead><tbody id="batteryRows"><tr><td colspan="6" class="subhead">No test results yet.</td></tr></tbody></table></div>
+ <div class="testnote">Each row reports duration relative to <b>its own</b> test cap (5 s or 15 s). RMS tilt is the pooled angular deviation from vertical, in degrees; motor effort is the mean absolute applied generalized torque across three axes. Compare ablations with the normal 5-second baseline, not with the 15-second run. Long survival alone is not proof of active feedback: pay particular attention to <b>all sensors removed</b> and <b>motors off</b>.</div>
+ </div>
+<div class="two">
+ <div class="panel"><h2>Learning curve · unseen tests</h2><canvas id="plot" width="850" height="275"></canvas><div class="legend"><span><i class="swatch s1"></i>Validation mean</span><span><i class="swatch s3"></i>Validation worst</span><span><i class="swatch s2"></i>Training mean</span></div><p class="muted">Twenty-four fixed validation initial conditions are never used to accept a rewire. A separate 30-case fresh test is generated on demand.</p></div>
+ <div class="panel"><h2>Experiment log and biopsy</h2><pre id="log">Ready. Structural trial-and-error search, single brain, no population.</pre><div class="controls"><button id="copy" class="smallbtn">Copy full biopsy JSON</button><button id="copyBX" class="smallbtn">Copy BX (paste to GPT)</button><button id="save" class="smallbtn">Download JSON</button><button id="import" class="smallbtn">Load JSON from box</button><button id="loadFileBtn" class="smallbtn">Load saved brain file</button><input id="loadFile" type="file" accept=".json,application/json" style="display:none"></div><textarea id="biopsy" placeholder="Biopsy/export JSON appears here. You can paste a saved report and click Load JSON from box."></textarea></div>
+</div>
+<p class="trail"><b>Interpret carefully:</b> this is reward-guided trial-and-error structural optimization within one ongoing brain, not backpropagation and not yet a biologically local synaptic-plasticity rule. Fixed tonic input signals are mathematical offsets (although the neurons have no learned biases). Sensor thresholds, readout groupings and motor torque are fixed by the experimenter. The physical model is a coupled three-link pendulum with massless rods and point masses; motors apply generalized torques to the absolute link coordinates.</p>
+</main><script>
+'use strict';
+const $=id=>document.getElementById(id), PI=Math.PI, NSENS=27,DT=.035,EPSEC=5,OUT=9;
+const palette={cyan:'#65dbf6',green:'#67e4aa',gold:'#ffcb70',purple:'#bba9fb',red:'#ff7c8c',muted:'#a4b5ca'};
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));const tri=x=>x>1/3?1:x<-1/3?-1:0;
+function PRNG(seed){let s=(seed>>>0)||1;return()=>{s=(s+0x6D2B79F5)>>>0;let t=s;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296}}
+const sensorNames=[];for(let j=0;j<3;j++)for(const nm of ['θ fine','θ wide']){sensorNames.push(`${nm}${j+1}+`,`${nm}${j+1}−`)}for(let j=0;j<3;j++)for(const nm of ['ω fine','ω wide']){sensorNames.push(`${nm}${j+1}+`,`${nm}${j+1}−`)}sensorNames.push('TONIC +1','TONIC −1','TONIC 0');
+let CFG={},rng=PRNG(47017),N=24,brain=[],original=[],testState=null,mode='idle',plasticity=true,trials=0,accepted=0,improvements=0,numberFaults=0;
+let lastBattery=null,batterySerial=0,batteryBusy=false,batteryProgress=0;
+let trainingSuite=[],validationSuite=[],trainResult=null,valResult=null,referenceResult=null,trainEpoch=0,lastProbe=null,history=[],lastFrame=performance.now(),carry=0,simCarry=0,previewIndex=0,lastEval=0,evalSerial=0;
+function readCfg(){CFG.seed=(Math.floor(Number($('seed').value))||47017)>>>0;CFG.N=clamp(Math.floor(Number($('neurons').value)||24),9,96);CFG.start=clamp(Number($('startDeg').value)||5.4,1,25)*PI/180;CFG.torque=clamp(Number($('torque').value)||18,4,40);CFG.cases=clamp(Math.floor(Number($('cases').value)||5),3,20);CFG.rotate=Number($('rotate').value)||0;N=CFG.N;}
+function makeBrain(){const b=Array.from({length:N},()=>{const r=[];while(r.length<3){let s=Math.floor(rng()*(NSENS+N));if(!r.includes(s))r.push(s)}return r});for(let i=0;i<OUT;i++)b[i]=[24,25,26];return b;}
+const copyBrain=b=>b.map(row=>row.slice());
+function encode(q,v){const ss=new Int8Array(NSENS);let k=0;for(let j=0;j<3;j++)for(const scale of [.095,.30]){const t=tri(q[j]/scale);ss[k++]=t;ss[k++]=-t}for(let j=0;j<3;j++)for(const scale of [.6,1.75]){const t=tri(v[j]/scale);ss[k++]=t;ss[k++]=-t}ss[24]=1;ss[25]=-1;ss[26]=0;return ss;}
+function controller(b,q,v,mem,sensorMode='normal'){
+const ss=encode(q,v);
+if(sensorMode==='noAngles')ss.fill(0,0,12);
+else if(sensorMode==='noVelocity')ss.fill(0,12,24);
+else if(sensorMode==='noSensors')ss.fill(0,0,24);
+else if(sensorMode==='noTonic')ss.fill(0,24,27);
+else if(sensorMode==='swapLinks'){
+  const old=ss.slice();for(const offset of [0,12])for(let k=0;k<4;k++){
+    ss[offset+k]=old[offset+8+k];ss[offset+8+k]=old[offset+k];
+  }
+}
+else if(sensorMode==='invertAngles'){for(let k=0;k<12;k++)ss[k]=-ss[k];}
+let prev=mem,curr=new Int8Array(N);for(let tick=0;tick<2;tick++){for(let i=0;i<N;i++){const a=b[i],z=(a[0]<NSENS?ss[a[0]]:prev[a[0]-NSENS])+(a[1]<NSENS?ss[a[1]]:prev[a[1]-NSENS])+(a[2]<NSENS?ss[a[2]]:prev[a[2]-NSENS]);curr[i]=tri(z)}const swap=prev;prev=curr;curr=swap;}mem.set(prev);return [(mem[0]+mem[1]+mem[2])*CFG.torque/3,(mem[3]+mem[4]+mem[5])*CFG.torque/3,(mem[6]+mem[7]+mem[8])*CFG.torque/3];}
+const PM={m:.55,l:.68,g:9.81,damping:.05};
+function acceleration(q,v,tau){const {m,l,g,damping}=PM,fac=m*l*l,A=[[],[],[]],rhs=[0,0,0];for(let i=0;i<3;i++){let coriolis=0;for(let j=0;j<3;j++){const delta=q[i]-q[j],z=fac*(3-Math.max(i,j));A[i][j]=z*Math.cos(delta);coriolis+=z*Math.sin(delta)*v[j]*v[j]}rhs[i]=tau[i]-coriolis+m*g*l*(3-i)*Math.sin(q[i])-damping*v[i]}
+for(let k=0;k<3;k++){if(Math.abs(A[k][k])<1e-12)return [NaN,NaN,NaN];for(let i=k+1;i<3;i++){let t=A[i][k]/A[k][k];for(let j=k;j<3;j++)A[i][j]-=t*A[k][j];rhs[i]-=t*rhs[k]}}
+const x=[0,0,0];for(let i=2;i>=0;i--){let z=rhs[i];for(let j=i+1;j<3;j++)z-=A[i][j]*x[j];x[i]=z/A[i][i]}return x;}
+function integrate(s,tau,step=DT,cap=EPSEC){const q=s.q,v=s.v,aa=acceleration(q,v,tau),qm=q.map((x,i)=>x+v[i]*step*.5),vm=v.map((x,i)=>x+aa[i]*step*.5),ab=acceleration(qm,vm,tau);for(let i=0;i<3;i++){q[i]+=vm[i]*step;v[i]+=ab[i]*step} s.t=Math.min(cap,s.t+step);s.tau=tau.slice();const bad=q.some(x=>!Number.isFinite(x)||Math.abs(x)>1)||v.some(x=>!Number.isFinite(x)||Math.abs(x)>13);s.done=bad||s.t>=cap;if(q.some(x=>!Number.isFinite(x))||v.some(x=>!Number.isFinite(x)))numberFaults++;return !bad;}
+function mkCase(seed,hard=1){const r=PRNG(seed>>>0),angle=CFG.start*hard,vel=.30*hard;return {q:Array.from({length:3},()=> (r()*2-1)*angle),v:Array.from({length:3},()=> (r()*2-1)*vel),seed:seed>>>0}}
+function makeTraining(){const se=CFG.seed;trainingSuite=Array.from({length:CFG.cases},(_,i)=>mkCase((se+114+i*8191+(i>2?trainEpoch*211831:0))>>>0,i===0?1.5:1));}
+function makeValidation(){validationSuite=Array.from({length:24},(_,i)=>mkCase((CFG.seed+120000+i*9901)>>>0,i<6?1.5:1));}
+function initEpisode(c,b){return{q:c.q.slice(),v:c.v.slice(),t:0,tau:[0,0,0],done:false,mem:new Int8Array(b.length),seed:c.seed}}
+function refTorque(s){const q=s.q,v=s.v,T=CFG.torque;return [clamp(-(42*q[0]+10*v[0]+10*q[1]+2.5*v[1]+6*q[2]+1.2*v[2]),-T,T),clamp(-(36*q[1]+9*v[1]+8*q[0]+2*v[0]+7*q[2]+1.8*v[2]),-T,T),clamp(-(28*q[2]+7*v[2]+7*q[1]+1.6*v[1]),-T,T)]}
+function runEpisode(b,c,reference=false){const s=initEpisode(c,b);let error=0,effort=0;while(!s.done){const torque=reference?refTorque(s):controller(b,s.q,s.v,s.mem);integrate(s,torque);for(let j=0;j<3;j++){error+=Math.min(2,s.q[j]*s.q[j])*DT;effort+=(torque[j]/CFG.torque)**2*DT;}}
+return{duration:s.t,score:2*s.t-.25*error-.008*effort,error,effort};}
+function score(b,cases,reference=false){let sum=0,duration=0,worst=Infinity,full=0;for(const c of cases){const e=runEpisode(b,c,reference);sum+=e.score;duration+=e.duration;worst=Math.min(worst,e.duration);if(e.duration>=EPSEC-1e-7)full++;}return{fit:sum/cases.length,mean:duration/cases.length,worst,full,attempts:cases.length,successRate:full/cases.length};}
+function mutate(parent){const c=copyBrain(parent),edits=rng()<.15?3:1;for(let n=0;n<edits;n++){const i=rng()<.85?Math.floor(rng()*OUT):Math.floor(rng()*N),k=Math.floor(rng()*3),preferSensors=rng()<.80;for(let tries=0;tries<60;tries++){const src=Math.floor(rng()*(preferSensors?NSENS:NSENS+N));if(!c[i].includes(src)){c[i][k]=src;break;}}}return c;}
+function oneTrial(){const candidate=mutate(brain),challenger=score(candidate,trainingSuite),delta=challenger.fit-trainResult.fit;trials++;const isBetter=delta>1e-11;const explore=rng()<.002*Math.exp(Math.min(0,delta*10));if(isBetter||explore){brain=candidate;trainResult=challenger;accepted++;if(isBetter)improvements++;}
+if(CFG.rotate&&trials%CFG.rotate===0){trainEpoch++;makeTraining();trainResult=score(brain,trainingSuite)}
+if(trials%80===0){valResult=score(brain,validationSuite);history.push({n:trials,train:trainResult.mean,mean:valResult.mean,worst:valResult.worst});if(history.length>300)history.shift();updateMetrics();}
+}
+function previewCase(){let seed=(CFG.seed+900000+previewIndex++*22307)>>>0;testState=initEpisode(mkCase(seed,previewIndex%5===0?1.5:1),brain);}
+function reset(){if(batteryBusy)return;readCfg();rng=PRNG(CFG.seed);brain=makeBrain();original=copyBrain(brain);trials=accepted=improvements=trainEpoch=numberFaults=0;mode='idle';plasticity=true;carry=0;history=[];previewIndex=0;evalSerial=0;lastProbe=null;referenceResult=null;makeTraining();makeValidation();trainResult=score(brain,trainingSuite);valResult=score(brain,validationSuite);history.push({n:0,train:trainResult.mean,mean:valResult.mean,worst:valResult.worst});previewCase();$('result').textContent='No evaluations yet. Tests do not change the brain.';if(lastBattery)batteryResultRows();writeStatus('New silent-motor brain initialized. Press Start learning to try structural changes.');drawAll();}
+function writeStatus(msg){$('status').innerHTML=msg}
+function startLearning(){if(batteryBusy||mode==='train')return;mode='train';plasticity=true;carry=0;writeStatus('<strong>Learning.</strong> Each proposal changes source addresses, then survives only if replay performance improves (with rare exploration).');updateMetrics()}
+function pause(){mode='paused';writeStatus('<strong>Paused.</strong> The network is unchanged; you can inspect or test it.');updateMetrics()}
+function frozenTest(newCase=true){mode='test';plasticity=false;simCarry=0;if(newCase)previewCase();writeStatus('<strong>Frozen test.</strong> No rewiring takes place. Watch the same neural circuit control the physical system.');updateMetrics()}
+function evaluate(){if(mode==='train')pause();const r=PRNG((CFG.seed^0xC0FFEE^((++evalSerial)*19333))>>>0),set=Array.from({length:30},()=>mkCase(Math.floor(r()*4294967295),r()<.2?1.5:1));const current=score(brain,set),neutral=score(original,set),fixed=score(brain,set,true);lastProbe={current,neutral,fixed,evalSerial};$('result').innerHTML=`<b>Independent 30-case test #${evalSerial}</b> · Current <strong>${current.mean.toFixed(2)}s</strong> mean, ${(100*current.successRate).toFixed(0)}% full; initial brain ${neutral.mean.toFixed(2)}s; hand-tuned PD ${fixed.mean.toFixed(2)}s. Current worst ${current.worst.toFixed(2)}s.`;logDetails();updateMetrics()}
+function compareReference(){if(mode==='train')pause();mode='reference';plasticity=false;simCarry=0;previewCase();writeStatus('<strong>PD reference playback.</strong> This hand-tuned feedback controller is not a neural learner. Press Freeze &amp; test to return to the current neural controller.');drawAll();}
+function doKick(){if(!testState||testState.done)previewCase();const rr=PRNG((testState.seed+Math.floor(testState.t*10000)+trials)>>>0),j=Math.floor(rr()*3);testState.v[j]+=(rr()<.5?-1:1)*1.1;writeStatus(`<strong>External disturbance.</strong> Applied ±1.1 rad/s to link ${j+1}; the brain must recover without changing wires.`)}
+function oneManual(){if(batteryBusy)return;if(mode==='train'||mode==='test'||mode==='reference')pause();oneTrial();valResult=score(brain,validationSuite);history.push({n:trials,train:trainResult.mean,mean:valResult.mean,worst:valResult.worst});writeStatus(`Trial ${trials}: ${accepted} wiring changes accepted. Training mean ${trainResult.mean.toFixed(2)}s, unseen mean ${valResult.mean.toFixed(2)}s.`);drawAll();}
+
+// ---- Frozen robustness and causal-ablation battery ----
+// Test controller receives EXACTLY the same wiring as trained brain; tests never call mutate() or oneTrial().
+const BATTERY_CONDITIONS=[
+ {id:'nominal',name:'1. Normal, independent starts',note:'New test states, untouched sensors and motors',seconds:5,hard:1},
+ {id:'hard2',name:'2. Harder starts (2×)',note:'Twice training tilt and initial speed',seconds:5,hard:2},
+ {id:'hard3',name:'3. Hard starts (3×)',note:'Three times the usual initial deviation',seconds:5,hard:3},
+ {id:'long',name:'4. Endurance (15 seconds)',note:'Beyond the five-second training cap',seconds:15,hard:1},
+ {id:'kick',name:'5. Unexpected kicks',note:'±0.8 rad/s velocity impulses at 1 and 3 s',seconds:5,hard:1,kicks:[1,3],kickStrength:.8},
+ {id:'strongKick',name:'6. Large unexpected kicks',note:'±1.6 rad/s impulses at 1 and 3 s',seconds:5,hard:1,kicks:[1,3],kickStrength:1.6},
+ {id:'noAngles',name:'7. Angle sensors blanked',note:'All 12 angle bits zero; velocities still live',seconds:5,hard:1,sensorMode:'noAngles'},
+ {id:'noVelocity',name:'8. Velocity sensors blanked',note:'All 12 angular-velocity bits zero',seconds:5,hard:1,sensorMode:'noVelocity'},
+ {id:'noSensors',name:'9. ALL physical sensors blanked',note:'Only tonic inputs and recurrent activity remain',seconds:5,hard:1,sensorMode:'noSensors'},
+ {id:'noTonic',name:'10. Tonic inputs removed',note:'The fixed +1, −1, and 0 lines all read as 0',seconds:5,hard:1,sensorMode:'noTonic'},
+ {id:'swapLinks',name:'11. First / third sensor swap',note:'Change sensor meanings without rewiring the brain',seconds:5,hard:1,sensorMode:'swapLinks'},
+ {id:'invertAngles',name:'12. Angle signals reversed',note:'Reverse angle sign, preserve velocity sign',seconds:5,hard:1,sensorMode:'invertAngles'},
+ {id:'motorOff',name:'13. Motors OFF',note:'No actuation; zero generalized torque',seconds:5,hard:1,motorMode:'off'},
+ {id:'motorConstant',name:'14. Constant motor command',note:'Hold the first computed torque throughout the episode',seconds:5,hard:1,motorMode:'constant'},
+ {id:'motorReverse',name:'15. Motor directions reversed',note:'Negate all three computed torques',seconds:5,hard:1,motorMode:'reverse'},
+ {id:'stepHalf',name:'16. Half physics time step',note:'Integrator and neural sample time both halved',seconds:5,hard:1,step:DT/2}
+];
+function wiringSignature(b){return b.map(r=>r.join(',')).join(';')}
+function independentCases(count,serial){const root=PRNG((CFG.seed^0xD14A66B9^Math.imul(serial,0x9e3779b9))>>>0);return Array.from({length:count},(_,i)=>mkCase((Math.floor(root()*4294967296)+i*7331)>>>0,1));}
+function customEpisode(frozen,c,spec,reference=false){
+ const s=initEpisode(c,frozen),limit=spec.seconds||5,step=spec.step||DT,kickRng=PRNG((c.seed^0x8E495A27^Math.floor((spec.kickStrength||0)*1000))>>>0);
+ let errSum=0,appliedSum=0,nstep=0,constantTau=null,nextKick=0;
+ const impulses=spec.kicks||[];
+ while(!s.done){
+  // Same kick times and link-selection procedure for every brain tested on this case.
+  if(nextKick<impulses.length && s.t>=impulses[nextKick]-1e-9){
+   const j=Math.floor(kickRng()*3),sign=kickRng()<.5?-1:1;
+   s.v[j]+=sign*spec.kickStrength;
+   nextKick++;
+  }
+  let tau=reference?refTorque(s):controller(frozen,s.q,s.v,s.mem,spec.sensorMode||'normal');
+  if(!reference){
+   if(spec.motorMode==='off')tau=[0,0,0];
+   else if(spec.motorMode==='constant'){
+    if(constantTau===null)constantTau=tau.slice();tau=constantTau;
+   }else if(spec.motorMode==='reverse')tau=tau.map(x=>-x);
+  }
+  integrate(s,tau,step,limit);
+  errSum+=(s.q[0]*s.q[0]+s.q[1]*s.q[1]+s.q[2]*s.q[2])/3;
+  appliedSum+=(Math.abs(tau[0])+Math.abs(tau[1])+Math.abs(tau[2]))/3;
+  nstep++;
+ }
+ return {duration:s.t,full:s.t>=limit-1e-8,rmsRadSq:errSum/Math.max(nstep,1),absTorque:appliedSum/Math.max(nstep,1)};
+}
+function runBatteryCondition(b,baseCases,spec,reference=false){
+ let sum=0,worst=Infinity,full=0,sumTiltSquare=0,meanTorque=0,durations=[];
+ for(let i=0;i<baseCases.length;i++){
+  // Matched start state across conditions, with condition-specific tilt scaling.
+  const base=baseCases[i],hard=spec.hard||1,c={q:base.q.map(x=>x*hard),v:base.v.map(x=>x*hard),seed:base.seed};
+  const r=customEpisode(b,c,spec,reference);sum+=r.duration;durations.push(r.duration);worst=Math.min(worst,r.duration);
+  if(r.full)full++;sumTiltSquare+=r.rmsRadSq;meanTorque+=r.absTorque;
+ }
+ const n=baseCases.length,ss=durations.slice().sort((a,b)=>a-b),med=n%2?ss[(n-1)/2]:(ss[n/2-1]+ss[n/2])/2;
+ return{id:spec.id,name:spec.name,note:spec.note,cap:spec.seconds,cases:n,mean:sum/n,median:med,worst,full,fullPct:100*full/n,rmsTiltDeg:Math.sqrt(sumTiltSquare/n)*180/PI,meanAbsTorque:meanTorque/n};
+}
+function batteryResultRows(){const r=lastBattery;if(!r)return;
+ const stale=r.brainSignature!==wiringSignature(brain);
+ $('batteryStatus').innerHTML=`<strong>${stale?'OLDER BRAIN — TEST AGAIN':'Battery finished on frozen brain'}</strong> · ${r.n} matched starts per condition · ${r.conditions.length} tests${r.pd?' + PD reference':''} · at rewire trial ${r.trials.toLocaleString()} · ${r.timestamp.replace('T',' ').slice(0,19)} UTC${stale?' · WIRING HAS CHANGED SINCE TEST':''}`;
+ const all=[...r.conditions,...(r.pd?[r.pd]:[])];
+ $('batteryRows').innerHTML=all.map((s,i)=>`<tr class="${i===0?'goodrow':s.id==='pd'?'goodrow':'proberow'}"><td><b>${s.name}</b><small>${s.note}</small></td><td>${s.mean.toFixed(2)} / ${s.cap}s</td><td>${s.worst.toFixed(2)}s</td><td>${s.full}/${s.cases} (${s.fullPct.toFixed(0)}%)</td><td>${s.rmsTiltDeg.toFixed(1)}°</td><td>${s.meanAbsTorque.toFixed(2)}</td></tr>`).join('');
+}
+function lockBatteryControls(locked){for(const id of ['learn','resume','one','reset','batteryTop','batteryRun','evaluate','reference','freeze','import'])$(id).disabled=locked;}
+async function runFullBattery(){
+ if(batteryBusy)return;
+ if(mode==='train')pause();
+ if(mode==='test'||mode==='reference')mode='paused';
+ batteryBusy=true;lockBatteryControls(true);
+ const frozen=copyBrain(brain),signature=wiringSignature(frozen),snapshotCFG={...CFG};
+ const n=Number($('batteryN').value)||30,serial=++batterySerial,base=independentCases(n,serial),rows=[],runPD=$('includePD').checked;
+ const sourceTrials=trials;
+ $('batteryRows').innerHTML='';$('batteryStatus').textContent='Preparing independent matched-case stress tests…';
+ try{
+  for(let i=0;i<BATTERY_CONDITIONS.length;i++){
+   const spec=BATTERY_CONDITIONS[i];
+   $('batteryStatus').textContent=`Testing ${i+1} / ${BATTERY_CONDITIONS.length}${runPD?' + PD':''}: ${spec.name}. Wiring frozen.`;
+   // Yield the main thread before each run so the table and progress remain responsive.
+   await new Promise(r=>setTimeout(r,0));
+   const result=runBatteryCondition(frozen,base,spec);
+   rows.push(result);
+   $('batteryRows').insertAdjacentHTML('beforeend',`<tr><td><b>${result.name}</b><small>${result.note}</small></td><td>${result.mean.toFixed(2)} / ${result.cap}s</td><td>${result.worst.toFixed(2)}s</td><td>${result.full}/${n} (${result.fullPct.toFixed(0)}%)</td><td>${result.rmsTiltDeg.toFixed(1)}°</td><td>${result.meanAbsTorque.toFixed(2)}</td></tr>`);
+  }
+  let pd=null;
+  if(runPD){
+    $('batteryStatus').textContent='Testing fixed PD reference on the exact same normal starts…';
+    await new Promise(r=>setTimeout(r,0));
+    pd=runBatteryCondition(frozen,base,{id:'pd',name:'PD reference · normal starts',note:'Hand-tuned non-neural baseline',seconds:5,hard:1},true);
+  }
+  lastBattery={version:2,kind:'frozen-stress-battery',timestamp:new Date().toISOString(),trials:sourceTrials,n,seed:CFG.seed,serial,dt:DT,physics:'three-link generalized-torque point-mass model',brainSignature:signature,brain:copyBrain(frozen),config:snapshotCFG,conditions:rows,pd};
+  batteryResultRows();
+  const nominal=rows[0],abl=rows.find(r=>r.id==='noSensors'),off=rows.find(r=>r.id==='motorOff');
+  $('result').innerHTML=`<b>Stress battery finished.</b> Normal ${nominal.fullPct.toFixed(0)}% full; no-sensor ${abl.fullPct.toFixed(0)}%; motors-off ${off.fullPct.toFixed(0)}%. Compare all rows and copy BX for analysis.`;
+  writeStatus('<strong>Stress battery finished.</strong> Brain was frozen throughout. Use Copy BX + tests to send its evidence.');
+ }catch(e){$('batteryStatus').textContent='Test failed: '+e.message;writeStatus('Battery error: '+e.message)}
+ finally{batteryBusy=false;lockBatteryControls(false);drawAll();}
+}
+function bxText(){
+ const recur=brain.flat().filter(x=>x>=NSENS).length,nowSignature=wiringSignature(brain);
+ const parts=[
+ 'TERNARY TRIPLE-PENDULUM STRUCTURAL LEARNING BIOPSY v2',
+ 'Timestamp: '+new Date().toISOString(),
+ 'Current mode: '+mode,'Seed: '+CFG.seed,'Neuron count: '+N,'Total input slots: '+3*N,'Recurrent input slots: '+recur,
+ 'Every wire has fixed +1 strength. Each cell is sign of three distinct source values. No trainable weights, biases, or gains.',
+ 'Fixed tonic lines: S24=+1, S25=-1, S26=0. Readout: N0–N2 motor1, N3–N5 motor2, N6–N8 motor3.',
+ 'Learning: accepted structural rewiring by full-episode reward comparison; not neuron-local synaptic learning.',
+ 'Attempts: '+trials+'; accepted: '+accepted+'; strict improvements: '+improvements,
+ 'Train mean/worst: '+trainResult.mean.toFixed(3)+' / '+trainResult.worst.toFixed(3)+' seconds',
+ 'Unseen validation mean/worst/full: '+valResult.mean.toFixed(3)+' / '+valResult.worst.toFixed(3)+' seconds; '+valResult.full+'/'+valResult.attempts,
+ 'Physics: 3 links, coupled point masses, generalized torques; dt='+DT+', nominal cap 5 s; limits |q|<=1 rad, |omega|<=13 rad/s',
+ '', 'STRESS BATTERY'
+ ];
+ if(!lastBattery)parts.push('Not run yet.');
+ else{
+  parts.push('Battery run at trial '+lastBattery.trials+'; '+lastBattery.timestamp+'; '+lastBattery.n+' matched starts/test; '+(lastBattery.brainSignature===nowSignature?'CURRENT BRAIN MATCH':'WARNING: CURRENT WIRING DIFFERS FROM TESTED BRAIN'));
+  parts.push('Condition | Mean/cap | Worst | Full | RMS tilt deg | Avg abs torque');
+  for(const r of [...lastBattery.conditions,...(lastBattery.pd?[lastBattery.pd]:[])])parts.push(`${r.name} | ${r.mean.toFixed(3)}/${r.cap}s | ${r.worst.toFixed(3)}s | ${r.full}/${r.cases} (${r.fullPct.toFixed(1)}%) | ${r.rmsTiltDeg.toFixed(2)} | ${r.meanAbsTorque.toFixed(2)}`);
+ }
+ parts.push('','CONNECTOME (each entry lists three sources; S is fixed input, N is recurrent neuron):');
+ for(let i=0;i<N;i++)parts.push('N'+i+(i<OUT?' [M'+(Math.floor(i/3)+1)+']':'')+' <- '+brain[i].map(x=>x<NSENS?'S'+x+'('+sensorNames[x]+')':'N'+(x-NSENS)).join(' , '));
+ if(lastBattery&&lastBattery.brainSignature!==nowSignature){parts.push('','NOTE: Stress battery results above apply to a different frozen wiring than the current connectome. Download full JSON for the battery snapshot or rerun.');}
+ return parts.join('\n');
+}
+async function copyBX(){const t=bxText();$('biopsy').value=t;
+ try{await navigator.clipboard.writeText(t);writeStatus('<strong>BX report copied.</strong> Includes source addresses and stress battery. Paste into chat for analysis.');}
+ catch(_){$('biopsy').focus();$('biopsy').select();writeStatus('BX report is in the text box; clipboard permission denied. Select and copy manually.');}
+}
+function batteryCSV(){if(!lastBattery){$('batteryStatus').textContent='Run a test battery first.';return;}
+ const q=v=>'"'+String(v).replace(/"/g,'""')+'"';
+ const header=['condition','note','seconds','cases','mean_s','median_s','worst_s','full_count','full_percent','rms_tilt_deg','mean_abs_torque'];
+ const all=[...lastBattery.conditions,...(lastBattery.pd?[lastBattery.pd]:[])];
+ const rows=[header.join(','),...all.map(s=>[s.name,s.note,s.cap,s.cases,s.mean,s.median,s.worst,s.full,s.fullPct,s.rmsTiltDeg,s.meanAbsTorque].map(q).join(','))];
+ downloadBlob(rows.join('\r\n'),'ternary_stress_battery.csv','text/csv');
+}
+function downloadBlob(t,name,type){const blob=new Blob([t],{type}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000)}
+
+function updateMetrics(){if(!brain.length)return;$('trials').textContent=trials.toLocaleString();$('accepts').textContent=accepted.toLocaleString();$('trainMean').textContent=trainResult.mean.toFixed(2)+'s';$('valMean').textContent=valResult.mean.toFixed(2)+'s';$('valWorst').textContent=valResult.worst.toFixed(2)+'s';$('valFull').textContent=(valResult.successRate*100).toFixed(0)+'%';$('worldLabel').textContent=mode==='reference'?`FIXED PD reference (not learned) · episode ${testState?.t.toFixed(2)||'0.00'} / ${EPSEC.toFixed(1)} s · ${testState?.done?'finished':'running'}`:mode==='test'?`FROZEN brain · episode ${testState?.t.toFixed(2)||'0.00'} / ${EPSEC.toFixed(1)} s · ${testState?.done?'finished':'running'}`:`${mode.toUpperCase()} · ${testState?.t.toFixed(2)||'0.00'} / ${EPSEC.toFixed(1)} s · current brain controls the live preview. The preview is not used for mutation selection.`;}
+function logDetails(){const recurrent=brain.flat().filter(v=>v>=NSENS).length;$('log').textContent=`MODE ${mode.toUpperCase()}  |  ${trials.toLocaleString()} rewiring proposals
+Single brain: ${N} neurons, ${3*N} connections (${recurrent} recurrent)
+Mutation acceptances: ${accepted} (${improvements} strict improvements)
+Training examples: ${CFG.cases}, epoch ${trainEpoch}
+Train score: ${trainResult.fit.toFixed(4)}
+Train mean ${trainResult.mean.toFixed(3)} s · worst ${trainResult.worst.toFixed(3)} s
+Unseen validation: ${valResult.attempts} trials
+Mean ${valResult.mean.toFixed(3)} s · worst ${valResult.worst.toFixed(3)} s
+Full survival ${valResult.full}/${valResult.attempts} (${(valResult.successRate*100).toFixed(1)}%)
+Physical limits: |q| ≤ 1 rad, |qdot| ≤ 13 rad/s
+Time cap ${EPSEC}s · torque ±${CFG.torque}
+Numerical faults: ${numberFaults}
+${lastProbe?`Fresh 30-case mean ${lastProbe.current.mean.toFixed(3)}s · initial ${lastProbe.neutral.mean.toFixed(3)}s · reference PD ${lastProbe.fixed.mean.toFixed(3)}s`: 'Run Evaluate 30 new cases to measure fresh performance.'}`;}
+function drawWorld(){const c=$('world'),g=c.getContext('2d'),W=c.width,H=c.height;g.clearRect(0,0,W,H);g.fillStyle='#081525';g.fillRect(0,0,W,H);const ox=W*.52,oy=H-54,L=103;
+for(let y=48;y<H-20;y+=65){g.strokeStyle='#1b2d40';g.lineWidth=1;g.beginPath();g.moveTo(15,y);g.lineTo(W-15,y);g.stroke()}
+g.setLineDash([7,10]);g.strokeStyle='#bb9759';g.lineWidth=1.5;g.beginPath();g.moveTo(ox,oy);g.lineTo(ox,oy-3*L);g.stroke();g.setLineDash([]);
+g.strokeStyle='#476784';g.lineWidth=2;g.beginPath();g.moveTo(ox-80,oy+6);g.lineTo(ox+80,oy+6);g.stroke();
+const s=testState||{q:[0,0,0],v:[0,0,0],tau:[0,0,0],t:0},pts=[[ox,oy]];let x=ox,y=oy;for(let j=0;j<3;j++){x+=L*Math.sin(s.q[j]);y-=L*Math.cos(s.q[j]);pts.push([x,y])}
+g.strokeStyle=palette.cyan;g.lineWidth=7;g.lineCap='round';g.beginPath();g.moveTo(ox,oy);for(let i=1;i<pts.length;i++)g.lineTo(...pts[i]);g.stroke();for(let i=0;i<pts.length;i++){g.beginPath();g.arc(...pts[i],i===0?9:11,0,2*PI);g.fillStyle=i===0?'#6c93b9':i===3?'#67e4aa':'#dbe9f9';g.fill();}
+g.fillStyle='#e3efff';g.font='14px ui-monospace,Consolas,monospace';g.fillText(`q  ${s.q.map(v=>(v*180/PI).toFixed(1).padStart(6)+'°').join(' ')}`,20,28);g.fillText(`ω  ${s.v.map(v=>v.toFixed(2).padStart(7)).join(' ')}`,20,50);g.fillText(`τ  ${s.tau.map(v=>v.toFixed(1).padStart(7)).join(' ')}`,20,72);g.fillStyle=palette.gold;g.fillText(`T ${s.t.toFixed(2)} / 5.00 s`,W-215,27);if(s.done){g.fillStyle=s.t>=EPSEC?'#67e4aa':'#ff7c8c';g.fillText(s.t>=EPSEC?'BALANCED 5 SEC':'FELL / TIMEOUT',W-215,49)}
+}
+function drawPlot(){const c=$('plot'),g=c.getContext('2d'),w=c.width,h=c.height,left=41,right=w-15,top=20,bottom=h-30;g.clearRect(0,0,w,h);g.fillStyle='#081525';g.fillRect(0,0,w,h);g.font='11px system-ui';g.fillStyle=palette.muted;for(let i=0;i<=5;i++){let y=bottom-(bottom-top)*i/5;g.strokeStyle='#223e58';g.beginPath();g.moveTo(left,y);g.lineTo(right,y);g.stroke();g.fillText(i+' s',4,y+4)}
+if(history.length===0)return;const min=history[0].n,max=history[history.length-1].n;const xx=n=>left+(right-left)*(n-min)/Math.max(1,max-min),yy=v=>bottom-(bottom-top)*clamp(v/EPSEC,0,1);for(const [key,col] of [['mean',palette.cyan],['worst',palette.purple],['train',palette.gold]]){g.beginPath();g.strokeStyle=col;g.lineWidth=2.5;history.forEach((r,i)=>{if(!i)g.moveTo(xx(r.n),yy(r[key]));else g.lineTo(xx(r.n),yy(r[key]))});g.stroke()}
+g.fillStyle=palette.muted;g.fillText(min+' trials',left,bottom+18);g.fillText(max+' trials',right-75,bottom+18)}
+function drawNetwork(){const c=$('netview'),g=c.getContext('2d'),w=c.width,h=c.height;g.clearRect(0,0,w,h);g.fillStyle='#081525';g.fillRect(0,0,w,h);const nn=Array.from({length:N},(_,i)=>{const angle=i*2*PI/N-PI/2;return{x:420+Math.cos(angle)*125,y:h/2+Math.sin(angle)*152}});const ss=Array.from({length:NSENS},(_,i)=>({x:61,y:23+(h-45)*i/(NSENS-1)}));for(let i=0;i<N;i++){const p=nn[i];for(let k=0;k<3;k++){const id=brain[i][k],from=id<NSENS?ss[id]:nn[id-NSENS];g.strokeStyle=id<NSENS?'#4e9fce':'#9d85d3';g.globalAlpha=.26;g.lineWidth=1.2;g.beginPath();g.moveTo(from.x,from.y);g.lineTo(p.x,p.y);g.stroke()}}g.globalAlpha=1;g.textAlign='right';g.font='9px system-ui';for(let i=0;i<NSENS;i++){g.fillStyle=i>=24?'#f9ca78':'#9fb7ce';g.fillText(sensorNames[i],ss[i].x-6,ss[i].y+3);g.beginPath();g.arc(ss[i].x,ss[i].y,2.7,0,2*PI);g.fill()}
+g.textAlign='center';g.font='10px system-ui';nn.forEach((p,i)=>{g.beginPath();g.arc(p.x,p.y,N>54?8:12,0,2*PI);g.fillStyle=i<OUT?'#1f4b42':'#27374b';g.fill();g.strokeStyle=i<OUT?palette.green:'#7792ad';g.lineWidth=i<OUT?2:1;g.stroke();if(N<=54){g.fillStyle='#eaf4ff';g.fillText(i.toString(),p.x,p.y+3.7)}});g.textAlign='left';g.fillStyle='#bdd5e9';g.font='12px system-ui';g.fillText('27 fixed ternary inputs',17,14);g.fillText('Motor N0–8 outlined in green',299,16)}
+function drawAll(){updateMetrics();logDetails();drawWorld();drawPlot();drawNetwork()}
+function frame(now){const dt=Math.min(.1,Math.max(0,(now-lastFrame)/1000));lastFrame=now;if(mode==='train'){carry=Math.min(200,carry+dt*(Number($('speed').value)||600));let todo=Math.min(100,Math.floor(carry)),count=0,start=performance.now();while(count<todo){oneTrial();count++;if(performance.now()-start>13)break}carry-=count;if(now-lastEval>150){drawAll();lastEval=now}}
+simCarry+=Math.min(dt,.06);const maxTick=(mode==='test'||mode==='reference')?5:2;for(let j=0;j<maxTick&&simCarry>=DT;j++){simCarry-=DT;if(!testState||testState.done){if(mode==='test'||mode==='reference')break;previewCase()}const tau=mode==='reference'?refTorque(testState):controller(brain,testState.q,testState.v,testState.mem);integrate(testState,tau);}
+if(mode!=='train'&&now-lastEval>130){drawAll();lastEval=now}else if(mode==='train'&&now-lastEval<=150){drawWorld()}
+requestAnimationFrame(frame)}
+function report(){return{kind:'structural-ternary-triple-pendulum',version:2,battery:lastBattery,batteryMatchesCurrentBrain:!!lastBattery&&lastBattery.brainSignature===wiringSignature(brain),description:'Single recurrent network, fixed unit positive connections, ternary firing; structural rewiring via episodic accept/reject search.',config:CFG,N,neurons:N,sensorNames,allWeightsFixedPositiveOne:true,trainableBiases:false,trainableGains:false,tonicSignals:[1,-1,0],recurrentTicks:2,episodeCapSeconds:EPSEC,integrator:'explicit midpoint, dt 0.035',angleLimitRad:1,velocityLimit:13,outputNeuronIndices:[0,1,2,3,4,5,6,7,8],trials,accepted,improvements,trainEpoch,numericalFaults:numberFaults,train:trainResult,validation:valResult,freshProbe:lastProbe,brain:copyBrain(brain),initialBrain:copyBrain(original),history,notes:'Fixed tonic ±1 signals act as mathematical offsets. Scores may overfit the small training suite. The readout is a fixed 3-cell sum per motor. The three actuators represent generalized torques on absolute angles, rather than idealized joint-relative motors.'}}
+function download(){downloadBlob(JSON.stringify(report(),null,2),'ternary_triple_pendulum_biopsy_v2.json','application/json')}
+function loadFromBox(){if(batteryBusy)return;try{const data=JSON.parse($('biopsy').value);if(data.kind!=='structural-ternary-triple-pendulum')throw new Error('wrong file type');if(!Array.isArray(data.brain)||data.brain.length<OUT||data.brain.length>96)throw new Error('invalid neuron count');const nb=data.brain.length;for(let i=0;i<nb;i++){const row=data.brain[i];if(!Array.isArray(row)||row.length!==3||new Set(row).size!==3||row.some(x=>!Number.isInteger(x)||x<0||x>=NSENS+nb))throw new Error('invalid wiring at cell '+i)}
+mode='paused';$('neurons').value=nb;if(data.config){for(const [id,key] of [['seed','seed'],['torque','torque'],['cases','cases'],['rotate','rotate']])if(data.config[key]!==undefined)$(id).value=data.config[key];if(data.config.start!==undefined)$('startDeg').value=(data.config.start*180/PI).toFixed(3);}readCfg();brain=copyBrain(data.brain);lastBattery=data.battery&&data.battery.kind==='frozen-stress-battery'?data.battery:null;if(lastBattery)batteryResultRows();else $('batteryRows').innerHTML='<tr><td colspan=6>Not run yet for this brain.</td></tr>';original=Array.isArray(data.initialBrain)&&data.initialBrain.length===N?copyBrain(data.initialBrain):makeBrain();rng=PRNG((CFG.seed^0xCAB1E)>>>0);trainEpoch=Number(data.trainEpoch)||0;makeTraining();makeValidation();trainResult=score(brain,trainingSuite);valResult=score(brain,validationSuite);trials=Number(data.trials)||0;accepted=Number(data.accepted)||0;improvements=Number(data.improvements)||0;history=[{n:trials,train:trainResult.mean,mean:valResult.mean,worst:valResult.worst}];previewIndex=0;previewCase();writeStatus('<strong>Imported saved connectome.</strong> Wiring checked, current scores independently recomputed.');drawAll();}catch(e){writeStatus(`<span class="failure">Import failed: ${String(e.message).replace(/[<>]/g,'')}</span>`)}}
+$('batteryRun').onclick=runFullBattery;$('batteryTop').onclick=runFullBattery;$('biopsyTop').onclick=copyBX;$('batteryCopy').onclick=copyBX;$('copyBX').onclick=copyBX;$('batteryCsv').onclick=batteryCSV;$('batteryJson').onclick=download;
+$('learn').onclick=startLearning;$('resume').onclick=startLearning;$('pause').onclick=pause;$('one').onclick=oneManual;$('freeze').onclick=()=>frozenTest();$('freshTest').onclick=()=>frozenTest();$('kick').onclick=doKick;$('reset').onclick=reset;$('evaluate').onclick=evaluate;$('reference').onclick=compareReference;
+$('copy').onclick=async()=>{const t=JSON.stringify(report(),null,2);$('biopsy').value=t;try{await navigator.clipboard.writeText(t);writeStatus('<strong>Biopsy copied.</strong> The complete connectome is also in the text box.')}catch(e){$('biopsy').select();writeStatus('Biopsy placed in text box; clipboard blocked, so select and copy manually.')}};$('save').onclick=download;$('import').onclick=loadFromBox;
+$('loadFileBtn').onclick=()=>{$('loadFile').value='';$('loadFile').click();};
+$('loadFile').onchange=async()=>{const f=$('loadFile').files?.[0];if(!f)return;try{$('biopsy').value=await f.text();loadFromBox();}catch(e){writeStatus('Could not read that saved brain file: '+e.message)}};
+for(const name of ['neurons','seed','torque','startDeg','cases','rotate'])$(name).addEventListener('change',()=>{if(mode==='train')pause();writeStatus('Settings changed. Press New brain to apply them cleanly; your current brain is preserved until then.')});
+reset();requestAnimationFrame(frame);
+</script></body></html>
