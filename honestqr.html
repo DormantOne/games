@@ -1,0 +1,557 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src blob: data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Honest QR Decoder</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #17202a;
+      --muted: #5c6874;
+      --line: #d9e0e6;
+      --paper: #ffffff;
+      --wash: #f3f6f8;
+      --blue: #0b5cab;
+      --blue-dark: #073f78;
+      --green: #126b45;
+      --green-bg: #eaf7f0;
+      --amber: #8a4d00;
+      --amber-bg: #fff4db;
+      --red: #a12622;
+      --red-bg: #fff0ef;
+      --shadow: 0 14px 35px rgba(17, 35, 52, .10);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: linear-gradient(135deg, #eef5fb 0%, #f8fafb 48%, #edf6f2 100%); color: var(--ink); }
+    .shell { width: min(980px, calc(100% - 28px)); margin: 28px auto 48px; }
+    header { display: flex; gap: 18px; align-items: center; margin-bottom: 20px; }
+    .mark { width: 58px; height: 58px; flex: 0 0 auto; border-radius: 16px; background: #0b5cab; box-shadow: var(--shadow); display: grid; place-items: center; }
+    .mark svg { width: 34px; height: 34px; }
+    h1 { font-size: clamp(1.65rem, 4vw, 2.45rem); margin: 0; letter-spacing: -.035em; }
+    .subtitle { color: var(--muted); margin: 5px 0 0; line-height: 1.45; }
+    .privacy { display: inline-flex; gap: 7px; align-items: center; margin-top: 9px; padding: 5px 9px; border: 1px solid #b9d8c8; background: var(--green-bg); color: var(--green); border-radius: 999px; font-size: .78rem; font-weight: 700; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #1b8a5a; }
+    .card { background: rgba(255,255,255,.96); border: 1px solid rgba(217,224,230,.95); border-radius: 20px; box-shadow: var(--shadow); overflow: hidden; }
+    .grid { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(280px, .92fr); }
+    .pane { padding: 24px; }
+    .pane + .pane { border-left: 1px solid var(--line); background: #fbfcfd; }
+    h2 { margin: 0 0 8px; font-size: 1.05rem; }
+    .hint { margin: 0 0 17px; color: var(--muted); font-size: .91rem; line-height: 1.48; }
+    .dropzone { position: relative; min-height: 320px; border: 2px dashed #aab9c6; border-radius: 16px; background: var(--wash); display: grid; place-items: center; text-align: center; padding: 24px; transition: .15s ease; outline: none; }
+    .dropzone:hover, .dropzone:focus-visible, .dropzone.drag { border-color: var(--blue); background: #edf6ff; box-shadow: 0 0 0 4px rgba(11,92,171,.10); }
+    .dropzone.has-image { background: #19232c; border-style: solid; border-color: #19232c; padding: 10px; }
+    #preview { max-width: 100%; max-height: 400px; display: none; border-radius: 9px; object-fit: contain; }
+    .empty-icon { width: 74px; height: 74px; margin: 0 auto 14px; opacity: .78; }
+    .empty-title { font-weight: 750; font-size: 1.03rem; }
+    .empty-copy { color: var(--muted); font-size: .86rem; margin-top: 6px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 15px; }
+    button, .file-label { border: 0; border-radius: 10px; font: inherit; font-weight: 700; font-size: .88rem; padding: 10px 14px; cursor: pointer; transition: .15s ease; }
+    button:focus-visible, .file-label:focus-within { outline: 3px solid rgba(11,92,171,.25); outline-offset: 2px; }
+    .primary { background: var(--blue); color: white; }
+    .primary:hover { background: var(--blue-dark); }
+    .secondary, .file-label { background: #e8eef3; color: #243442; }
+    .secondary:hover, .file-label:hover { background: #dbe5ed; }
+    .danger { background: #f4e4e2; color: var(--red); }
+    input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    .status { min-height: 22px; margin-top: 12px; color: var(--muted); font-size: .85rem; }
+    .status.error { color: var(--red); font-weight: 650; }
+    .status.ok { color: var(--green); font-weight: 650; }
+    .result-empty { border: 1px solid var(--line); border-radius: 14px; padding: 18px; color: var(--muted); background: white; font-size: .9rem; line-height: 1.5; }
+    .result { display: none; }
+    .verdict { border-radius: 14px; padding: 15px; margin-bottom: 15px; border: 1px solid; }
+    .verdict.good { color: var(--green); background: var(--green-bg); border-color: #b9d8c8; }
+    .verdict.caution { color: var(--amber); background: var(--amber-bg); border-color: #ebcb83; }
+    .verdict.blocked { color: var(--red); background: var(--red-bg); border-color: #efb8b5; }
+    .verdict strong { display: block; margin-bottom: 3px; }
+    .verdict span { font-size: .84rem; line-height: 1.4; display: block; }
+    .field { margin-top: 13px; }
+    .label { display: block; font-size: .74rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .055em; margin-bottom: 6px; }
+    .value { width: 100%; background: white; border: 1px solid var(--line); border-radius: 10px; padding: 10px 11px; font: .83rem/1.42 ui-monospace, SFMono-Regular, Consolas, monospace; overflow-wrap: anywhere; white-space: pre-wrap; max-height: 145px; overflow: auto; }
+    .host { font-size: 1rem; font-weight: 750; color: #142f44; }
+    .flags { display: grid; gap: 7px; margin: 13px 0 0; padding: 0; list-style: none; }
+    .flag { display: flex; align-items: flex-start; gap: 8px; font-size: .84rem; line-height: 1.35; }
+    .flag::before { content: "•"; font-weight: 900; }
+    .flag.good { color: var(--green); }
+    .flag.warn { color: var(--amber); }
+    .flag.bad { color: var(--red); }
+    .assessment { margin-top: 16px; padding: 14px; border: 1px solid var(--line); border-radius: 13px; background: #f6f9fb; }
+    .assessment h3 { margin: 0 0 5px; font-size: .92rem; }
+    .assessment p { margin: 0 0 11px; color: var(--muted); font-size: .79rem; line-height: 1.45; }
+    .check-row { display: flex; gap: 7px; align-items: stretch; }
+    .check-row input { min-width: 0; flex: 1; border: 1px solid #b9c5cf; border-radius: 9px; padding: 9px 10px; font: .84rem ui-monospace, SFMono-Regular, Consolas, monospace; background: white; color: var(--ink); }
+    .check-row input:focus { outline: 3px solid rgba(11,92,171,.17); border-color: var(--blue); }
+    .assessment-state { margin-top: 9px; padding: 9px 10px; border-left: 3px solid #9aa9b5; background: white; color: var(--muted); font-size: .8rem; line-height: 1.4; }
+    .assessment-state.good { border-color: var(--green); color: var(--green); }
+    .assessment-state.warn { border-color: #d18a12; color: var(--amber); }
+    .assessment-state.bad { border-color: var(--red); color: var(--red); }
+    .mini-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+    .mini-actions button { padding: 8px 10px; font-size: .78rem; }
+    .note { margin-top: 16px; padding-top: 15px; border-top: 1px solid var(--line); font-size: .79rem; color: var(--muted); line-height: 1.5; }
+    footer { margin-top: 15px; text-align: center; color: #66737e; font-size: .76rem; line-height: 1.5; }
+    .kbd { display: inline-block; border: 1px solid #b9c3cc; border-bottom-width: 2px; border-radius: 5px; background: white; padding: 0 5px; color: #3e4b56; font: .75rem ui-monospace, monospace; }
+    @media (max-width: 760px) {
+      .grid { grid-template-columns: 1fr; }
+      .pane + .pane { border-left: 0; border-top: 1px solid var(--line); }
+      .dropzone { min-height: 260px; }
+      .shell { margin-top: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div class="mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" fill="none">
+          <path fill="#fff" d="M3 3h10v10H3V3Zm3 3v4h4V6H6Zm13-3h10v10H19V3Zm3 3v4h4V6h-4ZM3 19h10v10H3V19Zm3 3v4h4v-4H6Zm12-5h4v4h-4v-4Zm7 0h4v4h-4v-4Zm-8 8h4v4h-4v-4Zm5-3h3v3h-3v-3Zm4 4h3v3h-3v-3Z"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Honest QR Decoder</h1>
+        <p class="subtitle">Paste or drop a QR image. See the exact destination before you choose what to do.</p>
+        <span class="privacy"><span class="dot"></span> Local by default: decoding makes no network requests</span>
+      </div>
+    </header>
+
+    <section class="card grid">
+      <div class="pane">
+        <h2>1. Add a QR image</h2>
+        <p class="hint">Copy a screenshot, then press <span class="kbd">Ctrl</span> + <span class="kbd">V</span> (or <span class="kbd">⌘</span> + <span class="kbd">V</span>) anywhere on this page.</p>
+        <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Paste, select, or drop a QR code image">
+          <div id="emptyState">
+            <svg class="empty-icon" viewBox="0 0 80 80" fill="none" aria-hidden="true">
+              <rect x="7" y="7" width="25" height="25" rx="3" stroke="#557184" stroke-width="5"/><rect x="48" y="7" width="25" height="25" rx="3" stroke="#557184" stroke-width="5"/><rect x="7" y="48" width="25" height="25" rx="3" stroke="#557184" stroke-width="5"/>
+              <path d="M46 45h10v10H46V45Zm15 0h12v8H61v-8ZM45 61h8v12h-8V61Zm13-3h7v7h-7v-7Zm9 7h6v8h-6v-8Zm-9 3h6v5h-6v-5Z" fill="#557184"/>
+            </svg>
+            <div class="empty-title">Paste, choose, or drop a QR image</div>
+            <div class="empty-copy">PNG, JPEG, WebP, GIF, or another browser-readable image</div>
+          </div>
+          <img id="preview" alt="Selected QR code image preview">
+        </div>
+        <div class="actions">
+          <button id="pasteBtn" class="primary" type="button">Paste image</button>
+          <label class="file-label">Choose image<input id="fileInput" type="file" accept="image/*"></label>
+          <button id="clearBtn" class="danger" type="button" disabled>Clear</button>
+        </div>
+        <div id="status" class="status" role="status" aria-live="polite">Nothing leaves this page.</div>
+      </div>
+
+      <div class="pane">
+        <h2>2. Inspect the decoded value</h2>
+        <p class="hint">The tool never opens a result automatically. “No obvious warning” does not mean a site is safe.</p>
+        <div id="resultEmpty" class="result-empty">Your decoded text, destination host, and visible warning signs will appear here.</div>
+        <div id="result" class="result">
+          <div id="verdict" class="verdict caution"><strong id="verdictTitle"></strong><span id="verdictText"></span></div>
+          <div class="field">
+            <span class="label">Destination host</span>
+            <div id="host" class="value host"></div>
+          </div>
+          <div class="field">
+            <span class="label">Exact decoded text</span>
+            <div id="raw" class="value"></div>
+          </div>
+          <ul id="flags" class="flags"></ul>
+          <div class="assessment">
+            <h3>Destination assessment without visiting it</h3>
+            <p><strong>Redirect warning:</strong> this offline page can see only the URL encoded in the QR. Any website—including an HTTPS site—can redirect after it is opened, so the first URL alone cannot establish safety.</p>
+            <span class="label">What domain did you expect?</span>
+            <div class="check-row">
+              <input id="expectedHost" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="example.org" aria-label="Expected domain">
+              <button id="checkHostBtn" class="secondary" type="button">Compare</button>
+            </div>
+            <div id="expectedState" class="assessment-state">Enter the organization’s expected domain to compare it locally. No lookup is made.</div>
+            <div id="trustState" class="assessment-state">Local trust status will appear here.</div>
+            <div class="mini-actions">
+              <button id="trustBtn" class="secondary" type="button">Trust this exact host locally…</button>
+              <button id="forgetBtn" class="secondary" type="button">Remove local trust</button>
+              <button id="reputationBtn" class="secondary" type="button">Check Google Safe Browsing…</button>
+            </div>
+            <p style="margin-top:10px;margin-bottom:0">Local trust is only your own note on this browser—not independent verification. The optional Google check requires confirmation, sends the exact decoded URL to Google, and still cannot guarantee safety or reveal every future redirect.</p>
+          </div>
+          <div class="actions">
+            <button id="copyBtn" class="primary" type="button">Copy exact text</button>
+            <button id="openBtn" class="secondary" type="button">Open in new tab…</button>
+          </div>
+          <div class="note"><strong>Honest limitation:</strong> this checks only visible URL traits and user-supplied expectations. It cannot inspect the target, follow redirects, prove ownership, detect every phishing trick, or guarantee safety. Verify the organization and final browser address independently before signing in or entering sensitive information.</div>
+        </div>
+      </div>
+    </section>
+    <footer>Self-contained • No analytics • No automatic uploads • No remote libraries • The optional reputation check opens Google only after confirmation • QR decoding depends on the browser’s built-in capability (current Microsoft Edge or Google Chrome recommended).</footer>
+  </main>
+
+  <canvas id="workCanvas" hidden></canvas>
+
+  <script>
+  (() => {
+    'use strict';
+    const $ = (id) => document.getElementById(id);
+    const dropzone = $('dropzone');
+    const fileInput = $('fileInput');
+    const pasteBtn = $('pasteBtn');
+    const clearBtn = $('clearBtn');
+    const preview = $('preview');
+    const emptyState = $('emptyState');
+    const status = $('status');
+    const result = $('result');
+    const resultEmpty = $('resultEmpty');
+    const openBtn = $('openBtn');
+    let activeObjectUrl = '';
+    let currentText = '';
+    let currentSafeUrl = '';
+    let currentWebUrl = '';
+    let currentHost = '';
+    const TRUST_KEY = 'honestQrTrustedHostsV1';
+
+    const SHORTENERS = new Set([
+      'bit.ly','tinyurl.com','t.co','goo.gl','ow.ly','is.gd','buff.ly','cutt.ly','rb.gy','rebrand.ly','shorturl.at','tiny.cc'
+    ]);
+    const RISKY_EXTENSIONS = /\.(?:exe|msi|scr|bat|cmd|com|ps1|vbs|js|jar|apk|dmg|pkg|iso|zip|rar|7z)(?:$|[/?#])/i;
+
+    function setStatus(message, kind = '') {
+      status.textContent = message;
+      status.className = 'status' + (kind ? ' ' + kind : '');
+    }
+
+    function isPrivateHost(hostname) {
+      const h = hostname.toLowerCase().replace(/^\[|\]$/g, '');
+      if (h === 'localhost' || h.endsWith('.localhost') || h === '::1') return true;
+      if (/^(?:fc|fd)[0-9a-f]{2}:/i.test(h) || /^fe[89ab][0-9a-f]:/i.test(h)) return true;
+      const parts = h.split('.').map(Number);
+      if (parts.length !== 4 || parts.some(n => !Number.isInteger(n) || n < 0 || n > 255)) return false;
+      return parts[0] === 10 || parts[0] === 127 ||
+        (parts[0] === 169 && parts[1] === 254) ||
+        (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) ||
+        (parts[0] === 192 && parts[1] === 168) || parts.every(n => n === 0);
+    }
+
+    function readTrustedHosts() {
+      try {
+        const value = JSON.parse(localStorage.getItem(TRUST_KEY) || '[]');
+        return new Set(Array.isArray(value) ? value.filter(v => typeof v === 'string') : []);
+      } catch (_) { return new Set(); }
+    }
+
+    function writeTrustedHosts(hosts) {
+      try { localStorage.setItem(TRUST_KEY, JSON.stringify([...hosts].sort())); return true; }
+      catch (_) { return false; }
+    }
+
+    function renderTrustState() {
+      const box = $('trustState');
+      const hosts = readTrustedHosts();
+      if (!currentHost) {
+        box.className = 'assessment-state';
+        box.textContent = 'Local trust is available only for a decoded web host.';
+      } else if (hosts.has(currentHost)) {
+        box.className = 'assessment-state good';
+        box.textContent = `You previously marked this exact host as trusted on this browser: ${currentHost}. This is your note, not an external verdict.`;
+      } else {
+        box.className = 'assessment-state';
+        box.textContent = `Not on your local trust list: ${currentHost}. This is not evidence that it is unsafe.`;
+      }
+      $('trustBtn').disabled = !currentHost || hosts.has(currentHost);
+      $('forgetBtn').disabled = !currentHost || !hosts.has(currentHost);
+      $('reputationBtn').disabled = !currentWebUrl;
+    }
+
+    function normalizeExpectedHost(input) {
+      let text = String(input || '').trim();
+      if (!text) throw new Error('Enter the domain you expected.');
+      let parsed;
+      try { parsed = new URL(text.includes('://') ? text : `https://${text}`); }
+      catch (_) { throw new Error('Enter a domain such as example.org.'); }
+      if (!parsed.hostname || parsed.username || parsed.password || (parsed.pathname && parsed.pathname !== '/') || parsed.search || parsed.hash) {
+        throw new Error('Enter only the expected domain, without a path, query, or sign-in text.');
+      }
+      const host = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, '');
+      if (!host.includes('.') && host !== 'localhost' && !host.includes(':')) throw new Error('Use a complete domain such as example.org.');
+      return host;
+    }
+
+    function compareExpectedHost() {
+      const box = $('expectedState');
+      if (!currentHost) {
+        box.className = 'assessment-state bad';
+        box.textContent = 'Decode a web URL before comparing an expected domain.';
+        return;
+      }
+      try {
+        const expected = normalizeExpectedHost($('expectedHost').value);
+        const match = currentHost === expected || currentHost.endsWith('.' + expected);
+        if (match) {
+          box.className = 'assessment-state good';
+          box.textContent = `Host matches the expected domain boundary: ${expected}. This confirms spelling only—not ownership, content, redirects, or safety.`;
+        } else {
+          box.className = 'assessment-state bad';
+          box.textContent = `Mismatch: decoded host is ${currentHost}, not ${expected} or one of its subdomains.`;
+        }
+      } catch (err) {
+        box.className = 'assessment-state warn';
+        box.textContent = err.message;
+      }
+    }
+
+    function analyzeRaw(rawInput) {
+      const raw = String(rawInput ?? '').trim();
+      const analysis = { raw, isWeb: false, url: '', host: 'Not a web URL', level: 'blocked', flags: [] };
+      if (!raw) {
+        analysis.flags.push(['bad', 'The QR code decoded to an empty value.']);
+        return analysis;
+      }
+      if (/[\u0000-\u001F\u007F]/.test(raw)) {
+        analysis.flags.push(['bad', 'Contains hidden control characters.']);
+      }
+      let parsed;
+      try { parsed = new URL(raw); } catch (_) {
+        analysis.flags.push(['warn', 'This is text, not a complete URL. It will not be opened.']);
+        return analysis;
+      }
+      const protocol = parsed.protocol.toLowerCase();
+      if (protocol !== 'http:' && protocol !== 'https:') {
+        analysis.host = parsed.hostname || 'No web host';
+        analysis.flags.push(['bad', `Blocked scheme: ${protocol || '(none)'}. Only http:// and https:// web links can be opened.`]);
+        return analysis;
+      }
+      analysis.isWeb = true;
+      analysis.url = parsed.href;
+      analysis.host = parsed.hostname || 'Missing host';
+      analysis.level = protocol === 'https:' ? 'good' : 'caution';
+      if (protocol === 'https:') analysis.flags.push(['good', 'Uses HTTPS. This encrypts the connection, but does not prove the site is trustworthy.']);
+      else analysis.flags.push(['warn', 'Uses unencrypted HTTP. Do not enter passwords or sensitive information.']);
+      if (parsed.username || parsed.password) {
+        analysis.level = 'blocked';
+        analysis.flags.push(['bad', 'The URL contains embedded username/password text, which can disguise the real host.']);
+      }
+      const host = parsed.hostname.toLowerCase();
+      if (host.includes('xn--')) {
+        if (analysis.level === 'good') analysis.level = 'caution';
+        analysis.flags.push(['warn', 'The host contains Punycode (xn--), often used for international names but also look-alike domains.']);
+      }
+      if (isPrivateHost(host)) {
+        if (analysis.level === 'good') analysis.level = 'caution';
+        analysis.flags.push(['warn', 'Points to this device or a private network address.']);
+      } else if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(host) || host.includes(':')) {
+        if (analysis.level === 'good') analysis.level = 'caution';
+        analysis.flags.push(['warn', 'Uses a numeric IP address instead of a recognizable domain name.']);
+      }
+      if (SHORTENERS.has(host) || [...SHORTENERS].some(d => host.endsWith('.' + d))) {
+        if (analysis.level === 'good') analysis.level = 'caution';
+        analysis.flags.push(['warn', 'Uses a link shortener, so the final destination is hidden.']);
+      }
+      if (parsed.port && !((protocol === 'https:' && parsed.port === '443') || (protocol === 'http:' && parsed.port === '80'))) {
+        if (analysis.level === 'good') analysis.level = 'caution';
+        analysis.flags.push(['warn', `Uses uncommon port ${parsed.port}.`]);
+      }
+      const labels = host.split('.').filter(Boolean);
+      if (labels.length >= 5) {
+        if (analysis.level === 'good') analysis.level = 'caution';
+        analysis.flags.push(['warn', 'Has many subdomain levels; read the registered domain carefully.']);
+      }
+      if (RISKY_EXTENSIONS.test(parsed.pathname)) {
+        if (analysis.level === 'good') analysis.level = 'caution';
+        analysis.flags.push(['warn', 'Appears to link directly to a downloadable or executable file.']);
+      }
+      const nested = [...parsed.searchParams.values()].some(v => /^https?:\/\//i.test(v));
+      if (nested) {
+        if (analysis.level === 'good') analysis.level = 'caution';
+        analysis.flags.push(['warn', 'Contains another URL inside its query, which may be a redirect destination.']);
+      }
+      if (raw !== parsed.href) analysis.flags.push(['warn', 'The browser normalized the URL. Use the “exact decoded text” above when comparing it.']);
+      return analysis;
+    }
+
+    function showAnalysis(raw) {
+      const a = analyzeRaw(raw);
+      currentText = a.raw;
+      currentSafeUrl = a.isWeb && a.level !== 'blocked' ? a.url : '';
+      currentWebUrl = a.isWeb ? a.url : '';
+      currentHost = a.isWeb ? a.host.toLowerCase() : '';
+      $('raw').textContent = a.raw || '(empty)';
+      $('host').textContent = a.host;
+      $('flags').replaceChildren(...a.flags.map(([kind, text]) => {
+        const li = document.createElement('li');
+        li.className = 'flag ' + kind;
+        li.textContent = text;
+        return li;
+      }));
+      const verdict = $('verdict');
+      verdict.className = 'verdict ' + a.level;
+      if (a.level === 'good') {
+        $('verdictTitle').textContent = 'No obvious URL warning found';
+        $('verdictText').textContent = 'Still verify the host. This is not a safety guarantee.';
+      } else if (a.level === 'caution') {
+        $('verdictTitle').textContent = 'Review carefully before opening';
+        $('verdictText').textContent = 'One or more URL traits deserve attention.';
+      } else {
+        $('verdictTitle').textContent = 'Opening disabled';
+        $('verdictText').textContent = a.isWeb ? 'This URL has a high-risk structural warning.' : 'The decoded value is not an ordinary web link.';
+      }
+      openBtn.disabled = !currentSafeUrl;
+      $('expectedHost').value = '';
+      $('expectedState').className = 'assessment-state';
+      $('expectedState').textContent = 'Enter the organization’s expected domain to compare it locally. No lookup is made.';
+      renderTrustState();
+      resultEmpty.style.display = 'none';
+      result.style.display = 'block';
+    }
+
+    async function getDetector() {
+      if (!('BarcodeDetector' in window)) throw new Error('This browser does not provide built-in QR decoding. Open this file in a current version of Microsoft Edge or Google Chrome.');
+      if (typeof BarcodeDetector.getSupportedFormats === 'function') {
+        const formats = await BarcodeDetector.getSupportedFormats();
+        if (!formats.includes('qr_code')) throw new Error('This browser has barcode detection, but QR codes are not supported here. Try a current version of Microsoft Edge or Google Chrome.');
+      }
+      return new BarcodeDetector({ formats: ['qr_code'] });
+    }
+
+    async function decodeImage(file) {
+      if (!file || !String(file.type).startsWith('image/')) {
+        setStatus('Please provide an image file.', 'error');
+        return;
+      }
+      clearResultOnly();
+      if (activeObjectUrl) URL.revokeObjectURL(activeObjectUrl);
+      activeObjectUrl = URL.createObjectURL(file);
+      preview.src = activeObjectUrl;
+      preview.style.display = 'block';
+      emptyState.style.display = 'none';
+      dropzone.classList.add('has-image');
+      clearBtn.disabled = false;
+      setStatus('Reading the image locally…');
+      try {
+        const detector = await getDetector();
+        const bitmap = await createImageBitmap(file);
+        const maxSide = 2400;
+        const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+        const canvas = $('workCanvas');
+        canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+        canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        bitmap.close?.();
+        const codes = await detector.detect(canvas);
+        if (!codes.length) throw new Error('No QR code was found. Try a sharper image, a tighter crop, or more contrast around the code.');
+        showAnalysis(codes[0].rawValue ?? '');
+        setStatus(codes.length > 1 ? `Found ${codes.length} QR codes; showing the first.` : 'QR code decoded locally.', 'ok');
+      } catch (err) {
+        setStatus(err && err.message ? err.message : 'The image could not be decoded.', 'error');
+      }
+    }
+
+    function clearResultOnly() {
+      currentText = '';
+      currentSafeUrl = '';
+      currentWebUrl = '';
+      currentHost = '';
+      result.style.display = 'none';
+      resultEmpty.style.display = 'block';
+      openBtn.disabled = true;
+    }
+
+    function clearAll() {
+      if (activeObjectUrl) URL.revokeObjectURL(activeObjectUrl);
+      activeObjectUrl = '';
+      preview.removeAttribute('src');
+      preview.style.display = 'none';
+      emptyState.style.display = 'block';
+      dropzone.classList.remove('has-image', 'drag');
+      fileInput.value = '';
+      clearBtn.disabled = true;
+      clearResultOnly();
+      setStatus('Nothing leaves this page.');
+    }
+
+    async function pasteFromButton() {
+      if (!navigator.clipboard || !navigator.clipboard.read) {
+        setStatus('Direct clipboard access is unavailable here. Press Ctrl+V or ⌘+V on this page instead.', 'error');
+        return;
+      }
+      try {
+        const items = await navigator.clipboard.read();
+        for (const item of items) {
+          const imageType = item.types.find(t => t.startsWith('image/'));
+          if (imageType) return decodeImage(await item.getType(imageType));
+        }
+        setStatus('The clipboard does not contain an image.', 'error');
+      } catch (_) {
+        setStatus('Clipboard permission was not granted. Press Ctrl+V or ⌘+V on this page instead.', 'error');
+      }
+    }
+
+    document.addEventListener('paste', (event) => {
+      const items = [...(event.clipboardData?.items || [])];
+      const image = items.find(item => item.type.startsWith('image/'));
+      if (image) {
+        event.preventDefault();
+        const file = image.getAsFile();
+        if (file) decodeImage(file);
+        return;
+      }
+      const text = event.clipboardData?.getData('text/plain')?.trim();
+      if (text) {
+        event.preventDefault();
+        showAnalysis(text);
+        setStatus('Pasted text inspected. No QR decoding was needed.', 'ok');
+      }
+    });
+    pasteBtn.addEventListener('click', pasteFromButton);
+    clearBtn.addEventListener('click', clearAll);
+    fileInput.addEventListener('change', () => fileInput.files?.[0] && decodeImage(fileInput.files[0]));
+    dropzone.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); } });
+    ['dragenter','dragover'].forEach(type => dropzone.addEventListener(type, e => { e.preventDefault(); dropzone.classList.add('drag'); }));
+    ['dragleave','drop'].forEach(type => dropzone.addEventListener(type, e => { e.preventDefault(); dropzone.classList.remove('drag'); }));
+    dropzone.addEventListener('drop', e => e.dataTransfer?.files?.[0] && decodeImage(e.dataTransfer.files[0]));
+    $('checkHostBtn').addEventListener('click', compareExpectedHost);
+    $('expectedHost').addEventListener('keydown', e => { if (e.key === 'Enter') compareExpectedHost(); });
+    $('trustBtn').addEventListener('click', () => {
+      if (!currentHost) return;
+      if (!confirm(`Trust this exact host locally?\n\n${currentHost}\n\nThis saves only your own note in this browser. It does not verify the organization, inspect the site, or make redirects safe.`)) return;
+      const hosts = readTrustedHosts();
+      hosts.add(currentHost);
+      if (!writeTrustedHosts(hosts)) {
+        $('trustState').className = 'assessment-state warn';
+        $('trustState').textContent = 'This browser did not allow local trust storage. Nothing was saved.';
+        return;
+      }
+      renderTrustState();
+    });
+    $('forgetBtn').addEventListener('click', () => {
+      if (!currentHost) return;
+      const hosts = readTrustedHosts();
+      hosts.delete(currentHost);
+      if (!writeTrustedHosts(hosts)) {
+        $('trustState').className = 'assessment-state warn';
+        $('trustState').textContent = 'This browser did not allow the local trust list to be changed.';
+        return;
+      }
+      renderTrustState();
+    });
+    $('reputationBtn').addEventListener('click', () => {
+      if (!currentWebUrl) return;
+      const ok = confirm(`Send this exact URL to Google Safe Browsing for a reputation lookup?\n\n${currentWebUrl}\n\nThis opens Google—not the decoded destination. Google will receive the URL. A clean report cannot guarantee safety or predict every redirect.`);
+      if (!ok) return;
+      const lookup = 'https://transparencyreport.google.com/safe-browsing/search?url=' + encodeURIComponent(currentWebUrl);
+      window.open(lookup, '_blank', 'noopener,noreferrer');
+    });
+    $('copyBtn').addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(currentText); setStatus('Exact decoded text copied.', 'ok'); }
+      catch (_) { setStatus('Copy permission was blocked. Select the exact text and copy it manually.', 'error'); }
+    });
+    openBtn.addEventListener('click', () => {
+      if (!currentSafeUrl) return;
+      let host = '';
+      try { host = new URL(currentSafeUrl).hostname; } catch (_) { return; }
+      if (confirm(`Open this host in a new tab?\n\n${host}\n\nOnly continue if you recognize and trust it.`)) {
+        window.open(currentSafeUrl, '_blank', 'noopener,noreferrer');
+      }
+    });
+    clearAll();
+  })();
+  </script>
+</body>
+</html>
