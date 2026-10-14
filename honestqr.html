@@ -4,8 +4,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src blob: data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
-  <title>Honest QR Decoder</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src blob: data:; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'none'; worker-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Honest QR Lab — Offline Decoder &amp; Maker</title>
   <style>
     :root {
       color-scheme: light;
@@ -100,6 +100,23 @@
       .dropzone { min-height: 260px; }
       .shell { margin-top: 18px; }
     }
+
+    [hidden] { display: none !important; }
+    .tabs { display: flex; gap: 9px; flex-wrap: wrap; margin: 14px 0 18px; }
+    .tab { background: #e4ebf2; color: #263b4b; border: 1px solid #cfd9e3; font-size: .96rem; padding: 12px 19px; }
+    .tab[aria-selected="true"] { background: #0b5cab; color: #fff; border-color: #0b5cab; }
+    .tab:focus-visible { outline: 3px solid #80afe4; outline-offset: 2px; }
+    .maker-entry { display:block; width:100%; min-height:160px; resize:vertical; padding:13px; border:1px solid #b9c5cf; border-radius:12px; font: .9rem/1.5 ui-monospace,Consolas,monospace; color:var(--ink); background:white; overflow-wrap:anywhere; }
+    .maker-entry:focus, .maker-select:focus { outline: 3px solid rgba(11,92,171,.17); border-color:var(--blue); }
+    .maker-select { display:block; width:100%; border:1px solid #b9c5cf; border-radius:9px; background:white; color:var(--ink); padding:10px; font:inherit; }
+    .maker-row { margin:15px 0; }
+    .maker-preview { min-height:290px; background:var(--wash); border:1px solid var(--line); border-radius:15px; display:flex; align-items:center; justify-content:center; padding:16px; text-align:center; }
+    #makerCanvas { display:block; max-width:100%; width:min(100%,420px); height:auto; image-rendering:pixelated; image-rendering:crisp-edges; background:white; border:1px solid #dce4e9; }
+    .maker-summary { padding:11px 13px; background:#f6f9fb; border:1px solid var(--line); border-radius:10px; font-size:.82rem; line-height:1.48; }
+    .maker-summary strong { display:block; font-size:.88rem; }
+    .maker-flags { margin:10px 0 0; padding-left:18px; font-size:.83rem; line-height:1.5; }
+    .maker-warning { color:#764700; background:#fff7e3; border:1px solid #e9d59f; border-radius:11px; padding:12px; font-size:.82rem; line-height:1.5; }
+    .maker-type { font-weight:750; }
   </style>
 </head>
 <body>
@@ -111,13 +128,17 @@
         </svg>
       </div>
       <div>
-        <h1>Honest QR Decoder</h1>
-        <p class="subtitle">Paste or drop a QR image. See the exact destination before you choose what to do.</p>
-        <span class="privacy"><span class="dot"></span> Local by default: decoding makes no network requests</span>
+        <h1>Honest QR Lab</h1>
+        <p class="subtitle">Decode a QR image, or make a new one. See exactly what the code contains.</p>
+        <span class="privacy"><span class="dot"></span> Entirely offline: no network requests, no external links, no automatic navigation</span>
       </div>
     </header>
 
-    <section class="card grid">
+    <nav class="tabs" role="tablist" aria-label="QR tools">
+      <button id="decoderTab" class="tab" role="tab" aria-selected="true" aria-controls="decoderPanel" tabindex="0" type="button">Inspect QR</button>
+      <button id="makerTab" class="tab" role="tab" aria-selected="false" aria-controls="makerPanel" tabindex="-1" type="button">Make QR</button>
+    </nav>
+    <section id="decoderPanel" role="tabpanel" aria-labelledby="decoderTab" class="card grid">
       <div class="pane">
         <h2>1. Add a QR image</h2>
         <p class="hint">Copy a screenshot, then press <span class="kbd">Ctrl</span> + <span class="kbd">V</span> (or <span class="kbd">⌘</span> + <span class="kbd">V</span>) anywhere on this page.</p>
@@ -142,7 +163,7 @@
 
       <div class="pane">
         <h2>2. Inspect the decoded value</h2>
-        <p class="hint">The tool never opens a result automatically. “No obvious warning” does not mean a site is safe.</p>
+        <p class="hint">The tool does not open destinations, even when clicked. “No obvious warning” does not mean safe.</p>
         <div id="resultEmpty" class="result-empty">Your decoded text, destination host, and visible warning signs will appear here.</div>
         <div id="result" class="result">
           <div id="verdict" class="verdict caution"><strong id="verdictTitle"></strong><span id="verdictText"></span></div>
@@ -168,23 +189,709 @@
             <div class="mini-actions">
               <button id="trustBtn" class="secondary" type="button">Trust this exact host locally…</button>
               <button id="forgetBtn" class="secondary" type="button">Remove local trust</button>
-              <button id="reputationBtn" class="secondary" type="button">Check Google Safe Browsing…</button>
             </div>
-            <p style="margin-top:10px;margin-bottom:0">Local trust is only your own note on this browser—not independent verification. The optional Google check requires confirmation, sends the exact decoded URL to Google, and still cannot guarantee safety or reveal every future redirect.</p>
+            <p style="margin-top:10px;margin-bottom:0">Local trust is only your own note in this browser—not independent verification. This page does not contact reputation services or any destination.</p>
           </div>
           <div class="actions">
             <button id="copyBtn" class="primary" type="button">Copy exact text</button>
-            <button id="openBtn" class="secondary" type="button">Open in new tab…</button>
           </div>
-          <div class="note"><strong>Honest limitation:</strong> this checks only visible URL traits and user-supplied expectations. It cannot inspect the target, follow redirects, prove ownership, detect every phishing trick, or guarantee safety. Verify the organization and final browser address independently before signing in or entering sensitive information.</div>
+          <div class="note"><strong>Honest limitation:</strong> this checks only visible URL traits and user-supplied expectations. It cannot inspect a website, follow redirects, prove ownership, detect every phishing trick, or guarantee safety. No website is visited by this tool. Any address you later copy or scan may lead somewhere.</div>
         </div>
       </div>
     </section>
-    <footer>Self-contained • No analytics • No automatic uploads • No remote libraries • The optional reputation check opens Google only after confirmation • QR decoding depends on the browser’s built-in capability (current Microsoft Edge or Google Chrome recommended).</footer>
+
+    <section id="makerPanel" role="tabpanel" aria-labelledby="makerTab" class="card grid" hidden>
+      <div class="pane">
+        <h2>1. Enter exactly what the QR should contain</h2>
+        <p class="hint">Type a web address or plain text. Nothing is shortened, tracked, uploaded, or rewritten. This page will never follow the address.</p>
+        <label for="makerInput" class="label">Exact text or URL</label>
+        <textarea id="makerInput" class="maker-entry" placeholder="https://example.org/
+or write ordinary text…" autocomplete="off" spellcheck="false"></textarea>
+        <div class="maker-row">
+          <label for="makerLevel" class="label">Error correction</label>
+          <select id="makerLevel" class="maker-select">
+            <option value="M" selected>Standard (M) · good default</option>
+            <option value="Q">High (Q) · more damage tolerance</option>
+            <option value="H">Maximum (H) · larger QR for same text</option>
+            <option value="L">Compact (L) · less damage tolerance</option>
+          </select>
+        </div>
+        <div class="actions">
+          <button id="makeBtn" class="primary" type="button">Generate QR</button>
+          <button id="makerClearBtn" class="secondary" type="button">Clear maker</button>
+        </div>
+        <div id="makerStatus" class="status" role="status" aria-live="polite">The maker runs entirely in this file.</div>
+        <div class="note"><strong>Important:</strong> A QR that contains a URL may offer to open that website when somebody scans it with a phone. This page does not open URLs. Make sure the URL is the one you intend to share.</div>
+      </div>
+      <div class="pane">
+        <h2>2. Review and save</h2>
+        <p class="hint">No QR is created until you press Generate. Downloads contain QR pixels only—no tracking, web requests, or hidden link.</p>
+        <div class="maker-preview">
+          <div id="makerEmpty" class="result-empty">Your QR will appear here. The exact encoded text and destination, if any, will be shown below it.</div>
+          <canvas id="makerCanvas" hidden aria-label="Generated QR code"></canvas>
+        </div>
+        <div class="actions">
+          <button id="downloadMakerBtn" class="primary" type="button" disabled>Download PNG</button>
+          <button id="downloadMakerSvgBtn" class="secondary" type="button" disabled>Download SVG</button>
+        </div>
+        <div id="makerResult" hidden>
+          <div id="makerMeta" class="maker-summary" style="margin-top:14px"></div>
+          <div class="field">
+            <span class="label">Exact encoded content (not a clickable link)</span>
+            <div id="makerExact" class="value"></div>
+          </div>
+          <div class="field">
+            <span class="label">Destination host or text status</span>
+            <div id="makerHost" class="value host"></div>
+          </div>
+          <ul id="makerFlags" class="maker-flags"></ul>
+          <p class="maker-warning" style="margin-top:13px"><strong>QR contents are not a safety certificate.</strong> A QR can contain a legitimate website, an unsafe website, or simply text. Nothing here checks who operates a site or where it may redirect later.</p>
+        </div>
+      </div>
+    </section>
+    <footer>One self-contained HTML file • Offline QR inspection and generation • No analytics • No remote libraries • No external navigation • PNG/SVG downloads are made locally • Firefox, Safari, Chrome, Edge.</footer>
   </main>
 
   <canvas id="workCanvas" hidden></canvas>
 
+  <script>
+/* Self-contained browser QR fallback; no network, camera access, or external scripts.
+   QR layout follows ISO/IEC 18004. RS block sizes originate in
+   QRCode for JavaScript (Copyright (c) 2009 Kazuhiko Arase, MIT licensed).
+
+   MIT License for the incorporated table:
+   Copyright (c) 2009 Kazuhiko Arase
+   Permission is hereby granted, free of charge, to any person obtaining a copy
+   of this software and associated documentation files (the "Software"), to deal
+   in the Software without restriction, including without limitation the rights
+   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+   copies of the Software, and to permit persons to whom the Software is
+   furnished to do so, subject to the following conditions:
+   The above copyright notice and this permission notice shall be included in
+   all copies or substantial portions of the Software.
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+   THE SOFTWARE. */
+(function (global) {
+  'use strict';
+  // QR RS block structure from qrcode-generator (Kazuhiko Arase; MIT license).
+  const RS = [[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16],[4,101,81],[1,80,50,4,81,51],[4,50,22,4,51,23],[3,36,12,8,37,13],[2,116,92,2,117,93],[6,58,36,2,59,37],[4,46,20,6,47,21],[7,42,14,4,43,15],[4,133,107],[8,59,37,1,60,38],[8,44,20,4,45,21],[12,33,11,4,34,12],[3,145,115,1,146,116],[4,64,40,5,65,41],[11,36,16,5,37,17],[11,36,12,5,37,13],[5,109,87,1,110,88],[5,65,41,5,66,42],[5,54,24,7,55,25],[11,36,12],[5,122,98,1,123,99],[7,73,45,3,74,46],[15,43,19,2,44,20],[3,45,15,13,46,16],[1,135,107,5,136,108],[10,74,46,1,75,47],[1,50,22,15,51,23],[2,42,14,17,43,15],[5,150,120,1,151,121],[9,69,43,4,70,44],[17,50,22,1,51,23],[2,42,14,19,43,15],[3,141,113,4,142,114],[3,70,44,11,71,45],[17,47,21,4,48,22],[9,39,13,16,40,14],[3,135,107,5,136,108],[3,67,41,13,68,42],[15,54,24,5,55,25],[15,43,15,10,44,16],[4,144,116,4,145,117],[17,68,42],[17,50,22,6,51,23],[19,46,16,6,47,17],[2,139,111,7,140,112],[17,74,46],[7,54,24,16,55,25],[34,37,13],[4,151,121,5,152,122],[4,75,47,14,76,48],[11,54,24,14,55,25],[16,45,15,14,46,16],[6,147,117,4,148,118],[6,73,45,14,74,46],[11,54,24,16,55,25],[30,46,16,2,47,17],[8,132,106,4,133,107],[8,75,47,13,76,48],[7,54,24,22,55,25],[22,45,15,13,46,16],[10,142,114,2,143,115],[19,74,46,4,75,47],[28,50,22,6,51,23],[33,46,16,4,47,17],[8,152,122,4,153,123],[22,73,45,3,74,46],[8,53,23,26,54,24],[12,45,15,28,46,16],[3,147,117,10,148,118],[3,73,45,23,74,46],[4,54,24,31,55,25],[11,45,15,31,46,16],[7,146,116,7,147,117],[21,73,45,7,74,46],[1,53,23,37,54,24],[19,45,15,26,46,16],[5,145,115,10,146,116],[19,75,47,10,76,48],[15,54,24,25,55,25],[23,45,15,25,46,16],[13,145,115,3,146,116],[2,74,46,29,75,47],[42,54,24,1,55,25],[23,45,15,28,46,16],[17,145,115],[10,74,46,23,75,47],[10,54,24,35,55,25],[19,45,15,35,46,16],[17,145,115,1,146,116],[14,74,46,21,75,47],[29,54,24,19,55,25],[11,45,15,46,46,16],[13,145,115,6,146,116],[14,74,46,23,75,47],[44,54,24,7,55,25],[59,46,16,1,47,17],[12,151,121,7,152,122],[12,75,47,26,76,48],[39,54,24,14,55,25],[22,45,15,41,46,16],[6,151,121,14,152,122],[6,75,47,34,76,48],[46,54,24,10,55,25],[2,45,15,64,46,16],[17,152,122,4,153,123],[29,74,46,14,75,47],[49,54,24,10,55,25],[24,45,15,46,46,16],[4,152,122,18,153,123],[13,74,46,32,75,47],[48,54,24,14,55,25],[42,45,15,32,46,16],[20,147,117,4,148,118],[40,75,47,7,76,48],[43,54,24,22,55,25],[10,45,15,67,46,16],[19,148,118,6,149,119],[18,75,47,31,76,48],[34,54,24,34,55,25],[20,45,15,61,46,16]];
+  const ALIGN = [
+        [],
+        [6, 18],
+        [6, 22],
+        [6, 26],
+        [6, 30],
+        [6, 34],
+        [6, 22, 38],
+        [6, 24, 42],
+        [6, 26, 46],
+        [6, 28, 50],
+        [6, 30, 54],        
+        [6, 32, 58],
+        [6, 34, 62],
+        [6, 26, 46, 66],
+        [6, 26, 48, 70],
+        [6, 26, 50, 74],
+        [6, 30, 54, 78],
+        [6, 30, 56, 82],
+        [6, 30, 58, 86],
+        [6, 34, 62, 90],
+        [6, 28, 50, 72, 94],
+        [6, 26, 50, 74, 98],
+        [6, 30, 54, 78, 102],
+        [6, 28, 54, 80, 106],
+        [6, 32, 58, 84, 110],
+        [6, 30, 58, 86, 114],
+        [6, 34, 62, 90, 118],
+        [6, 26, 50, 74, 98, 122],
+        [6, 30, 54, 78, 102, 126],
+        [6, 26, 52, 78, 104, 130],
+        [6, 30, 56, 82, 108, 134],
+        [6, 34, 60, 86, 112, 138],
+        [6, 30, 58, 86, 114, 142],
+        [6, 34, 62, 90, 118, 146],
+        [6, 30, 54, 78, 102, 126, 150],
+        [6, 24, 50, 76, 102, 128, 154],
+        [6, 28, 54, 80, 106, 132, 158],
+        [6, 32, 58, 84, 110, 136, 162],
+        [6, 26, 54, 82, 110, 138, 166],
+        [6, 30, 58, 86, 114, 142, 170]
+    ];
+  const ALPHA = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ $%*+-./:';
+  function hamming(a, b) { let x = a ^ b, n = 0; while (x) { x &= x - 1; n++; } return n; }
+  function formatCode(value) {
+    let r = value << 10;
+    const poly = 0x537;
+    for (let bit = 14; bit >= 10; bit--) if (r & (1 << bit)) r ^= poly << (bit-10);
+    return ((value << 10) | r) ^ 0x5412;
+  }
+  function decodeFormat(m) {
+    const n = m.length;
+    function read(which) {
+      let b = 0;
+      for (let i = 0; i < 15; i++) {
+        let x, y;
+        if (which === 0) {
+          x = 8; y = i < 6 ? i : (i < 8 ? i+1 : n-15+i);
+        } else {
+          y = 8; x = i < 8 ? n-1-i : (i === 8 ? 7 : 14-i);
+        }
+        if (m[y][x]) b |= 1 << i;
+      }
+      return b;
+    }
+    let a = read(0), b = read(1), best = null, score = 20;
+    for (let v = 0; v < 32; v++) {
+      const code = formatCode(v), dist = Math.min(hamming(a, code), hamming(b, code));
+      if (dist < score) { best = v; score = dist; }
+    }
+    return score <= 3 ? { mask: best & 7, level: best >> 3 } : null;
+  }
+  function masked(pattern, row, col) {
+    const p = row * col;
+    switch (pattern) {
+      case 0: return (row + col) % 2 === 0;
+      case 1: return row % 2 === 0;
+      case 2: return col % 3 === 0;
+      case 3: return (row + col) % 3 === 0;
+      case 4: return (Math.floor(row / 2) + Math.floor(col / 3)) % 2 === 0;
+      case 5: return (p % 2 + p % 3) === 0;
+      case 6: return (p % 2 + p % 3) % 2 === 0;
+      default: return (p % 3 + (row + col) % 2) % 2 === 0;
+    }
+  }
+  function decodeMatrix(m) {
+    const n = m.length, v = (n - 17) / 4;
+    if (v < 1 || v > 40 || !Number.isInteger(v)) return null;
+    const fmt = decodeFormat(m);
+    if (!fmt) return null;
+    const reserved = Array.from({length:n}, () => new Uint8Array(n));
+    function rect(x1,y1,x2,y2) {
+      for (let y=Math.max(0,y1);y<=Math.min(n-1,y2);y++)
+        for (let x=Math.max(0,x1);x<=Math.min(n-1,x2);x++) reserved[y][x] = 1;
+    }
+    rect(0,0,8,8); rect(n-8,0,n-1,8); rect(0,n-8,8,n-1);
+    rect(6,0,6,n-1); rect(0,6,n-1,6);
+    const alignment = ALIGN[v-1];
+    for (const row of alignment) for (const col of alignment) {
+      if ((row === 6 && (col === 6 || col === n-7)) || (row === n-7 && col === 6)) continue;
+      rect(col-2,row-2,col+2,row+2);
+    }
+    if (v >= 7) { rect(n-11,0,n-9,5); rect(0,n-11,5,n-9); }
+    rect(8,n-8,8,n-8);
+    const bits = [];
+    let upward = true;
+    for (let right=n-1;right>=1;right-=2) {
+      if (right === 6) right = 5;
+      for (let iy=0;iy<n;iy++) {
+        let y = upward ? n-1-iy : iy;
+        for (let dx=0;dx<2;dx++) {
+          const x=right-dx;
+          if (!reserved[y][x]) bits.push((m[y][x]?1:0) ^ (masked(fmt.mask,y,x)?1:0));
+        }
+      }
+      upward = !upward;
+    }
+    const bytes = [];
+    for (let i=0;i+7<bits.length;i+=8) {
+      let b=0;for(let j=0;j<8;j++) b=(b<<1)|bits[i+j]; bytes.push(b);
+    }
+    const eccIdx = {1:0,0:1,3:2,2:3}[fmt.level];
+    if (eccIdx === undefined) return null;
+    const structure = RS[(v-1)*4 + eccIdx], blocks=[];
+    for (let i=0;i<structure.length;i+=3) for (let j=0;j<structure[i];j++)
+      blocks.push({data:structure[i+2], ecc:structure[i+1]-structure[i+2], bytes:[]});
+    const total = blocks.reduce((s,b)=>s+b.data+b.ecc,0);
+    if (bytes.length < total) return null;
+    let at=0, maxData=Math.max(...blocks.map(b=>b.data)), maxECC=Math.max(...blocks.map(b=>b.ecc));
+    for(let k=0;k<maxData;k++) for(const b of blocks) if(k<b.data) b.bytes[k]=bytes[at++];
+    for(let k=0;k<maxECC;k++) for(const b of blocks) if(k<b.ecc) b.bytes[b.data+k]=bytes[at++];
+    const data=[];
+    for(const b of blocks) {
+      let corrected = repairBlock(b.bytes, b.ecc);
+      if (!corrected) return null;
+      for(let i=0;i<b.data;i++) data.push(corrected[i]);
+    }
+    return readPayload(data,v);
+  }
+  // GF(256) Reed-Solomon correction. Syndrome-first Berlekamp-Massey and
+  // error magnitudes solved by Gaussian elimination over the same finite field.
+  const EXP = new Uint8Array(512), LOG = new Uint8Array(256);
+  { let x=1;for(let i=0;i<255;i++){EXP[i]=x;LOG[x]=i;x<<=1;if(x&256)x^=0x11d;}for(let i=255;i<512;i++)EXP[i]=EXP[i-255]; }
+  function mul(a,b){return (!a||!b)?0:EXP[LOG[a]+LOG[b]];}
+  function div(a,b){if(!b)throw Error('GF division by zero');return a?EXP[(LOG[a]-LOG[b]+255)%255]:0;}
+  function polyEval(coeffs, x){let y=0;for(let i=0;i<coeffs.length;i++)y=mul(y,x)^coeffs[i];return y;}
+  function syndromes(bytes, n){const ss=[];for(let j=0;j<n;j++)ss.push(polyEval(bytes,EXP[j]));return ss;}
+  function repairBlock(bytes, ecc) {
+    const sy = syndromes(bytes,ecc);
+    if(sy.every(x=>x===0)) return bytes;
+    let C=[1], B=[1], L=0, m=1, b=1;
+    for(let k=0;k<ecc;k++) {
+      let d=sy[k]; for(let i=1;i<=L;i++) d^=mul(C[i]||0,sy[k-i]);
+      if(d===0){m++;continue;}
+      const T=C.slice(), coef=div(d,b);
+      while(C.length<B.length+m) C.push(0);
+      for(let j=0;j<B.length;j++) C[j+m]^=mul(coef,B[j]);
+      if(2*L<=k){L=k+1-L;B=T;b=d;m=1;}else m++;
+    }
+    if(L<=0||L>Math.floor(ecc/2)) return null;
+    const positions=[];
+    for(let pos=0;pos<bytes.length;pos++) {
+      let x=EXP[(255-(bytes.length-1-pos)%255)%255], out=0;
+      for(let i=C.length-1;i>=0;i--)out=mul(out,x)^C[i];
+      if(out===0)positions.push(pos);
+    }
+    if(positions.length!==L) return null;
+    // S_j = sum(error_i * alpha^(j*(len-1-pos_i))), j = 0,1,...
+    const matrix=Array.from({length:L},(_,j)=>[
+      ...positions.map(pos=>j===0?1:EXP[(j*(bytes.length-1-pos))%255]), sy[j]
+    ]);
+    for(let j=0;j<L;j++) {
+      let pivot=j;while(pivot<L&&!matrix[pivot][j])pivot++;
+      if(pivot===L)return null;
+      [matrix[pivot],matrix[j]]=[matrix[j],matrix[pivot]];
+      const inv=div(1,matrix[j][j]);for(let k=j;k<=L;k++)matrix[j][k]=mul(matrix[j][k],inv);
+      for(let i=0;i<L;i++)if(i!==j){let factor=matrix[i][j];for(let k=j;k<=L;k++)matrix[i][k]^=mul(factor,matrix[j][k]);}
+    }
+    const fixed=bytes.slice();
+    for(let i=0;i<L;i++)fixed[positions[i]] ^= matrix[i][L];
+    return syndromes(fixed,ecc).every(x=>x===0)?fixed:null;
+  }
+  function decodeUtf8(arr, encoding) {
+    try {if(typeof TextDecoder!=='undefined')return new TextDecoder(encoding||'utf-8',{fatal:false}).decode(new Uint8Array(arr));}catch(_){ }
+    try{return decodeURIComponent(arr.map(b=>'%'+b.toString(16).padStart(2,'0')).join(''));}
+    catch(_){return arr.map(b=>String.fromCharCode(b)).join('');}
+  }
+  function readPayload(bytes,v) {
+    let at=0, output='', enc='utf-8';
+    function read(n){if(at+n>bytes.length*8)throw Error('truncated payload');let x=0;for(let i=0;i<n;i++){x=x*2+((bytes[at>>3]>>(7-(at&7)))&1);at++;}return x;}
+    try {
+      let segmentCount=0;
+      while(at+4<=bytes.length*8 && segmentCount++<500) {
+        const mode=read(4);
+        if(mode===0) return output;
+        if(mode===7) {let eci=read(8);if((eci&0xC0)===0x80)eci=((eci&0x3F)<<8)|read(8);else if((eci&0xE0)===0xC0)eci=((eci&0x1F)<<16)|read(16);enc=eci===26?'utf-8':eci===3?'iso-8859-1':eci===20?'shift_jis':'utf-8';continue;}
+        if(mode===5||mode===9)continue; // FNC1 indicators
+        if(mode===3){read(16);continue;} // Structured append header
+        const tier=v<10?0:(v<27?1:2);
+        const lens={1:[10,12,14],2:[9,11,13],4:[8,16,16],8:[8,10,12],13:[8,10,12]};
+        if(!lens[mode]) return null;
+        let count=read(lens[mode][tier]);
+        if(count>12000)return null;
+        if(mode===1) {
+          while(count>=3){output+=String(read(10)).padStart(3,'0');count-=3;}
+          if(count===2)output+=String(read(7)).padStart(2,'0');else if(count===1)output+=String(read(4));
+        } else if(mode===2) {
+          while(count>=2){let n=read(11);output+=ALPHA[Math.floor(n/45)]+ALPHA[n%45];count-=2;}
+          if(count===1)output+=ALPHA[read(6)];
+        } else if(mode===4) {
+          const b=[];for(let i=0;i<count;i++)b.push(read(8));output+=decodeUtf8(b,enc);
+        } else if(mode===8) {
+          const b=[];for(let i=0;i<count;i++){let n=read(13),sjis=n<0x1F00?n+0x8140:n+0xC140;b.push(sjis>>8,sjis&255);} output+=decodeUtf8(b,'shift_jis');
+        } else if(mode===13) {
+          const b=[];for(let i=0;i<count;i++){const n=read(13);b.push((n>>8)&255,n&255);} output+=decodeUtf8(b,'gb18030');
+        }
+      }
+      return output || null;
+    } catch(_) {return null;}
+  }
+  function otsu(data) {
+    const hist=new Int32Array(256), length=data.length/4;
+    for(let i=0;i<data.length;i+=4){let lum=(data[i]*299+data[i+1]*587+data[i+2]*114)/1000|0;hist[lum]++;}
+    let sum=0;for(let i=0;i<256;i++)sum+=i*hist[i];
+    let background=0,sumBack=0,best=0,threshold=128;
+    for(let t=0;t<256;t++) {
+      background+=hist[t];if(!background)continue;
+      const foreground=length-background;if(!foreground)break;
+      sumBack+=t*hist[t];const delta=(sumBack/background)-(sum-sumBack)/foreground;
+      const variance=background*foreground*delta*delta;
+      if(variance>best){best=variance;threshold=t;}
+    }
+    return Math.max(40,Math.min(215,threshold));
+  }
+  function bitmapFromCanvas(ctx,width,height) {
+    const pixels=ctx.getImageData(0,0,width,height).data, t=otsu(pixels), bitmap=new Uint8Array(width*height);
+    for(let i=0,j=0;i<pixels.length;i+=4,j++) bitmap[j]=(pixels[i]*299+pixels[i+1]*587+pixels[i+2]*114)/1000 < t?1:0;
+    return bitmap;
+  }
+  function detectCenters(bm,w,h) {
+    const groups=[];
+    function check(r) {
+      const unit=(r[0]+r[1]+r[3]+r[4])/4;
+      if(unit<0.7)return -1;
+      let err=0;for(let j=0;j<5;j++){const expected=unit*(j===2?3:1);err+=Math.abs(r[j]-expected)/expected;}
+      return err<2.35?(r[0]+r[1]+r[2]+r[3]+r[4])/7:-1;
+    }
+    function cross(x,y) {
+      let run=[0,0,0,0,0], k=y;
+      while(k>=0&&bm[k*w+x]&&run[2]<120){run[2]++;k--;}
+      while(k>=0&&!bm[k*w+x]&&run[1]<120){run[1]++;k--;}
+      while(k>=0&&bm[k*w+x]&&run[0]<120){run[0]++;k--;}
+      k=y+1;
+      while(k<h&&bm[k*w+x]&&run[2]<240){run[2]++;k++;}
+      while(k<h&&!bm[k*w+x]&&run[3]<120){run[3]++;k++;}
+      while(k<h&&bm[k*w+x]&&run[4]<120){run[4]++;k++;}
+      const u=check(run);if(u<0)return null;
+      let top=y;while(top>=0&&bm[top*w+x])top--;
+      let bottom=y;while(bottom<h&&bm[bottom*w+x])bottom++;
+      return {y:(top+1+bottom-1)/2,pitch:u};
+    }
+    const step=Math.max(1,Math.floor(h/480));
+    for(let y=0;y<h;y+=step) {
+      const runs=[];let last=bm[y*w], start=0;
+      for(let x=1;x<=w;x++){
+        const color=x<w?bm[y*w+x]:2;
+        if(color===last)continue;
+        runs.push({color:last,start,end:x,len:x-start});
+        if(runs.length>8)runs.shift();
+        if(runs.length>=5) {
+          const seg=runs.slice(-5);
+          if(seg[0].color===1&&seg[1].color===0&&seg[2].color===1&&seg[3].color===0&&seg[4].color===1) {
+            const pitch=check(seg.map(s=>s.len));
+            if(pitch>=0){
+              const center=Math.round((seg[2].start+seg[2].end-1)/2);
+              const vertical=cross(center,y);
+              if(vertical&&vertical.pitch/pitch>0.55&&vertical.pitch/pitch<1.7){
+                let target=groups.find(g=>Math.abs(g.x-center)<pitch*2.2&&Math.abs(g.y-vertical.y)<pitch*2.2);
+                if(target){const num=target.hits;target.x=(target.x*num+center)/(num+1);target.y=(target.y*num+vertical.y)/(num+1);target.pitch=(target.pitch*num+(pitch+vertical.pitch)/2)/(num+1);target.hits++;}
+                else groups.push({x:center,y:vertical.y,pitch:(pitch+vertical.pitch)/2,hits:1});
+              }
+            }
+          }
+        }
+        last=color;start=x;
+      }
+    }
+    function finderScore(g) {
+      let best=0;
+      for(const angle of [0, -0.17, 0.17, -0.35, 0.35, -0.52, 0.52, Math.PI/4]) {
+        const sin=Math.sin(angle),cos=Math.cos(angle);
+        let score=0;
+        for(let y=-3;y<=3;y++)for(let x=-3;x<=3;x++) {
+          const xx=Math.round(g.x+(x*cos-y*sin)*g.pitch);
+          const yy=Math.round(g.y+(x*sin+y*cos)*g.pitch);
+          const expected=(Math.abs(x)===3 || Math.abs(y)===3 || (Math.abs(x)<=1&&Math.abs(y)<=1))?1:0;
+          if(xx>=0&&xx<w&&yy>=0&&yy<h&&bm[yy*w+xx]===expected)score++;
+        }
+        if(score>best)best=score;
+      }
+      return best;
+    }
+    return groups.filter(g=>g.hits>=2).map(g=>({...g, finderScore:finderScore(g)}))
+      .filter(g=>g.finderScore>=36)
+      .sort((a,b)=>b.finderScore-a.finderScore || b.hits-a.hits).slice(0,25);
+  }
+  function readAt(bm,w,h,x,y,radius) {
+    const ix=Math.round(x), iy=Math.round(y);
+    if(ix<0||iy<0||ix>=w||iy>=h)return 0;
+    if(radius<1)return bm[iy*w+ix];
+    let count=0,total=0;const rr=Math.min(2,Math.floor(radius));
+    for(let dy=-rr;dy<=rr;dy++)for(let dx=-rr;dx<=rr;dx++){
+      const xx=ix+dx, yy=iy+dy;if(xx>=0&&xx<w&&yy>=0&&yy<h){total++;count+=bm[yy*w+xx];}
+    }
+    return count>total/2?1:0;
+  }
+  function candidateMatrix(bm,w,h,TL,TR,BL,n) {
+    const m=Array.from({length:n},()=>new Uint8Array(n));
+    const r=(TL.pitch+TR.pitch+BL.pitch)/3*0.14;
+    for(let y=0;y<n;y++)for(let x=0;x<n;x++) {
+      const fx=(x-3)/(n-7),fy=(y-3)/(n-7);
+      const px=TL.x+fx*(TR.x-TL.x)+fy*(BL.x-TL.x);
+      const py=TL.y+fx*(TR.y-TL.y)+fy*(BL.y-TL.y);
+      m[y][x]=readAt(bm,w,h,px,py,r);
+    }
+    return m;
+  }
+  function decodeFallback(ctx,w,h) {
+    const bm=bitmapFromCanvas(ctx,w,h), centers=detectCenters(bm,w,h);
+    if(centers.length<3)return null;
+    const candidates=[];
+    for(let i=0;i<centers.length;i++)for(let j=0;j<centers.length;j++)if(j!==i)
+      for(let k=0;k<centers.length;k++)if(k!==i&&k!==j){
+        const a=centers[i],b=centers[j],c=centers[k];
+        const dx=b.x-a.x,dy=b.y-a.y,ex=c.x-a.x,ey=c.y-a.y;
+        const d1=Math.hypot(dx,dy),d2=Math.hypot(ex,ey);
+        if(d1<12*a.pitch||d2<12*a.pitch)continue;
+        if(Math.abs(dx*ex+dy*ey)/(d1*d2)>0.35)continue;
+        if(Math.max(d1,d2)/Math.min(d1,d2)>1.8)continue;
+        const pitch=(a.pitch+b.pitch+c.pitch)/3;
+        const dim=7+(d1+d2)/2/pitch;
+        const v=Math.round((dim-17)/4);
+        if(v<1||v>40)continue;
+        const n=17+4*v, error=Math.abs(n-dim);
+        if(error>Math.max(4,n*0.09))continue;
+        candidates.push({a,b,c,n,score:error + Math.abs(dx*ex+dy*ey)/(d1*d2)*10 - (a.hits+b.hits+c.hits)*0.03});
+      }
+    candidates.sort((x,y)=>x.score-y.score);
+    for(const c of candidates.slice(0,80)) {
+      const m=candidateMatrix(bm,w,h,c.a,c.b,c.c,c.n);
+      const decoded=decodeMatrix(m);
+      if(decoded!==null)return decoded;
+    }
+    return null;
+  }
+  global.localQRSpec = Object.freeze({ RS: RS, ALIGN: ALIGN });
+  global.localQRDecode = function (ctx,w,h) {
+    const direct = decodeFallback(ctx,w,h);
+    if (direct !== null) return direct;
+    const image = ctx.canvas;
+    for (const degrees of [-15,15,-30,30,-45,45]) {
+      const radians = degrees*Math.PI/180, sine=Math.abs(Math.sin(radians)), cosine=Math.abs(Math.cos(radians));
+      const fullW=Math.ceil(w*cosine+h*sine),fullH=Math.ceil(w*sine+h*cosine);
+      const scale=Math.min(1,2400/Math.max(fullW,fullH));
+      const rotated = document.createElement('canvas');
+      rotated.width=Math.max(1,Math.round(fullW*scale));
+      rotated.height=Math.max(1,Math.round(fullH*scale));
+      const rctx=rotated.getContext('2d', {willReadFrequently:true});
+      if (!rctx) continue;
+      rctx.fillStyle='#ffffff';rctx.fillRect(0,0,rotated.width,rotated.height);
+      rctx.translate(rotated.width/2,rotated.height/2);
+      rctx.rotate(radians);
+      rctx.drawImage(image,-w*scale/2,-h*scale/2,w*scale,h*scale);
+      rctx.setTransform(1,0,0,1,0,0);
+      const result=decodeFallback(rctx,rotated.width,rotated.height);
+      if (result !== null) return result;
+    }
+    return null;
+  };
+})(window);
+
+  </script>
+  <script>
+/* Honest QR Maker — standalone, offline QR Model 2 encoder.
+   Uses the Reed–Solomon block layout and alignment tables already shipped
+   with Honest QR Decoder; no remote code, URLs, or third-party services. */
+(function (global) {
+  'use strict';
+  const LEVEL_CODES = { L:1, M:0, Q:3, H:2 };
+  const LEVEL_OFFSETS = { L:0, M:1, Q:2, H:3 };
+  const EXP = new Uint8Array(512), LOG = new Uint8Array(256);
+  let a = 1;
+  for (let i = 0; i < 255; i++) {
+    EXP[i] = a; LOG[a] = i; a <<= 1; if (a & 256) a ^= 0x11d;
+  }
+  for (let i = 255; i < 512; i++) EXP[i] = EXP[i - 255];
+  function mul(a,b) { return a && b ? EXP[LOG[a] + LOG[b]] : 0; }
+  function eccPolynomial(n) {
+    let poly = [1];
+    for (let i=0;i<n;i++) {
+      const next = new Uint8Array(poly.length + 1);
+      for(let j=0;j<poly.length;j++) {
+        next[j] ^= poly[j];
+        next[j+1] ^= mul(poly[j],EXP[i]);
+      }
+      poly = Array.from(next);
+    }
+    return poly;
+  }
+  const divisors = Object.create(null);
+  function eccBytes(data, count) {
+    const poly = divisors[count] || (divisors[count] = eccPolynomial(count));
+    const rem = new Uint8Array(count);
+    for (const byte of data) {
+      const factor = byte ^ rem[0];
+      rem.copyWithin(0,1); rem[count-1] = 0;
+      for (let j=0;j<count;j++) rem[j] ^= mul(poly[j+1],factor);
+    }
+    return Array.from(rem);
+  }
+  function utf8(s) {
+    if (typeof TextEncoder === 'function') return Array.from(new TextEncoder().encode(s));
+    const result=[];
+    for (const cp of s) {
+      const n=cp.codePointAt(0);
+      if (n<128) result.push(n);
+      else if(n<2048) result.push(0xC0|(n>>6),0x80|(n&63));
+      else if(n<65536) result.push(0xE0|(n>>12),0x80|((n>>6)&63),0x80|(n&63));
+      else result.push(0xF0|(n>>18),0x80|((n>>12)&63),0x80|((n>>6)&63),0x80|(n&63));
+    }
+    return result;
+  }
+  function pushBits(out,val,len) { for(let i=len-1;i>=0;i--)out.push((val>>>i)&1); }
+  function rsBlocks(version,level) {
+    const spec=global.localQRSpec;
+    if(!spec || !spec.RS) throw Error('The embedded QR tables are unavailable.');
+    const entry = spec.RS[(version-1)*4 + LEVEL_OFFSETS[level]];
+    const blocks=[];
+    if(!entry) throw Error('Unsupported QR version.');
+    for(let i=0;i<entry.length;i+=3) {
+      const [num,total,data] = entry.slice(i,i+3);
+      for(let j=0;j<num;j++) blocks.push({data, ecc:total-data});
+    }
+    return blocks;
+  }
+  function canFit(bytes, version, level, eci) {
+    const blocks=rsBlocks(version,level);
+    const capacity=blocks.reduce((total,b)=>total+b.data,0)*8;
+    const countBits=version<10?8:16;
+    return bytes.length < (1<<countBits) && (eci?12:0)+4+countBits+bytes.length*8<=capacity;
+  }
+  function encodeCodewords(bytes,version,level,eci) {
+    const blocks=rsBlocks(version,level);
+    const cap=blocks.reduce((sum,b)=>sum+b.data,0);
+    const bits=[];
+    if(eci) {pushBits(bits,7,4);pushBits(bits,26,8);} // ECI UTF-8 for non-ASCII
+    pushBits(bits,4,4); // Byte mode (binary payload)
+    pushBits(bits,bytes.length,version<10?8:16);
+    for(const byte of bytes)pushBits(bits,byte,8);
+    for(let i=0;i<Math.min(4,cap*8-bits.length);i++)bits.push(0);
+    while(bits.length%8)bits.push(0);
+    const data=[];
+    for(let i=0;i<bits.length;i+=8) {
+      let b=0;for(let j=0;j<8;j++)b=(b<<1)|bits[i+j];
+      data.push(b);
+    }
+    for(let pad=0;data.length<cap;pad++)data.push(pad%2===0?0xec:0x11);
+    const decodedBlocks=[];
+    let offset=0;
+    for(const b of blocks) {
+      const dataPart=data.slice(offset,offset+b.data);
+      decodedBlocks.push({data:dataPart,ecc:eccBytes(dataPart,b.ecc)});
+      offset+=b.data;
+    }
+    const output=[];
+    const maxData=Math.max(...decodedBlocks.map(b=>b.data.length));
+    const maxEcc=Math.max(...decodedBlocks.map(b=>b.ecc.length));
+    for(let i=0;i<maxData;i++)for(const b of decodedBlocks)if(i<b.data.length)output.push(b.data[i]);
+    for(let i=0;i<maxEcc;i++)for(const b of decodedBlocks)if(i<b.ecc.length)output.push(b.ecc[i]);
+    return output;
+  }
+  function maskBit(mask,x,y) {
+    const p=x*y;
+    switch(mask) {
+      case 0:return (x+y)%2===0;
+      case 1:return y%2===0;
+      case 2:return x%3===0;
+      case 3:return (x+y)%3===0;
+      case 4:return (Math.floor(y/2)+Math.floor(x/3))%2===0;
+      case 5:return p%2+p%3===0;
+      case 6:return (p%2+p%3)%2===0;
+      default:return ((x+y)%2+p%3)%2===0;
+    }
+  }
+  function makeMatrix(version,level,words,mask) {
+    const size=version*4+17;
+    const m=Array.from({length:size},()=>new Uint8Array(size));
+    const used=Array.from({length:size},()=>new Uint8Array(size));
+    function set(x,y,dark) {
+      if(x<0||y<0||x>=size||y>=size)return;
+      m[y][x]=dark?1:0;used[y][x]=1;
+    }
+    function finder(cx,cy) {
+      for(let dy=-4;dy<=4;dy++)for(let dx=-4;dx<=4;dx++){
+        const d=Math.max(Math.abs(dx),Math.abs(dy));
+        set(cx+dx,cy+dy,d!==2&&d!==4);
+      }
+    }
+    finder(3,3);finder(size-4,3);finder(3,size-4);
+    const positions=global.localQRSpec.ALIGN[version-1];
+    for(const cy of positions) for(const cx of positions) {
+      if(used[cy][cx])continue;
+      for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++)set(cx+dx,cy+dy,Math.max(Math.abs(dx),Math.abs(dy))!==1);
+    }
+    for(let i=0;i<size;i++) {
+      if(!used[i][6])set(6,i,i%2===0);
+      if(!used[6][i])set(i,6,i%2===0);
+    }
+    if(version>=7) {
+      let value=version<<12;
+      for(let i=17;i>=12;i--)if((value>>>i)&1)value^=0x1f25<<(i-12);
+      const vbits=(version<<12)|value;
+      for(let i=0;i<18;i++) {
+        const bit=((vbits>>>i)&1)!==0;
+        const a=size-11+i%3,b=Math.floor(i/3);
+        set(a,b,bit);set(b,a,bit);
+      }
+    }
+    function writeFormat(maskNum) {
+      const ec=LEVEL_CODES[level];
+      const data=(ec<<3)|maskNum;
+      let rem=data<<10;
+      for(let i=14;i>=10;i--)if((rem>>>i)&1)rem^=0x537<<(i-10);
+      const val=((data<<10)|rem)^0x5412;
+      function bit(i){return ((val>>>i)&1)!==0;}
+      for(let i=0;i<=5;i++)set(8,i,bit(i));
+      set(8,7,bit(6));set(8,8,bit(7));set(7,8,bit(8));
+      for(let i=9;i<15;i++)set(14-i,8,bit(i));
+      for(let i=0;i<8;i++)set(size-1-i,8,bit(i));
+      for(let i=8;i<15;i++)set(8,size-15+i,bit(i));
+      set(8,size-8,true);
+    }
+    writeFormat(mask); // reserve format cells before filling data
+    const stream=[];
+    for(const byte of words)for(let bit=7;bit>=0;bit--)stream.push((byte>>>bit)&1);
+    let at=0,up=true;
+    for(let right=size-1;right>=1;right-=2) {
+      if(right===6)right=5;
+      for(let yi=0;yi<size;yi++) {
+        const y=up?size-1-yi:yi;
+        for(let dx=0;dx<2;dx++) {
+          const x=right-dx;
+          if(!used[y][x]){
+            const bit=at<stream.length?stream[at++]:0;
+            m[y][x]=bit^(maskBit(mask,x,y)?1:0);
+          }
+        }
+      }
+      up=!up;
+    }
+    return m;
+  }
+  function penalty(m) {
+    const n=m.length;let score=0,dark=0;
+    for(let y=0;y<n;y++)for(let x=0;x<n;x++){
+      dark+=m[y][x];
+      if(x&&y&&m[y][x]===m[y-1][x]&&m[y][x]===m[y][x-1]&&m[y][x]===m[y-1][x-1])score+=3;
+    }
+    const patternA='00001011101',patternB='10111010000';
+    for(let direction=0;direction<2;direction++)for(let outer=0;outer<n;outer++) {
+      let seq='',last=-1,run=0;
+      for(let inner=0;inner<n;inner++){
+        const b=direction===0?m[outer][inner]:m[inner][outer];
+        seq+=b;
+        if(b===last)run++;else {if(run>=5)score+=run-2;last=b;run=1;}
+      }
+      if(run>=5)score+=run-2;
+      for(let i=0;i<=seq.length-11;i++) {
+        const window=seq.slice(i,i+11);
+        if(window===patternA||window===patternB)score+=40;
+      }
+    }
+    score+=Math.floor(Math.abs(dark*20-n*n*10)/(n*n))*10;
+    return score;
+  }
+  function create(text,level) {
+    if(typeof text!=='string'||!text.length)throw Error('Enter text or a URL to encode.');
+    if(!Object.prototype.hasOwnProperty.call(LEVEL_CODES,level))throw Error('Unsupported error-correction level.');
+    for (let i=0;i<text.length;i++) {
+      const n=text.charCodeAt(i);
+      if(n>=0xD800&&n<=0xDBFF) {
+        const next=text.charCodeAt(++i);
+        if(!(next>=0xDC00&&next<=0xDFFF))throw Error('Text contains an incomplete Unicode character.');
+      } else if(n>=0xDC00&&n<=0xDFFF)throw Error('Text contains an incomplete Unicode character.');
+    }
+    const bytes=utf8(text),eci=bytes.some(b=>b>127);
+    let version=0;
+    for(let v=1;v<=40;v++)if(canFit(bytes,v,level,eci)){version=v;break;}
+    if(!version)throw Error('Too much text for one QR code at this correction level. Shorten the text or select a lower correction level.');
+    const codewords=encodeCodewords(bytes,version,level,eci);
+    let best=null,bestScore=Infinity,bestMask=-1;
+    for(let mask=0;mask<8;mask++) {
+      const matrix=makeMatrix(version,level,codewords,mask);
+      const score=penalty(matrix);
+      if(score<bestScore){best=matrix;bestScore=score;bestMask=mask;}
+    }
+    return {matrix:best,version,level,mask:bestMask,bytes:bytes.length,size:best.length};
+  }
+  global.HonestQRMake = create;
+})(window);
+
+  </script>
   <script>
   (() => {
     'use strict';
@@ -198,11 +905,9 @@
     const status = $('status');
     const result = $('result');
     const resultEmpty = $('resultEmpty');
-    const openBtn = $('openBtn');
     let activeObjectUrl = '';
+    let requestSerial = 0;
     let currentText = '';
-    let currentSafeUrl = '';
-    let currentWebUrl = '';
     let currentHost = '';
     const TRUST_KEY = 'honestQrTrustedHostsV1';
 
@@ -255,7 +960,6 @@
       }
       $('trustBtn').disabled = !currentHost || hosts.has(currentHost);
       $('forgetBtn').disabled = !currentHost || !hosts.has(currentHost);
-      $('reputationBtn').disabled = !currentWebUrl;
     }
 
     function normalizeExpectedHost(input) {
@@ -296,14 +1000,14 @@
     }
 
     function analyzeRaw(rawInput) {
-      const raw = String(rawInput ?? '').trim();
+      const raw = String(rawInput ?? '');
       const analysis = { raw, isWeb: false, url: '', host: 'Not a web URL', level: 'blocked', flags: [] };
-      if (!raw) {
+      if (!raw.trim()) {
         analysis.flags.push(['bad', 'The QR code decoded to an empty value.']);
         return analysis;
       }
       if (/[\u0000-\u001F\u007F]/.test(raw)) {
-        analysis.flags.push(['bad', 'Contains hidden control characters.']);
+        analysis.flags.push(['bad', 'Contains hidden control characters; opening is disabled.']);
       }
       let parsed;
       try { parsed = new URL(raw); } catch (_) {
@@ -320,6 +1024,7 @@
       analysis.url = parsed.href;
       analysis.host = parsed.hostname || 'Missing host';
       analysis.level = protocol === 'https:' ? 'good' : 'caution';
+      if (/[\u0000-\u001F\u007F]/.test(raw)) analysis.level = 'blocked';
       if (protocol === 'https:') analysis.flags.push(['good', 'Uses HTTPS. This encrypts the connection, but does not prove the site is trustworthy.']);
       else analysis.flags.push(['warn', 'Uses unencrypted HTTP. Do not enter passwords or sensitive information.']);
       if (parsed.username || parsed.password) {
@@ -367,8 +1072,6 @@
     function showAnalysis(raw) {
       const a = analyzeRaw(raw);
       currentText = a.raw;
-      currentSafeUrl = a.isWeb && a.level !== 'blocked' ? a.url : '';
-      currentWebUrl = a.isWeb ? a.url : '';
       currentHost = a.isWeb ? a.host.toLowerCase() : '';
       $('raw').textContent = a.raw || '(empty)';
       $('host').textContent = a.host;
@@ -390,7 +1093,6 @@
         $('verdictTitle').textContent = 'Opening disabled';
         $('verdictText').textContent = a.isWeb ? 'This URL has a high-risk structural warning.' : 'The decoded value is not an ordinary web link.';
       }
-      openBtn.disabled = !currentSafeUrl;
       $('expectedHost').value = '';
       $('expectedState').className = 'assessment-state';
       $('expectedState').textContent = 'Enter the organization’s expected domain to compare it locally. No lookup is made.';
@@ -399,20 +1101,70 @@
       result.style.display = 'block';
     }
 
-    async function getDetector() {
-      if (!('BarcodeDetector' in window)) throw new Error('This browser does not provide built-in QR decoding. Open this file in a current version of Microsoft Edge or Google Chrome.');
-      if (typeof BarcodeDetector.getSupportedFormats === 'function') {
-        const formats = await BarcodeDetector.getSupportedFormats();
-        if (!formats.includes('qr_code')) throw new Error('This browser has barcode detection, but QR codes are not supported here. Try a current version of Microsoft Edge or Google Chrome.');
+    async function detectNative(canvas) {
+      if (!('BarcodeDetector' in window) || typeof window.BarcodeDetector !== 'function') return null;
+      try {
+        if (typeof BarcodeDetector.getSupportedFormats === 'function') {
+          const formats = await BarcodeDetector.getSupportedFormats();
+          if (!formats.includes('qr_code')) return null;
+        }
+        const detector = new BarcodeDetector({ formats: ['qr_code'] });
+        const codes = await detector.detect(canvas);
+        if (!codes.length) return null;
+        return { text: codes[0].rawValue, count: codes.length, engine: 'browser' };
+      } catch (_) {
+        // Some browsers expose BarcodeDetector but do not implement QR
+        // detection on every OS, context, or image format. Try our fallback.
+        return null;
       }
-      return new BarcodeDetector({ formats: ['qr_code'] });
+    }
+
+    async function drawImageToCanvas(file, canvas) {
+      const ctx = canvas.getContext('2d', { willReadFrequently: true }) || canvas.getContext('2d');
+      if (!ctx) throw new Error('Your browser does not support the image canvas needed for QR decoding.');
+      let bitmap = null;
+      let image = null;
+      let tempUrl = '';
+      try {
+        if (typeof createImageBitmap === 'function') {
+          try { bitmap = await createImageBitmap(file); } catch (_) { /* image element fallback */ }
+        }
+        if (!bitmap) {
+          tempUrl = URL.createObjectURL(file);
+          image = await new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = () => reject(new Error('The browser could not read this image. Try PNG or JPEG.'));
+            img.src = tempUrl;
+          });
+        }
+        const width = bitmap ? bitmap.width : image.naturalWidth;
+        const height = bitmap ? bitmap.height : image.naturalHeight;
+        if (!width || !height || width>20000 || height>20000 || width*height>120000000) throw new Error('Image dimensions are too large or invalid.');
+        const scale = Math.min(1, 2400 / Math.max(width, height));
+        canvas.width = Math.max(1, Math.round(width * scale));
+        canvas.height = Math.max(1, Math.round(height * scale));
+        // White background avoids treating transparency as black QR modules.
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(bitmap || image, 0, 0, canvas.width, canvas.height);
+        return ctx;
+      } finally {
+        if (bitmap && typeof bitmap.close === 'function') bitmap.close();
+        if (tempUrl) URL.revokeObjectURL(tempUrl);
+      }
     }
 
     async function decodeImage(file) {
-      if (!file || !String(file.type).startsWith('image/')) {
-        setStatus('Please provide an image file.', 'error');
+      if (!file || !(String(file.type || '').startsWith('image/') || /\.(?:png|jpe?g|webp|gif|bmp|avif)$/i.test(file.name || ''))) {
+        setStatus('Please provide a PNG, JPEG, GIF, WebP, or another browser-readable image.', 'error');
         return;
       }
+      if (file.size > 20*1024*1024) {
+        setStatus('Image is too large. Choose an image under 20 MB.', 'error');
+        return;
+      }
+      const serial = ++requestSerial;
       clearResultOnly();
       if (activeObjectUrl) URL.revokeObjectURL(activeObjectUrl);
       activeObjectUrl = URL.createObjectURL(file);
@@ -423,36 +1175,36 @@
       clearBtn.disabled = false;
       setStatus('Reading the image locally…');
       try {
-        const detector = await getDetector();
-        const bitmap = await createImageBitmap(file);
-        const maxSide = 2400;
-        const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
         const canvas = $('workCanvas');
-        canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-        canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-        bitmap.close?.();
-        const codes = await detector.detect(canvas);
-        if (!codes.length) throw new Error('No QR code was found. Try a sharper image, a tighter crop, or more contrast around the code.');
-        showAnalysis(codes[0].rawValue ?? '');
-        setStatus(codes.length > 1 ? `Found ${codes.length} QR codes; showing the first.` : 'QR code decoded locally.', 'ok');
+        const ctx = await drawImageToCanvas(file, canvas);
+        if (serial !== requestSerial) return;
+        let answer = await detectNative(canvas);
+        if (serial !== requestSerial) return;
+        if (!answer) {
+          // Included directly in this HTML. Works in Safari/Firefox and
+          // elsewhere without BarcodeDetector, even offline or with file://.
+          const text = window.localQRDecode(ctx, canvas.width, canvas.height);
+          if (text !== null) answer = { text, count: 1, engine: 'offline fallback' };
+        }
+        if (!answer) throw new Error('No readable QR code found. Try a sharper image, crop closer to the code, or increase contrast.');
+        showAnalysis(answer.text);
+        setStatus(answer.count > 1
+          ? `Found ${answer.count} QR codes; showing the first (${answer.engine}).`
+          : `QR code decoded locally (${answer.engine}).`, 'ok');
       } catch (err) {
-        setStatus(err && err.message ? err.message : 'The image could not be decoded.', 'error');
+        if (serial === requestSerial) setStatus(err && err.message ? err.message : 'The image could not be decoded.', 'error');
       }
     }
 
     function clearResultOnly() {
       currentText = '';
-      currentSafeUrl = '';
-      currentWebUrl = '';
       currentHost = '';
       result.style.display = 'none';
       resultEmpty.style.display = 'block';
-      openBtn.disabled = true;
     }
 
     function clearAll() {
+      requestSerial++;
       if (activeObjectUrl) URL.revokeObjectURL(activeObjectUrl);
       activeObjectUrl = '';
       preview.removeAttribute('src');
@@ -467,7 +1219,7 @@
 
     async function pasteFromButton() {
       if (!navigator.clipboard || !navigator.clipboard.read) {
-        setStatus('Direct clipboard access is unavailable here. Press Ctrl+V or ⌘+V on this page instead.', 'error');
+        setStatus('This browser restricts the Paste image button. Use Ctrl+V / ⌘+V on this page, or Choose image.', 'error');
         return;
       }
       try {
@@ -478,7 +1230,7 @@
         }
         setStatus('The clipboard does not contain an image.', 'error');
       } catch (_) {
-        setStatus('Clipboard permission was not granted. Press Ctrl+V or ⌘+V on this page instead.', 'error');
+        setStatus('Clipboard access was blocked. Try Ctrl+V / ⌘+V directly on the page or Choose image.', 'error');
       }
     }
 
@@ -491,16 +1243,24 @@
         if (file) decodeImage(file);
         return;
       }
-      const text = event.clipboardData?.getData('text/plain')?.trim();
-      if (text) {
+      const text = event.clipboardData?.getData('text/plain');
+      const element = event.target;
+      const editing = element && (element.isContentEditable || /^(INPUT|TEXTAREA)$/.test(element.tagName));
+      if (text && !editing && $('decoderTab').getAttribute('aria-selected') === 'true') {
         event.preventDefault();
         showAnalysis(text);
         setStatus('Pasted text inspected. No QR decoding was needed.', 'ok');
       }
     });
+    document.addEventListener('dragover', e => { if (e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files')) e.preventDefault(); });
+    document.addEventListener('drop', e => { if(e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files')) e.preventDefault(); });
     pasteBtn.addEventListener('click', pasteFromButton);
     clearBtn.addEventListener('click', clearAll);
-    fileInput.addEventListener('change', () => fileInput.files?.[0] && decodeImage(fileInput.files[0]));
+    fileInput.addEventListener('change', () => {
+      const chosen = fileInput.files && fileInput.files[0];
+      if (chosen) decodeImage(chosen);
+      fileInput.value = ''; // Allow selecting the same image again.
+    });
     dropzone.addEventListener('click', () => fileInput.click());
     dropzone.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); } });
     ['dragenter','dragover'].forEach(type => dropzone.addEventListener(type, e => { e.preventDefault(); dropzone.classList.add('drag'); }));
@@ -531,25 +1291,151 @@
       }
       renderTrustState();
     });
-    $('reputationBtn').addEventListener('click', () => {
-      if (!currentWebUrl) return;
-      const ok = confirm(`Send this exact URL to Google Safe Browsing for a reputation lookup?\n\n${currentWebUrl}\n\nThis opens Google—not the decoded destination. Google will receive the URL. A clean report cannot guarantee safety or predict every redirect.`);
-      if (!ok) return;
-      const lookup = 'https://transparencyreport.google.com/safe-browsing/search?url=' + encodeURIComponent(currentWebUrl);
-      window.open(lookup, '_blank', 'noopener,noreferrer');
-    });
     $('copyBtn').addEventListener('click', async () => {
-      try { await navigator.clipboard.writeText(currentText); setStatus('Exact decoded text copied.', 'ok'); }
-      catch (_) { setStatus('Copy permission was blocked. Select the exact text and copy it manually.', 'error'); }
-    });
-    openBtn.addEventListener('click', () => {
-      if (!currentSafeUrl) return;
-      let host = '';
-      try { host = new URL(currentSafeUrl).hostname; } catch (_) { return; }
-      if (confirm(`Open this host in a new tab?\n\n${host}\n\nOnly continue if you recognize and trust it.`)) {
-        window.open(currentSafeUrl, '_blank', 'noopener,noreferrer');
+      try {
+        if (!navigator.clipboard || !navigator.clipboard.writeText) throw new Error('Clipboard API unavailable');
+        await navigator.clipboard.writeText(currentText);
+        setStatus('Exact decoded text copied.', 'ok');
+      } catch (_) {
+        // Clipboard writeText usually requires HTTPS or localhost; the old
+        // selection-based approach works in many file:// browsers.
+        const field = document.createElement('textarea');
+        field.value = currentText;
+        field.setAttribute('readonly', '');
+        field.style.cssText = 'position:fixed;left:-9999px;top:0';
+        document.body.appendChild(field);
+        field.focus(); field.select();
+        let copied = false;
+        try { copied = document.execCommand('copy'); } catch (_) { /* blocked */ }
+        field.remove();
+        setStatus(copied ? 'Exact decoded text copied.' : 'Automatic copying was blocked. Select the exact decoded text and copy it manually.', copied ? 'ok' : 'error');
       }
     });
+
+    // Tab state: no URL changes, hash changes, navigation, or network activity.
+    function setTab(which, focus) {
+      const isMaker=which==='maker';
+      $('decoderPanel').hidden=isMaker;
+      $('makerPanel').hidden=!isMaker;
+      $('decoderTab').setAttribute('aria-selected',String(!isMaker));
+      $('makerTab').setAttribute('aria-selected',String(isMaker));
+      $('decoderTab').tabIndex=isMaker?-1:0;
+      $('makerTab').tabIndex=isMaker?0:-1;
+      if(focus)(isMaker?$('makerTab'):$('decoderTab')).focus();
+    }
+    $('decoderTab').addEventListener('click',()=>setTab('decoder',false));
+    $('makerTab').addEventListener('click',()=>setTab('maker',false));
+    for(const tab of [$('decoderTab'),$('makerTab')]) tab.addEventListener('keydown',e=>{
+      if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)) {
+        e.preventDefault();setTab(e.key==='ArrowRight'||e.key==='End'?'maker':'decoder',true);
+      }
+    });
+    let makerQR = null;
+    let makerText = '';
+    function makerStatus(message,kind='') {
+      $('makerStatus').textContent=message;
+      $('makerStatus').className='status'+(kind?' '+kind:'');
+    }
+    function invalidateMaker(changed) {
+      makerQR=null;makerText='';
+      $('makerCanvas').hidden=true;
+      $('makerEmpty').hidden=false;
+      $('makerResult').hidden=true;
+      $('downloadMakerBtn').disabled=true;
+      $('downloadMakerSvgBtn').disabled=true;
+      if(changed)makerStatus('Input changed. Generate a new QR to update the preview.');
+    }
+    function renderMaker(q) {
+      const canvas=$('makerCanvas');
+      const quiet=4, pitch=Math.max(4,Math.floor(1024/(q.size+quiet*2)));
+      const total=q.size+quiet*2;
+      canvas.width=total*pitch;canvas.height=total*pitch;
+      const ctx=canvas.getContext('2d');
+      if(!ctx)throw new Error('Canvas rendering is unavailable in this browser.');
+      ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle='#000';
+      for(let y=0;y<q.size;y++)for(let x=0;x<q.size;x++)if(q.matrix[y][x])
+        ctx.fillRect((x+quiet)*pitch,(y+quiet)*pitch,pitch,pitch);
+      canvas.hidden=false;$('makerEmpty').hidden=true;
+    }
+    function makeQR() {
+      invalidateMaker(false);
+      const text=$('makerInput').value;
+      try {
+        const level=$('makerLevel').value;
+        if (/^\s*(?:javascript|vbscript|data|file|blob|intent):/i.test(text))
+          throw new Error('Executable, local-file, and app-launch URL schemes are intentionally blocked. Use ordinary text or an HTTP/HTTPS URL.');
+        const preflight=analyzeRaw(text);
+        if(preflight.isWeb && preflight.level==='blocked')
+          throw new Error('This URL has a blocked structure (such as embedded credentials or control characters). Edit it before creating a QR.');
+        const qr=window.HonestQRMake(text,level);
+        renderMaker(qr);
+        makerQR=qr;makerText=text;
+        const a=analyzeRaw(text);
+        $('makerMeta').textContent=`QR version ${qr.version} • ${qr.size} × ${qr.size} modules • ${qr.bytes} UTF-8 bytes • ${qr.level} correction`;
+        $('makerExact').textContent=text;
+        $('makerHost').textContent=a.isWeb?a.host:'Plain text / other content — no web URL identified';
+        const flags=$('makerFlags');
+        flags.replaceChildren();
+        const summary=document.createElement('li');
+        summary.textContent=a.isWeb
+          ? 'This QR contains a web URL. A separate scanner may offer to visit it; this page will not.'
+          : 'This QR contains text, not an ordinary HTTP/HTTPS link.';
+        flags.appendChild(summary);
+        for(const [kind,message] of a.flags) {
+          const li=document.createElement('li');li.textContent=message;
+          if(kind==='bad')li.style.color='var(--red)';
+          else if(kind==='warn')li.style.color='var(--amber)';
+          flags.appendChild(li);
+        }
+        $('makerResult').hidden=false;
+        $('downloadMakerBtn').disabled=false;
+        $('downloadMakerSvgBtn').disabled=false;
+        makerStatus('QR generated locally. Review the exact contents before sharing.', 'ok');
+      } catch(err) {makerStatus(err&&err.message?err.message:'Could not generate QR.','error');}
+    }
+    function localDownload(blob,filename) {
+      if(!('download' in document.createElement('a'))) {
+        makerStatus('This browser does not support safe local downloads. Please use a newer browser.','error');
+        return;
+      }
+      const url=URL.createObjectURL(blob);
+      const anchor=document.createElement('a');
+      anchor.href=url;anchor.download=filename;
+      anchor.setAttribute('aria-hidden','true');
+      document.body.appendChild(anchor);
+      anchor.click();anchor.remove();
+      setTimeout(()=>URL.revokeObjectURL(url),15000);
+    }
+    $('makeBtn').addEventListener('click',makeQR);
+    $('makerInput').addEventListener('input',()=>invalidateMaker(true));
+    $('makerLevel').addEventListener('change',()=>invalidateMaker(true));
+    $('makerClearBtn').addEventListener('click',()=>{
+      $('makerInput').value='';$('makerLevel').value='M';
+      invalidateMaker(false);makerStatus('Maker cleared; no information was sent or saved.');
+    });
+    $('downloadMakerBtn').addEventListener('click',()=>{
+      if(!makerQR)return;
+      const canvas=$('makerCanvas');
+      if(typeof canvas.toBlob!=='function') {
+        makerStatus('PNG downloads are unsupported in this browser. Try the SVG download.','error');
+        return;
+      }
+      canvas.toBlob(blob=>{
+        if(!blob) {makerStatus('PNG creation failed.','error');return;}
+        localDownload(blob,'honest-qr.png');
+      },'image/png');
+    });
+    $('downloadMakerSvgBtn').addEventListener('click',()=>{
+      if(!makerQR)return;
+      const q=makerQR,quiet=4,total=q.size+quiet*2;
+      let paths=[];
+      for(let y=0;y<q.size;y++)for(let x=0;x<q.size;x++)if(q.matrix[y][x])paths.push(`M${x+quiet} ${y+quiet}h1v1h-1z`);
+      // No user input is ever included in the SVG. All SVG geometry comes from QR bits.
+      const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${total*8}" height="${total*8}" viewBox="0 0 ${total} ${total}"><rect width="100%" height="100%" fill="white"/><path fill="black" d="${paths.join('')}"/></svg>`;
+      localDownload(new Blob([svg],{type:'image/svg+xml'}),'honest-qr.svg');
+    });
+    invalidateMaker(false);
     clearAll();
   })();
   </script>
