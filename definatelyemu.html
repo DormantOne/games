@@ -1,0 +1,412 @@
+
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>PROTONEURON v22.1 · Unlimited Fuel / Living Curriculum</title>
+<style>
+:root{color-scheme:dark;font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#07121c;color:#e7f3f5}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse 85% 600px at 50% -180px,#174b55 0%,#081925 70%,#07121c 100%);min-height:100vh}.wrap{max-width:1320px;margin:0 auto;padding:24px 28px 64px}.top{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap}.eyebrow{letter-spacing:2px;color:#77c8bd;font-size:12px;font-weight:800}h1{font-size:clamp(32px,5vw,58px);margin:8px 0;font-weight:830;letter-spacing:-2px;line-height:1.09}.lead{line-height:1.6;color:#b5d0d8;max-width:930px;font-size:15px}.tag{border:1px solid #2b7777;border-radius:25px;color:#a3eee1;padding:8px 13px;font-size:12px;white-space:nowrap}.panel{background:#102433e9;border:1px solid #2b5363;border-radius:16px;padding:20px 21px;margin-top:17px;box-shadow:0 12px 26px #0002}h2{font-size:18px;margin:0 0 15px}.micro{font-size:12px;color:#9abac5}.controls{display:flex;flex-wrap:wrap;gap:9px;align-items:center}.btn{border:1px solid #3d6270;background:#213b49;color:#e6f6f8;border-radius:9px;padding:12px 16px;cursor:pointer;font-weight:750;font-size:13px}.btn:hover{filter:brightness(1.14)}.primary{background:#56d8bb;color:#05222b;border-color:#56d8bb;font-size:17px;padding:17px 26px}.warn{background:#5f3642;border-color:#93566a}.btn:disabled{opacity:.4;cursor:not-allowed}.row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}.muted{color:#a8c4ce}.progress{height:13px;border-radius:30px;background:#071b29;border:1px solid #356271;overflow:hidden;margin:17px 0 7px}.bar{width:0;height:100%;background:linear-gradient(90deg,#25b8b7,#67deb9,#c4d973);transition:width .3s}.miniGrid{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:12px}.stat{background:#0b1d2a;border:1px solid #315162;border-radius:11px;padding:13px}.stat .num{font-size:27px;font-weight:830;font-variant-numeric:tabular-nums}.stat .name{font-size:11px;color:#a9c9d0;margin-top:4px}.levels{display:flex;gap:4px;flex-wrap:wrap;margin:15px 0}.level{border-radius:7px;border:1px solid #2d5a66;padding:7px 10px;color:#9dbbc7;font-size:12px}.level.active{background:#286a6f;color:#eafff8;border-color:#58dcc3}.level.passed{background:#1b4b3f;color:#8ce4a5;border-color:#35755b}.grid2{display:grid;grid-template-columns:1.16fr 1fr;gap:17px}.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.setting{display:flex;flex-direction:column;gap:7px;color:#b4d0d7;font-size:12px;font-weight:600}select,input{background:#0b202e;color:#f0fcfd;border:1px solid #3b6475;border-radius:7px;padding:10px 11px;font-family:inherit;font-size:13px;max-width:100%}input[type=checkbox]{accent-color:#61daba;width:17px;height:17px}.tick{display:flex;align-items:center;gap:7px;font-size:13px;color:#b4d0d7}details{border:1px solid #3a5d6c;padding:15px;border-radius:10px;margin-top:15px}summary{cursor:pointer;font-weight:750}summary::marker{color:#69d0b6}.note{border-left:3px solid #68d3bc;padding:10px 12px;background:#0b2331;color:#b6d3d9;line-height:1.55;font-size:12px;margin-top:14px}canvas{width:100%;height:auto;background:#071925;border:1px solid #294c60;border-radius:9px}.tableOuter{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:12px}td,th{padding:10px 8px;text-align:left;border-bottom:1px solid #2b4655;white-space:nowrap}th{color:#a9c6d1}td{color:#deeced}tbody tr:hover{background:#173342}.pill{display:inline-block;padding:2px 7px;border:1px solid #377465;border-radius:10px;color:#92e7c0}.selectedRow{background:#22463e!important}.smallbutton{background:#16434a;border:1px solid #47777d;border-radius:6px;color:#a9efe0;padding:6px 8px;cursor:pointer}.history{max-height:235px;overflow-y:auto;background:#071927;border:1px solid #294958;border-radius:9px;font:11px/1.6 ui-monospace,monospace;padding:11px;white-space:pre-wrap}.inspect{white-space:pre-wrap;font:12px/1.75 ui-monospace,monospace;background:#071927;border:1px solid #325367;padding:13px;border-radius:8px;min-height:154px;overflow:auto}.footer{font-size:12px;color:#93b2bc;line-height:1.8;margin-top:16px}.badgeWarn{color:#f3cf80}.filebtn{cursor:pointer;color:#a3eedd;text-decoration:underline}.fuelbar{display:flex;flex-wrap:wrap;align-items:end;gap:16px;border:1px solid #35786d;border-radius:12px;padding:13px 14px;margin-top:13px;background:#102d32}.fuelbar .setting{min-width:230px}.fuelbar .micro{margin-left:auto}.layoutCart{display:grid;grid-template-columns:1.25fr .85fr;gap:17px}@media(max-width:950px){.grid2,.layoutCart{grid-template-columns:1fr}.miniGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:640px){.wrap{padding:14px}.grid3{grid-template-columns:1fr}.miniGrid{grid-template-columns:1fr 1fr}.primary{width:100%}}
+</style></head><body><main class="wrap">
+<div class="top"><div><div class="eyebrow">PROTONEURON · RESEARCH LAB v22.1</div><h1>The Living Curriculum. More Fuel.</h1></div><span class="tag">OFFLINE SINGLE HTML · NO INSTALLER · NO NETWORK</span></div>
+<p class="lead">Train the weights. Occasionally evolve the wiring. Let each promising new anatomy relearn. Climb from 3% to 100% distal gravity <strong>only when performance qualifies</strong>—then keep evolving at full gravity for as many rounds as you want. Never throw away a winning brain just because the original fuel tank ran dry.</p>
+<section class="panel"><div class="row"><div><h2>01 / One button. One curriculum. Unlimited refills.</h2><span class="micro">Start normally, then add more learning rounds whenever you wish. The same evolved brains continue.</span></div><span class="tag" id="stateTag">READY</span></div>
+<div class="controls" style="margin-top:17px"><button class="btn primary" id="go">▶ START MODERATE CURRICULUM</button><button class="btn" id="fuelNow">⛽ ADD FUEL &amp; RUN</button><button class="btn" id="pause" disabled>Pause + checkpoint</button><button class="btn" id="resume" disabled>Resume</button><button class="btn warn" id="restart">New experiment / reset</button></div>
+<div class="fuelbar"><label class="setting" for="fuelSize">Refill size · additional reward-learning rounds<select id="fuelSize"><option value="420">+420 · moderate</option><option value="1200" selected>+1,200 · generous</option><option value="4000">+4,000 · long</option><option value="10000">+10,000 · overnight</option><option value="50000">+50,000 · deep search</option></select></label><label class="tick"><input type="checkbox" id="autoFuel"/> Keep refilling automatically until I press Pause</label><span class="micro" id="fuelStatus">Fuel remaining: 420 rounds</span></div><div class="progress"><div class="bar" id="bar"></div></div><div class="row"><span class="micro" id="progressText">Ready. One button starts continuous reward learning and intermittent rewiring.</span><span class="micro" id="pct">0%</span></div>
+<div class="levels" id="levels"></div>
+<div class="miniGrid"><div class="stat"><div class="num" id="currentStage">3%</div><div class="name">Training distal gravity</div></div><div class="stat"><div class="num" id="roundsDone">0 / 420</div><div class="name">Reward-learning rounds</div></div><div class="stat"><div class="num" id="archiveCount">0</div><div class="name">Diverse champions retained</div></div><div class="stat"><div class="num" id="physicsUsed">0</div><div class="name">RK4 physics integrations</div></div></div>
+<div class="note" id="status">One button launches a moderate 420-round experiment. Press Add Fuel &amp; Run to extend the SAME experiment; promotion through 100% gravity does not stop evolution. Four-second physics trials remain unchanged. Export JSON before closing for reliable backup.</div>
+<details id="advanced"><summary>Optional controls · experiment design</summary><div class="grid3" style="margin-top:17px">
+<label class="setting">Run length<select id="length"><option value="420" selected>Moderate · 420 learning rounds</option><option value="100">Quick smoke · 100 rounds</option><option value="1200">Long · 1,200 rounds</option><option value="4000">Marathon · 4,000 rounds</option><option value="10000">Deep search · 10,000 rounds</option><option value="50000">Very long · 50,000 rounds</option></select></label>
+<label class="setting">Maximum active champion pool<select id="pool"><option value="4">4</option><option value="6" selected>6 · default</option><option value="10">10</option><option value="16">16</option></select></label>
+<label class="setting">Curriculum starting gravity<select id="startGravity"><option value="0">3% · default</option><option value="1">8%</option><option value="2">13%</option><option value="3">15%</option><option value="4">20%</option><option value="5">30%</option><option value="6">50%</option><option value="7">75%</option><option value="8">100%</option></select></label>
+<label class="setting">Gravity promotion gate<select id="gate"><option value="gentle">Gentle · mean 3.20s &amp; 25% full</option><option value="standard" selected>Standard · mean 3.40s &amp; 35% full</option><option value="strict">Strict · mean 3.70s &amp; 65% full</option></select></label>
+<label class="setting">Source addresses eligible for evolution<select id="scope"><option value="motor" selected>27 motor neurons (81 fibers)</option><option value="all">All 100 neurons (300 fibers)</option></select></label>
+<label class="setting">Rewire trigger<select id="schedule"><option value="adaptive" selected>Adaptive · more after stalls</option><option value="fixed">Fixed · every 2 training blocks</option><option value="none">No rewiring · continuous weights only</option></select></label>
+<label class="setting">Reward perturbations / round<select id="directions"><option value="4">4 · fast</option><option value="6" selected>6 · default</option><option value="10">10 · thorough</option></select></label>
+<label class="setting">Learning starts / perturbation<select id="learningStarts"><option value="2" selected>2 · default</option><option value="3">3 · higher robustness</option><option value="4">4 · slow</option></select></label>
+<label class="setting">Experiment seed<input id="seed" type="number" value="47017" min="0" max="4294967295"/></label>
+<label class="tick"><input id="shortcut" type="checkbox" checked/> Enable 8 direct sensory motor shortcuts</label>
+<label class="tick"><input id="plastic" type="checkbox" checked/> Train 81 motor-input dendrites</label>
+<label class="tick"><input id="diverse" type="checkbox" checked/> Preserve behavioral diversity</label>
+</div><div class="note">Two ideas can be tested here: turn rewiring OFF to test weight learning alone, or turn diversity OFF to test a purely score-driven pool. The final independent benchmark should be run on a separate set of starting conditions.</div></details>
+</section>
+<div class="grid2"><section class="panel"><h2>02 / Progress and gravity promotions</h2><canvas id="curve" width="720" height="225"></canvas><div class="history" id="events">The experiment event log will appear here.</div></section><section class="panel"><h2>03 / Training the tuner</h2><div class="miniGrid" style="grid-template-columns:repeat(2,1fr)"><div class="stat"><div class="num" id="weightBlocks">0</div><div class="name">Reward learning blocks</div></div><div class="stat"><div class="num" id="evoTries">0</div><div class="name">Rewiring candidates evaluated</div></div><div class="stat"><div class="num" id="evoWins">0</div><div class="name">Novel/strong rewires admitted</div></div><div class="stat"><div class="num" id="novelty">—</div><div class="name">Last behavioral novelty</div></div></div><p class="micro" id="scheduleInfo" style="line-height:1.6;margin-top:15px">Rewiring requires retuning before a candidate is judged. Top fitness is always preserved; secondary champions must be meaningfully different in motor response.</p><p class="micro" id="lastDelta">Last reward δ: —</p><p class="micro" id="trainingBest">Current candidate: —</p></section></div>
+<section class="panel"><div class="row"><div><h2>04 / Diverse champion archive</h2><p class="micro">Best performer is protected. Other survivors are retained for contrasting action patterns—not just different wire addresses.</p></div><div class="controls"><button class="btn" id="bench" disabled>Test selected · 64 truly fresh starts</button><button class="btn" id="copyBX" disabled>Copy BX</button></div></div><div class="tableOuter"><table><thead><tr><th>Champion</th><th>Stage</th><th>Gate mean</th><th>Gate 4s</th><th>Novelty</th><th>Source</th><th>Action</th></tr></thead><tbody id="champRows"><tr><td colspan="7" class="muted">No champions yet. Start the curriculum.</td></tr></tbody></table></div><div class="note" id="benchResult">Fresh independent tests use a separate seed family. The training gate is reused during learning, so its scores are selection metrics—not final unbiased evidence.</div></section>
+<section class="panel"><div class="row"><h2>05 / Neural microscope and cart replay</h2><div class="controls"><button class="btn" id="replay" disabled>▶ Replay selected champion</button><button class="btn" id="stopReplay" disabled>Stop replay</button></div></div><div class="layoutCart"><div><canvas width="780" height="300" id="cart"></canvas><p class="micro" id="cartInfo">Physics: 1.5 kg cart, three 0.4 kg distal point masses, 0.6 m links, RK4 at 20 ms; 45 N motor and 2.4 m track.</p><canvas width="780" height="370" id="brainCanvas"></canvas><p class="micro">Hover over any neuron or click to pin it. Lines show the three real incoming fibers of the selected neuron; green/violet is actual firing sign.</p></div><div><div class="setting">Inspect neuron<select id="neuron"></select></div><div class="inspect" id="inspect">Start an experiment, then select a champion to inspect.</div><div class="note">Each neuron has exactly three inputs. The 27 motor neurons also feed a learned 27-way motor readout, and the optional eight sensor shortcuts bypass this restriction at the motor—not inside any neuron.</div></div></div></section>
+<section class="panel"><div class="row"><div><h2>06 / Save, resume, share</h2><span class="micro">A browser may suspend offline pages when the tab is closed. Export a checkpoint for reliable overnight work.</span></div><div class="controls"><button class="btn" id="export">Export full checkpoint JSON</button><button class="btn" id="copyReport">Copy readable report</button><button class="btn" id="exportCSV">Export champion CSV</button><label class="btn filebtn">Import v21 / v22 JSON <input type="file" id="import" accept=".json,application/json" hidden/></label></div></div><p class="micro" id="autosave">Local autosave not yet initialized. Export a JSON checkpoint before closing the tab.</p></section>
+<div class="footer">Research notes: Fuel means more reward-learning rounds, not longer four-second trials. Automatic refueling works while the tab remains active; browsers may throttle background tabs. A hard page crash can lose progress since the last checkpoint. All learning is teacher-free reward-difference perturbation search, <strong>not online temporal-difference actor–critic or backpropagation</strong>. Only 81 motor dendrites, 27 motor readout gains, and optionally eight shortcuts learn. The other 219 internal weights stay continuous but fixed. Rewiring can target either the 27 motor cells or all cells. The gravity curriculum artificially scales the distal gravitational term, not inertial mass; it is not nine different physical poles. All computations happen locally in this page.</div>
+</main>
+<script>
+
+
+const PI=Math.PI, DT=.02, MC=1.5, PM=.4, L=.6, G=9.81, CDF=.07, ADF=.025;
+const SCALES=[[.06,.28],[.08,.35],[.004,.028],[.022,.12],[.004,.028],[.022,.12],[.004,.028],[.022,.12],[.006,.035],[.006,.035],[.006,.035]];
+const SENSOR_LABELS=['cart x','cart v','θ1','ω1','θ2','ω2','θ3','ω3','θ1−θ2','θ2−θ3','θ1−θ3'];
+// Fixed addresses across sensor chorus sizes; inactive threshold pairs cannot be selected for new wires.
+const PER_VARIABLE=12, NPHYS=11*PER_VARIABLE, NINPUT=NPHYS+3, POS=NPHYS, NEG=NPHYS+1, ZERO=NPHYS+2;
+const ACTIVE_LEVELS={4:[2,5],8:[1,2,3,5],12:[0,1,2,3,4,5]};
+function activeSensorSources(){const levels=ACTIVE_LEVELS[cfg.inputChorus]||ACTIVE_LEVELS[8],a=[];for(let v=0;v<11;v++)for(const j of levels){a.push(v*12+2*j,v*12+2*j+1)}return a}
+function sourceChoices(N){return activeSensorSources().concat([POS,NEG,ZERO],Array.from({length:N},(_,i)=>NINPUT+i))}
+function thresholds(sc){const f=sc[0],w=sc[1];return [f*.25,f*.50,f,Math.sqrt(f*w),w*.70,w]}
+
+const STEPS=[
+ {name:'One passive link',n:1,g3:1},
+ {name:'Two passive links',n:2,g3:1},
+ {name:'Three links · distal gravity 3%',n:3,g3:.03},
+ {name:'Three links · distal gravity 8%',n:3,g3:.08},
+ {name:'Three links · distal gravity 16%',n:3,g3:.16},
+ {name:'Three links · distal gravity 30%',n:3,g3:.30},
+ {name:'Three links · distal gravity 50%',n:3,g3:.50},
+ {name:'Three links · distal gravity 75%',n:3,g3:.75},
+ {name:'Three links · full gravity',n:3,g3:1}
+];
+const RAMP=[16,24,36,50,100,150,200];
+let cfg={},W=null;
+function clamp(a,l,h){return Math.max(l,Math.min(h,a))}
+function tern(x){return x>0?1:x<0?-1:0}
+function rngObj(seed){let s=seed>>>0;return{next(){let t=s+=0x6D2B79F5;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296},int(n){return Math.floor(this.next()*n)},get state(){return s>>>0},set state(v){s=v>>>0}}}
+function stage(){return STEPS[W?.stage??cfg.stage]}
+function stageLabel(){const s=stage();return `${s.n} link${s.n===1?'':'s'} · ${s.n===3?(s.g3*100).toFixed(0)+'% distal gravity':'normal gravity'}`}
+function sourceName(s){if(s===POS)return 'TONIC +1';if(s===NEG)return 'TONIC −1';if(s===ZERO)return 'TONIC 0';if(s<NPHYS){const v=Math.floor(s/12),lev=Math.floor(s%12/2)+1,pol=s%2===0?'+':'−';return SENSOR_LABELS[v]+' L'+lev+pol;}return 'N'+(s-NINPUT)}
+function copyNet(b){return{N:b.N,src:b.src.map(x=>x.slice())}}
+function goodNet(b){return b&&Number.isInteger(b.N)&&b.N>=9&&b.N<=200&&b.src?.length===b.N&&b.src.every(a=>a?.length===3&&new Set(a).size===3&&a.every(k=>Number.isInteger(k)&&k>=0&&k<NINPUT+b.N))}
+function makeNet(N,r){let src=[],sources=sourceChoices(N),phys=activeSensorSources();for(let i=0;i<N;i++){let row=[];if(i<cfg.motorChorus && r.next()<.65){row=[POS,NEG,phys[r.int(phys.length)]]}else while(row.length<3){const z=sources[r.int(sources.length)];if(!row.includes(z))row.push(z)}src.push(row)}return{N,src}}
+function encode(s){let x=s.q,v=s.v;const a=[x[0],v[0],x[1],v[1],x[2],v[2],x[3],v[3],x[1]-x[2],x[2]-x[3],x[1]-x[3]],out=[],levels=ACTIVE_LEVELS[cfg.inputChorus]||ACTIVE_LEVELS[8];for(let i=0;i<11;i++){const z=a[i],ts=thresholds(SCALES[i]);for(let j=0;j<6;j++){const ternValue=levels.includes(j)?(z>ts[j]?1:z<-ts[j]?-1:0):0;out.push(ternValue,-ternValue)}}out.push(1,-1,0);return out}
+function netStep(b,s,prev){const inp=encode(s),h=new Int8Array(b.N);let sumOut=0;for(let i=0;i<b.N;i++){const a=b.src[i],x=(a[0]<NINPUT?inp[a[0]]:prev[a[0]-NINPUT])+(a[1]<NINPUT?inp[a[1]]:prev[a[1]-NINPUT])+(a[2]<NINPUT?inp[a[2]]:prev[a[2]-NINPUT]);const z=tern(x);h[i]=z;if(i<cfg.motorChorus)sumOut+=z}return{h,force:cfg.force*sumOut/cfg.motorChorus,signal:sumOut}}
+// Coupled point-mass cart-pendulum, absolute link angles, integrated by RK4.
+// Only gravitational generalized forces from the distal end mass are scaled by g3.
+// Inertial mass and coupling are kept at their full values; this is a deliberately artificial curriculum.
+function accel(s,F,n,g3){let M=Array.from({length:n+1},()=>new Float64Array(n+1)),b=new Float64Array(n+1);M[0][0]=MC+n*PM;b[0]=F-CDF*s.v[0];for(let i=0;i<n;i++){let qi=s.q[i+1],vi=s.v[i+1],ki=(n-i)*PM*L;M[i+1][0]=M[0][i+1]=ki*Math.cos(qi);b[0]+=ki*Math.sin(qi)*vi*vi;
+ const kg=(n===3 ? (n-i-1+g3): (n-i))*PM*L;
+ b[i+1]=kg*G*Math.sin(qi)-ADF*vi;
+ for(let j=0;j<n;j++){let kij=(n-Math.max(i,j))*PM*L*L;M[i+1][j+1]=kij*Math.cos(qi-s.q[j+1]);if(i!==j)b[i+1]-=kij*Math.sin(qi-s.q[j+1])*s.v[j+1]**2}}
+ for(let j=0;j<n+1;j++){let pivot=j;for(let k=j+1;k<n+1;k++)if(Math.abs(M[k][j])>Math.abs(M[pivot][j]))pivot=k;if(pivot!==j){[M[pivot],M[j]]=[M[j],M[pivot]];[b[pivot],b[j]]=[b[j],b[pivot]]}const div=M[j][j];if(Math.abs(div)<1e-10)return Array(4).fill(1e9);for(let k=j+1;k<n+1;k++){let v=M[k][j]/div;for(let z=j+1;z<n+1;z++)M[k][z]-=v*M[j][z];b[k]-=v*b[j]}}
+ const out=Array(n+1).fill(0);for(let j=n;j>=0;j--){let v=b[j];for(let k=j+1;k<n+1;k++)v-=M[j][k]*out[k];out[j]=v/M[j][j]}while(out.length<4)out.push(0);return out}
+function derivative(s,F,n,g3){return{q:s.v,v:accel(s,F,n,g3)}}
+function addS(s,k,m){return{q:s.q.map((x,i)=>x+k.q[i]*m),v:s.v.map((x,i)=>x+k.v[i]*m),t:s.t}}
+function integrate(s,F,n,g3,dt=DT){if(W)W.physicsSteps=(W.physicsSteps||0)+1;const a=derivative(s,F,n,g3),b=derivative(addS(s,a,dt/2),F,n,g3),c=derivative(addS(s,b,dt/2),F,n,g3),d=derivative(addS(s,c,dt),F,n,g3);for(let i=0;i<4;i++){s.q[i]+=dt/6*(a.q[i]+2*b.q[i]+2*c.q[i]+d.q[i]);s.v[i]+=dt/6*(a.v[i]+2*b.v[i]+2*c.v[i]+d.v[i])}s.t+=dt}
+function failed(s,n){if(!Number.isFinite(s.q[0])||Math.abs(s.q[0])>cfg.track)return true;for(let j=1;j<=n;j++)if(!Number.isFinite(s.q[j])||!Number.isFinite(s.v[j])||Math.abs(s.q[j])>.55||Math.abs(s.v[j])>20)return true;return false}
+function makeCase(seed,st,diff=1){const r=rngObj(seed),s={q:[0,0,0,0],v:[0,0,0,0],t:0,seed};let ang=[0,.055,.025,.018][st.n]*diff,vel=[0,.12,.055,.045][st.n]*diff;s.q[0]=(r.next()*2-1)*.11*diff;s.v[0]=(r.next()*2-1)*.075*diff;for(let i=1;i<=st.n;i++){s.q[i]=(r.next()*2-1)*ang;s.v[i]=(r.next()*2-1)*vel}return s}
+function cloneState(s){return{q:s.q.slice(),v:s.v.slice(),t:s.t,seed:s.seed}}
+
+'use strict';
+const N=100, MOTOR=27, READ=35, NUMPARAM=416; // 300 dendrites + 27 motor readout + 8 sensory shortcuts =335; extra slots reserved only for legacy compatibility
+const KINS=300, OUTSTART=300, DIRECTSTART=327, WEIGHTCOUNT=335;
+const RAW_SCALE=[.15,.045,.045,.045,.15,.10,.10,.10];
+const BUNDLE_JSON=[[[132,1.0],[133,1.0],[102,1.0]],[[132,1.0],[133,1.0],[180,1.0]],[[194,1.0],[133,1.0],[124,1.0]],[[138,1.0],[147,1.0],[40,1.0]],[[11,1.1],[174,1.0],[231,1.0]],[[132,1.0],[137,1.0],[150,1.0]],[[132,1.0],[133,1.0],[10,1.0]],[[10,1.0],[133,1.0],[86,1.0]],[[132,1.0],[133,1.0],[65,1.0]],[[132,1.0],[133,0.5],[53,1.0]],[[132,1.0],[34,1.0],[190,1.0]],[[143,1.0],[133,1.0],[14,1.0]],[[132,1.0],[133,1.0],[67,1.5]],[[132,1.0],[133,1.0],[98,1.0]],[[100,1.0],[22,1.0],[98,1.0]],[[232,1.0],[200,1.0],[100,1.0]],[[132,1.0],[133,1.0],[230,1.0]],[[232,1.0],[133,1.0],[153,1.0]],[[132,1.0],[19,1.0],[26,1.0]],[[169,1.0],[55,1.0],[71,1.0]],[[132,1.0],[19,1.0],[17,1.0]],[[228,1.0],[86,1.0],[76,1.0]],[[52,1.0],[148,1.0],[131,1.0]],[[100,1.0],[10,1.0],[226,1.0]],[[102,1.0],[40,1.0],[6,1.0]],[[227,1.1],[232,1.0],[123,0.7]],[[206,1.0],[27,1.0],[201,1.0]],[[179,1.0],[26,1.1],[87,1.0]],[[51,1.0],[130,1.0],[125,1.0]],[[164,1.0],[107,1.0],[147,1.0]],[[233,1.0],[225,1.0],[103,1.0]],[[171,1.0],[166,1.0],[132,1.0]],[[180,1.0],[198,1.0],[172,1.1]],[[228,1.0],[29,1.0],[156,1.0]],[[42,1.0],[191,1.0],[230,1.0]],[[184,1.0],[222,1.0],[170,1.0]],[[46,1.0],[187,1.1],[71,1.0]],[[187,1.0],[227,1.0],[98,1.0]],[[165,1.0],[113,1.0],[152,1.0]],[[112,1.0],[106,0.7],[88,1.0]],[[167,1.0],[180,1.0],[30,0.9]],[[132,1.0],[133,1.0],[23,1.0]],[[47,1.0],[132,1.0],[30,1.0]],[[222,1.0],[46,1.0],[39,1.0]],[[2,1.0],[204,1.0],[194,1.0]],[[26,1.0],[165,1.1],[195,1.0]],[[183,1.0],[219,1.0],[35,1.0]],[[22,1.0],[182,1.0],[181,1.0]],[[119,1.0],[51,1.0],[47,1.0]],[[170,1.0],[144,1.0],[46,1.0]],[[218,1.0],[203,1.0],[188,1.0]],[[145,1.0],[206,1.0],[190,1.0]],[[114,1.0],[34,1.0],[70,1.0]],[[4,1.0],[215,1.0],[162,1.0]],[[35,1.0],[137,1.0],[87,1.0]],[[123,1.0],[191,1.0],[75,1.0]],[[65,1.0],[131,1.1],[200,1.0]],[[230,1.0],[152,1.0],[192,1.0]],[[193,1.0],[7,1.0],[66,1.0]],[[192,1.0],[59,0.9],[89,1.0]],[[74,1.0],[70,1.0],[198,1.0]],[[4,1.0],[134,1.0],[148,1.0]],[[197,1.0],[165,1.0],[227,1.0]],[[185,1.0],[82,1.0],[111,1.0]],[[199,1.0],[133,1.0],[159,1.0]],[[63,1.0],[147,1.0],[231,1.0]],[[131,0.9],[173,1.0],[175,1.0]],[[106,1.0],[219,1.0],[177,1.0]],[[229,1.0],[209,1.0],[160,1.0]],[[171,1.0],[46,1.0],[205,1.0]],[[212,1.0],[188,1.0],[54,1.0]],[[102,1.0],[23,1.0],[31,1.0]],[[113,1.0],[207,1.1],[18,1.0]],[[34,1.0],[214,1.0],[162,1.0]],[[146,1.0],[53,1.0],[215,1.0]],[[205,1.0],[64,1.0],[220,1.0]],[[18,1.1],[193,1.0],[173,1.0]],[[210,1.0],[64,1.0],[205,1.0]],[[39,1.0],[119,1.0],[145,1.0]],[[202,1.0],[165,1.0],[192,1.0]],[[206,1.0],[167,1.0],[207,1.0]],[[130,1.0],[137,1.0],[112,1.0]],[[233,1.0],[71,0.9],[185,1.0]],[[78,1.0],[63,1.0],[229,1.0]],[[22,1.0],[23,1.0],[178,1.0]],[[41,1.0],[185,1.0],[184,1.0]],[[199,1.0],[75,1.0],[168,1.0]],[[222,1.0],[149,1.0],[83,1.0]],[[151,1.0],[39,1.0],[43,1.0]],[[224,1.0],[150,1.0],[151,1.0]],[[217,1.1],[173,1.0],[222,1.0]],[[102,1.1],[82,1.1],[230,1.0]],[[91,0.9],[123,1.0],[193,1.0]],[[178,1.0],[98,1.0],[163,1.0]],[[149,0.5],[15,1.0],[126,1.0]],[[119,1.1],[71,1.0],[42,1.0]],[[46,1.0],[176,1.0],[183,1.0]],[[46,1.0],[31,1.0],[106,1.0]],[[191,1.0],[206,0.7],[211,1.0]],[[47,1.0],[207,1.0],[115,1.0]]];
+function baseBrain(seed=47017){const r=rngObj(seed),src=[],weight=new Array(WEIGHTCOUNT).fill(0);for(const [i,row] of BUNDLE_JSON.entries()){
+ src.push(row.map(p=>p[0]));for(let j=0;j<3;j++)weight[i*3+j]=0.65*row[j][1];
+ }for(let i=0;i<MOTOR;i++)weight[OUTSTART+i]=(r.next()-.5)*.02;
+ return {src,weight,sourceSeed:seed,teacherExamples:0,rewardRounds:0,physicsSteps:0,rollouts:0,teacherEma:0,history:[],lastDelta:0,lastSignal:'none',rngSeed:(seed^0x77abcc02)>>>0,bestReward:-Infinity,bestWeight:null};}
+function inputFeatures(s){const r=[...s.q,...s.v];return r.map((x,i)=>clamp(x/RAW_SCALE[i],-5,5));}
+function forward(b,s,prev,shortcut=true){const sensors=encode(s),h=new Float64Array(N),x=new Float64Array(KINS),sums=new Float64Array(N),direct=inputFeatures(s);let mu=0;
+ for(let i=0;i<N;i++){let z=0;for(let j=0;j<3;j++){const address=b.src[i][j],signal=address<NINPUT?sensors[address]:prev[address-NINPUT];x[i*3+j]=signal;z+=signal*b.weight[i*3+j];}sums[i]=z;h[i]=Math.tanh(z);}
+ for(let i=0;i<MOTOR;i++)mu+=b.weight[OUTSTART+i]*h[i]*.40;
+ if(shortcut)for(let j=0;j<8;j++)mu+=b.weight[DIRECTSTART+j]*direct[j];
+ return {h,x,sums,sensors,direct,mu,force:clamp(cfg.force*mu,-cfg.force,cfg.force)};
+}
+function newExample(seed,g){const r=rngObj(seed),s={q:[0,0,0,0],v:[0,0,0,0],t:0,seed};const ext=1+(seed%7===0?.35:0);
+ s.q[0]=(r.next()*2-1)*.23*ext;s.v[0]=(r.next()*2-1)*.19*ext;
+ for(let i=1;i<4;i++){s.q[i]=(r.next()*2-1)*.085*ext;s.v[i]=(r.next()*2-1)*.17*ext;}
+ return s;
+}
+
+function rewardEpisode(b,init,g,weight,shortcut=true){let s=cloneState(init),prev=new Float64Array(N),score=0,steps=0,full=false;
+ while(s.t<cfg.cap-1e-9&&!failed(s,3)){
+  const ref=b.weight;b.weight=weight;let z=forward(b,s,prev,shortcut);b.weight=ref;prev=z.h;
+  integrate(s,z.force,3,g);steps++;
+  let tilt=(s.q[1]**2+s.q[2]**2+s.q[3]**2)/3;
+  score+=DT*(1-.035*Math.min(20,tilt/.045**2)-.015*Math.min(10,(s.q[0]/1.6)**2)-.003*(z.force/45)**2);
+ }
+ full=s.t>=cfg.cap-1e-8;if(full)score+=.5;return{score,time:s.t,full,steps};
+}
+function freshCases(seed,n,g){return Array.from({length:n},(_,i)=>makeCase((seed+i*8191)>>>0,{n:3,g3:g}));}
+function evalBrain(b,g,n,seed=90901,shortcut=true,weight=b.weight){let t=0,full=0,rew=0;for(const s of freshCases(seed,n,g)){const x=rewardEpisode(b,s,g,weight,shortcut);t+=x.time;full+=x.full?1:0;rew+=x.score;}return {mean:t/n,full,n,reward:rew/n};}
+function gaussian(r){return Math.sqrt(-2*Math.log(Math.max(1e-11,r.next())))*Math.cos(2*Math.PI*r.next());}
+function oneRewardRound(b,g,seed,opts={}){
+ const r=rngObj(seed),dirs=opts.dirs||10,starts=opts.starts||3,sigma=opts.sigma||.15,eta=opts.eta||.10,shortcut=opts.shortcut!==false,plastic=opts.plastic===true,
+    cases=freshCases((seed^0x8e7e1)>>>0,starts,g),dims=[];
+ if(plastic)for(let i=0;i<MOTOR*3;i++)dims.push(i);
+ for(let i=0;i<MOTOR;i++)dims.push(OUTSTART+i);
+ if(shortcut)for(let i=0;i<8;i++)dims.push(DIRECTSTART+i);
+ let trials=[],physicsStart=W.physicsSteps;
+ for(let i=0;i<dirs;i++){
+  const eps=dims.map(()=>gaussian(r)),up=b.weight.slice(),dn=b.weight.slice();for(let j=0;j<dims.length;j++){const k=dims[j];up[k]+=sigma*eps[j];dn[k]-=sigma*eps[j];}
+  let a=0,c=0;for(const s of cases){a+=rewardEpisode(b,s,g,up,shortcut).score;c+=rewardEpisode(b,s,g,dn,shortcut).score;}
+  trials.push({eps,a:a/starts,c:c/starts,best:Math.max(a,c)/starts});
+ }
+ trials.sort((a,b)=>b.best-a.best);let chosen=trials.slice(0,Math.max(1,Math.floor(dirs/2))),av=chosen.flatMap(z=>[z.a,z.c]);let m=av.reduce((a,b)=>a+b,0)/av.length,
+ std=Math.sqrt(av.reduce((a,b)=>a+(b-m)**2,0)/av.length),grad=new Float64Array(dims.length);
+ for(const z of chosen)for(let j=0;j<dims.length;j++)grad[j]+=(z.a-z.c)*z.eps[j];const fac=eta/(chosen.length*Math.max(.05,std));
+ for(let j=0;j<dims.length;j++){const k=dims[j],step=clamp(fac*grad[j],-.13,.13);b.weight[k]=clamp(b.weight[k]+step,-8,8);}
+ const contrast=chosen.reduce((a,z)=>a+(z.a-z.c),0)/chosen.length;
+ b.lastDelta=contrast;b.lastSignal='reward';b.rewardRounds++;b.rollouts+=dirs*starts*2;b.physicsSteps+=W.physicsSteps-physicsStart;
+ return{delta:contrast,std,steps:W.physicsSteps-physicsStart,round:b.rewardRounds};
+}
+
+
+'use strict';
+const $=id=>document.getElementById(id);
+const GRAVITIES=[.03,.08,.13,.15,.20,.30,.50,.75,1.0];
+const STORAGE='protoneuron_v22_living_curriculum_1';
+const EPOCH=20;
+let lab=null,running=false,tickTimer=null,selectedId=null,showBrain=null,sim=null,simPrev=null,simOutput=null,replayRunning=false,inspectId=0,pinned=false,lastFrame=0,points=[];
+const nfmt=(x,d=2)=>Number.isFinite(x)?Number(x).toFixed(d):'—';
+const nice=n=>n>=1e6?(n/1e6).toFixed(2)+' M':n>=1e3?(n/1e3).toFixed(1)+' k':String(n);
+const deep=o=>JSON.parse(JSON.stringify(o));
+function initCfg(){cfg={N:100,force:45,track:2.4,cap:4,inputChorus:8,motorChorus:27};if(!W)W={physicsSteps:0};}
+function params(){return {rounds:+$('length').value,pool:+$('pool').value,start:+$('startGravity').value,gate:$('gate').value,scope:$('scope').value,schedule:$('schedule').value,dirs:+$('directions').value,starts:+$('learningStarts').value,seed:(+$('seed').value)>>>0,shortcut:$('shortcut').checked,plastic:$('plastic').checked,diverse:$('diverse').checked};}
+function applyParams(p){const sel={length:p.rounds,pool:p.pool,startGravity:p.start,gate:p.gate,scope:p.scope,schedule:p.schedule,directions:p.dirs,learningStarts:p.starts,seed:p.seed};for(const [id,v] of Object.entries(sel))if($(id)){
+  const el=$(id);if(el.tagName==='SELECT'&&!Array.from(el.options).some(o=>o.value===String(v))){const opt=document.createElement('option');opt.value=String(v);opt.textContent='Imported checkpoint · '+String(v);el.appendChild(opt);}el.value=String(v);
+ }$('shortcut').checked=p.shortcut;$('plastic').checked=p.plastic;$('diverse').checked=p.diverse;}
+function fuelAmount(){return Math.max(1,Math.min(50000,Number($('fuelSize').value)||1200));}
+function addFuel(){if(!lab)return;const fuel=fuelAmount();lab.settings.rounds=Math.max(lab.round,lab.settings.rounds)+fuel;lab.fuelLoads=(lab.fuelLoads||0)+1;lab.fuelSize=fuel;log('REFUEL +'+fuel.toLocaleString()+' learning rounds. Target '+lab.settings.rounds.toLocaleString()+'. Champions, synapses, RNG and physics count retained.');saveLocal();renderStats();}
+function updateFuelPreferences(){if(!lab)return;lab.fuelSize=fuelAmount();lab.autoFuel=$('autoFuel').checked;saveLocal();renderStats();}
+function nextSeed(){const r=rngObj(lab.rngState);r.next();lab.rngState=r.state;return lab.rngState;}
+function nextFloat(){const r=rngObj(lab.rngState),v=r.next();lab.rngState=r.state;return v;}
+function nextInt(n){return Math.floor(nextFloat()*n);}
+function activeStage(){return GRAVITIES[lab?.stage||0];}
+function tag(){return Math.round(activeStage()*100)+'%';}
+function log(s){if(!lab)return;lab.log.push('['+lab.round+'] '+s);if(lab.log.length>130)lab.log.splice(0,lab.log.length-130);$('events').textContent=lab.log.slice(-30).reverse().join('\n');}
+function cloneBrain(b){return {...b,src:b.src.map(row=>row.slice()),weight:b.weight.slice(),history:[],bestWeight:null};}
+function pickParent(){const pool=lab.archive;if(!pool.length)return lab.curBrain;let pick=nextFloat();const idx=pick<.53?0:pick<.74?Math.min(1,pool.length-1):nextInt(pool.length);return pool[idx].brain;}
+function behavioralSignature(b){const out=[],r=rngObj(10220929);
+ for(let k=0;k<16;k++){const q=newExample((r.next()*4294967295)>>>0,activeStage());let prev=new Float64Array(N);
+  for(let j=0;j<5;j++){let z=forward(b,q,prev,lab.settings.shortcut);prev=z.h;if(j===4){out.push(clamp(z.mu/3,-1,1),clamp(z.force/45,-1,1));}}}
+ return out;
+}
+function distance(a,b){if(!a||!b||a.length!==b.length)return 0;let s=0;for(let i=0;i<a.length;i++)s+=(a[i]-b[i])**2;return Math.sqrt(s/a.length);}
+function scored(b,stageIdx,seed,n=10){let t=0,full=0,rew=0,g=GRAVITIES[stageIdx];for(let i=0;i<n;i++){const init=makeCase((seed+8191*i)>>>0,{n:3,g3:g});const z=rewardEpisode(b,init,g,b.weight,lab.settings.shortcut);t+=z.time;full+=+z.full;rew+=z.score;}return{mean:t/n,full:full/n,reward:rew/n,score:t/n+.065*rew/n};}
+function phaseSeed(stageIdx){return (790019+stageIdx*41881+lab.settings.seed*23)>>>0;}
+function makeChamp(b,stageIdx,origin,epoch,stats=null){const sig=behavioralSignature(b);const metrics=stats||scored(b,stageIdx,phaseSeed(stageIdx),10);
+ return {id:++lab.idCounter,stage:stageIdx,origin,epoch,brain:cloneBrain(b),signature:sig,novelty:0,...metrics};}
+function recalcNovelty(){const a=lab.archive;for(let i=0;i<a.length;i++)a[i].novelty=a.length>1?Math.min(...a.filter((_,j)=>i!==j).map(z=>distance(a[i].signature,z.signature))):0;a.sort((x,y)=>y.score-x.score);}
+function admission(ch){const a=lab.archive;
+ if(!a.length){a.push(ch);recalcNovelty();return true;}
+ const near=a.map((z,i)=>({i,d:distance(z.signature,ch.signature)})).sort((x,y)=>x.d-y.d)[0];ch.novelty=near.d;
+ const close=near.d<.065;
+ if(close){if(ch.score>a[near.i].score+0.004){a.splice(near.i,1,ch);recalcNovelty();return true;}return false;}
+ // Keep the strongest controller while allowing behaviorally distinct, reasonably capable strategies.
+ const best=a[0].score;
+ if(lab.settings.diverse){if(ch.score<best-.60)return false;}else if(ch.score<best-.035)return false;
+ if(a.length<lab.settings.pool){a.push(ch);recalcNovelty();return true;}
+ // Never evict best for novelty alone; select the weakest diversity-adjusted secondary member.
+ const utility=z=>z.score+(lab.settings.diverse?.37*z.novelty:0);
+ recalcNovelty();let worst=1;
+ for(let i=2;i<a.length;i++)if(utility(a[i])<utility(a[worst]))worst=i;
+ const childUtility=utility(ch);
+ if(childUtility>utility(a[worst])+.008||ch.score>a[0].score+.004){a.splice(worst,1,ch);recalcNovelty();return true;}
+ return false;
+}
+function refreshScores(){for(const c of lab.archive){const z=scored(c.brain,lab.stage,phaseSeed(lab.stage),10);Object.assign(c,z);}recalcNovelty();}
+function checkGate(){if(!lab.archive.length)return false;
+ const top=lab.archive[0],stage=lab.stage,g=GRAVITIES[stage];
+ const a=scored(top.brain,stage,nextSeed(),16),b=scored(top.brain,stage,nextSeed(),16);
+ const mean=(a.mean+b.mean)/2,full=(a.full+b.full)/2;
+ lab.gate={mean,full,stage,round:lab.round};lab.curve.push({round:lab.round,stage:stage,g,mean,full});
+ const [needTime,needFull]=lab.settings.gate==='gentle'?[3.2,.25]:lab.settings.gate==='strict'?[3.7,.65]:[3.4,.35];
+ if(mean>=needTime&&full>=needFull){
+  if(stage===GRAVITIES.length-1){
+   // Full-gravity qualification is a milestone, NOT a reason to shut down the lottery.
+   const first=!lab.completedFull, improvement=mean>(lab.bestTerminalGateMean??-1)+.055;
+   lab.completedFull=true;lab.fullGatePasses=(lab.fullGatePasses||0)+1;
+   if(first||improvement){
+    lab.bestTerminalGateMean=Math.max(mean,lab.bestTerminalGateMean??-1);
+    // Snapshot the best and up to two distinct alternatives. Do not flood the historic archive on every gate pass.
+    const saved=lab.archive.slice(0,Math.min(3,lab.archive.length)).map(c=>deep(c));
+    lab.hall.push(...saved);if(lab.hall.length>96)lab.hall.splice(0,lab.hall.length-96);
+    log((first?'FIRST FULL GRAVITY QUALIFICATION!':'NEW 100% GATE MILESTONE!')+' '+nfmt(mean,3)+'s, '+Math.round(full*100)+'% full. Evolution continues.');
+   }else if(lab.fullGatePasses%10===0){log('100% gate qualified '+lab.fullGatePasses+' times. Still training; pool '+lab.archive.length+'.');}
+   return true;
+  }
+  log('GATE PASSED '+tag()+': '+nfmt(mean,3)+'s, '+Math.round(full*100)+'% full.');
+  // Preserve winners at each intermediate stage and promote multiple diverse controllers.
+  const old=lab.archive.map(c=>deep(c));lab.hall.push(...old);if(lab.hall.length>96)lab.hall.splice(0,lab.hall.length-96);
+  lab.stage++;
+  // Carry multiple distinct strategies into the harder setting; re-evaluate honestly there.
+  lab.archive=[];
+  for(let i=0;i<Math.min(old.length,lab.settings.pool);i++){
+   const candidate=makeChamp(old[i].brain,lab.stage,'transfer from '+Math.round(g*100)+'%',lab.epoch);
+   admission(candidate);
+  }
+  lab.curBrain=cloneBrain(lab.archive[0].brain);lab.roundInEpoch=0;
+  lab.stalls=0;lab.lastBest=lab.archive[0]?.score||-1e9;
+  log('PROMOTION → '+tag()+' gravity; transferred '+lab.archive.length+' diverse champions.');
+  selectedId=lab.archive[0].id;return true;
+ }
+ log('Gate held '+tag()+': '+nfmt(mean,3)+'s, '+Math.round(full*100)+'% full. Keep learning.');return false;
+}
+function wiringMutation(b){const child=cloneBrain(b),r=rngObj(nextSeed()),i=lab.settings.scope==='all'?r.int(N):r.int(MOTOR),slot=r.int(3),row=child.src[i],choices=sourceChoices(N);
+ let fresh=row[slot];for(let tries=0;tries<65;tries++){let x=choices[r.int(choices.length)];if(x!==fresh&&!row.includes(x)){fresh=x;break;}}if(fresh===row[slot])return null;
+ child.src[i][slot]=fresh;
+ // New wire first arrives gently; continuous reward learner gets the chance to retune it.
+ child.weight[i*3+slot]=Math.max(-.6,Math.min(.6,(r.next()<.5?-.30:.30)));
+ return {brain:child,at:i,slot,source:fresh};
+}
+function structuralTrial(){const parent=pickParent(),mut=wiringMutation(parent);if(!mut)return;
+ lab.evoTries++;const b=mut.brain,g=activeStage();
+ // Small budget to allow newly rewired candidate to learn before selection.
+ for(let j=0;j<5;j++)oneRewardRound(b,g,nextSeed(),{dirs:4,starts:2,sigma:.13,eta:.105,shortcut:lab.settings.shortcut,plastic:lab.settings.plastic});
+ const z=makeChamp(b,lab.stage,'rewire N'+mut.at+' input '+(mut.slot+1),lab.epoch);
+ const accepted=admission(z);
+ if(accepted){lab.evoWins++;lab.lastNovelty=z.novelty;if(z.score>=lab.archive[0].score-.01)lab.curBrain=cloneBrain(z.brain);
+  log('Rewire admitted · N'+mut.at+' input '+(mut.slot+1)+' → '+sourceName(mut.source)+' · novelty '+nfmt(z.novelty,3));}
+}
+function evaluateEpoch(){lab.epoch++;lab.blocks++;
+ const candidate=makeChamp(lab.curBrain,lab.stage,'reward learning',lab.epoch);const before=lab.archive.length?lab.archive[0].score:-Infinity;
+ const accepted=admission(candidate);
+ if(accepted){lab.lastNovelty=candidate.novelty;}
+ refreshScores();const after=lab.archive[0]?.score||-1e9;lab.stalls=after>before+.012?0:lab.stalls+1;
+ if(accepted&&after>before+.01)log('Reward learning improved top champion at '+tag()+' · score '+nfmt(after,3));
+ // Structural mutation frequency adapts to the number of blocks without improvement.
+ let count=0;
+ if(lab.settings.schedule==='fixed')count=lab.blocks%2===0?2:0;
+ else if(lab.settings.schedule==='adaptive')count=lab.stalls>=4?4:lab.stalls>=2?2:lab.blocks%2===0?1:0;
+ for(let i=0;i<count;i++)structuralTrial();
+ refreshScores();checkGate();
+ if(lab.archive[0]){selectedId=lab.archive[0].id;showBrain=cloneBrain(lab.archive[0].brain);}
+ saveLocal();renderAll();
+}
+function beginFresh(imported=null){if(running)halt();initCfg();const p=params();W.physicsSteps=0;
+ lab={format:'protoneuron-v22-checkpoint',version:22,settings:p,stage:p.start,round:0,roundInEpoch:0,epoch:0,blocks:0,stalls:0,archive:[],hall:[],idCounter:0,log:[],curve:[],curBrain:imported?cloneBrain(imported):baseBrain(p.seed),rngState:(p.seed^0x6f3972cc)>>>0,evoTries:0,evoWins:0,lastNovelty:0,completedFull:false,fullGatePasses:0,fuelLoads:0,fuelSize:fuelAmount(),autoFuel:$('autoFuel').checked,gate:null,benchSeq:0,mode:'ready',latestTest:null,imported:!!imported};
+ const ch=makeChamp(lab.curBrain,lab.stage,imported?'imported v21 brain':'inherited v18 wiring',0);
+ admission(ch);selectedId=ch.id;showBrain=cloneBrain(ch.brain);
+ lab.lastBest=ch.score;log('New '+tag()+' curriculum with '+lab.archive.length+' initial controller. No teacher force used.');
+ renderAll();saveLocal();
+}
+function startOne(){if(!lab){beginFresh();}if(running)return;
+ // Optional controls edited after page load must take effect on the initial Start.
+ if(lab.round===0&&lab.mode==='ready'&&JSON.stringify(params())!==JSON.stringify(lab.settings)){
+  const prior=lab.imported?cloneBrain(lab.curBrain):null;beginFresh(prior);
+ }
+ if(lab.round>=lab.settings.rounds)addFuel();
+ // 100%-gravity gate success is informational, not a stopping condition.
+ if(lab.roundInEpoch===0){lab.curBrain=cloneBrain(pickParent());}
+ running=true;lab.mode='running';endReplay();renderAll();queueNext();
+}
+function queueNext(){if(tickTimer!==null)clearTimeout(tickTimer);tickTimer=setTimeout(runStep,0);}
+function runStep(){tickTimer=null;if(!running||!lab)return;try{
+  if(lab.round>=lab.settings.rounds){if(lab.autoFuel)addFuel();else{finish();return;}}
+  const p=lab.settings;
+  oneRewardRound(lab.curBrain,activeStage(),nextSeed(),{dirs:p.dirs,starts:p.starts,sigma:.145,eta:.11,shortcut:p.shortcut,plastic:p.plastic});
+  lab.round++;lab.roundInEpoch++;
+  if(lab.roundInEpoch>=EPOCH){evaluateEpoch();lab.roundInEpoch=0;if(lab.round<lab.settings.rounds||lab.autoFuel)lab.curBrain=cloneBrain(pickParent());}
+  if(lab.round%5===0)renderStats();
+  if(lab.round>=lab.settings.rounds){if(lab.autoFuel)addFuel();else{finish();return;}}
+  queueNext();
+ }catch(e){running=false;lab.mode='error';log('ERROR: '+e.message);renderAll();console.error(e);}
+}
+function halt(){running=false;if(tickTimer!==null)clearTimeout(tickTimer);tickTimer=null;if(lab){lab.mode='paused';saveLocal();renderAll();}}
+function finish(){running=false;if(tickTimer!==null)clearTimeout(tickTimer);tickTimer=null;lab.mode='complete';if(lab.roundInEpoch>0){const z=makeChamp(lab.curBrain,lab.stage,'final partially trained block',lab.epoch+1);admission(z);lab.roundInEpoch=0;refreshScores();}log('Fuel exhausted at '+tag()+'. All champions preserved. Press Add Fuel & Run for more lottery tickets.');saveLocal();renderAll();}
+function completeSelection(){return lab?.archive.find(z=>z.id===selectedId)||lab?.hall.find(z=>z.id===selectedId)||lab?.archive[0]||null;}
+function findAll(){return [...(lab?.archive||[]),...(lab?.hall||[])];}
+function renderStats(){if(!lab)return;
+ $('stateTag').textContent=running?'LEARNING · '+tag():lab.mode.toUpperCase();
+ $('currentStage').textContent=tag();$('roundsDone').textContent=lab.round+' / '+lab.settings.rounds;
+ $('archiveCount').textContent=(lab.archive.length+lab.hall.length).toString();$('physicsUsed').textContent=nice(W.physicsSteps);
+ $('weightBlocks').textContent=lab.blocks;$('evoTries').textContent=lab.evoTries;$('evoWins').textContent=lab.evoWins;
+ $('novelty').textContent=nfmt(lab.lastNovelty,3);$('lastDelta').textContent='Last selected reward difference δ: '+nfmt(lab.curBrain.lastDelta,5)+' · rounds '+lab.curBrain.rewardRounds;
+ $('trainingBest').textContent='Top current '+tag()+' champion: '+nfmt(lab.archive[0]?.mean||0,3)+'s · '+Math.round((lab.archive[0]?.full||0)*100)+'% complete';
+ $('bar').style.width=(Math.min(100,lab.round/Math.max(1,lab.settings.rounds)*100)).toFixed(2)+'%';$('pct').textContent=(lab.round/Math.max(1,lab.settings.rounds)*100).toFixed(1)+'%';
+ $('fuelStatus').textContent=(lab.autoFuel?'AUTO-REFUEL ON · ':'')+'Fuel remaining: '+Math.max(0,lab.settings.rounds-lab.round).toLocaleString()+' rounds · refills '+(lab.fuelLoads||0)+(lab.completedFull?' · FULL GRAVITY QUALIFIED (still learning)':'');
+ $('go').textContent=lab.round===0?'▶ START MODERATE CURRICULUM':lab.round>=lab.settings.rounds?'▶ CONTINUE SAME RUN · +'+fuelAmount().toLocaleString():'▶ RESUME SAME RUN';
+ $('fuelNow').textContent='⛽ ADD +'+fuelAmount().toLocaleString()+' & RUN';
+ $('progressText').textContent='Block '+(lab.blocks+1)+' · '+lab.roundInEpoch+'/'+EPOCH+' learning rounds · gravity '+tag()+' · '+(lab.archive.length)+' active champions';
+ const msgs=lab.mode==='complete'?'Fuel exhausted. Nothing was reset. Click Add Fuel & Run to keep buying evolutionary lottery tickets.':lab.mode==='paused'?'Paused safely. Click Resume or Add Fuel & Run; export JSON for reliable backup.':running?'Still learning at '+tag()+(lab.completedFull?' (full-gravity gate already qualified).':' gravity.')+' New neural and wiring combinations remain eligible to beat the champions.':'Ready for the one-button curriculum.';
+ $('status').textContent=msgs;
+ const old=$('levels');old.innerHTML=GRAVITIES.map((g,i)=>'<span class="level '+(i<lab.stage?'passed':i===lab.stage?'active':'')+'">'+Math.round(g*100)+'%</span>').join('');
+ $('go').disabled=running;$('pause').disabled=!running;$('resume').disabled=running||(!lab.round && lab.mode==='ready');$('bench').disabled=running;$('replay').disabled=running;$('copyBX').disabled=running;
+ $('restart').disabled=running;
+ // Allow users to extend the total round count after a completed run without destroying weights.
+ $('scheduleInfo').textContent='Search: '+lab.settings.schedule+' rewiring · '+lab.settings.scope+' topology · '+lab.settings.diverse+' behavior diversity. Retraining per candidate: 5 reward rounds. No teacher and no gradient through the cart.';
+}
+function renderTable(){const a=lab?.archive||[],hall=(lab?.hall||[]).slice(-24).reverse();const items=[...a,...hall];
+ $('champRows').innerHTML=items.map(c=>'<tr class="'+(c.id===selectedId?'selectedRow':'')+'"><td>CH-'+c.id+(a.includes(c)?' <span class="pill">active</span>':'')+'</td><td>'+Math.round(GRAVITIES[c.stage]*100)+'%</td><td>'+nfmt(c.mean,3)+' s</td><td>'+Math.round(c.full*100)+'%</td><td>'+nfmt(c.novelty,3)+'</td><td>'+String(c.origin).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</td><td><button class="smallbutton" data-id="'+c.id+'">Inspect</button></td></tr>').join('')||'<tr><td colspan="7">No champions yet</td></tr>';
+ for(const b of $('champRows').querySelectorAll('button[data-id]'))b.onclick=()=>{selectedId=+b.dataset.id;showBrain=cloneBrain(completeSelection().brain);sim=null;simPrev=null;simOutput=null;renderTable();paintAll();};
+}
+function plot(){let c=$('curve'),x=c.getContext('2d'),w=c.width,h=c.height;x.clearRect(0,0,w,h);x.fillStyle='#071925';x.fillRect(0,0,w,h);x.strokeStyle='#345766';x.lineWidth=1;for(let k=0;k<5;k++){const y=22+k*43;x.beginPath();x.moveTo(44,y);x.lineTo(w-16,y);x.stroke();x.fillStyle='#a6c1c8';x.font='11px sans-serif';x.fillText((4-k).toFixed(0)+' s',10,y+4);}
+ const arr=lab?.curve||[];if(!arr.length){x.fillStyle='#a9c7ce';x.fillText('Gravity promotions and gate scores will appear here.',55,105);return;}
+ const last=Math.max(lab.settings.rounds,arr.at(-1).round,1),rx=round=>44+(w-68)*round/last,ry=mean=>h-31-clamp(mean,0,4)/4*(h-55);
+ x.lineWidth=2.4;x.beginPath();for(let i=0;i<arr.length;i++){const p=arr[i],X=rx(p.round),Y=ry(p.mean);if(i===0)x.moveTo(X,Y);else x.lineTo(X,Y);}x.strokeStyle='#78dec3';x.stroke();for(const p of arr){x.beginPath();x.arc(rx(p.round),ry(p.mean),3.8,0,6.3);x.fillStyle=p.stage===lab.stage?'#f4d282':'#54c6b9';x.fill();}
+ x.fillStyle='#b7d0d7';x.font='11px sans-serif';x.fillText('Training rounds',w-113,h-9);x.fillText('Mean survival on repeated fresh gate tests',51,17);
+}
+function renderAll(){renderStats();renderTable();plot();$('events').textContent=(lab?.log||[]).slice(-32).reverse().join('\n');paintAll();}
+function saveLocal(){try{localStorage.setItem(STORAGE,JSON.stringify(exportObject()));$('autosave').textContent='Browser autosave refreshed · also export JSON before closing.';}catch(e){$('autosave').textContent='Local autosave unavailable: '+e.message+'. Export JSON instead.';}}
+function exportObject(){if(!lab)return{format:'protoneuron-v22-checkpoint',version:22,empty:true};return {format:'protoneuron-v22-checkpoint',version:22,lab:deep(lab),physicsSteps:W.physicsSteps,selectedId};}
+function validBrain(b){if(!b||b.src?.length!==100||b.weight?.length!==335||b.src.some(row=>row.length!==3||new Set(row).size!==3||row.some(v=>!Number.isInteger(v)||v<0||v>=NINPUT+100))||b.weight.some(w=>!Number.isFinite(w)||Math.abs(w)>40))throw Error('Malformed or unsupported 100-neuron weighted connectome');return b;}
+function importCheckpoint(j){if(!j||typeof j!=='object')throw Error('Not a JSON checkpoint');if(j.format==='Protoneuron-v21-delta'&&j.version===21){const b=validBrain(j.brain);beginFresh(b);log('Imported a trained v21 brain. Starting gravity follows your v22 controls.');saveLocal();return;}
+ if(j.format!=='protoneuron-v22-checkpoint'||j.version!==22||!j.lab||!j.lab.settings)throw Error('Only v21 or v22 JSON checkpoints are accepted');
+ if(j.lab.archive?.length>20||j.lab.hall?.length>110)throw Error('Checkpoint pool is unexpectedly large');
+ validBrain(j.lab.curBrain);for(const c of [...j.lab.archive,...j.lab.hall])validBrain(c.brain);
+ if(running)halt();initCfg();lab=j.lab;lab.mode='paused';W.physicsSteps=Number(j.physicsSteps)||0;
+ selectedId=j.selectedId;const ch=completeSelection();showBrain=ch?cloneBrain(ch.brain):cloneBrain(lab.curBrain);sim=null;simOutput=null;
+ applyParams(lab.settings);
+ if(!Number.isInteger(lab.fuelSize)||lab.fuelSize<1)lab.fuelSize=1200;
+ if(!('autoFuel' in lab))lab.autoFuel=false;
+ if(!('fuelLoads' in lab))lab.fuelLoads=0;
+ $('fuelSize').value=String(lab.fuelSize);$('autoFuel').checked=!!lab.autoFuel;
+ log('Restored complete v22 checkpoint, including champion history. More fuel can now be added even after 100% gravity qualified.');renderAll();saveLocal();
+}
+function download(name,content,mime='application/json'){const blob=new Blob([content],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),800);}
+function copy(text){if(navigator.clipboard?.writeText)return navigator.clipboard.writeText(text).catch(()=>fallback(text));return fallback(text);}
+function fallback(text){const x=document.createElement('textarea');x.value=text;document.body.appendChild(x);x.select();document.execCommand('copy');x.remove();}
+function bx(){const c=completeSelection();if(!c)return'No selected champion.';let out=['PROTONEURON v22 · LIVING CURRICULUM WEIGHTED BX','Champion '+c.id+'; gravity '+Math.round(GRAVITIES[c.stage]*100)+'%; reward-learned tanh neurons','100 neurons · 3 inputs each; 27 motor readout; 8 optional shortcuts',''];
+ for(let i=0;i<N;i++)out.push('N'+i+(i<MOTOR?' [MOTOR]':'')+' <- '+c.brain.src[i].map((s,j)=>sourceName(s)+'@'+nfmt(c.brain.weight[i*3+j],5)).join(' | '));
+ out.push('MOTOR READOUT: '+c.brain.weight.slice(300,327).map((w,i)=>'N'+i+':'+nfmt(w,5)).join(' '));out.push('DIRECT: '+c.brain.weight.slice(327,335).map((w,i)=>'S'+i+':'+nfmt(w,5)).join(' '));return out.join('\n');}
+function report(){if(!lab)return 'No experiment yet';let arr=['PROTONEURON v22.1 · LIVING CURRICULUM / REFUEL REPORT',new Date().toISOString(),'State '+lab.mode+'; reward rounds '+lab.round+'/'+lab.settings.rounds+'; physics steps '+W.physicsSteps,'Current gravity '+tag()+'; history hall '+lab.hall.length+'; active '+lab.archive.length+'; total fuel loads '+(lab.fuelLoads||0)+'; full gravity gate passed '+(lab.fullGatePasses||0)+' times','Settings '+JSON.stringify(lab.settings),'LEARNING: teacher-free reward-difference perturbation; 3-input tanh recurrent cells; 27 motor neurons + optional eight shortcuts','Rewiring '+lab.evoTries+' candidates; accepted '+lab.evoWins,'GATE HISTORY'];for(const p of lab.curve)arr.push('round='+p.round+' gravity='+Math.round(p.g*100)+'% mean='+nfmt(p.mean,4)+' full='+nfmt(p.full,3));arr.push('CHAMPIONS');for(const c of lab.archive)arr.push('CH-'+c.id+' gravity='+Math.round(GRAVITIES[c.stage]*100)+'% mean='+nfmt(c.mean,3)+' full='+nfmt(c.full,3)+' novelty='+nfmt(c.novelty,4)+' origin='+c.origin);arr.push('DISCLOSURE: gate cases influence selection; a separate benchmark remains necessary. Retained behavioral signatures are static-state probes, not a proof of distinct control strategy.');return arr.join('\n');}
+function csv(){let rows=['id,gravity,mean_survival,full_rate,novelty,origin,epoch'];for(const c of findAll())rows.push([c.id,GRAVITIES[c.stage],c.mean,c.full,c.novelty,'"'+c.origin.replaceAll('"','""')+'"',c.epoch].join(','));return rows.join('\n');}
+function independentBenchmark(){if(!lab||running)return;const c=completeSelection();if(!c)return;
+ $('benchResult').textContent='Evaluating 64 independent starts…';setTimeout(()=>{try{const g=GRAVITIES[c.stage],seed=(990000121+(lab.benchSeq++)*10000019+lab.settings.seed)>>>0,
+ learned=evalBrain(c.brain,g,64,seed,lab.settings.shortcut),baseline=evalBrain(baseBrain(lab.settings.seed),g,64,seed,lab.settings.shortcut);
+ lab.latestTest={id:c.id,g,learned,baseline,seed};$('benchResult').textContent='CH-'+c.id+' at '+Math.round(g*100)+'% gravity · 64 independent starts: learned '+nfmt(learned.mean,3)+'s ('+learned.full+'/64 full); baseline '+nfmt(baseline.mean,3)+'s ('+baseline.full+'/64 full). Results are not fed into selection.';saveLocal();}catch(e){$('benchResult').textContent='Benchmark failed: '+e.message;console.error(e);}},0);
+}
+// Live neural inspection: each signal and weight below is used in the actual forward pass.
+function graphPositions(){const a=[];for(let i=0;i<100;i++)if(i<27)a.push({x:714,y:19+(i+.5)*334/27});else{let j=i-27;a.push({x:57+(j%11)*55,y:35+Math.floor(j/11)*45});}return a;}
+function drawGraph(){const c=$('brainCanvas'),x=c.getContext('2d'),w=c.width,h=c.height;
+ x.clearRect(0,0,w,h);x.fillStyle='#071925';x.fillRect(0,0,w,h);x.fillStyle='#a1c4d0';x.font='12px sans-serif';x.fillText('73 RECURRENT CELLS',35,18);x.fillText('MOTOR 27',666,14);
+ const b=showBrain;if(!b)return;const row=b.src[inspectId],pt=points[inspectId];
+ for(let j=0;j<3;j++){let s=row[j],from=s>=NINPUT?points[s-NINPUT]:{x:13,y:45+(s%12)*24};x.beginPath();x.moveTo(from.x,from.y);x.lineTo(pt.x,pt.y);const wt=b.weight[inspectId*3+j];x.strokeStyle=wt>=0?'#77e4b9aa':'#d9a0f9aa';x.lineWidth=2+Math.min(4,Math.abs(wt)*.45);x.stroke();if(s<NINPUT){x.fillStyle='#bed7de';x.fillText('S'+s,4,from.y-8);}}
+ for(let i=0;i<100;i++){const p=points[i],v=simOutput?.h[i]||0,mag=Math.min(1,Math.abs(v));x.beginPath();x.arc(p.x,p.y,i===inspectId?8:5.2,0,2*Math.PI);x.fillStyle=v>=0?`rgb(${Math.round(48+55*(1-mag))},${Math.round(108+115*mag)},${Math.round(144+45*mag)})`:`rgb(${Math.round(100+95*mag)},${Math.round(100+38*(1-mag))},${Math.round(160+78*mag)})`;x.fill();x.lineWidth=i===inspectId?2.8:1;x.strokeStyle=i===inspectId?'#fff0a7':i<27?'#81e9c9':'#496b80';x.stroke();}
+ x.font='12px monospace';x.fillStyle='#ffe5ac';x.fillText('N'+inspectId,Math.min(pt.x+12,w-45),Math.max(14,pt.y-12));inspect();
+}
+function inspect(){const b=showBrain;if(!b){$('inspect').textContent='No selected champion';return;}let i=inspectId,z=simOutput,w=b.weight,lines=['N'+i+' · '+(i<27?'MOTOR':'RECURRENT')+' NEURON','a = tanh(Σ input × weight)','Current activation: '+nfmt(z?.h[i]||0,6),'Weighted input sum: '+nfmt(z?.sums[i]||0,6),''];
+ for(let j=0;j<3;j++){const s=b.src[i][j],v=z?.x[i*3+j]||0,wt=w[i*3+j];lines.push('Fiber '+(j+1)+': '+sourceName(s),'    signal '+nfmt(v,4)+' × gain '+nfmt(wt,5)+' = '+nfmt(v*wt,5));}
+ if(i<27)lines.push('','Motor readout weight: '+nfmt(w[300+i],5),'Motor contribution: '+nfmt(w[300+i]*(z?.h[i]||0)*.4,5)+' latent units');
+ else lines.push('','These dendrites are fixed between wiring mutations.');
+ lines.push('','Motor latent '+nfmt(z?.mu||0,5),'Applied force '+nfmt(z?.force||0,3)+' N');$('inspect').textContent=lines.join('\n');
+}
+function drawCart(){const c=$('cart'),x=c.getContext('2d'),w=c.width,h=c.height;x.clearRect(0,0,w,h);x.fillStyle='#071925';x.fillRect(0,0,w,h);const ground=237;const q=sim?.q||[0,0,0,0],center=w/2+q[0]*75;
+ x.strokeStyle='#4c6c7d';x.lineWidth=2;x.beginPath();x.moveTo(48,ground+16);x.lineTo(w-48,ground+16);x.stroke();
+ x.fillStyle='#7ac4d3';x.fillRect(center-34,ground-10,68,26);x.fillStyle='#aad4e2';for(let j of [-22,22]){x.beginPath();x.arc(center+j,ground+20,8,0,6.3);x.fill();}
+ let px=center,py=ground-10;const colors=['#81e9c9','#eac08b','#c7a1ff'];for(let j=1;j<=3;j++){let nx=px+62*Math.sin(q[j]),ny=py-62*Math.cos(q[j]);x.strokeStyle=colors[j-1];x.lineWidth=7;x.lineCap='round';x.beginPath();x.moveTo(px,py);x.lineTo(nx,ny);x.stroke();x.beginPath();x.arc(nx,ny,7,0,6.3);x.fillStyle=colors[j-1];x.fill();px=nx;py=ny;}
+ x.fillStyle='#c5dce3';x.font='14px monospace';x.fillText('x = '+nfmt(q[0],3)+' m',20,26);x.fillText('angles = '+q.slice(1).map(v=>nfmt(v*180/Math.PI,1)+'°').join(' · '),20,45);
+ x.fillStyle=simOutput?.force>=0?'#67dabf':'#e4b09a';let F=simOutput?.force||0;x.fillText('force = '+nfmt(F,2)+' N',20,65);x.beginPath();x.moveTo(center,ground+49);x.lineTo(center+F*2,ground+49);x.strokeStyle=x.fillStyle;x.lineWidth=4;x.stroke();
+}
+function paintAll(){drawCart();drawGraph();}
+function endReplay(){replayRunning=false;sim=null;simPrev=null;simOutput=null;$('stopReplay').disabled=true;paintAll();}
+function replayFrame(t){if(!replayRunning)return;if(t-lastFrame>32){lastFrame=t;const chosen=completeSelection();if(!chosen){endReplay();return;}const gravity=GRAVITIES[chosen.stage];
+ if(!sim||failed(sim,3)||sim.t>=4){sim=makeCase((789110+lab.settings.seed)>>>0,{n:3,g3:gravity});simPrev=new Float64Array(N);}
+ for(let n=0;n<2;n++){const z=forward(chosen.brain,sim,simPrev,lab.settings.shortcut);simPrev=z.h;simOutput=z;integrate(sim,z.force,3,gravity);if(failed(sim,3))break;}
+ $('cartInfo').textContent='Live neural-only replay of CH-'+chosen.id+' at '+Math.round(gravity*100)+'% gravity · t='+nfmt(sim.t,2)+'s · no teacher force.';paintAll();}
+ requestAnimationFrame(replayFrame);
+}
+function beginReplay(){if(running)return;const chosen=completeSelection();if(!chosen)return;showBrain=cloneBrain(chosen.brain);sim=null;simPrev=null;simOutput=null;lastFrame=0;replayRunning=true;$('stopReplay').disabled=false;requestAnimationFrame(replayFrame);}
+function setupGraph(){points=graphPositions();const c=$('brainCanvas'),getNode=e=>{const r=c.getBoundingClientRect(),x=(e.clientX-r.left)*c.width/r.width,y=(e.clientY-r.top)*c.height/r.height;let best=-1,d=225;for(let i=0;i<points.length;i++){const dd=(points[i].x-x)**2+(points[i].y-y)**2;if(dd<d){d=dd;best=i;}}return best;};
+ c.addEventListener('mousemove',e=>{if(pinned)return;const n=getNode(e);if(n>=0){inspectId=n;$('neuron').value=n;drawGraph();}});
+ c.addEventListener('click',e=>{const n=getNode(e);if(n>=0){inspectId=n;pinned=!pinned;$('neuron').value=n;drawGraph();}});
+}
+function setup(){initCfg();points=graphPositions();for(let i=0;i<100;i++){const opt=document.createElement('option');opt.value=i;opt.textContent='N'+i+(i<27?' · motor':' · recurrent');$('neuron').appendChild(opt);}setupGraph();
+ $('neuron').addEventListener('change',e=>{inspectId=+e.target.value;pinned=true;drawGraph();});
+ $('go').onclick=startOne;$('pause').onclick=halt;
+ $('fuelNow').onclick=()=>{if(!lab){beginFresh();startOne();return;}if(lab.round===0&&lab.mode==='ready'){startOne();return;}addFuel();if(!running)startOne();};
+ $('fuelSize').addEventListener('change',updateFuelPreferences);$('autoFuel').addEventListener('change',updateFuelPreferences);
+ $('resume').onclick=startOne;
+ $('restart').onclick=()=>{if(!confirm('Discard this run and start from an inherited v18 connectome? Export first if needed.'))return;endReplay();beginFresh();};
+ $('bench').onclick=independentBenchmark;$('replay').onclick=beginReplay;$('stopReplay').onclick=endReplay;
+ $('copyBX').onclick=()=>copy(bx());$('copyReport').onclick=()=>copy(report());
+ $('export').onclick=()=>{saveLocal();download('Protoneuron_v22_Checkpoint.json',JSON.stringify(exportObject()));};
+ $('exportCSV').onclick=()=>download('Protoneuron_v22_Champions.csv',csv(),'text/csv');
+ $('import').addEventListener('change',async e=>{const f=e.target.files?.[0];if(!f)return;try{if(f.size>15e6)throw Error('Checkpoint >15 MB; unexpected file size');importCheckpoint(JSON.parse(await f.text()));}catch(err){alert('Import failed: '+err.message);}e.target.value='';});
+ try{const v=localStorage.getItem(STORAGE);if(v){importCheckpoint(JSON.parse(v));lab.mode='paused';log('Restored local autosave · training paused.');renderAll();return;}}catch(e){console.warn('Local recovery unavailable',e);}
+ beginFresh();
+}
+setup();
+
+</script></body></html>
