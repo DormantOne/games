@@ -1,0 +1,2056 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VentLab: ventilator and ICU physiology simulator</title>
+<style>
+:root{
+  --room:#d6dddb;--paper:#f4f7f6;--paper2:#e9efed;--ink:#1b2527;--muted:#576667;--line:#c2ccc9;--accent:#1f6d71;--accentInk:#fff;
+  --crit:#c22f37;--warn:#9a5f08;--tip:#2a5fa6;--good:#22744c;
+  --crit-bg:#fae7e8;--warn-bg:#faf0dc;--tip-bg:#e5eef9;--good-bg:#e2f2e9;
+  --num:"DIN Alternate","Bahnschrift","D-DIN","Roboto Condensed","Arial Narrow",system-ui,sans-serif;
+  --ui:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --ecg:#46e36b;--abp:#ff5b5b;--spo:#3fd8f6;--co2:#f2df4b;
+  --vbg:#122330;--vpanel:#1a3142;--vline:#294558;--vtext:#e3edf3;--vmuted:#8fa7b7;--paw:#ffb547;--flw:#5bd8a8;--vol:#9eaaff;--pes:#f27bbd;--pend:#ffb547;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --room:#111617;--paper:#1b2223;--paper2:#232c2d;--ink:#dfe6e5;--muted:#93a1a0;--line:#323f3f;--accent:#5db1ac;--accentInk:#0b1414;
+  --crit:#ff6b6b;--warn:#efb54a;--tip:#80b0ff;--good:#62cf95;
+  --crit-bg:#391c1e;--warn-bg:#362a14;--tip-bg:#172940;--good-bg:#163025;color-scheme:dark;}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--room);color:var(--ink);font:14px/1.45 var(--ui);-webkit-font-smoothing:antialiased}
+button{font:500 13px/1.2 var(--ui);color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:6px 10px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.on,button.primary{background:var(--accent);border-color:var(--accent);color:var(--accentInk)}
+button:disabled{opacity:.4;cursor:default}
+select{font:500 13px var(--ui);color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:6px 8px;max-width:270px}
+h2,h3{line-height:1.25}
+.muted{color:var(--muted)}
+/* header */
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:10px 16px}
+.brand{display:flex;align-items:center;gap:10px;margin-right:4px}
+.bname{font-weight:700;font-size:17px;letter-spacing:-.01em}
+.bsub{font-size:12px;color:var(--muted)}
+.scen{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.spacer{flex:1}
+.clock{font:600 19px var(--num);font-variant-numeric:tabular-nums;padding:0 4px;min-width:84px;text-align:right}
+.seg{display:inline-flex}
+.seg button{border-radius:0;margin-left:-1px}
+.seg button:first-child{border-radius:6px 0 0 6px;margin-left:0}
+.seg button:last-child{border-radius:0 6px 6px 0}
+.ptbar{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;padding:0 16px 10px;font-size:13px}
+.ptbar .pn{font-weight:650}
+.ptbar .chip{font-size:12px;padding:1px 8px;border-radius:999px;background:var(--paper);border:1px solid var(--line);color:var(--muted)}
+/* layout */
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.22fr);grid-template-areas:"mon vent" "coach vent" "panel panel";gap:14px;padding:0 16px 28px;align-items:start}
+.mon-dev{grid-area:mon}.vent-dev{grid-area:vent}.coach{grid-area:coach}.panel{grid-area:panel}
+@media (max-width:1120px){.grid{grid-template-columns:minmax(0,1fr);grid-template-areas:"mon" "vent" "coach" "panel"}}
+.device{background:#2a2e30;border-radius:14px;padding:7px;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 10px 24px rgba(0,0,0,.18)}
+.screen{border-radius:8px;overflow:hidden}
+/* alarm bars */
+.abar{min-height:26px;display:flex;flex-wrap:wrap;gap:2px 16px;align-items:center;padding:3px 10px;font:650 13px var(--ui)}
+.abar.hi{background:#c8102e;color:#fff}
+.abar.med{background:#f2c200;color:#141000}
+@media (prefers-reduced-motion:no-preference){.abar.hi{animation:pulse 1s ease-in-out infinite alternate}}
+@keyframes pulse{from{background:#c8102e}to{background:#8f0b21}}
+/* monitor */
+.mon{background:#000;color:#fff}
+.mon-body{display:grid;grid-template-columns:minmax(0,1fr) 172px}
+.wrow{position:relative;height:68px;border-bottom:1px solid #0d120e;background-image:linear-gradient(#0a1a0d 1px,transparent 1px);background-size:100% 17px}
+.wrow canvas,.vrow canvas,.loop canvas{position:absolute;inset:0;width:100%;height:100%}
+.wlab{position:absolute;left:6px;top:2px;font:650 12px var(--ui);z-index:1}
+.wsc{position:absolute;right:6px;top:3px;font:500 11px var(--num);z-index:1;opacity:.75}
+.ecg{color:var(--ecg)}.abp{color:var(--abp)}.spo{color:var(--spo)}.co2{color:var(--co2)}
+.mon-nums{display:flex;flex-direction:column;border-left:1px solid #1b1b1b}
+.num{flex:1;display:flex;flex-direction:column;padding:3px 10px;border-bottom:1px solid #151515;min-height:68px}
+.nl{font:650 12px var(--ui)}
+.nv{font:600 46px/1 var(--num);font-variant-numeric:tabular-nums;text-align:right;letter-spacing:-.02em;margin-top:auto}
+.nv.md{font-size:30px}
+.ns{font:500 12px var(--num);text-align:right;opacity:.85}
+.mon-foot{display:flex;flex-wrap:wrap;gap:4px 20px;padding:5px 10px 7px;font:500 12px var(--num);color:#c8c8c8;border-top:1px solid #151515}
+.mon-foot b{font-weight:600;color:#fff;font-size:15px;margin-left:4px}
+/* ventilator */
+.vent{background:var(--vbg);color:var(--vtext)}
+.v-top{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:6px 8px;border-bottom:1px solid var(--vline)}
+.modebtn{background:var(--vpanel);color:var(--vtext);border:1px solid var(--vline);font:650 14px var(--ui);padding:6px 12px}
+.modebtn.pend{color:var(--pend);border-color:var(--pend)}
+.trig{font:600 11px var(--ui);padding:3px 9px;border-radius:999px;background:#0d1a24;color:var(--vmuted)}
+.trig.pt{background:#3b2a0c;color:var(--paw)}
+.v-top .abar{flex:1;border-radius:5px;min-width:180px}
+.v-main{display:grid;grid-template-columns:minmax(0,1fr) 156px}
+.vrow{position:relative;height:86px;border-bottom:1px solid var(--vline)}
+.vlab{position:absolute;left:6px;top:3px;z-index:1;font:650 12px var(--ui)}
+.vlab i{font-style:normal;font-weight:500;opacity:.75;margin-left:5px;font-family:var(--num)}
+.vlab.pes{left:auto;right:8px;color:var(--pes)}
+.paw{color:var(--paw)}.flw{color:var(--flw)}.vol{color:var(--vol)}
+.v-meas{margin:0;padding:6px 10px;display:grid;grid-template-columns:auto auto;gap:1px 8px;align-content:start;border-left:1px solid var(--vline)}
+.v-meas dt{font:500 12px var(--ui);color:var(--vmuted);align-self:end;padding-bottom:2px}
+.v-meas dd{margin:0;text-align:right;font:600 20px/1.15 var(--num);font-variant-numeric:tabular-nums}
+.v-meas dd small{font-size:10px;color:var(--vmuted);font-weight:500;margin-left:3px}
+.v-loops{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.15fr);border-bottom:1px solid var(--vline)}
+.loop{position:relative;height:156px;border-right:1px solid var(--vline)}
+.llab{position:absolute;left:6px;top:3px;font:500 11px var(--ui);color:var(--vmuted);z-index:1}
+.v-side{display:flex;flex-direction:column;justify-content:space-between;min-width:0}
+.v-side .v-meas{border-left:0;grid-template-columns:auto auto auto auto;gap:1px 6px}
+.v-side .v-meas dd{font-size:16px}
+.v-quick{display:flex;flex-wrap:wrap;gap:4px;padding:6px}
+.vent button{background:var(--vpanel);color:var(--vtext);border-color:var(--vline)}
+.vent button:hover{border-color:var(--vmuted)}
+.v-quick button{font-size:12px;padding:5px 8px}
+.tiles{display:flex;flex-wrap:wrap;gap:6px;padding:8px}
+.vent .tile{display:flex;flex-direction:column;align-items:flex-start;min-width:84px;flex:1 1 84px;padding:6px 8px;border-radius:7px;text-align:left}
+.tile .tl{font:500 11px var(--ui);color:var(--vmuted)}
+.tile .tv{font:600 25px/1.1 var(--num);font-variant-numeric:tabular-nums}
+.tile.txt .tv{font-size:17px;line-height:1.75}
+.vent .tile{max-width:136px}
+.v-top .abar:empty{display:none}
+.tile .tu{font:500 10px var(--ui);color:var(--vmuted)}
+.vent .tile.sel{border-color:var(--paw);box-shadow:inset 0 0 0 1px var(--paw)}
+.tile.pend .tv{color:var(--pend)}
+.knob{padding:8px 10px 10px;border-top:1px solid var(--vline);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;align-items:center}
+.kn-head{grid-column:1/-1;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.kn-name{font:650 14px var(--ui)}
+.kn-help{font-size:12px;color:var(--vmuted)}
+.kn-ctl{display:flex;gap:8px;align-items:center;flex-wrap:wrap;min-height:34px}
+.kn-ctl input[type=range]{flex:1;accent-color:var(--paw);min-width:140px}
+.kn-ctl output{font:600 26px var(--num);min-width:76px;text-align:right;color:var(--pend)}
+.vent .kn-ctl .opt.on{background:var(--paw);color:#1a1200;border-color:var(--paw)}
+.kn-ctl .pm{width:36px;height:34px;font-size:18px;padding:0}
+.kn-act{display:flex;gap:6px;justify-content:flex-end}
+.vent button.accept{background:var(--paw);color:#1a1200;border-color:var(--paw);font-weight:650}
+.kn-prev{grid-column:1/-1;font-size:12px;color:var(--vmuted)}
+.kn-prev table{border-collapse:collapse;width:100%;font:500 12px var(--num);font-variant-numeric:tabular-nums}
+.kn-prev td,.kn-prev th{padding:2px 6px;text-align:right;border-bottom:1px solid var(--vline);white-space:nowrap}
+.kn-prev th{color:var(--vmuted);font:500 11px var(--ui)}
+.kn-prev th:first-child,.kn-prev td:first-child{text-align:left}
+.kn-prev .bad{color:#ff8f8f}.kn-prev .good{color:#7fe3a9}
+/* paper panels */
+.paper{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 16px;min-width:0}
+.ph{font:650 13px var(--ui);color:var(--muted);margin:16px 0 6px}
+.brief{background:var(--paper2);border-radius:8px;padding:10px 12px;font-size:13px}
+.brief h3{margin:0 0 4px;font-size:15px}
+.brief p{margin:4px 0;max-width:74ch}
+.clist{display:flex;flex-direction:column;gap:6px}
+.cc{border-left:4px solid var(--muted);background:var(--paper2);border-radius:0 8px 8px 0;padding:7px 10px}
+.cc.crit{border-color:var(--crit);background:var(--crit-bg)}.cc.warn{border-color:var(--warn);background:var(--warn-bg)}
+.cc.tip{border-color:var(--tip);background:var(--tip-bg)}.cc.good{border-color:var(--good);background:var(--good-bg)}
+.ct{font-weight:650;font-size:14px}
+.cb{font-size:13px;max-width:76ch}
+.checklist{display:grid;grid-template-columns:minmax(0,1fr) auto 22px;gap:3px 12px;font-size:13px;align-items:baseline}
+.checklist .v{font-family:var(--num);font-variant-numeric:tabular-nums;text-align:right;font-size:14px}
+.ok{color:var(--good)}.no{color:var(--crit)}
+.outcome{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:13px}
+.orow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:8px}
+.ol{font-size:12px;color:var(--muted)}
+.big{font:600 24px/1.1 var(--num);font-variant-numeric:tabular-nums}
+.os{font-size:12px;color:var(--muted)}
+.outcome button{margin-top:8px}
+/* tabs */
+.tablist{display:flex;flex-wrap:wrap;gap:2px;border-bottom:1px solid var(--line);margin:-6px -6px 14px}
+.tablist button{border:0;background:none;border-bottom:2px solid transparent;border-radius:0;padding:9px 11px;color:var(--muted);font-weight:550}
+.tablist button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--accent)}
+.tabpane{min-height:240px}
+.cols{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:18px}
+@media (max-width:800px){.cols{grid-template-columns:minmax(0,1fr)}}
+.ctwrap{background:#000;border-radius:10px;overflow:hidden}
+#cvCT{display:block;width:100%;height:300px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;margin:8px 0 4px;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:2px;margin-right:5px;vertical-align:-2px;border:1px solid #555}
+.note{font-size:12px;color:var(--muted);max-width:70ch}
+.kv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 14px;margin:0 0 12px;font-size:13px}
+.kv dt{color:var(--muted)}.kv dd{margin:0;text-align:right;font-family:var(--num);font-variant-numeric:tabular-nums;font-size:14px}
+.kvh{font:650 13px var(--ui);margin:0 0 6px}
+.actgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.grp h3{font-size:13px;margin:0 0 6px;color:var(--muted)}
+.btns{display:flex;flex-wrap:wrap;gap:6px}
+.rng{display:flex;align-items:center;gap:8px;font-size:13px;margin-top:8px}
+.rng input{flex:1;accent-color:var(--accent)}
+table.data{border-collapse:collapse;font-size:13px;width:100%}
+table.data th,table.data td{padding:4px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+table.data th:first-child,table.data td:first-child{text-align:left}
+table.data th{font-weight:600;color:var(--muted);font-size:12px}
+.scroll{overflow-x:auto}
+.finds{list-style:none;padding:0;margin:8px 0}
+.finds li{padding:6px 0;border-bottom:1px solid var(--line);font-size:13px}
+.finds b{font-weight:650}
+.tlbl{font-size:12px;color:var(--muted);font-family:var(--num)}
+.charts{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.charts canvas{width:100%;height:130px;display:block;background:var(--paper2);border-radius:8px}
+.fcnarr{font-size:14px;max-width:80ch;margin:10px 0}
+.caselist{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px}
+.casebtn{display:block;text-align:left;padding:10px 12px;width:100%}
+.casebtn b{display:block;font-size:14px;margin-bottom:2px}
+.casebtn span{font-size:12px;color:var(--muted)}
+.casebtn .st{float:right;font-weight:650}
+.stem{font-size:15px;line-height:1.6;max-width:76ch}
+.qline{font-weight:650;margin:10px 0 6px}
+.opts{display:flex;flex-direction:column;gap:6px;max-width:76ch}
+.opts button{text-align:left;padding:10px 12px;font-size:14px}
+.opts button:disabled{opacity:1;color:var(--muted)}
+.opts button.right,.opts button.wrong{color:var(--ink)}
+.opts button.right{border-color:var(--good);background:var(--good-bg)}
+.opts button.wrong{border-color:var(--crit);background:var(--crit-bg)}
+.verdict{font-weight:700;font-size:16px;margin:14px 0 6px}
+.verdict.right{color:var(--good)}.verdict.wrong{color:var(--crit)}
+.explain{max-width:76ch;font-size:14px}
+.why{max-width:76ch;font-size:13px;padding-left:20px}
+.why li{margin:4px 0}
+.why li.correct{color:var(--good)}
+.refgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+.refcard{background:var(--paper2);border-radius:10px;padding:12px 14px;font-size:13px}
+.refcard h3{font-size:14px;margin:0 0 6px}
+.refcard p{margin:4px 0;max-width:70ch}
+.refcard td.hl,.refcard th.hl{background:var(--accent);color:var(--accentInk)}
+.loglist{list-style:none;margin:0;padding:0;font-size:13px;max-height:420px;overflow:auto}
+.loglist li{padding:4px 0;border-bottom:1px solid var(--line)}
+.loglist .lt{font-family:var(--num);color:var(--muted);margin-right:8px}
+.loglist .crit{color:var(--crit)}.loglist .warn{color:var(--warn)}.loglist .good{color:var(--good)}
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink);max-width:600px;width:calc(100% - 32px);padding:18px 20px}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+dialog h3{margin:0 0 8px}
+.dlg-act{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.modes{display:flex;flex-direction:column;gap:6px}
+.modeopt{text-align:left;display:flex;flex-direction:column;gap:2px;padding:9px 12px}
+.modeopt span{font-size:12px;color:var(--muted)}
+.modeopt.on span{color:inherit}
+ul.crit{list-style:none;padding:0}
+ul.crit li{padding:3px 0}
+@media (max-width:640px){
+  .mon-body{grid-template-columns:minmax(0,1fr) 116px}
+  .nv{font-size:34px}.nv.md{font-size:21px}
+  .v-main{grid-template-columns:minmax(0,1fr) 118px}
+  .v-meas dd{font-size:16px}
+  .v-loops{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .v-side{grid-column:1/-1}
+  .orow{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .bsub{display:none}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="7" fill="#122330"/><path d="M3 19h4l1.5-10h7l1 10H25" stroke="#ffb547" stroke-width="2" fill="none" stroke-linejoin="round"/></svg>
+    <div><div class="bname">VentLab</div><div class="bsub">Ventilator and ICU physiology simulator</div></div></div>
+  <label class="scen"><span>Patient</span><select id="scenSel"></select></label>
+  <button id="restartBtn" type="button">Restart</button>
+  <div class="spacer"></div>
+  <div class="clock" title="Simulated time since the scenario began"><span id="clock">00:00:00</span></div>
+  <div class="seg" id="speedSeg" role="group" aria-label="Simulation speed">
+    <button type="button" data-sp="0">Pause</button><button type="button" data-sp="1" class="on">1×</button><button type="button" data-sp="5">5×</button><button type="button" data-sp="20">20×</button><button type="button" data-sp="60">60×</button>
+  </div>
+  <button id="skipBtn" type="button" title="Jump ahead 10 simulated minutes">Skip 10 min</button>
+  <button id="soundBtn" type="button" aria-pressed="false">Sound off</button>
+  <button id="silenceBtn" type="button" hidden>Silence 2 min</button>
+</header>
+<div class="ptbar" id="ptbar"></div>
+<main class="grid">
+  <section class="device mon-dev" aria-label="Bedside monitor">
+    <div class="screen mon">
+      <div class="abar" id="monAlarms" aria-live="polite"></div>
+      <div class="mon-body">
+        <div class="mon-waves">
+          <div class="wrow"><span class="wlab ecg">II</span><span class="wsc ecg">×1</span><canvas id="cvEcg" aria-label="ECG lead II"></canvas></div>
+          <div class="wrow"><span class="wlab abp">ABP</span><span class="wsc abp" id="scAbp"></span><canvas id="cvAbp" aria-label="Arterial pressure waveform"></canvas></div>
+          <div class="wrow"><span class="wlab spo">Pleth</span><canvas id="cvPleth" aria-label="Plethysmograph"></canvas></div>
+          <div class="wrow"><span class="wlab co2">CO₂</span><span class="wsc co2" id="scCo2"></span><canvas id="cvCo2" aria-label="Capnogram"></canvas></div>
+        </div>
+        <div class="mon-nums">
+          <div class="num ecg"><span class="nl">HR</span><span class="nv" id="nHr">--</span></div>
+          <div class="num abp"><span class="nl">ABP</span><span class="nv md" id="nAbp">--/--</span><span class="ns" id="nMap">(--)</span></div>
+          <div class="num spo"><span class="nl">SpO₂</span><span class="nv" id="nSpo2">--</span><span class="ns" id="nPi">Perf --</span></div>
+          <div class="num co2"><span class="nl">etCO₂</span><span class="nv" id="nEt">--</span><span class="ns" id="nAwrr">awRR --</span></div>
+        </div>
+      </div>
+      <div class="mon-foot" id="monFoot"></div>
+    </div>
+  </section>
+  <section class="device vent-dev" aria-label="Ventilator">
+    <div class="screen vent">
+      <div class="v-top">
+        <button type="button" id="modeBtn" class="modebtn">VC-AC</button>
+        <span class="trig" id="trigChip">Time-triggered</span>
+        <div class="abar" id="ventAlarms" aria-live="polite"></div>
+      </div>
+      <div class="v-main">
+        <div class="v-waves">
+          <div class="vrow"><span class="vlab paw">Paw<i id="scPaw"></i></span><span class="vlab pes" id="pesLab" hidden>Pes</span><canvas id="cvPaw" aria-label="Airway pressure waveform"></canvas></div>
+          <div class="vrow"><span class="vlab flw">Flow<i id="scFlow"></i></span><canvas id="cvFlow" aria-label="Flow waveform"></canvas></div>
+          <div class="vrow"><span class="vlab vol">Volume<i id="scVol"></i></span><canvas id="cvVol" aria-label="Volume waveform"></canvas></div>
+        </div>
+        <dl class="v-meas" id="ventMeas"></dl>
+      </div>
+      <div class="v-loops">
+        <div class="loop"><span class="llab">Pressure–volume</span><canvas id="cvPV" aria-label="Pressure-volume loop"></canvas></div>
+        <div class="loop"><span class="llab">Flow–volume</span><canvas id="cvFV" aria-label="Flow-volume loop"></canvas></div>
+        <div class="v-side">
+          <dl class="v-meas" id="ventMeas2"></dl>
+          <div class="v-quick">
+            <button type="button" data-act="ihold">Insp hold</button><button type="button" data-act="ehold">Exp hold</button>
+            <button type="button" data-act="manual">Manual breath</button><button type="button" data-act="o2">O₂ 100% 2 min</button>
+            <button type="button" id="refLoopBtn">Save reference loop</button>
+          </div>
+        </div>
+      </div>
+      <div class="tiles" id="tiles"></div>
+      <div class="knob" id="knob">
+        <div class="kn-head"><span class="kn-name" id="knName"></span><span class="kn-help" id="knHelp"></span></div>
+        <div class="kn-ctl" id="knCtl"></div>
+        <div class="kn-act"><button type="button" id="knCancel">Cancel</button><button type="button" id="knAccept" class="accept">Accept</button></div>
+        <div class="kn-prev" id="knPrev"></div>
+      </div>
+    </div>
+  </section>
+  <aside class="paper coach" aria-label="Coach">
+    <div class="brief" id="brief"></div>
+    <h2 class="ph">What the bedside is telling you</h2>
+    <div id="coachList" class="clist"></div>
+    <h2 class="ph">Targets <span class="muted" style="font-weight:400">(true values from the model; on the ventilator, confirm with holds)</span></h2>
+    <div id="checklist" class="checklist"></div>
+    <div class="outcome">
+      <div class="orow">
+        <div><div class="ol">Projected mortality</div><div class="big" id="oMort">—</div><div class="os" id="oMortB"></div></div>
+        <div><div class="ol">Lung injury index</div><div class="big" id="oVili">—</div><div class="os" id="oViliR"></div></div>
+        <div><div class="ol">Barotrauma risk</div><div class="big" id="oBaro">—</div><div class="os">per 24 h at this pressure</div></div>
+      </div>
+      <div class="os" id="oStats"></div>
+      <div class="os">A teaching model of how management shifts risk, not a clinical prediction.</div>
+      <button type="button" id="fcBtn">Forecast the next 24 hours</button>
+    </div>
+  </aside>
+  <section class="paper panel" aria-label="Tools">
+    <div class="tablist" role="tablist" id="tablist">
+      <button role="tab" type="button" data-tab="lung" aria-selected="true">Lung</button>
+      <button role="tab" type="button" data-tab="act" aria-selected="false">Interventions</button>
+      <button role="tab" type="button" data-tab="labs" aria-selected="false">Labs and exam</button>
+      <button role="tab" type="button" data-tab="trend" aria-selected="false">Trends and forecast</button>
+      <button role="tab" type="button" data-tab="cases" aria-selected="false">Board cases</button>
+      <button role="tab" type="button" data-tab="ref" aria-selected="false">Reference</button>
+      <button role="tab" type="button" data-tab="log" aria-selected="false">Log</button>
+    </div>
+    <div class="tabpane" id="tab-lung" role="tabpanel"></div>
+    <div class="tabpane" id="tab-act" role="tabpanel" hidden></div>
+    <div class="tabpane" id="tab-labs" role="tabpanel" hidden></div>
+    <div class="tabpane" id="tab-trend" role="tabpanel" hidden></div>
+    <div class="tabpane" id="tab-cases" role="tabpanel" hidden></div>
+    <div class="tabpane" id="tab-ref" role="tabpanel" hidden></div>
+    <div class="tabpane" id="tab-log" role="tabpanel" hidden></div>
+  </section>
+</main>
+<dialog id="dlg"><div id="dlgBody"></div><div class="dlg-act" id="dlgAct"></div></dialog>
+<script>
+'use strict';
+/* ============================================================
+   VentLab physiology engine
+   ============================================================ */
+const clamp=(x,a,b)=>x<a?a:(x>b?b:x);
+const sig=x=>1/(1+Math.exp(-x));
+const gauss=(t,m,w)=>Math.exp(-((t-m)*(t-m))/(2*w*w));
+const PATM=760,PH2O=47,KO2=(PATM-PH2O)*10/826;
+function rng32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function shiftF(pH,pco2,T){return Math.pow(10,0.024*(37-T)+0.40*(pH-7.40)+0.06*Math.log10(40/Math.max(pco2,4)));}
+function satX(x){if(x<=0)return 0;return 1/(23400/(x*x*x+150*x)+1);}
+function satO2(P,pH,pco2,T){return satX(P*shiftF(pH,pco2,T));}
+function contO2(P,hb,pH,pco2,T){return 1.34*hb*satO2(P,pH,pco2,T)+0.003*P;}
+function invCont(C,hb,pH,pco2,T){const sh=shiftF(pH,pco2,T);let lo=0.1,hi=800;if(1.34*hb*satX(hi*sh)+0.003*hi<=C)return hi;
+  for(let i=0;i<34;i++){const m=(lo+hi)/2;if(1.34*hb*satX(m*sh)+0.003*m<C)lo=m;else hi=m;}return(lo+hi)/2;}
+function solveQ(dP,r){if(dP===0)return 0;const m=Math.abs(dP);const q=r.b>1e-6?(-r.a+Math.sqrt(r.a*r.a+4*r.b*m))/(2*r.b):m/r.a;return dP>0?q:-q;}
+function dPres(q,r){return r.a*q+r.b*q*Math.abs(q);}
+
+const TARGETS={normal:{s:[92,98],ph:[7.35,7.45]},ards:{s:[88,95],ph:[7.30,7.45]},copd:{s:[88,92],ph:[7.25,7.45]},
+ asthma:{s:[92,98],ph:[7.20,7.45]},metabolic:{s:[92,98],ph:[7.20,7.45]},pe:{s:[92,98],ph:[7.30,7.45]},
+ obese:{s:[90,96],ph:[7.30,7.45]},chf:{s:[92,98],ph:[7.32,7.45]},wean:{s:[92,98],ph:[7.35,7.45]},od:{s:[92,98],ph:[7.35,7.45]}};
+const PFT_LO=[[.3,5],[.4,5],[.4,8],[.5,8],[.5,10],[.6,10],[.7,10],[.7,12],[.7,14],[.8,14],[.9,14],[.9,16],[.9,18],[1,18],[1,20],[1,22],[1,24]];
+const PFT_HI=[[.3,5],[.3,8],[.3,10],[.3,12],[.3,14],[.4,14],[.4,16],[.5,16],[.5,18],[.5,20],[.6,20],[.7,20],[.8,20],[.8,22],[.9,22],[1,22],[1,24]];
+function tableAdvice(fio2,peep){
+  const f=Math.round(fio2*10)/10, row=PFT_LO.filter(r=>Math.abs(r[0]-f)<0.051).map(r=>r[1]);
+  if(row.length){const mn=Math.min(...row),mx=Math.max(...row);
+    if(peep<mn-0.5)return{peep:mn,fio2:f,text:`At FiO₂ ${f.toFixed(1)} the table calls for PEEP ${mn===mx?mn:mn+'–'+mx}, so raise PEEP to ${mn}.`};
+    if(peep<mx-0.5){const nx=row.find(v=>v>peep+0.5);return{peep:nx,fio2:f,text:`Next step on the table: PEEP ${nx} at FiO₂ ${f.toFixed(1)}.`};}}
+  let i=-1;for(let k=0;k<PFT_LO.length;k++)if(PFT_LO[k][0]<=f+0.001&&PFT_LO[k][1]<=peep+0.5)i=k;
+  const nx=PFT_LO[Math.min(PFT_LO.length-1,i+1)];
+  return{peep:nx[1],fio2:nx[0],text:`Next step on the table: FiO₂ ${nx[0].toFixed(1)} with PEEP ${nx[1]}.`};
+}
+
+const PDEF={name:'Patient',sex:'M',age:55,heightCm:175,weightKg:80,cat:'normal',
+ cL:2.1,ccw:2.6,ppl0:0,sp:4,abd:0,pClose:-3,pOpen:6,pOd:28,rawI:3,rawE:4,ett:8.0,kfl:0,voff:0.15,
+ phi:0,psi:1,hpv:0.5,vdKg:1.2,fragility:0.5,vuln:0.5,cons:null,pe:null,
+ vo2:null,rq:0.8,temp:37,hb:13,hco3Met:24,co2Base:40,paco2Init:null,lac:1.0,lacProd:0,
+ msfp:16,rvr:1.5,comax:8,ks:4,svr:1100,hr:80,cart:1.6,pvr:1,rvSens:0.4,lvAfter:0,
+ drive:1,chemo:1,muscle:1,rass:-4,nmb:false,bronch:0,bronchFloor:0,norepi:0,mort:0.1,cxr:'clear lungs',goal:'',vcap:null,shuntX:0};
+const DEFSET={mode:'VC',vt:450,rr:14,peep:5,fio2:0.4,flow:60,pattern:'square',pause:0,pinsp:15,ti:1.0,rise:0.15,
+ ps:10,ets:25,trig:'flow',trigFlow:2,trigPres:2,phigh:28,plow:0,thigh:5,tlow:0.5,hme:true,pmax:40,vteLow:200,apnea:20,bkRR:14,bkVt:450};
+const SEDTAB={'2':1.45,'1':1.2,'0':1,'-1':0.88,'-2':0.7,'-3':0.45,'-4':0.15,'-5':0.03};
+const SEDSVR={'2':1.12,'1':1.06,'0':1,'-1':0.97,'-2':0.93,'-3':0.88,'-4':0.83,'-5':0.78};
+
+function buildPatient(def){
+  const p=Object.assign({},PDEF,def);
+  p.pbw=(p.sex==='M'?50:45.5)+0.91*(p.heightCm-152.4);
+  if(p.vo2==null)p.vo2=Math.round(10*Math.pow(p.weightKg,0.75));
+  const k1={6.5:7.5,7:5.2,7.5:4,8:3}[p.ett]||3; p.k1=k1; p.k2=k1*0.85;
+  p.CLn=p.cL*p.pbw; p.Ccw=p.ccw*p.pbw; p.vd=p.vdKg*p.pbw/1000;
+  p.zones=[]; let ws=0,ps=0;
+  for(let side=0;side<2;side++)for(let k=0;k<8;k++){
+    const d=(k+0.5)/8, shape=0.65+0.7*Math.sin(Math.PI*d), w=(side===0?0.55:0.45)*shape;
+    const z={side,k,d,w,cons:p.cons?clamp(p.cons(side,d),0,1):0,pe:p.pe?clamp(p.pe(side,d),0,1):1};
+    z.pw=w*(1+(p.dorsal==null?0.8:p.dorsal)*d); ws+=w; ps+=z.pw; p.zones.push(z);
+  }
+  p.zones.forEach(z=>{z.w/=ws;z.pw/=ps;z.c0=p.CLn*z.w;});
+  delete p.cons; delete p.pe;
+  return p;
+}
+
+class Sim{
+  constructor(def,set,seed){
+    const p=this.p=buildPatient(def);
+    this.set=Object.assign({},DEFSET,set||{});
+    this.rng=rng32(seed||7);
+    const pa0=p.paco2Init!=null?p.paco2Init:p.co2Base;
+    this.s={t:0,x:0,pref:this.set.mode==='APRV'?this.set.plow:this.set.peep,E1:16,E2:0,fL:0.5,crs:60,veq:0,ccwEff:p.Ccw,
+      phase:'exp',phaseT:0,since:10,btype:'none',bkind:'time',bP:0,bVt:0.45,deliv:0,qPeak:0,trigT:0,hold:null,holdReq:null,pauseDur:0,
+      prvcP:12,simvPend:true,simvStart:0,backup:false,bkTrig:0,rm:null,rmReq:false,
+      pmus:0,nT:0,nPer:4,nTi:1,nPm:0,effTrig:0,effExp:false,effPk:0,
+      paw:0,q:0,qv:0,vol:0,palvEl:0,pes:0,co2:0,co2Max:0,expV:0,inspFlag:0,
+      cur:null,hist:[],meas:{},ep:{on:false,vin:0,quiet:0},vaAcc:4.5*0.5,veAcc:6.5*0.5,rrAcc:7,vaF:4.5*8/60,vteAcc:3.2,brAcc:7,ptAcc:0,
+      z:p.zones.map(()=>({r:0.95,rAvg:0.95,od:0,odAvg:0,odEI:0,rEE:0.95,rEI:0.95,pa:100,pb:100,g:0,dep:0.5})),
+      CLei:0,vtPrev:0.45,zt:0,slowT:0,lungScale:1,pOpenEff:p.pOpen,pCloseEff:p.pClose,
+      pvco2:pa0+6,cao2:17,caT:17,cvo2:12,pao2:95,sao2:0.97,svo2:0.7,paco2:pa0,ph:7.4,hco3:24,be:0,ren:0.35*Math.max(0,p.co2Base-40),
+      lac:p.lac,petco2:pa0-3,etco2:pa0-3,peco2:20,paAO2:100,
+      shunt:0.05,qsqt:0.05,lowvq:0,deadFrac:0,vdvt:0.3,VA:4.5,VAf:4.5,VE:6.5,rrTot:14,VO2dem:p.vo2,vo2eff:p.vo2,VCO2:p.vo2*p.rq,Eco2:5,gmix:1,
+      co:5.5,hr:p.hr,map:85,sbp:115,dbp:70,cvp:7,sv:70,ppv:6,svr:p.svr,svr0:p.svr,pplMean:2,palvMean:8,do2:900,o2er:0.27,
+      potCo:5.5,potMap:85,pvri:1,ppBase:45,dpTidal:10,lastPeepTot:5,
+      driveEff:0,rrPat:6,pmusPat:0,
+      rass:p.rass,nmb:p.nmb,prone:false,ino:false,norepi:p.norepi,fluid:0,fluidP:0,lasix:0,albu:0,esoph:false,o2flush:0,bicarb:0,lysis:0,lysisOn:false,
+      ptx:null,ptens:0,ettObs:0,bronch:p.bronch,cuffLeak:0,circLeak:0,disc:false,discUntil:0,mainstem:false,biting:false,bpf:0,
+      edema:1,vili:0,viliRate:0,baroHaz:0,mp:0,randomEvents:true,fast:false,flags:{},
+      alarms:[],arrest:null,ineff:[],dbl:[],dysCount:0,log:[],
+      beatPh:0,beatRR:0.75,beatSbp:115,beatDbp:70,pvc:false,pvcPause:false,ecg:0,abp:70,pleth:0,perf:1,
+      aPh:0.3,aS:115,aD:70,aRR:0.75,pPh:0.3,pAmp:1,beats:0,
+      lowSatT:0,lowMapT:0,lowPhT:0,dead:false,extubated:false,
+      spo2:97,spo2buf:[],fio2Hi:0,tidalRec:0,odFrac:0,colFrac:0,consFrac:0,recFrac:0,
+      stats:{T:0,sat:0,pplat:0,dp:0,vt:0,ap:0,map:0,ph:0,maxPplat:0,maxAP:0,minSat:100,minMap:200,maxVili:0}};
+    this.updateGeom();
+    this.initZones();
+    this.updateMech();
+    this.drive();
+  }
+  log(msg,lvl){this.s.log.push({t:this.s.t,msg,lvl:lvl||'info'});if(this.s.log.length>400)this.s.log.shift();}
+  fio2(){return this.s.o2flush>0?1:this.set.fio2;}
+  base(){const s=this.s,set=this.set;if(s.disc)return 0;return set.mode==='APRV'?set.plow:set.peep;}
+  initZones(){
+    const s=this.s,p=this.p,CL=this.lungC(),fL=p.Ccw/(CL+p.Ccw),PL=s.pref*fL-p.ppl0;
+    p.zones.forEach((z,i)=>{const zs=s.z[i],PLr=PL-zs.g,PLi=PLr+14*fL;
+      const r=clamp(Math.min(sig((PLr-s.pCloseEff)/1),sig((PLi-s.pOpenEff)/2))+0.02,0,1);
+      zs.r=zs.rAvg=zs.rEE=zs.rEI=r;});
+  }
+  /* ---------- respiratory-system mechanics ---------- */
+  pel(x){const s=this.s,E1=s.E1,E2=s.E2;let v;
+    if(x<=0)return E1*x;
+    if(E2>=0)v=E1*x+E2*x*x;
+    else{const vs=(0.35*E1-E1)/(2*E2);v=x<=vs?E1*x+E2*x*x:E1*vs+E2*vs*vs+0.35*E1*(x-vs);}
+    const vlim=this.p.vcap||s.crs*0.045,a=x+s.veq-vlim,b=s.veq-vlim;
+    if(a>0)v+=140*a*a-(b>0?140*b*b:0);
+    return v;}
+  pelInv(P){if(P<=0)return P/this.s.E1;let lo=0,hi=6;for(let i=0;i<40;i++){const m=(lo+hi)/2;if(this.pel(m)<P)lo=m;else hi=m;}return(lo+hi)/2;}
+  setPref(np){const s=this.s;if(np===s.pref)return;const pa=s.pref+this.pel(s.x);s.pref=np;this.updateMech();s.x=this.pelInv(pa-np);}
+  resI(){const s=this.s,p=this.p;return{a:p.rawI*(1+2.5*s.bronch)+p.k1*(1+4*s.ettObs),b:p.k2*(1+8*s.ettObs)};}
+  resE(){const s=this.s,p=this.p;return{a:p.rawE*(1+3*s.bronch)+p.k1*(1+4*s.ettObs)+1.0,b:p.k2*(1+8*s.ettObs)};}
+  lungC(){const s=this.s,p=this.p,ed=1.25-0.25*s.edema;let c=3;
+    for(let i=0;i<16;i++){const z=p.zones[i],zs=s.z[i];if(s.mainstem&&z.side===1)continue;c+=z.c0*(1-z.cons)*zs.r*(1-0.6*zs.od)*s.lungScale*ed;}
+    return c;}
+  updateMech(){
+    const s=this.s,p=this.p;
+    const CLee=this.lungC(),CLei=s.CLei||CLee;
+    const ccw=p.Ccw/(1+s.ptens/8);
+    const ce=1/(1/CLee+1/ccw),ci=1/(1/CLei+1/ccw);
+    const oldPa=s.pref+this.pel(s.x);
+    const E1=1000/ce,Ee=1000/ci,vt=Math.max(0.15,s.vtPrev||0.4);
+    s.E1=E1;s.E2=clamp((Ee-E1)/(2*vt),-0.3*E1/vt,3*E1);
+    s.crs=(ce+ci)/2;s.fL=clamp(ccw/(ccw+(CLee+CLei)/2),0.15,0.95);s.ccwEff=ccw;
+    s.veq=s.pref*ce/1000;
+    s.x=this.pelInv(oldPa-s.pref);
+  }
+  /* ---------- patient's own breathing ---------- */
+  neural(dt){
+    const s=this.s;
+    s.nT+=dt;
+    if(s.nT>=s.nPer){
+      if(s.effPk>1.5&&s.effExp&&!s.effTrig&&this.set.mode!=='APRV')s.ineff.push(s.t);
+      if(s.effTrig>=2)s.dbl.push(s.t);
+      s.nT=0;s.nPer=60/s.rrPat*(1+0.14*(this.rng()-0.5));
+      s.nTi=clamp(0.4*s.nPer,0.55,1.45);s.nPm=s.pmusPat*(1+0.16*(this.rng()-0.5));s.effTrig=0;s.effExp=false;s.effPk=0;
+    }
+    if(s.nmb||s.driveEff<0.2||s.arrest||s.extubated){s.pmus=0;s.nPm=0;return;}
+    const t=s.nT,Ti=s.nTi,Tr=0.35*Ti;let pm=0;
+    if(t<Ti)pm=s.nPm*Math.sin(Math.PI/2*t/Ti);
+    else if(t<Ti+Tr){const u=(t-Ti)/Tr;pm=s.nPm*(1-u)*(1-u);}
+    else if(s.phase==='insp'&&s.btype!=='vc'&&s.btype!=='rm'&&s.driveEff>1.05&&t<Ti+Tr+0.7&&s.phaseT>0.3)pm=-Math.min(7,3+3*(s.driveEff-1));
+    if(pm>s.effPk){s.effPk=pm;if(t<Ti)s.effExp=(s.phase==='exp');}
+    s.pmus=pm;
+  }
+  /* ---------- integrator (dt ≈ 5–10 ms) ---------- */
+  step(dt){
+    const s=this.s,p=this.p,set=this.set;
+    if(s.dead)return;
+    s.t+=dt;s.phaseT+=dt;s.since+=dt;
+    this.neural(dt);
+    const pm=s.pmus;
+    const palvEl=s.pref+this.pel(s.x)+s.ptens*0.35;
+    const palv=palvEl-pm;
+    s.palvEl=palvEl;
+    const kL=s.cuffLeak+s.circLeak,ri=this.resI(),re=this.resE(),base=this.base();
+    let q=0,paw=s.paw,qv=0;
+    if(s.phase==='insp'){
+      if(s.btype==='vc'){
+        const pk=set.flow/60,qs=set.pattern==='decel'?pk*(1-0.75*clamp(s.deliv/s.bVt,0,1)):pk;
+        if(s.disc){q=solveQ(-palv,palv>0?re:ri);paw=0.5;}
+        else{const lk=kL*Math.sqrt(Math.max(0,s.paw));q=Math.max(0,qs-lk);paw=palv+dPres(q,ri);}
+        qv=qs;s.deliv+=qs*dt;
+        if(!s.disc&&paw>set.pmax){this.flag('hp');this.endInsp(true);}
+        else if(s.deliv>=s.bVt||s.phaseT>5)this.endInsp(false);
+      }else{
+        const rt=Math.max(0.03,set.rise);
+        const rs=s.btype==='rm'?Math.min(1,s.phaseT/2):Math.min(1,(1-Math.exp(-4*s.phaseT/rt))/(1-Math.exp(-4)));
+        const tgt=base+s.bP*rs;
+        if(s.disc){q=solveQ(-palv,palv>0?re:ri);paw=0.5;qv=1.5;}
+        else{const lk=kL*Math.sqrt(Math.max(0,tgt)),dP=tgt-palv;
+          q=dP>=0?solveQ(dP,ri):solveQ(dP,re);qv=q+lk;paw=tgt;
+          if(qv>3){qv=3;q=3-lk;paw=palv+dPres(q,ri);}}
+        if(qv>s.qPeak)s.qPeak=qv;
+        let end=false;
+        if(s.btype==='ps'){if((s.phaseT>0.15&&qv<set.ets/100*s.qPeak)||s.phaseT>2.5||(q<-0.05&&s.phaseT>0.2))end=true;}
+        else if(s.btype==='aprv'){if(s.phaseT>=set.thigh)end=true;}
+        else if(s.btype==='rm'){if(s.phaseT>=s.rm.dur)end=true;}
+        else if(s.phaseT>=set.ti)end=true;
+        if(end)this.endInsp(false);
+      }
+    }else if(s.phase==='pause'){
+      if(s.disc){q=solveQ(-palv,palv>0?re:ri);paw=0;}
+      else{q=0;paw=s.paw+(palv-s.paw)*Math.min(1,dt/0.05);}
+      if(s.phaseT>=s.pauseDur){
+        const valid=Math.abs(pm)<1.2&&!s.disc;
+        if(s.cur&&valid)s.cur.plat=paw;
+        if(s.hold==='insp'){s.meas.platHold=valid?paw:null;s.meas.platHoldT=s.t;s.hold=null;
+          this.log(valid?`Inspiratory hold: Pplat ${paw.toFixed(0)} cmH₂O`:'Inspiratory hold invalid: patient effort during the hold','act');}
+        s.phase='exp';s.phaseT=0;s.expV=0;
+      }
+    }else{
+      if(s.hold==='exp'&&!s.disc){
+        q=0;paw=s.paw+(palv-s.paw)*Math.min(1,dt/0.06);
+        if(s.phaseT>=s.pauseDur){const valid=Math.abs(pm)<1.2;
+          s.meas.peepTotHold=valid?paw:null;s.meas.autoPeepHold=valid?Math.max(0,paw-base):null;s.meas.peepTotHoldT=s.t;s.hold=null;
+          this.log(valid?`Expiratory hold: total PEEP ${paw.toFixed(0)}, auto-PEEP ${Math.max(0,paw-base).toFixed(0)} cmH₂O`:'Expiratory hold invalid: patient effort during the hold','act');
+          this.post(dt,0,paw,0);this.startBreath('time');return;}
+      }else{
+        const lk=kL*Math.sqrt(Math.max(0,base)),dP=base-palv;
+        if(s.disc){q=solveQ(-palv,palv>0?re:ri);paw=0;qv=0;}
+        else{
+          if(dP<0){q=solveQ(dP,re);
+            if(p.kfl>0){const vab=Math.max(0,s.x+s.veq+p.voff),qm=p.kfl/(1+0.8*s.bronch)*(1+2.5*Math.exp(-s.phaseT/0.12))*vab;if(-q>qm)q=-qm;}}
+          else q=solveQ(dP,ri);
+          paw=base;qv=q<0?Math.min(0,q+lk):q;
+          if(set.mode!=='APRV'&&s.phaseT>0.12){
+            const fire=set.trig==='flow'?(q+0.4*lk)*60>set.trigFlow:(pm-Math.max(0,palvEl-base))>set.trigPres;
+            if(fire){s.trigT+=dt;if(s.trigT>=0.035){s.trigT=0;this.post(dt,q,paw,qv);this.patientTrigger();return;}}else s.trigT=0;
+          }
+          this.timeCycle();
+        }
+        if(s.disc)this.timeCycle();
+      }
+    }
+    this.post(dt,q,paw,qv);
+  }
+  post(dt,q,paw,qv){
+    const s=this.s,p=this.p;
+    let qb=0;if(s.bpf>0&&s.ptx&&s.ptx.tube)qb=s.bpf*Math.sqrt(Math.max(0,s.palvEl));
+    s.x+=(q-qb)*dt;s.q=q;s.paw=paw;s.qv=qv-qb*0.0;
+    if(s.phase==='insp'&&s.phaseT<=dt*1.01)s.vol=0;
+    s.vol+=qv*dt;if(s.vol<-0.2)s.vol=-0.2;
+    const c=s.cur;
+    if(c){if(paw>c.ppeak)c.ppeak=paw;c.pawSum+=paw*dt;c.pT+=dt;if(qv>0&&s.phase==='insp')c.vti+=qv*dt;if(qv<0)c.vte-=qv*dt;
+      if(s.phase==='exp'&&q<c.qExpPk)c.qExpPk=q;c.qEnd=q;}
+    const vd=p.vd+(this.set.hme?0.05:0);
+    const ep=s.ep;
+    if(q>0.015){if(!ep.on){ep.on=true;ep.vin=0;}ep.vin+=q*dt;ep.quiet=0;}
+    else if(ep.on){ep.quiet+=dt;if(ep.quiet>0.15){ep.on=false;const va=Math.max(0,ep.vin-vd);s.vaAcc+=va;s.vaF+=va;s.veAcc+=ep.vin;s.rrAcc+=ep.vin>0.05?1:0;s.lastEpV=ep.vin;}}
+    const k30=Math.exp(-dt/30),k8=Math.exp(-dt/8);
+    s.vaAcc*=k30;s.veAcc*=k30;s.rrAcc*=k30;s.vteAcc*=k30;s.brAcc*=k30;s.ptAcc*=k30;s.vaF*=k8;
+    if(q<-0.01)s.expV+=-q*dt;
+    if(q>0.02)s.inspFlag+=dt;else s.inspFlag=0;
+    let co2=s.co2;
+    if(s.inspFlag>0.04||s.disc)co2=Math.max(0,co2-dt*400);
+    else if(q<-0.005){const f=sig((s.expV-0.8*vd)/(0.13*vd+0.005)),slope=p.phi>0.2?0.35:0.08,prog=Math.min(1,s.expV/Math.max(0.1,s.vtPrev));
+      co2=s.petco2*(1-slope*(1-prog))*f;}
+    s.co2=co2;if(co2>s.co2Max)s.co2Max=co2;
+    s.pes=p.ppl0+s.palvEl*(1-s.fL)+s.ptens*0.6-s.pmus;
+    const a=1-Math.exp(-dt/5);s.pplMean+=(s.pes+s.pmus-s.pplMean)*a;s.palvMean+=(s.palvEl-s.palvMean)*a;
+    s.zt+=dt;if(s.zt>=0.05){this.zoneTick(s.zt);s.zt=0;}
+    this.cardiac(dt);
+    s.slowT+=dt;if(s.slowT>=1){this.slow(s.slowT);s.slowT=0;}
+  }
+  timeCycle(){
+    const s=this.s,set=this.set,m=set.mode;
+    if(s.phase!=='exp'||s.hold==='exp')return;
+    if(m==='VC'||m==='PC'||m==='PRVC'){if(s.since>=60/set.rr)this.timeStart();}
+    else if(m==='SIMV'){const T=60/set.rr;if(s.t-s.simvStart>=T){const was=s.simvPend;s.simvStart=s.t;s.simvPend=true;if(was)this.timeStart();}}
+    else if(m==='PSV'){
+      if(!s.backup&&s.since>=set.apnea){s.backup=true;s.bkTrig=0;this.flag('apnea');this.log('Apnea: backup ventilation started','warn');}
+      if(s.backup&&s.since>=60/set.bkRR)this.timeStart();}
+    else if(m==='APRV'){if(s.phaseT>=set.tlow)this.startBreath('time');}
+  }
+  timeStart(){const s=this.s;
+    if(s.holdReq==='exp'){s.hold='exp';s.holdReq=null;s.pauseDur=3;s.phaseT=0;return;}
+    if(this.set.mode==='SIMV'){s.simvPend=false;s.simvStart=s.t;}
+    this.startBreath('time');}
+  patientTrigger(){
+    const s=this.s,m=this.set.mode;
+    if(s.holdReq==='exp'){s.hold='exp';s.holdReq=null;s.pauseDur=3;s.phaseT=0;return;}
+    s.effTrig++;
+    if(m==='SIMV'){const mand=s.simvPend;if(mand)s.simvPend=false;this.startBreath('pt',mand?'vc':'ps');return;}
+    if(m==='PSV'&&s.backup){s.bkTrig++;if(s.bkTrig>=2){s.backup=false;this.log('Patient triggering resumed: back to pressure support');}}
+    this.startBreath('pt');
+  }
+  manual(){const s=this.s;if(s.phase==='exp'&&!s.hold&&this.set.mode!=='APRV')this.startBreath('man');}
+  startBreath(kind,forced){
+    const s=this.s,set=this.set,m=set.mode;
+    this.finalizeBreath();
+    let type;
+    if(forced)type=forced;
+    else if(m==='VC'||m==='SIMV')type='vc';
+    else if(m==='PC'){type='pc';s.bP=set.pinsp;}
+    else if(m==='PRVC'){type='pc';s.bP=s.prvcP;}
+    else if(m==='PSV')type=s.backup?'vc':'ps';
+    else if(m==='APRV'){type='aprv';s.bP=set.phigh-set.plow;}
+    if(kind==='man'&&type==='ps')type='vc';
+    if(type==='ps')s.bP=set.ps;
+    if(s.rmReq){s.rmReq=false;type='rm';s.rm={dur:40};s.bP=40-this.base();this.log('Recruitment maneuver: sustained inflation to 40 cmH₂O for 40 s','act');}
+    s.bVt=(m==='PSV'?set.bkVt:set.vt)/1000;
+    s.btype=type;s.bkind=kind;s.phase='insp';s.phaseT=0;s.since=0;s.deliv=0;s.qPeak=0;s.trigT=0;s.co2Max=0;
+    for(const zs of s.z)zs.rEE=zs.r;
+    this.updateMech();
+    s.cur={t0:s.t,kind,type,ppeak:-99,pawSum:0,pT:0,vti:0,vte:0,ti:0,palvEI:null,plat:null,peepTot:s.palvEl,v0:s.x,qExpPk:0,qEnd:0,pesEE:s.pes+s.pmus};
+  }
+  endInsp(trunc){
+    const s=this.s,set=this.set,c=s.cur;
+    if(c){c.ti=s.phaseT;c.palvEI=s.palvEl;c.vtPat=s.x-c.v0;c.trunc=trunc;c.pesEI=s.pes+s.pmus;}
+    for(const zs of s.z){zs.rEI=zs.r;zs.odEI=zs.od;}
+    s.CLei=this.lungC();if(c&&c.vtPat>0.05)s.vtPrev=c.vtPat;
+    if(s.btype==='rm'){s.rm=null;this.log('Recruitment maneuver complete','act');}
+    if(s.holdReq==='insp'&&!trunc){s.phase='pause';s.hold='insp';s.holdReq=null;s.pauseDur=2.5;s.phaseT=0;return;}
+    if(s.btype==='vc'&&set.pause>0&&!trunc){s.phase='pause';s.pauseDur=set.pause;s.phaseT=0;return;}
+    s.phase='exp';s.phaseT=0;s.expV=0;
+  }
+  finalizeBreath(){
+    const s=this.s,set=this.set,c=s.cur;if(!c)return;
+    const dur=s.t-c.t0;if(dur<0.05){s.cur=null;return;}
+    c.dur=dur;c.te=Math.max(0.01,dur-c.ti);c.pmean=c.pawSum/Math.max(0.01,c.pT);c.peepEnd=s.palvEl;c.peepMeasEnd=s.paw;
+    s.hist.push(c);if(s.hist.length>16)s.hist.shift();
+    const M=s.meas;
+    M.ppeak=c.ppeak;M.pmean=c.pmean;M.peep=s.paw;M.vti=c.vti*1000;M.vte=c.vte*1000;M.ti=c.ti;M.te=c.te;M.kind=c.kind;M.type=c.type;
+    if(c.plat!=null){M.pplat=c.plat;M.pplatT=s.t;}
+    const h=s.hist.slice(-6),tt=h.reduce((a,b)=>a+b.dur,0);M.ftot=h.length?60*h.length/tt:0;
+    M.ie=c.te/Math.max(0.05,c.ti);
+    M.leak=c.vti>0.05?clamp((c.vti-c.vte)/c.vti*100,0,100):0;
+    M.vtPat=(c.vtPat||0)*1000;M.palvEI=c.palvEI;M.peepTot=c.peepEnd;M.autoPeep=Math.max(0,c.peepEnd-this.base());
+    M.dp=(c.palvEI!=null)?c.palvEI-c.peepTot:null;M.pesEI=c.pesEI;M.pesEE=c.pesEE;
+    M.qExpPk=c.qExpPk;M.qEnd=c.qEnd;M.trunc=c.trunc;
+    s.etco2=s.co2Max;
+    s.vteAcc+=c.vte;s.brAcc+=1;if(c.kind==='pt')s.ptAcc+=1;
+    M.mve=s.vteAcc/30*60;M.fspont=s.ptAcc/30*60;
+    if(set.mode==='PRVC'&&c.type==='pc'&&c.kind!=='man'){
+      const err=set.vt/1000-c.vte,d=clamp(err/Math.max(0.005,s.crs/1000),-3,3),lim=set.pmax-5-set.peep;
+      s.prvcP=clamp(s.prvcP+d,5,Math.max(5,lim));
+      if(s.prvcP>=lim-0.01&&err>0.05)this.flag('plim');
+    }
+    if(c.vte*1000<set.vteLow&&c.type!=='rm'&&!s.disc)this.flag('vtelow');
+    if(M.leak>25&&c.vti>0.1)this.flag('leak');
+    s.cur=null;
+  }
+  flag(id){this.s.flags[id]=this.s.t;}
+}
+
+/* ===================== slower physiology (≈1 Hz) ===================== */
+Object.assign(Sim.prototype,{
+  updateGeom(){
+    const s=this.s,p=this.p,pr=s.prone,ed=p.sp*s.edema*(1+0.6*s.vili/100),ab=p.abd||0;
+    const sp=d=>{const dep=pr?1-d:d;return ed*Math.pow(dep,1.3)*(pr?0.62:1)+ab*dep*(pr?0.5:1);};
+    const mid=sp(0.5);
+    p.zones.forEach((z,i)=>{s.z[i].g=sp(z.d)-mid;s.z[i].dep=pr?1-z.d:z.d;});
+    const fi=this.fio2();
+    s.pOpenEff=p.pOpen+3*s.vili/100;s.pCloseEff=p.pClose+1.5*s.vili/100+1.2*Math.max(0,fi-0.6)/0.4;
+  },
+  zoneTick(dt){
+    const s=this.s,p=this.p,fi=this.fio2(),PL=s.palvEl*s.fL-p.ppl0;
+    for(let i=0;i<16;i++){
+      const z=p.zones[i],zs=s.z[i];let PLr=PL-zs.g;
+      const ptxSide=s.ptx&&!s.ptx.tube&&z.side===s.ptx.side;
+      if(ptxSide)PLr-=(s.ptx.needle?8:30)+s.ptens;else if(s.ptx)PLr-=s.ptens*0.4;
+      if(s.mainstem&&z.side===1){const tau=clamp(90*0.35/fi,25,240);zs.r-=zs.r*(1-Math.exp(-dt/tau));zs.od=0;}
+      else{const op=sig((PLr-s.pOpenEff)/2.0),hd=sig((PLr-s.pCloseEff)/1.0);
+        if(op>zs.r)zs.r+=(op-zs.r)*(1-Math.exp(-dt/0.3));
+        else if(hd<zs.r)zs.r-=(zs.r-hd)*(1-Math.exp(-dt/(ptxSide?2:0.7)));
+        zs.od=sig((PLr-p.pOd)/1.5);}
+      const a=1-Math.exp(-dt/6);zs.rAvg+=(zs.r-zs.rAvg)*a;zs.odAvg+=(zs.od-zs.odAvg)*a;
+    }
+  },
+  drive(){
+    const s=this.s,p=this.p;
+    const chem=Math.max(0,1+p.chemo*(10*(7.40-s.ph)+0.03*Math.max(0,70-s.pao2)));
+    const D=p.drive*SEDTAB[String(s.rass)]*chem*((s.arrest||s.extubated)?0:1);
+    s.driveEff=D;s.rrPat=clamp(4+12*D,4,44);
+    const ap=Math.max(0,s.meas.autoPeep||0);
+    s.pmusPat=clamp((1+7*D)*p.muscle*(1-0.3*clamp(ap/12,0,1)),0,28);
+    const wob=(s.nmb||D<0.2)?0:0.015*s.pmusPat*Math.min(2,D);
+    s.VO2dem=p.vo2*(1+0.1*(p.temp-37))*(s.rass>0?1+0.07*s.rass:1)*(s.nmb?0.9:1)*(1+wob);
+    s.VCO2=s.VO2dem*p.rq;
+  },
+  gas(dt){
+    const s=this.s,p=this.p,fi=this.fio2(),PIO2=fi*(PATM-PH2O),hb=p.hb,T=p.temp,ph=s.ph;
+    s.VA=s.vaAcc/30*60;s.VAf=s.vaF/8*60;s.VE=s.veAcc/30*60;s.rrTot=s.rrAcc/30*60;
+    const CO=Math.max(0.4,s.arrest?s.potCo:s.co);
+    let ws=0;const vw=new Array(16);
+    for(let i=0;i<16;i++){const z=p.zones[i],zs=s.z[i];vw[i]=(s.mainstem&&z.side===1)?0:z.c0*(1-z.cons)*zs.rAvg*(1-0.6*zs.odAvg);ws+=vw[i];}
+    const phi=p.phi,psi=p.psi,den=(1-phi)+phi*psi,hpv=p.hpv,ino=s.ino?1.25:1,lys=s.lysis;
+    const hyp=P=>sig((70-P)/10);
+    const comps=[];let wsh=0,wt=0;
+    for(let i=0;i<16;i++){
+      const z=p.zones[i],zs=s.z[i];
+      const pe=z.pe+(1-z.pe)*lys;
+      const base=z.pw*pe*(1-0.5*zs.odAvg)*(1+0.35*(zs.dep-0.5));
+      const aer=(1-z.cons)*zs.rAvg*((s.mainstem&&z.side===1)?0:1);
+      wsh+=base*(1-aer)*(1-hpv);
+      const vent=ws>0?s.VA*vw[i]/ws:0;
+      const qf=base*aer*(1-phi)*(1-hpv*hyp(zs.pa))*ino;
+      comps.push({i,sub:0,w:qf,va:vent*(1-phi)/den});wt+=qf;
+      if(phi>0){const qs=base*aer*phi*(1-hpv*hyp(zs.pb))*ino;comps.push({i,sub:1,w:qs,va:vent*phi*psi/den});wt+=qs;}
+    }
+    const tot=wsh+wt,fsh=(wsh/tot)*(1-p.shuntX)+p.shuntX;
+    let E=0,gm=fsh,vs=0,lowvq=0,dsv=0;
+    for(const c of comps){c.f=c.w/tot*(1-p.shuntX);c.Q=CO*c.f;c.r=c.va/Math.max(c.Q,1e-5);c.g=1/(1+c.r/5.6);E+=c.va*c.g;gm+=c.f*c.g;vs+=c.va;if(c.r<0.35)lowvq+=c.f;if(c.r>3)dsv+=c.va;}
+    s.pvco2=clamp(s.pvco2+(s.VCO2-s.pvco2*E/0.863)/(0.5*p.weightKg)*(dt/60),12,230);
+    s.paco2=s.pvco2*gm;s.petco2=vs>0.05?s.pvco2*E/vs:0;s.Eco2=E;s.gmix=gm;
+    if(s.arrest)s.petco2*=0.4;
+    let cv=Math.max(1,s.cvo2);
+    const vo2=Math.min(s.VO2dem,0.7*CO*s.cao2*10);s.vo2eff=vo2;
+    const iters=s.fast?5:9,bis=s.fast?18:24;let ca=0;
+    const sh=comps.map(c=>shiftF(ph,s.pvco2*c.g,T));
+    for(let it=0;it<iters;it++){
+      ca=fsh*cv;
+      for(let j=0;j<comps.length;j++){const c=comps[j];if(c.f<1e-7){c.pa=40;continue;}
+        const r=Math.max(c.r,1e-4),shj=sh[j];let lo=1,hi=Math.max(2,PIO2);
+        for(let k=0;k<bis;k++){const m=(lo+hi)/2,cc=1.34*hb*satX(m*shj)+0.003*m;if(PIO2-m-KO2*(cc-cv)/r>0)lo=m;else hi=m;}
+        c.pa=(lo+hi)/2;c.cc=1.34*hb*satX(c.pa*shj)+0.003*c.pa;ca+=c.f*c.cc;}
+      cv+=0.65*(Math.max(1,ca-vo2/(10*CO))-cv);
+    }
+    s.cvo2=cv;s.caT=ca;
+    for(const c of comps){if(c.sub===0)s.z[c.i].pa=c.pa;else s.z[c.i].pb=c.pa;}
+    if(phi===0)s.z.forEach(zs=>zs.pb=zs.pa);
+    let aerTot=0;p.zones.forEach((z,i)=>aerTot+=z.w*(1-z.cons)*s.z[i].rAvg);
+    const frc=2.0*aerTot+s.veq+Math.max(0,s.x);
+    let tau=12;
+    if(s.caT<s.cao2){const store=frc*(PIO2/713)*1000*0.85;tau=8+clamp(store/(vo2/60),0,220)*(1-fsh);}
+    s.cao2+=(s.caT-s.cao2)*(1-Math.exp(-dt/tau));
+    s.pao2=invCont(s.cao2,hb,ph,s.paco2,T);s.sao2=satO2(s.pao2,ph,s.paco2,T);
+    s.svo2=satO2(invCont(Math.max(1,s.cao2-vo2/(10*CO)),hb,ph,s.pvco2,T),ph,s.pvco2,T);
+    s.shunt=fsh;s.lowvq=lowvq;s.deadFrac=vs>0?dsv/vs:0;
+    const ccI=contO2(Math.max(1,PIO2-s.paco2/0.8),hb,ph,s.paco2,T);
+    s.qsqt=clamp((ccI-s.cao2)/Math.max(0.1,ccI-(s.cao2-vo2/(10*CO))),0,1);
+    const elim=s.pvco2*E/0.863;s.peco2=s.VE>0.1?0.863*elim/s.VE:0;
+    s.vdvt=s.paco2>1&&s.VE>0.1?clamp((s.paco2-s.peco2)/s.paco2,0,0.99):1;
+    s.paAO2=PIO2-s.paco2/0.8;s.do2=CO*s.cao2*10;s.o2er=s.do2>0?vo2/s.do2:1;
+    s.spo2buf.push(s.sao2*100);if(s.spo2buf.length>8)s.spo2buf.shift();
+    s.spo2=s.spo2buf[0];
+  },
+  acidBase(dt){
+    const s=this.s,p=this.p;
+    const buf=s.paco2>40?0.1*(s.paco2-40):0.15*(s.paco2-40);
+    const renT=s.paco2>40?0.35*(s.paco2-40):0.4*(s.paco2-40);
+    s.ren+=(renT-s.ren)*(1-Math.exp(-dt/(36*3600)));
+    s.hco3=clamp(p.hco3Met+s.ren+buf-(s.lac-1)*0.9+s.bicarb,3,60);
+    s.ph=6.1+Math.log10(s.hco3/(0.0307*Math.max(5,s.paco2)));
+    s.be=0.93*(s.hco3-24.4+14.8*(s.ph-7.4));
+    const def=s.VO2dem>0?Math.max(0,1-s.vo2eff/s.VO2dem):0;
+    const prod=p.lacProd+22*def+(s.sao2<0.75?(0.75-s.sao2)*14:0)+(s.map<60?(60-s.map)*0.08:0)+(s.arrest?8:0);
+    s.lac=clamp(s.lac+(prod-(s.lac-0.9)/2.0)*dt/3600,0.5,25);
+  },
+  hemoSolve(ppl){
+    const s=this.s,p=this.p,ne=s.norepi;
+    const msfp=p.msfp+s.fluidP+14*ne+0.15*Math.max(0,ppl);
+    const acid=s.ph<7.15?clamp(1-1.4*(7.15-s.ph),0.35,1):1;
+    const hyp=s.sao2<0.75?clamp(1-(0.75-s.sao2)*1.5,0.3,1):1;
+    const hr=Math.max(30,s.hr);
+    const hrF=clamp(Math.pow(hr/80,0.5),0.55,1.4)*(hr>150?clamp(1-(hr-150)/80,0.5,1):1);
+    const plm=s.palvMean*s.fL-p.ppl0;
+    const pvrBase=1+(p.pvr-1)*(1-0.8*s.lysis);
+    const pvri=pvrBase*(1+1.5*s.odFrac)*(1+0.03*Math.max(0,plm-8))*(s.sao2<0.9?1+(0.9-s.sao2)*1.5:1)*(s.ph<7.3?1+(7.3-s.ph)*1.5:1)*(s.ino?0.9:1);
+    const rvF=1/(1+p.rvSens*Math.max(0,pvri-1));
+    const lvF=1+p.lvAfter*clamp(ppl/30,0,0.5);
+    const sedI=s.rass<=-4?0.94:1;
+    const comax=p.comax*acid*hyp*hrF*rvF*lvF*(1+0.6*ne)*sedI;
+    const f=x=>comax*(1-Math.exp(-Math.max(0,x)/p.ks))-(msfp-x-ppl)/p.rvr;
+    let lo=-5,hi=Math.max(-4,msfp-ppl),co;
+    if(hi<=0){co=0.3;lo=0;}else{for(let i=0;i<40;i++){const m=(lo+hi)/2;if(f(m)<0)lo=m;else hi=m;}co=Math.max(0.3,comax*(1-Math.exp(-Math.max(0,lo)/p.ks)));}
+    const svr=s.svr0*(1+2.5*ne)*SEDSVR[String(s.rass)]*(s.ph<7.1?clamp(1-1.2*(7.1-s.ph),0.55,1):1);
+    const cvp=lo+ppl,map=cvp+co*svr/80;
+    return{co,cvp,map,svr,rapTm:lo,comax,pvri};
+  },
+  hemo(dt){
+    const s=this.s,p=this.p;
+    const ppl=(s.pplMean+s.ptens*0.4)*0.735;
+    const h=this.hemoSolve(ppl);
+    s.potCo=h.co;s.potMap=h.map;
+    if(s.arrest){s.co=1.3;s.map=30;s.cvp=h.cvp;s.svr=h.svr;}
+    else{const k=1-Math.exp(-dt/6);s.co+=(h.co-s.co)*k;s.map+=(h.map-s.map)*k;s.cvp=h.cvp;s.svr=h.svr;}
+    s.pvri=h.pvri;
+    let hrT=p.hr+1.1*Math.max(0,70-s.map)+0.7*Math.max(0,92-s.sao2*100)+0.25*Math.max(0,s.paco2-50)+(s.rass>0?12*s.rass:0)
+      +25*s.norepi+Math.min(15,s.dysCount*1.5)+(s.rass>=-1&&s.driveEff>1.3?(s.driveEff-1.3)*20:0);
+    if(s.sao2<0.6)hrT-=(0.6-s.sao2)*250;if(s.rass<=-4)hrT-=6;if(s.ph<7.0)hrT-=(7.0-s.ph)*80;
+    hrT=clamp(hrT,25,175);s.hr+=(hrT-s.hr)*(1-Math.exp(-dt/12));
+    s.sv=s.co/Math.max(30,s.hr)*1000;
+    const pp=clamp(s.sv/p.cart,8,110);s.ppBase=pp;
+    s.dbp=s.map-pp/3;s.sbp=s.map+2*pp/3;
+    const M=s.meas,dpt=(M.palvEI!=null&&M.peepTot!=null)?Math.max(0,M.palvEI-M.peepTot):0;
+    s.dpTidal=dpt;s.lastPeepTot=M.peepTot!=null?M.peepTot:this.base();
+    const dPpl=dpt*(1-s.fL)*0.735,x=h.rapTm,cm=h.comax,ks=p.ks;
+    const c1=cm*(1-Math.exp(-Math.max(0,x)/ks)),c0=cm*(1-Math.exp(-Math.max(0,x-dPpl)/ks));
+    s.ppv=clamp(13*(c1-c0)/Math.max(0.3,c1)*((s.nmb||s.driveEff<0.2)?1:0.6),0,40);
+  },
+  injury(dt){
+    const s=this.s,p=this.p,M=s.meas,fi=this.fio2();
+    const vtkg=(M.vtPat||0)/p.pbw,dp=M.dp||0;
+    s.mp=0.098*(M.ftot||0)*(M.vtPat||0)/1000*Math.max(0,(M.ppeak||0)-0.5*dp);
+    let tr=0,od=0,col=0,cons=0,rec=0;
+    p.zones.forEach((z,i)=>{const zs=s.z[i],o=z.w*(1-z.cons);tr+=o*Math.max(0,zs.rEI-zs.rEE);od+=o*zs.odEI*zs.rEI;col+=o*(1-zs.rAvg);cons+=z.w*z.cons;rec+=o*zs.rAvg;});
+    s.tidalRec=tr;s.odFrac=od;s.colFrac=col;s.consFrac=cons;s.recFrac=rec;
+    const effort=s.nmb?0:Math.max(0,s.pmusPat*Math.min(2,s.driveEff)-14)*0.25;
+    const rate=(Math.max(0,vtkg-7)*1.2+Math.max(0,dp-15)*0.5+tr*25+od*18+Math.max(0,s.mp-17)*0.25+effort)*p.vuln*0.35+Math.max(0,fi-0.6)*1.2;
+    s.viliRate=rate;
+    s.vili=clamp(s.vili+(rate-(rate<1.5?0.02*s.vili:0))*dt/3600,0,100);
+    if(p.cat==='ards'&&rate<2)s.edema=Math.max(0.55,s.edema-0.008*s.edema*dt/3600);
+    s.lungScale=1-0.2*s.vili/100;
+    if(fi>0.6)s.fio2Hi+=dt;else s.fio2Hi=Math.max(0,s.fio2Hi-dt);
+    const pk=Math.max(M.palvEI||0,s.rm?40:0);
+    s.baroHaz=0.004*Math.exp((pk-28)/3.5)*(p.fragility/0.5)*(1+s.vili/30);
+    if(s.randomEvents&&!s.ptx&&!s.fast&&this.rng()<s.baroHaz*dt/3600){
+      const side=this.rng()<0.5?0:1;this.event(this.rng()<0.7?'tptx':'ptx',side);this.log('Barotrauma: alveolar rupture has caused a pneumothorax','crit');}
+  },
+  stats(dt){
+    const s=this.s,p=this.p,M=s.meas,st=s.stats,T=TARGETS[p.cat]||TARGETS.normal;
+    st.T+=dt;
+    if(s.spo2>=T.s[0]-0.5&&s.spo2<=T.s[1]+0.5)st.sat+=dt;
+    if((M.palvEI||0)<=30||p.cat==='obese')st.pplat+=dt;
+    if((M.dp||0)<=15)st.dp+=dt;
+    if((M.vtPat||0)/p.pbw<=8.05)st.vt+=dt;
+    if((M.autoPeep||0)<=4)st.ap+=dt;
+    if(s.map>=65)st.map+=dt;
+    if(s.ph>=T.ph[0]&&s.ph<=T.ph[1])st.ph+=dt;
+    st.maxPplat=Math.max(st.maxPplat,M.palvEI||0);st.maxAP=Math.max(st.maxAP,M.autoPeep||0);
+    st.minSat=Math.min(st.minSat,s.spo2);st.minMap=Math.min(st.minMap,s.map);st.maxVili=Math.max(st.maxVili,s.vili);
+  },
+  slow(dt){
+    const s=this.s,p=this.p;
+    if(s.o2flush>0)s.o2flush-=dt;
+    if(s.discUntil&&s.t>=s.discUntil){s.disc=false;s.discUntil=0;this.log('Circuit reconnected','act');}
+    if(s.albu>0){s.albu-=dt;s.bronch=Math.max(p.bronchFloor||0,s.bronch*Math.exp(-dt/180));}
+    if(s.lasix>0){s.lasix-=dt;s.fluidP-=2.5*dt/3600;if(p.cat==='chf')s.edema=Math.max(0.4,s.edema-0.45*dt/3600);else if(p.cat==='ards')s.edema=Math.max(0.5,s.edema-0.15*dt/3600);}
+    s.fluidP*=Math.exp(-dt/(6*3600));
+    if(s.lysisOn&&s.lysis<1)s.lysis=Math.min(1,s.lysis+dt/2400);
+    if(s.ptx&&s.ptx.tension&&!s.ptx.needle&&!s.ptx.tube)s.ptens=Math.min(28,s.ptens+dt*0.006*Math.max(4,s.palvMean));
+    if(s.ptx&&(s.ptx.needle||s.ptx.tube))s.ptens=Math.max(s.ptx.tube?0:2,s.ptens-dt*2);
+    if(s.biting&&s.rass>=1){s.ettObs=this.rng()<0.3?0.45+0.45*this.rng():s.ettObs*0.5;}
+    else if(s.biting&&s.rass<1){s.biting=false;s.ettObs=0;this.log('Sedation deepened: patient no longer biting the tube','act');}
+    const h=s.t-60;s.ineff=s.ineff.filter(t=>t>h);s.dbl=s.dbl.filter(t=>t>h);s.dysCount=s.ineff.length+s.dbl.length;
+    this.drive();this.updateGeom();this.gas(dt);this.acidBase(dt);this.hemo(dt);this.injury(dt);this.stats(dt);
+    this.alarmsUpdate();this.arrestCheck(dt);
+  },
+  alarmsUpdate(){
+    const s=this.s,set=this.set,M=s.meas,A=[],f=s.flags,rec=id=>f[id]!=null&&s.t-f[id]<8;
+    const add=(id,pri,src,msg)=>A.push({id,pri,src,msg});
+    if(s.dead){s.alarms=[{id:'dead',pri:'high',src:'mon',msg:'Asystole'}];return;}
+    if(s.arrest)add('arrest','high','mon','No pulse: PEA (CPR in progress)');
+    if(s.disc)add('disc','high','vent','Disconnection');
+    if(rec('hp'))add('hp','high','vent','High pressure: breath cut short');
+    if(s.backup||rec('apnea'))add('apnea','high','vent','Apnea: backup ventilation');
+    if(rec('vtelow')&&!s.disc)add('vte','med','vent','Exhaled Vt low');
+    if(rec('leak'))add('leak','med','vent','Leak: VTe much lower than VTi');
+    if(rec('plim'))add('plim','med','vent','Volume not reached: pressure limited');
+    if((M.mve||0)<3&&!s.disc&&s.t>40)add('mv','high','vent','Exhaled minute volume low');
+    if((M.ftot||0)>35)add('rr','med','vent','Respiratory rate high');
+    if((M.autoPeep||0)>8&&!s.disc)add('ap','med','vent','Expiratory flow not ending: check for air trapping');
+    if(!s.arrest){
+      if(s.spo2<85)add('spo2','high','mon','SpO₂ low');else if(s.spo2<89)add('spo2','med','mon','SpO₂ low');
+      if(s.map<55)add('map','high','mon','ABPm low');else if(s.map<65)add('map','med','mon','ABPm low');
+      if(s.hr>140)add('hr','high','mon','Tachycardia');else if(s.hr<45)add('hr','high','mon','Bradycardia');else if(s.hr>120)add('hr','med','mon','HR high');
+      if(s.etco2<8&&!s.disc&&(M.mve||0)>1)add('co2','high','mon','No CO₂ detected');else if(s.etco2>65)add('co2h','med','mon','etCO₂ high');
+    }
+    s.alarms=A;
+  },
+  arrestCheck(dt){
+    const s=this.s;
+    if(!s.arrest){
+      s.lowSatT=s.sao2<0.5?s.lowSatT+dt:Math.max(0,s.lowSatT-2*dt);
+      s.lowMapT=s.map<40?s.lowMapT+dt:Math.max(0,s.lowMapT-2*dt);
+      s.lowPhT=s.ph<6.9?s.lowPhT+dt:Math.max(0,s.lowPhT-dt);
+      if(s.lowSatT>80||s.lowMapT>60||s.lowPhT>180){
+        const cause=s.lowSatT>80?'severe hypoxemia':s.lowPhT>180?'severe acidemia':'circulatory collapse';
+        s.arrest={t:s.t,cause,rosc:0,dur:0};this.log(`Cardiac arrest (PEA) from ${cause}. CPR started.`,'crit');}
+    }else{
+      const a=s.arrest;a.dur=s.t-a.t;
+      const ok=s.potMap>60&&s.sao2>0.82&&s.ph>6.95;
+      a.rosc=ok?a.rosc+dt:0;
+      if(a.rosc>45){s.arrest=null;s.lowSatT=s.lowMapT=s.lowPhT=0;s.co=s.potCo;s.map=s.potMap;this.log('ROSC: pulse restored after the cause was fixed','good');}
+      else if(a.dur>900){s.dead=true;this.log('Resuscitation stopped after 15 minutes without ROSC','crit');}
+    }
+  },
+  cardiac(dt){
+    const s=this.s,r=this.rng,ar=s.arrest;
+    s.beatPh+=dt;s.aPh+=dt;s.pPh+=dt;
+    if(s.dead){s.ecg=0.01*(r()-0.5);s.abp=4;s.pleth=0;return;}
+    if(ar){
+      const Tc=60/110,ct=s.t%Tc,u=ct/Tc;
+      const pea=s.t%1.5;
+      s.ecg=0.45*gauss(pea,0.1,0.03)-0.15*gauss(pea,0.2,0.05)+0.35*Math.sin(2*Math.PI*s.t/Tc)+0.05*(r()-0.5);
+      s.abp=u<0.5?14+46*Math.pow(Math.sin(Math.PI*u/0.5),1.3):14+5*Math.exp(-(u-0.5)/0.1);
+      s.pleth=0.05*Math.max(0,Math.sin(2*Math.PI*s.t/Tc));s.perf=0.02;
+      if(s.beatPh>=1.5){s.beatPh=0;s.beats++;}
+      return;
+    }
+    const prevPh=s.beatPh-dt;
+    if(s.beatPh>=s.beatRR){
+      s.beatPh=0;s.beats++;
+      const risk=(s.sao2<0.85?(0.85-s.sao2)*1.2:0)+(s.ph<7.2?(7.2-s.ph)*1.5:0)+(s.ph>7.55?(s.ph-7.55)*2:0)+(s.norepi>0.3?0.04:0);
+      s.pvc=!s.pvc&&r()<risk;
+      s.beatRR=60/Math.max(20,s.hr)*(s.pvc?0.72:1)*(1+0.03*(r()-0.5));
+      if(s.pvcPause){s.beatRR*=1.45;s.pvcPause=false;}if(s.pvc)s.pvcPause=true;
+      const resp=s.dpTidal>0.5?clamp((s.palvEl-s.lastPeepTot)/s.dpTidal,0,1):0.5;
+      const pp=s.ppBase*(1-(s.ppv||0)/100*(resp-0.5)*2)*(s.pvc?0.55:1);
+      s.beatDbp=s.dbp;s.beatSbp=s.dbp+pp;
+    }
+    const tb=s.beatPh,rri=60/Math.max(20,s.hr);
+    if(prevPh<0.2&&tb>=0.2){s.aPh=tb-0.2;s.aS=s.beatSbp;s.aD=s.beatDbp;s.aRR=s.beatRR;}
+    if(prevPh<0.3&&tb>=0.3){s.pPh=tb-0.3;s.pAmp=clamp(s.sv/70*Math.sqrt(1100/Math.max(300,s.svr)),0.03,1.6)*(s.pvc?0.5:1);s.perf=s.pAmp*2.2;}
+    let e;
+    if(s.pvc)e=-1.15*gauss(tb,0.08,0.035)+0.5*gauss(tb,0.26,0.06);
+    else e=0.12*gauss(tb,0.06,0.022)-0.1*gauss(tb,0.137,0.008)+1.1*gauss(tb,0.155,0.011)-0.26*gauss(tb,0.176,0.01)+0.28*gauss(tb,0.2+0.22*Math.sqrt(rri),0.045);
+    s.ecg=e+0.025*Math.sin(2*Math.PI*0.21*s.t)+0.012*(r()-0.5);
+    const t=s.aPh,D=s.aD,PP=s.aS-s.aD,Ts=Math.min(0.3,0.4*s.aRR);let v;
+    if(t<0.09)v=D+PP*(1-Math.cos(Math.PI*t/0.09))/2;
+    else if(t<Ts)v=D+PP*(1-0.3*Math.pow((t-0.09)/(Ts-0.09),1.3));
+    else{const td=Math.max(0.12,(s.aRR-Ts)/3);v=D+PP*0.68*Math.exp(-(t-Ts)/td)-0.07*PP*gauss(t,Ts+0.01,0.012)+0.06*PP*gauss(t,Ts+0.05,0.025);}
+    s.abp=v;
+    const xp=s.pPh;s.pleth=s.pAmp*(gauss(xp,0.12,0.06)+0.35*gauss(xp,0.33,0.08));
+  }
+});
+
+/* ===================== actions, events, bedside findings ===================== */
+Object.assign(Sim.prototype,{
+  run(sec,dt){dt=dt||0.005;const n=Math.round(sec/dt);for(let i=0;i<n;i++){this.step(dt);if(this.s.dead)break;}},
+  jump(dt){const s=this.s;s.t+=dt;if(s.cur)s.cur.t0+=dt;s.simvStart+=dt;this.slow(dt);},
+  settle(min){const s=this.s,f=s.fast;s.fast=true;if(s.rmReq||s.rm)this.run(55,0.01);for(let i=0;i<min;i++){this.run(6,0.01);if(s.dead)break;this.jump(54);if(s.dead)break;}this.run(10,0.01);s.fast=f;},
+  event(name,arg){
+    const s=this.s;
+    switch(name){
+      case 'ptx':case 'tptx':if(s.ptx)return;s.ptx={side:arg==null?0:arg,tension:name==='tptx',needle:false,tube:false};s.ptens=0;
+        this.log(`Complication: ${name==='tptx'?'tension ':''}pneumothorax (${s.ptx.side===0?'right':'left'})`,'crit');break;
+      case 'mucus':s.ettObs=0.6;this.log('Complication: mucus plug partly occluding the endotracheal tube','warn');break;
+      case 'bronch':s.bronch=Math.min(2.5,s.bronch+0.9);this.log('Complication: acute bronchospasm','warn');break;
+      case 'cuff':s.cuffLeak=0.035;this.log('Complication: endotracheal tube cuff leak','warn');break;
+      case 'circuit':s.circLeak=0.06;this.log('Complication: cracked circuit with a gas leak','warn');break;
+      case 'disc':s.disc=true;s.discUntil=0;this.log('Complication: circuit disconnected at the Y-piece','crit');break;
+      case 'mainstem':s.mainstem=true;this.log('Complication: tube advanced into the right mainstem bronchus','warn');break;
+      case 'agit':s.rass=2;s.biting=true;this.log('Complication: patient agitated and biting the tube','warn');break;
+    }
+  },
+  act(name,val){
+    const s=this.s,p=this.p,M=s.meas;let msg='';
+    switch(name){
+      case 'suction':if(s.ettObs>0.2){s.ettObs*=0.12;msg='Suctioned: thick plug removed, airway resistance falls';}else msg='Suctioned: small amount of thin secretions';
+        s.z.forEach(zs=>zs.r*=0.93);break;
+      case 'albuterol':s.albu=600;msg='Albuterol 8 puffs by in-line MDI';break;
+      case 'rm':s.rmReq=true;msg='Recruitment maneuver queued for the next breath';break;
+      case 'prone':s.prone=!s.prone;msg=s.prone?'Turned prone':'Returned supine';break;
+      case 'ino':s.ino=!s.ino;msg=s.ino?'Inhaled nitric oxide 20 ppm started':'Inhaled nitric oxide stopped';break;
+      case 'rass':s.rass=clamp(Math.round(val),-5,2);msg=`Sedation adjusted to target RASS ${s.rass>0?'+':''}${s.rass}`;break;
+      case 'nmb':s.nmb=!s.nmb;msg=s.nmb?'Cisatracurium infusion started':'Neuromuscular blockade stopped';break;
+      case 'fluid':{const cur=p.msfp+s.fluidP;s.fluidP+=1.4*(1-clamp((cur-18)/12,0,0.8));s.fluid+=500;
+        if(p.cat==='ards')s.edema+=0.05;if(p.cat==='chf')s.edema+=0.12;msg='Crystalloid 500 mL bolus';break;}
+      case 'norepi':s.norepi=clamp(val,0,1);msg=`Norepinephrine set to ${s.norepi.toFixed(2)} µg/kg/min`;break;
+      case 'lasix':s.lasix=3600;msg='Furosemide 40 mg IV';break;
+      case 'bicarb':s.bicarb+=1.6;s.pvco2+=3;msg='Sodium bicarbonate 50 mEq IV';break;
+      case 'tpa':if(p.cat==='pe'&&!s.lysisOn){s.lysisOn=true;msg='Alteplase 100 mg IV over 2 h started';}else msg=p.cat==='pe'?'Thrombolysis already running':'No indication for thrombolysis';break;
+      case 'needle':{const side=val||0,nm=side===0?'right':'left';
+        if(s.ptx&&s.ptx.side===side&&!s.ptx.tube){s.ptx.needle=true;msg=s.ptx.tension?`Needle decompression ${nm}: rush of air, tension relieved`:`Needle decompression ${nm}: small amount of air`;}
+        else if(!s.ptx){this.event('ptx',side);msg=`Needle decompression ${nm} with no pneumothorax present: you have caused one`;}
+        else msg=`Needle decompression ${nm}: no air. The pneumothorax is on the other side`;break;}
+      case 'tube':{const side=val||0,nm=side===0?'right':'left';
+        if(s.ptx&&s.ptx.side===side){s.ptx.tube=true;s.ptens=0;
+          if((M.palvEI||0)>30&&this.rng()<0.5){s.bpf=0.02;msg=`Chest tube ${nm}: persistent air leak through the tube (bronchopleural fistula)`;}else msg=`Chest tube ${nm}: lung re-expanding`;}
+        else msg=`Chest tube ${nm} placed but there is no pneumothorax on that side`;break;}
+      case 'withdraw':if(s.mainstem){s.mainstem=false;msg='Tube withdrawn 3 cm: tip now 4 cm above the carina';}else msg='Tube position already correct; withdrawing further risks extubation';break;
+      case 'cuffFix':if(s.cuffLeak){s.cuffLeak=0;msg='Cuff reinflated to 25 cmH₂O: leak resolved';}else msg='Cuff pressure 25 cmH₂O, no leak';break;
+      case 'circFix':if(s.circLeak){s.circLeak=0;msg='Circuit replaced: leak resolved';}else msg='Circuit checked: intact';break;
+      case 'reconnect':s.disc=false;s.discUntil=0;msg='Circuit reconnected';break;
+      case 'disc30':s.disc=true;s.discUntil=s.t+30;msg='Disconnected from the ventilator for 30 s to let trapped gas escape';break;
+      case 'esoph':s.esoph=!s.esoph;msg=s.esoph?'Esophageal balloon placed: Pes now shown':'Esophageal balloon removed';break;
+      case 'o2':s.o2flush=120;msg='O₂ 100% for 2 minutes';break;
+      case 'ihold':s.holdReq='insp';msg='Inspiratory hold requested';break;
+      case 'ehold':s.holdReq='exp';msg='Expiratory hold requested';break;
+      case 'manual':this.manual();msg='Manual breath';break;
+      case 'biteblock':s.biting=false;s.ettObs=0;msg='Bite block placed';break;
+    }
+    if(msg)this.log(msg,'act');
+    return msg;
+  },
+  rsbi(){const s=this.s,M=s.meas;const f=M.ftot||0,vt=(M.vte||0)/1000;return vt>0.02?f/vt:999;},
+  extubate(){
+    const s=this.s,set=this.set,c=[],ok=(t,b)=>c.push({t,ok:!!b});
+    ok('On spontaneous breathing trial settings (PSV ≤ 8, PEEP ≤ 8)',set.mode==='PSV'&&set.ps<=8&&set.peep<=8&&!s.backup);
+    ok('FiO₂ ≤ 0.40 with SpO₂ ≥ 90%',this.fio2()<=0.41&&s.spo2>=90);
+    const rs=this.rsbi();ok(`RSBI under 105 (now ${rs>500?'not measurable':rs.toFixed(0)})`,rs<105);
+    ok('pH ≥ 7.32',s.ph>=7.32);
+    ok('MAP ≥ 65 on norepinephrine ≤ 0.05',s.map>=65&&s.norepi<=0.05);
+    ok('Awake: RASS 0 to −1 and not paralyzed',s.rass>=-1&&s.rass<=1&&!s.nmb);
+    ok('No untreated pneumothorax or leak',!(s.ptx&&!s.ptx.tube)&&!s.cuffLeak&&!s.disc);
+    const fails=c.filter(x=>!x.ok).length,pr=fails===0?0.88:fails===1?0.45:fails===2?0.2:0.05;
+    const success=this.rng()<pr;
+    if(success){s.extubated=true;this.log('Extubated to high-flow nasal cannula: breathing comfortably','good');}
+    else this.log('Extubation failed: reintubated after 2 hours of respiratory distress','crit');
+    return{criteria:c,success,prob:pr};
+  },
+  abg(){const s=this.s;return{t:s.t,ph:s.ph,paco2:s.paco2,pao2:s.pao2,hco3:s.hco3,be:s.be,sao2:s.sao2*100,lac:s.lac,fio2:this.fio2(),pf:s.pao2/this.fio2(),peep:this.base()};},
+  ausc(){
+    const s=this.s,p=this.p,parts=[],R=[],L=[];
+    if(s.ptx&&!s.ptx.tube)(s.ptx.side===0?R:L).push('breath sounds absent, hyperresonant to percussion');
+    if(s.mainstem)L.push('breath sounds absent');
+    if(s.bronch>0.6||p.cat==='asthma')parts.push(s.bronch>1.4?'very quiet chest with faint wheeze (severe obstruction)':'diffuse expiratory wheeze');
+    if(p.cat==='copd')parts.push('distant breath sounds with prolonged expiration');
+    if(p.cat==='ards')parts.push('bilateral coarse crackles');
+    if(p.cat==='chf')parts.push(s.edema>0.7?'bibasilar crackles to the mid-lung fields, S3 gallop':'faint basal crackles');
+    if(p.cat==='obese')parts.push('distant breath sounds, reduced at the bases');
+    if(p.cat==='od')parts.push('crackles at the right base');
+    if(p.cat==='wean')parts.push('a few crackles at the right base');
+    if(s.ettObs>0.3)parts.push('coarse rhonchi and gurgling in the tube');
+    if(s.cuffLeak)parts.push('audible air leak at the mouth during inspiration');
+    if(s.ptx&&s.ptx.tension&&!s.ptx.needle&&!s.ptx.tube&&s.ptens>8)parts.push(`trachea deviated to the ${s.ptx.side===0?'left':'right'}, distended neck veins`);
+    let txt=parts.length?parts.join('; '):'clear, equal breath sounds';
+    if(R.length)txt=`Right side: ${R.join(', ')}. `+txt;if(L.length)txt=`Left side: ${L.join(', ')}. `+txt;
+    return txt[0].toUpperCase()+txt.slice(1)+'.';
+  },
+  cxr(){
+    const s=this.s,p=this.p,f=[];
+    f.push(s.mainstem?'Tube tip in the right mainstem bronchus':'Tube tip 4 cm above the carina');
+    if(s.ptx&&!s.ptx.tube)f.push(`${s.ptx.tension&&s.ptens>8?'large ':''}${s.ptx.side===0?'right':'left'} pneumothorax${s.ptx.tension&&s.ptens>8?' with mediastinal shift away from it':''}, deep sulcus sign`);
+    if(s.ptx&&s.ptx.tube)f.push(`${s.ptx.side===0?'right':'left'} chest tube in place`+(s.bpf?', persistent pneumothorax despite the tube':', lung re-expanded'));
+    if(s.mainstem)f.push('left lung volume loss');
+    f.push(p.cxr);
+    if((s.meas.autoPeep||0)>6)f.push('hyperinflated lungs with flattened hemidiaphragms');
+    if(s.vili>40)f.push('opacities worse than the previous film');
+    return f.join('. ')+'.';
+  },
+  us(){
+    const s=this.s,p=this.p,f=[];
+    if(s.ptx&&!s.ptx.tube)f.push(`No lung sliding on the ${s.ptx.side===0?'right':'left'} (barcode sign) with a lung point`);
+    else if(s.mainstem)f.push('Left: lung pulse but no sliding (lung not ventilated)');
+    else f.push('Lung sliding present on both sides');
+    if(p.cat==='ards')f.push('patchy B-lines with spared areas and subpleural consolidations');
+    else if(p.cat==='chf')f.push('diffuse symmetric B-lines with small bilateral effusions');
+    else f.push('A-line pattern');
+    if(s.colFrac>0.25)f.push('dependent consolidation with air bronchograms');
+    if(p.cat==='pe')f.push('dilated right ventricle with septal flattening');
+    if(s.cvp<4)f.push('small, collapsing IVC');
+    return f.join('; ')+'.';
+  }
+});
+
+Sim.clone=function(src,seed){const c=Object.create(Sim.prototype);c.p=src.p;c.set=Object.assign({},src.set);
+  const l=src.s.log;src.s.log=[];c.s=JSON.parse(JSON.stringify(src.s));src.s.log=l;c.rng=rng32(seed||99);c.s.randomEvents=false;return c;};
+Sim.prototype.applySettings=function(ns){
+  const s=this.s,old=this.set;this.set=Object.assign({},old,ns);
+  this.setPref(this.set.mode==='APRV'?this.set.plow:this.set.peep);
+  if(this.set.mode!==old.mode){s.backup=false;s.simvPend=true;s.simvStart=s.t;
+    if(this.set.mode==='PRVC')s.prvcP=clamp((s.meas.palvEI||15)-(s.meas.peepTot||5),6,30);}
+};
+Sim.prototype.snapshot=function(){
+  const s=this.s,M=s.meas,p=this.p;
+  const ratio=clamp(s.VA>0.05?s.VAf/s.VA:1,0.1,6);
+  const paSS=s.Eco2>0.01?0.863*s.VCO2/(s.Eco2*ratio)*s.gmix:200;
+  const saT=satO2(invCont(s.caT,p.hb,s.ph,s.paco2,p.temp),s.ph,s.paco2,p.temp);
+  return{ppeak:M.ppeak,pplat:M.palvEI,dp:M.dp,autoPeep:M.autoPeep,vt:M.vtPat,vte:M.vte,mve:M.mve,spo2:saT*100,paco2:Math.min(paSS,200),map:s.map,tidalRec:s.tidalRec,od:s.odFrac,shunt:s.shunt,ftot:M.ftot};
+};
+Sim.prototype.preview=function(ns){const c=Sim.clone(this);c.applySettings(ns);c.s.fast=true;c.run(45,0.01);return c.snapshot();};
+Sim.prototype.forecast=function(hours){
+  const c=Sim.clone(this);c.s.fast=true;c.run(30,0.01);
+  const out=[],step=1800;let haz=0;
+  for(let t=0;;t+=step){
+    const o=outcome(c);
+    out.push({h:t/3600,pf:c.s.pao2/c.fio2(),spo2:c.s.sao2*100,paco2:c.s.paco2,ph:c.s.ph,pplat:c.s.meas.palvEI,dp:c.s.meas.dp,vili:c.s.vili,map:c.s.map,lac:c.s.lac,baro:1-Math.exp(-haz),mort:o.mort,dead:c.s.dead,arrest:!!c.s.arrest});
+    if(c.s.dead||t>=hours*3600)break;
+    c.run(8,0.01);for(let k=0;k<6;k++){c.jump(297);if(c.s.dead)break;}
+    haz+=c.s.baroHaz*step/3600;
+  }
+  return out;
+};
+
+/* ---------- outcome estimate (teaching model only) ---------- */
+function outcome(sim){
+  const s=sim.s,p=sim.p,M=s.meas,fi=sim.fio2();
+  const vtkg=(M.vtPat||0)/p.pbw,dp=M.dp||0,pf=s.pao2/fi;
+  let lo=Math.log(p.mort/(1-p.mort));
+  lo+=0.05*Math.max(0,dp-13)+(p.cat==='ards'?0.08:0.04)*Math.max(0,vtkg-6.5);
+  lo+=pf<100?0.45:pf<200?0.2:0;
+  lo+=s.ph<7.2?clamp((7.2-s.ph)*5,0,1.2):0;lo+=s.ph>7.55?0.4:0;
+  lo+=s.map<65?0.04*(65-s.map):0;lo+=s.lac>2?0.15*(s.lac-2):0;
+  lo+=0.015*s.vili+Math.max(0,s.mp-17)*0.03+(s.ptx?0.3:0)+(s.sao2<0.85?(0.85-s.sao2)*4:0);
+  if(s.arrest)lo+=2.5;
+  return{mort:s.dead?1:1/(1+Math.exp(-lo)),vtkg,dp,pf};
+}
+
+/* ---------- coach: reads the bedside like an intensivist ---------- */
+function coach(sim){
+  const s=sim.s,p=sim.p,set=sim.set,M=s.meas,fi=sim.fio2(),out=[];
+  const T=TARGETS[p.cat]||TARGETS.normal,add=(lvl,title,body)=>out.push({lvl,title,body});
+  const pbw=p.pbw,vtkg=(M.vtPat||0)/pbw,pplat=M.palvEI||0,dp=M.dp||0,ap=M.autoPeep||0,res=(M.ppeak||0)-pplat,pf=s.pao2/fi;
+  const isPress=['PC','PRVC','PSV','APRV'].includes(set.mode),ardsLike=['ards','obese','chf'].includes(p.cat);
+  if(s.dead){add('crit','The patient has died','Review the log and the debrief, then restart the case.');return out;}
+  if(s.extubated){add('good','Extubated','Case complete. Pick another scenario or restart this one.');return out;}
+  if(s.arrest)add('crit','Cardiac arrest: treat the cause',`CPR is running. On a ventilator the fast reversible causes are tension pneumothorax (decompress), dynamic hyperinflation (disconnect for 30 s), hypoxemia (FiO₂ 1.0, check the tube) and severe acidosis. Pulses return once the circulation can work: projected MAP if the heart restarted is ${s.potMap.toFixed(0)}.`);
+  if(s.disc&&!s.discUntil)add('crit','The patient is disconnected','No ventilation, no PEEP, and the lung is collapsing. Reconnect the circuit.');
+  const tension=s.ptx&&s.ptx.tension&&!s.ptx.needle&&!s.ptx.tube&&s.ptens>5;
+  if(tension)add('crit','Pressures up, blood pressure down','Peak and plateau pressure both rose suddenly while blood pressure fell. That is a compliance catastrophe, and tension pneumothorax comes first. Listen for a silent side, then needle-decompress that side without waiting for imaging. A chest tube follows.');
+  else if(s.ptx&&!s.ptx.tube)add('warn','Pneumothorax not drained','On positive pressure a pneumothorax can convert to tension at any time. Place a chest tube on that side.');
+  if(s.bpf&&s.ptx&&s.ptx.tube)add('warn','Bronchopleural fistula',`Gas escapes through the chest tube on every breath. Use the lowest PEEP, tidal volume and inspiratory time that keep gas exchange acceptable.`);
+  if(s.mainstem&&!tension)add('warn','One lung is not being ventilated','High pressures and hypoxemia after intubation with silence over the left chest points to right-mainstem intubation. Listen, check the chest film, and pull the tube back 2–3 cm.');
+  if(s.nmb&&s.rass>-4)add('crit','Paralyzed but not deeply sedated','Neuromuscular blockade with RASS above −4 risks awareness under paralysis. Deepen sedation first.');
+  if(ap>4){const lvl=s.map<65?'crit':'warn';add(lvl,`Auto-PEEP about ${ap.toFixed(0)} cmH₂O`,`Expiratory flow does not reach zero before the next breath, so gas is trapped. Give more time to exhale: lower the rate, lower the tidal volume, and raise inspiratory flow to shorten inspiration. Confirm with an expiratory hold.${s.map<65?' The trapped gas is squeezing venous return: disconnect the circuit for 30 s.':''}${p.kfl>0?' With flow limitation (COPD), external PEEP up to about 80% of auto-PEEP lowers the work of triggering without adding hyperinflation.':''}`);}
+  if(res>12&&!isPress)add('warn',`Ppeak − Pplat = ${res.toFixed(0)} cmH₂O`,'A high peak with a lower plateau means airway resistance: secretions, a bitten or kinked tube, or bronchospasm. Suction, give a bronchodilator, check the tube. Peak pressure alone does not injure alveoli; plateau pressure does.');
+  if(s.spo2<T.s[0]-1&&!s.arrest){
+    let b=`SpO₂ ${s.spo2.toFixed(0)}% is below the ${T.s[0]}–${T.s[1]}% target.`;
+    if(ardsLike){const ta=tableAdvice(fi,set.peep);b+=' '+ta.text;
+      if(s.colFrac>0.15)b+=` About ${(s.colFrac*100).toFixed(0)}% of the lung is collapsed but recruitable, so PEEP should help.`;
+      if(pf<150&&fi>=0.6&&set.peep>=10&&!s.prone)b+=' With P/F under 150 on FiO₂ ≥ 0.6, prone positioning lowers mortality (PROSEVA).';}
+    else if(p.cat==='pe')b+=' Dead space and a low cardiac output drive this. More PEEP rarely helps and can worsen RV failure: raise FiO₂ and support the RV.';
+    else b+=fi<0.6?' Raise FiO₂ first, then look for a cause: secretions, atelectasis, tube position.':' Look for a cause: tube position, pneumothorax, secretions, atelectasis.';
+    add(s.spo2<85?'crit':'warn','Hypoxemia',b);
+  }
+  if(s.spo2>T.s[1]+1&&fi>0.4)add('tip','SpO₂ above target',`Wean FiO₂ toward ${T.s[0]}–${T.s[1]}%. Hyperoxia causes absorption atelectasis and oxidative injury${p.cat==='copd'?', and in COPD it can raise PaCO₂ through V/Q mismatch and the Haldane effect':''}.`);
+  const vtLim=p.cat==='ards'?6.5:8.05;
+  if(vtkg>vtLim)add('warn',`Vt ${vtkg.toFixed(1)} mL/kg predicted body weight`,`Lung-protective ventilation uses 6 mL/kg predicted body weight (range 4–8): ${(6*pbw).toFixed(0)} mL for this patient, whose PBW is ${pbw.toFixed(0)} kg. Base it on height and sex, never actual weight.`);
+  if(pplat>30){if(p.cat==='obese'){const pli=pplat-(M.pesEI||0);add('tip',`Pplat ${pplat.toFixed(0)}: check transpulmonary pressure`,`In obesity much of the plateau pressure stretches the chest wall, not the lung. End-inspiratory transpulmonary pressure is about ${pli.toFixed(0)} cmH₂O${s.esoph?'':' (place an esophageal balloon to measure it)'}; under 20–25 is acceptable.`);}
+    else add(pplat>35?'crit':'warn',`Pplat ${pplat.toFixed(0)} cmH₂O (goal ≤ 30)`,'Lower Vt in 1 mL/kg steps (down to 4 mL/kg) and raise the rate to hold minute ventilation (up to 35). Changing flow does not lower Pplat; it is set by volume and compliance.');}
+  if(dp>15&&p.cat!=='obese')add('warn',`Driving pressure ${dp.toFixed(0)} cmH₂O`,'ΔP = Pplat − total PEEP. Above 15 it tracks with higher mortality. If raising PEEP at the same Vt lowers ΔP, you recruited lung; if ΔP rises, you are overdistending.');
+  if(s.tidalRec>0.05)add('warn',`Tidal recruitment ${(s.tidalRec*100).toFixed(0)}%`,'Alveoli open with every breath and collapse with every exhalation (atelectrauma). Raise PEEP so they stay open. A recruitment maneuver followed by higher PEEP opens them faster.');
+  if(s.odFrac>0.08)add('warn',`Overdistension ${(s.odFrac*100).toFixed(0)}%`,'The top of the lung is overstretched: dead space, volutrauma, compressed capillaries. Lower PEEP or Vt.');
+  const hi=s.paco2>45;
+  if(s.ph<T.ph[0]&&!s.arrest){
+    if(p.hco3Met<19&&s.paco2>1.5*s.hco3+10)add('crit',`PaCO₂ ${s.paco2.toFixed(0)} is far above Winter's prediction`,`Expected compensation for HCO₃⁻ ${s.hco3.toFixed(0)} is PaCO₂ ${(1.5*s.hco3+8).toFixed(0)} ± 2. The ventilator has taken away the patient's respiratory compensation. Raise the rate (and Vt within limits) toward the minute ventilation the patient was generating before intubation.`);
+    else if(hi&&(p.cat==='copd'||p.cat==='asthma'))add(s.ph<7.2?'warn':'tip','Hypercapnia with airflow obstruction',`Permissive hypercapnia is acceptable down to pH about 7.20. Raising the rate here shortens exhalation and worsens trapping; ${ap>4?'fix auto-PEEP first.':'add Vt or rate cautiously while watching auto-PEEP.'}`);
+    else if(hi&&p.cat==='ards')add('warn',`pH ${s.ph.toFixed(2)} with PaCO₂ ${s.paco2.toFixed(0)}`,'Raise the rate (up to 35) before raising Vt, and watch for auto-PEEP. If pH stays under 7.15, Vt can be increased even if Pplat exceeds 30, or bicarbonate considered. Removing the HME cuts about 50 mL of dead space.');
+    else if(hi)add('warn','Respiratory acidosis','Increase minute ventilation (rate or Vt), then recheck the gas.');
+  }
+  if(s.ph>7.48&&s.paco2<p.co2Base-5){if(p.co2Base>45)add('crit','Post-hypercapnic alkalosis',`This patient lives at PaCO₂ about ${p.co2Base} with renal compensation (HCO₃⁻ ${s.hco3.toFixed(0)}). Normalizing PaCO₂ causes alkalemia, with seizures and arrhythmias. Reduce minute ventilation and aim for a normal pH, not a normal PaCO₂.`);
+    else add('warn','Respiratory alkalosis','Reduce minute ventilation (lower rate or Vt).');}
+  if(s.map<65&&!s.arrest){
+    let b=`MAP ${s.map.toFixed(0)}.`;
+    if(ap>5)b+=' Trapped gas is raising intrathoracic pressure: treat auto-PEEP first.';
+    if(s.ppv>13&&(s.nmb||s.driveEff<0.2)&&vtkg>=7.5)b+=` PPV ${s.ppv.toFixed(0)}% suggests fluid responsiveness.`;
+    else if(s.ppv>13)b+=` PPV ${s.ppv.toFixed(0)}%, but spontaneous efforts or a low Vt make PPV unreliable here.`;
+    if(set.peep>=12&&p.cat!=='chf')b+=' High PEEP reduces venous return; make sure each cmH₂O is buying oxygenation.';
+    if(s.svr<800)b+=' Low SVR points to vasodilatory shock: norepinephrine.';
+    if(p.cat==='pe')b+=' RV failure: avoid big fluid loads and high airway pressure. Norepinephrine supports RV perfusion; consider thrombolysis.';
+    add(s.map<55?'crit':'warn','Hypotension',b);
+  }
+  if(s.ineff.length>=4)add('warn',`Ineffective triggering (${s.ineff.length}/min)`,`Efforts fail to trigger because the patient must first overcome auto-PEEP${ap>2?` of about ${ap.toFixed(0)} cmH₂O`:''} before flow can reverse. Reduce trapping, or with COPD add external PEEP to about 75–85% of auto-PEEP. Flow triggering is more sensitive than pressure triggering.`);
+  if(s.dbl.length>=3)add('warn',`Double triggering (${s.dbl.length}/min)`,'The patient is still inhaling when the breath ends, so a second breath stacks on the first and the real Vt nearly doubles. Lengthen inspiratory time or slightly raise Vt; in ARDS, deeper sedation and if needed paralysis.');
+  if(set.mode==='VC'&&s.driveEff>1&&s.pmusPat>9&&set.flow<55)add('tip','Flow starvation','The patient pulls harder than the set flow, so the pressure curve scoops downward. Raise peak flow or switch to a pressure-targeted mode.');
+  if((s.cuffLeak||s.circLeak)&&(M.ftot||0)>s.rrPat+6&&set.trig==='flow'&&set.trigFlow<4&&s.driveEff<0.5)add('warn','Auto-triggering','Leak flow is read as patient effort, so the ventilator cycles faster than the patient breathes. Fix the leak or make the trigger less sensitive.');
+  if((M.leak||0)>15&&!s.bpf)add('warn',`Leak ${(M.leak||0).toFixed(0)}%`,'Exhaled volume is well below inspired volume and the volume curve does not return to zero: cuff leak, circuit leak, or bronchopleural fistula.');
+  if(set.mode==='APRV'&&M.qExpPk<-0.1&&M.qEnd>0.5*M.qExpPk&&s.colFrac>0.15)add('tip','Release too long','In APRV, end the release when expiratory flow has fallen to about 75% of its peak. A longer Tlow lets the lung collapse.');
+  if(set.mode==='PSV'&&(M.ftot||0)>30&&(M.vte||0)<5*pbw)add('warn','Rapid shallow breathing','Rate above 30 with small tidal volumes means pressure support is not carrying enough of the load. Raise PS until rate falls under 30, or return to assist-control.');
+  if(s.fio2Hi>3600)add('tip','FiO₂ above 0.6 for over an hour','Prolonged high FiO₂ risks oxygen toxicity and absorption atelectasis. Use PEEP to buy FiO₂ down.');
+  if(s.biting)add('warn','Biting the tube','Pressure spikes and cut-short breaths from biting. Deepen sedation or place a bite block.');
+  if(fi<=0.41&&set.peep<=8&&s.ph>=7.32&&s.map>=65&&s.norepi<=0.05&&!s.extubated&&!s.ptx&&p.cat!=='ards'&&s.spo2>=90)
+    add('tip','Passes the screen for a breathing trial',set.mode==='PSV'&&set.ps<=8?`On trial settings: RSBI ${sim.rsbi()>500?'not measurable':sim.rsbi().toFixed(0)} (under 105 predicts success). If the patient is awake (RASS 0 to −1), extubate.`:'Lighten sedation to RASS 0 to −1, switch to PSV 5–8 with PEEP 5, and check the RSBI (rate ÷ Vt in litres).');
+  if(!out.some(x=>x.lvl==='crit'||x.lvl==='warn')){
+    const prot=vtkg<=8.05&&(pplat<=30||p.cat==='obese')&&dp<=15&&s.tidalRec<0.05&&s.odFrac<0.08&&ap<=4;
+    add('good',prot?'Lung-protective targets met':'Stable',`SpO₂ ${s.spo2.toFixed(0)}%, pH ${s.ph.toFixed(2)}, Pplat ${pplat.toFixed(0)}, ΔP ${dp.toFixed(0)}. ${p.goal||''}`);
+  }
+  const rank={crit:0,warn:1,tip:2,good:3};out.sort((a,b)=>rank[a.lvl]-rank[b.lvl]);
+  return out;
+}
+if(typeof module!=='undefined')module.exports={Sim,coach,outcome,tableAdvice,PFT_LO,PFT_HI,TARGETS,satO2,contO2,invCont,clamp};
+
+/* ===================== patient presets ===================== */
+const PRESETS={
+ normal:{title:'Healthy lungs',sub:'Airway protection after a stroke',
+  patient:{name:'R. Okafor',sex:'M',age:64,heightCm:178,weightKg:84,cat:'normal',mort:0.2,cxr:'clear lungs',
+    goal:'Healthy lungs still do best at 6–8 mL/kg PBW. Wean FiO₂ to SpO₂ 92–98% and keep PaCO₂ 35–45.'},
+  set:{mode:'VC',vt:500,rr:14,peep:5,fio2:0.5,flow:60},init:{rass:-3},settle:20,
+  hx:'64-year-old man intubated for airway protection after an intracerebral hemorrhage (GCS 6). No lung disease. Use this case to explore modes, waveforms and loops.'},
+ ards:{title:'ARDS',sub:'Pneumonia, moderate to severe',
+  patient:{name:'D. Alvarez',sex:'M',age:58,heightCm:175,weightKg:96,cat:'ards',mort:0.38,
+    cL:0.68,ccw:2.6,sp:16,pOpen:10,pClose:3.5,pOd:28.5,rawI:5,rawE:6,hpv:0.15,dorsal:1.2,fragility:0.6,vuln:0.8,
+    cons:(side,d)=>clamp((d-0.5)/0.5,0,1)*0.9,
+    msfp:16,svr:950,hr:104,temp:38.3,lac:2.2,lacProd:0.65,hb:11,
+    cxr:'bilateral patchy opacities, worse at the bases, no cardiomegaly',
+    goal:'Keep Vt 6 mL/kg PBW, Pplat ≤ 30, ΔP ≤ 15, SpO₂ 88–95%, pH ≥ 7.30, and use PEEP to keep recruitable lung open.'},
+  set:{mode:'VC',vt:420,rr:22,peep:8,fio2:0.6,flow:50},init:{rass:-4,norepi:0.05},settle:25,
+  hx:'58-year-old man with pneumococcal pneumonia. Bilateral infiltrates, P/F well under 200 despite PEEP, no heart failure. Height 175 cm, weight 96 kg.'},
+ copd:{title:'COPD exacerbation',sub:'Hypercapnic failure with air trapping',
+  patient:{name:'H. Brennan',sex:'M',age:69,heightCm:170,weightKg:66,cat:'copd',mort:0.2,
+    cL:1.6,ccw:2.4,sp:3,pOpen:6,pClose:-4,pOd:30,rawI:10,rawE:18,kfl:0.12,voff:0.25,vcap:1.0,phi:0.4,psi:0.12,hpv:0.35,shuntX:0.06,vdKg:1.3,
+    pe:(side,d)=>d<0.45?0.3:1,fragility:0.7,vuln:0.5,co2Base:58,chemo:0.6,drive:0.8,msfp:14,comax:7,svr:1350,hr:96,
+    cxr:'hyperinflated lungs with flat hemidiaphragms, no infiltrate',
+    goal:'Long exhalation: low rate, high flow, Vt 6–8 mL/kg. Accept PaCO₂ near his baseline of 58; target pH, not PaCO₂. SpO₂ 88–92%.'},
+  set:{mode:'VC',vt:500,rr:20,peep:5,fio2:0.4,flow:50,pmax:45},init:{rass:-4},settle:6,
+  hx:'69-year-old man with severe COPD (FEV₁ 28%) and a baseline PaCO₂ of 58. Intubated after failing BiPAP. The team set a rate of 20 to "blow off CO₂".'},
+ asthma:{title:'Status asthmaticus',sub:'Severe airflow obstruction',
+  patient:{name:'K. Nguyen',sex:'F',age:24,heightCm:165,weightKg:62,cat:'asthma',mort:0.08,
+    cL:1.5,ccw:2.8,sp:3,pClose:-4,pOpen:6,pOd:30,rawI:8,rawE:10,kfl:0.19,voff:0.4,vcap:0.9,phi:0.3,psi:0.4,hpv:0.6,vdKg:1.5,vo2:300,
+    pe:(side,d)=>d<0.5?0.45:1,bronch:1.1,bronchFloor:0.45,fragility:0.7,vuln:0.4,lac:3.5,lacProd:1.3,hr:122,svr:1150,msfp:15,drive:1.2,
+    cxr:'hyperinflation, no pneumothorax, no infiltrate',
+    goal:'Peak pressure from resistance is not the danger; trapped gas is. Low rate, short inspiration, high flow, bronchodilators, and accept pH down to 7.20.'},
+  set:{mode:'VC',vt:450,rr:18,peep:5,fio2:0.5,flow:60,pmax:80},init:{rass:-4},settle:5,
+  hx:'24-year-old woman with life-threatening asthma, intubated after a silent chest and drowsiness. On continuous albuterol before intubation.'},
+ od:{title:'Opioid overdose',sub:'Acute hypercapnia, normal lungs',
+  patient:{name:'J. Mercer',sex:'M',age:31,heightCm:180,weightKg:78,cat:'od',mort:0.05,drive:0.15,paco2Init:88,
+    cons:(side,d)=>side===0&&d>0.74?0.55:0,cxr:'right lower lobe opacity consistent with aspiration',
+    goal:'Acute hypercapnia corrects within minutes on normal settings because the kidneys never compensated. Normalize pH, treat the aspiration, wean FiO₂.'},
+  set:{mode:'VC',vt:480,rr:16,peep:5,fio2:0.5},init:{rass:-3},settle:0,
+  hx:'31-year-old man found apneic after a fentanyl overdose. Bag-mask ventilated by EMS, intubated in the ED. Pre-intubation ABG: pH 7.12, PaCO₂ 88.'},
+ dka:{title:'Severe metabolic acidosis',sub:'DKA, intubated and paralyzed',
+  patient:{name:'A. Lindqvist',sex:'F',age:26,heightCm:162,weightKg:54,cat:'metabolic',mort:0.12,hco3Met:10,paco2Init:17,chemo:1.2,
+    msfp:14,hr:124,svr:1300,lac:2.5,lacProd:0.8,cxr:'clear lungs',
+    goal:'Match the minute ventilation she generated before intubation (about 14–16 L/min) so PaCO₂ stays near Winter\'s prediction while the acidosis is treated.'},
+  set:{mode:'VC',vt:400,rr:14,peep:5,fio2:0.4},init:{rass:-4,nmb:true},settle:0,
+  hx:'26-year-old woman with type 1 diabetes in DKA, intubated for exhaustion. Before intubation she breathed 34/min with deep breaths; ABG pH 7.11, PaCO₂ 17, HCO₃⁻ 5. Rocuronium given for intubation, so she cannot breathe above the set rate.'},
+ pe:{title:'Massive pulmonary embolism',sub:'Obstructive shock, RV failure',
+  patient:{name:'T. Adeyemi',sex:'M',age:52,heightCm:178,weightKg:105,cat:'pe',mort:0.4,
+    pe:(side,d)=>((side===0&&d>0.35)||(side===1&&d>0.5))?0.05:1,shuntX:0.22,
+    pvr:4.5,rvSens:0.45,msfp:19,comax:7.5,svr:1150,hr:118,lac:3.5,lacProd:1.3,sp:5,pClose:-1,
+    cxr:'clear lung fields with a prominent right pulmonary artery',
+    goal:'Ventilation cannot fix this. Keep intrathoracic pressure low (modest PEEP, Pplat well under 30), support the RV with norepinephrine, avoid big fluid boluses, and give thrombolysis.'},
+  set:{mode:'VC',vt:500,rr:18,peep:8,fio2:0.8},init:{rass:-3,norepi:0.08},settle:15,
+  hx:'52-year-old man, 5 days after knee surgery, collapsed with hypoxemia and hypotension. Bedside echo: dilated RV. Intubated after a brief PEA arrest.'},
+ obese:{title:'Obesity with atelectasis',sub:'Heavy chest wall, BMI 55',
+  patient:{name:'M. Castillo',sex:'F',age:46,heightCm:160,weightKg:142,cat:'obese',mort:0.15,
+    cL:1.7,ccw:1.0,ppl0:5,abd:3,sp:5,pOpen:3,pClose:-3,pOd:28,hpv:0.5,msfp:21,comax:8.5,svr:1100,hr:96,
+    cxr:'low lung volumes with bibasilar atelectasis',
+    goal:'Vt by predicted, not actual, weight. Higher PEEP offsets the chest wall and abdomen pressing on dependent lung; an esophageal balloon shows how much of Pplat actually stretches the lung.'},
+  set:{mode:'VC',vt:550,rr:16,peep:5,fio2:0.6},init:{rass:-4},settle:20,
+  hx:'46-year-old woman, 160 cm and 142 kg, intubated after abdominal surgery for persistent hypoxemia. Tidal volume was set at 550 mL in the operating room.'},
+ chf:{title:'Cardiogenic pulmonary edema',sub:'Acute decompensated heart failure',
+  patient:{name:'E. Morrow',sex:'M',age:74,heightCm:172,weightKg:88,cat:'chf',mort:0.2,
+    cL:1.4,sp:10.5,pOpen:10,pClose:2,pOd:28,hpv:0.5,cons:(side,d)=>d>0.8?0.2:0,
+    comax:3.9,ks:6,msfp:24,svr:1500,hr:108,lvAfter:0.6,rvSens:0.3,cart:1.2,lac:2.4,lacProd:0.75,
+    cxr:'cardiomegaly, bilateral perihilar opacities, Kerley B lines, small effusions',
+    goal:'PEEP recruits flooded alveoli and unloads the failing left ventricle, so blood pressure often holds or improves. Diurese; avoid fluids.'},
+  set:{mode:'VC',vt:450,rr:18,peep:5,fio2:0.8},init:{rass:-3},settle:20,
+  hx:'74-year-old man with ischemic cardiomyopathy (EF 20%) and flash pulmonary edema, intubated after failing BiPAP.'},
+ wean:{title:'Liberation from the ventilator',sub:'Day 5, pneumonia improving',
+  patient:{name:'S. Patel',sex:'F',age:61,heightCm:165,weightKg:70,cat:'wean',mort:0.1,cL:1.8,sp:5,pClose:-1,
+    cons:(side,d)=>side===0&&d>0.8?0.3:0,cxr:'resolving right lower lobe opacity',
+    goal:'Screen daily: lighten sedation, run a spontaneous breathing trial (PSV 5–8 / PEEP 5), check the RSBI, then extubate.'},
+  set:{mode:'VC',vt:380,rr:14,peep:5,fio2:0.35},init:{rass:-3},settle:20,
+  hx:'61-year-old woman on day 5 of ventilation for right lower lobe pneumonia. Afebrile, off vasopressors, secretions thin.'}
+};
+function makeSim(key,over){
+  const pr=PRESETS[key];over=over||{};
+  const pat=Object.assign({},pr.patient,over.patient||{});
+  const sim=new Sim(pat,Object.assign({},pr.set,over.set||{}),over.seed||11);
+  const init=Object.assign({},pr.init||{},over.init||{});
+  for(const k in init)sim.s[k]=init[k];
+  sim.drive();
+  if(over.events)over.events.forEach(e=>sim.event(e[0],e[1]));
+  const st=over.settle!=null?over.settle:pr.settle;
+  sim.s.randomEvents=false;
+  sim.settle(st||0);
+  sim.s.randomEvents=over.random!=null?over.random:true;
+  sim.s.stats={T:0,sat:0,pplat:0,dp:0,vt:0,ap:0,map:0,ph:0,maxPplat:0,maxAP:0,minSat:100,minMap:200,maxVili:0};
+  sim.s.log=[];sim.s.t0=sim.s.t;sim.s.flags={};
+  return sim;
+}
+
+/* ===================== board-style cases ===================== */
+function caseVals(sim){
+  const s=sim.s,p=sim.p,M=s.meas,set=sim.set,r=(x,d)=>x==null||isNaN(x)?'—':(+x).toFixed(d||0);
+  return{age:p.age,sex:p.sex==='M'?'man':'woman',ht:p.heightCm,wt:p.weightKg,pbw:r(p.pbw),vt:set.vt,rr:set.rr,peep:set.peep,fio2:r(sim.fio2(),2),
+    ppeak:r(M.ppeak),pplat:r(M.palvEI),dp:r(M.dp),ap:r(M.autoPeep),peeptot:r(M.peepTot),vte:r(M.vte),vti:r(M.vti),ftot:r(M.ftot),
+    ph:r(s.ph,2),paco2:r(s.paco2),pao2:r(s.pao2),hco3:r(s.hco3),spo2:r(s.spo2),map:r(s.map),sbp:r(s.sbp),dbp:r(s.dbp),hr:r(s.hr),
+    etco2:r(s.etco2),lac:r(s.lac,1),rsbi:r(sim.rsbi()),pf:r(s.pao2/sim.fio2()),vtkg:r(set.vt/p.pbw,1),flow:set.flow,
+    _raw:{spo2:s.spo2,pao2:s.pao2,paco2:s.paco2,ph:s.ph,ppeak:M.ppeak,pplat:M.palvEI,dp:M.dp,ap:M.autoPeep,map:s.map,vte:M.vte,hr:s.hr,etco2:s.etco2,mve:M.mve,tr:s.tidalRec,od:s.odFrac,ineff:s.ineff.length,ftot:M.ftot}};
+}
+const CASES=[
+{id:'ards-peep',title:'Hypoxemia on a low tidal volume',topic:'ARDS: oxygenation',preset:'ards',over:{},run:20,
+ stem:v=>`A ${v.age}-year-old ${v.sex} with pneumococcal pneumonia is intubated for hypoxemic respiratory failure. Chest radiograph shows bilateral opacities and echocardiography shows normal left ventricular function. He is ${v.ht} cm tall (predicted body weight ${v.pbw} kg). The ventilator is set to volume assist-control: tidal volume ${v.vt} mL (6 mL/kg PBW), rate ${v.rr}/min, PEEP ${v.peep} cm H₂O, FiO₂ ${v.fio2}. Plateau pressure is ${v.pplat} cm H₂O. Arterial blood gas: pH ${v.ph}, PaCO₂ ${v.paco2} mm Hg, PaO₂ ${v.pao2} mm Hg. SpO₂ is ${v.spo2}%.`,
+ opts:[{t:'Increase PEEP to 12 cm H₂O',set:{peep:12}},{t:'Increase tidal volume to 8 mL/kg (565 mL)',set:{vt:565}},{t:'Increase the respiratory rate to 30/min',set:{rr:30}},{t:'Increase FiO₂ to 1.0',set:{fio2:1}},{t:'Switch to pressure support 10 cm H₂O',set:{mode:'PSV',ps:10}}],
+ ans:0,show:['spo2','pao2','pplat','dp','map'],
+ explain:'Hypoxemia in ARDS is shunt: blood crosses collapsed, flooded alveoli without meeting oxygen. PEEP holds recruitable alveoli open at end-expiration, so it attacks the mechanism directly, and it also stops those units from snapping open and shut with every breath (atelectrauma). The ARDSnet table pairs FiO₂ 0.6 with PEEP 10 and FiO₂ 0.7 with PEEP 10–14, so this patient\'s PEEP is behind his FiO₂. Watch the driving pressure: if ΔP falls at the same tidal volume, the added PEEP recruited lung rather than overstretching it.',
+ why:['Recruits collapsed lung, reduces shunt and tidal recruitment, and moves him onto the PEEP/FiO₂ table.','Larger tidal volumes raise plateau and driving pressure without fixing shunt. ARMA showed 6 mL/kg beats 12 mL/kg on mortality.','Rate changes CO₂ elimination, not oxygenation, and short expiratory times can create auto-PEEP.','Shunt is relatively refractory to FiO₂, and FiO₂ 1.0 worsens absorption atelectasis. The table says raise PEEP first.','A deeply sedated patient on pressure support may not trigger at all, and in severe ARDS it gives up control of tidal volume.']},
+{id:'ards-pplat',title:'Plateau pressure above 30',topic:'ARDS: lung protection',preset:'ards',over:{set:{vt:600,rr:16,peep:12,fio2:0.6,pmax:50}},run:20,
+ stem:v=>`A ${v.age}-year-old ${v.sex} with ARDS from aspiration pneumonia is ${v.ht} cm tall (PBW ${v.pbw} kg). Ventilator: volume assist-control, tidal volume ${v.vt} mL, rate ${v.rr}/min, PEEP ${v.peep} cm H₂O, FiO₂ ${v.fio2}. Peak pressure ${v.ppeak} cm H₂O; an inspiratory hold shows a plateau pressure of ${v.pplat} cm H₂O. ABG: pH ${v.ph}, PaCO₂ ${v.paco2}, PaO₂ ${v.pao2}.`,
+ opts:[{t:'Decrease tidal volume to 6 mL/kg (425 mL) and increase the rate to 24/min',set:{vt:425,rr:24}},{t:'Increase inspiratory flow to 80 L/min',set:{flow:80}},{t:'Decrease PEEP to 5 cm H₂O',set:{peep:5}},{t:'Switch to pressure control at the same plateau pressure',set:v=>({mode:'PC',pinsp:Math.round(v._raw.pplat-12),ti:0.9})},{t:'Deepen sedation to RASS −5',acts:[['rass',-5]]}],
+ ans:0,show:['pplat','dp','vte','paco2','ph','spo2'],
+ explain:`Plateau pressure reflects alveolar distending pressure, which is what injures lung. It is set by tidal volume relative to compliance, so the fix is a smaller tidal volume: 6 mL/kg of predicted body weight, stepping down toward 4 mL/kg if Pplat stays above 30. Raising the rate keeps minute ventilation up and limits the rise in PaCO₂; some hypercapnia is acceptable (pH ≥ 7.25–7.30).`,
+ why:['Lowers Pplat and driving pressure; the rate increase limits the CO₂ rise.','Faster flow raises peak pressure (resistive) and does nothing to plateau pressure.','Less PEEP derecruits lung, worsening oxygenation and atelectrauma. ΔP may even rise.','Same pressure in the same lung delivers the same volume: the stretch is unchanged.','Sedation does not change Pplat in a passive patient; the tidal volume is the problem.']},
+{id:'copd-autopeep',title:'Hypotension right after intubation',topic:'COPD: dynamic hyperinflation',preset:'copd',over:{set:{rr:24,flow:45,vt:550,pmax:60},settle:8},run:12,
+ stem:v=>`A ${v.age}-year-old ${v.sex} with severe COPD is intubated for hypercapnic respiratory failure. Ten minutes later his blood pressure is ${v.sbp}/${v.dbp} mm Hg and heart rate ${v.hr}/min. Ventilator: volume control, tidal volume ${v.vt} mL, rate ${v.rr}/min, peak flow ${v.flow} L/min, PEEP ${v.peep}. Peak pressure ${v.ppeak}, plateau ${v.pplat} cm H₂O. The expiratory flow tracing does not return to zero before each new breath, and an expiratory hold shows total PEEP ${v.peeptot} cm H₂O.`,
+ opts:[{t:'Give a 1-L normal saline bolus',acts:[['fluid'],['fluid']]},{t:'Decrease the respiratory rate to 10/min',set:{rr:10}},{t:'Increase PEEP to 15 cm H₂O',set:{peep:15}},{t:'Start norepinephrine',acts:[['norepi',0.15]]},{t:'Increase tidal volume to 650 mL',set:{vt:650}}],
+ ans:1,show:['ap','pplat','map','paco2','ph'],
+ explain:'Each breath starts before the last one is fully exhaled, so gas accumulates (dynamic hyperinflation). Raised intrathoracic pressure squeezes venous return and blood pressure falls. The fix is more time to exhale: cutting the rate gives the biggest gain in expiratory time, helped by a smaller tidal volume and faster inspiratory flow. If blood pressure is crashing, disconnect the circuit for 20–30 seconds first. The resulting hypercapnia is acceptable.',
+ why:['Fluid may nudge pressure up briefly but leaves the trapped gas in place.','Lengthens expiratory time, so trapped gas empties, auto-PEEP falls and venous return recovers.','External PEEP above the auto-PEEP adds to hyperinflation in a passive patient.','Treats the number, not the cause; trapping keeps worsening.','More volume per breath means more gas to exhale in the same time: more trapping.']},
+{id:'mucus',title:'High peak, normal plateau',topic:'Troubleshooting: resistance',preset:'wean',over:{set:{mode:'VC',vt:400,rr:16},init:{rass:-3}},events:[['mucus']],evMin:2,run:5,
+ stem:v=>`A ${v.age}-year-old ${v.sex} ventilated for pneumonia triggers the high-pressure alarm. Peak airway pressure has risen from ${v.p0.ppeak} to ${v.ppeak} cm H₂O over 10 minutes. An inspiratory hold shows plateau pressure ${v.pplat} cm H₂O, unchanged from earlier (${v.p0.pplat}). SpO₂ is ${v.spo2}% on FiO₂ ${v.fio2}. Coarse rhonchi are heard over the trachea.`,
+ opts:[{t:'Pass a suction catheter down the endotracheal tube',acts:[['suction']]},{t:'Needle decompression of the right chest',acts:[['needle',0]]},{t:'CT pulmonary angiography',acts:[]},{t:'Increase PEEP to 10 cm H₂O',set:{peep:10}},{t:'Raise the high-pressure alarm limit to 60',set:{pmax:60}}],
+ ans:0,show:['ppeak','pplat','vte','spo2'],
+ explain:'Ppeak minus Pplat is the pressure needed to push flow through the airways and tube. A rising peak with a stable plateau means resistance went up while lung compliance did not: secretions, a kinked or bitten tube, or bronchospasm. Pass a suction catheter first; it diagnoses and treats tube obstruction in one step.',
+ why:['Removes the plug: peak pressure falls back toward plateau.','A stable plateau argues against pneumothorax, which raises both pressures. Decompressing a normal chest causes a pneumothorax.','Pulmonary embolism does not raise airway pressure; this is an airway problem.','PEEP adds pressure to every breath without opening the tube.','Silencing the alarm hides the obstruction; breaths will still be cut short or delivered through a blocked tube.']},
+{id:'tension',title:'Pressures up, blood pressure down',topic:'Troubleshooting: compliance',preset:'ards',over:{set:{peep:12}},events:[['tptx',0]],evMin:1,run:6,
+ stem:v=>`A ${v.age}-year-old ${v.sex} with ARDS on PEEP ${v.peep} suddenly desaturates to ${v.spo2}%. Blood pressure is ${v.sbp}/${v.dbp} mm Hg (an hour ago ${v.p0.sbp}/${v.p0.dbp}), heart rate ${v.hr}. Peak pressure rose from ${v.p0.ppeak} to ${v.ppeak} cm H₂O and plateau pressure from ${v.p0.pplat} to ${v.pplat}. Breath sounds are absent on the right, the right chest is hyperresonant, and the trachea is deviated to the left.`,
+ opts:[{t:'Needle decompression of the right chest, then a chest tube',acts:[['needle',0],['tube',0]]},{t:'Portable chest radiograph',acts:[]},{t:'Suction the endotracheal tube',acts:[['suction']]},{t:'Increase FiO₂ to 1.0 and PEEP to 16',set:{fio2:1,peep:16}},{t:'Give a 1-L crystalloid bolus',acts:[['fluid'],['fluid']]}],
+ ans:0,show:['ppeak','pplat','map','spo2'],
+ explain:'Both peak and plateau pressure jumped, so compliance collapsed, and hypotension means a tension physiology. Absent breath sounds, hyperresonance and tracheal deviation make this a clinical diagnosis: tension pneumothorax. Decompress immediately (2nd intercostal space midclavicular, or 4th–5th space anterior axillary line), then place a chest tube. Waiting for a film costs the patient minutes they may not have.',
+ why:['Releases the tension: pressures fall and blood pressure returns.','Imaging delays treatment of a clinical diagnosis while the patient deteriorates.','Suction treats resistance; here the plateau rose too, which points to compliance.','More PEEP increases pleural pressure and worsens the tension.','Fluid cannot overcome a pleural space compressing the heart and great veins.']},
+{id:'mainstem',title:'New hypoxemia after intubation',topic:'Troubleshooting: tube position',preset:'normal',over:{set:{fio2:0.5}},events:[['mainstem']],evMin:15,run:8,
+ stem:v=>`A ${v.age}-year-old ${v.sex} was intubated 20 minutes ago for airway protection; the tube is taped at 26 cm at the teeth. SpO₂ has fallen from ${v.p0.spo2}% to ${v.spo2}% on FiO₂ ${v.fio2}. Peak pressure rose from ${v.p0.ppeak} to ${v.ppeak} and plateau from ${v.p0.pplat} to ${v.pplat} cm H₂O. Blood pressure is ${v.sbp}/${v.dbp}. Breath sounds are diminished on the left and the left chest rises less.`,
+ opts:[{t:'Withdraw the endotracheal tube 2–3 cm',acts:[['withdraw']]},{t:'Place a left chest tube',acts:[['tube',1]]},{t:'Increase PEEP to 15 cm H₂O',set:{peep:15}},{t:'Give in-line albuterol',acts:[['albuterol']]},{t:'Increase FiO₂ to 1.0',set:{fio2:1}}],
+ ans:0,show:['spo2','ppeak','pplat'],
+ explain:'The right mainstem bronchus is straighter and wider, so a tube pushed too deep usually enters it. The whole tidal volume then goes to one lung (pressures rise) and the unventilated left lung becomes a shunt (hypoxemia). A tube at 26 cm in an adult of average height, plus left-sided silence right after intubation, makes this the first thing to fix. Pull back so the tip sits 3–5 cm above the carina (about 21–23 cm at the teeth), and confirm with a chest film.',
+ why:['Restores ventilation to the left lung: shunt and pressures fall.','There is no pneumothorax; a chest tube adds risk without treating the cause.','PEEP cannot reach a lung that receives no gas.','There is no bronchospasm; peak and plateau rose together.','More oxygen partly masks the shunt but leaves one lung unventilated.']},
+{id:'dka',title:'Worsening acidosis after intubation',topic:'Metabolic acidosis: minute ventilation',preset:'dka',over:{settle:15},run:20,
+ stem:v=>`A ${v.age}-year-old ${v.sex} with diabetic ketoacidosis was intubated 15 minutes ago for exhaustion and received rocuronium. Before intubation she was breathing 34/min; ABG showed pH 7.11, PaCO₂ 17, HCO₃⁻ 5. Ventilator: volume assist-control, tidal volume ${v.vt} mL, rate ${v.rr}/min, PEEP ${v.peep}, FiO₂ ${v.fio2}. Now: pH ${v.ph}, PaCO₂ ${v.paco2} mm Hg, PaO₂ ${v.pao2}. Blood pressure ${v.sbp}/${v.dbp}.`,
+ opts:[{t:'Increase the rate to 30/min and tidal volume to 8 mL/kg (430 mL)',set:{rr:30,vt:430}},{t:'Give sodium bicarbonate 50 mEq IV',acts:[['bicarb']]},{t:'Decrease tidal volume to 6 mL/kg (320 mL)',set:{vt:320}},{t:'Increase PEEP to 10 cm H₂O',set:{peep:10}},{t:'Increase FiO₂ to 1.0',set:{fio2:1}}],
+ ans:0,show:['paco2','ph','map'],
+ explain:`Before intubation she compensated for HCO₃⁻ 5 by driving PaCO₂ to 17, which is what Winter's formula predicts (1.5 × 5 + 8 = 15.5 ± 2). Paralyzed on a rate of 14 she can no longer do that, so PaCO₂ climbs toward 40 and pH falls toward a lethal range. Match the minute ventilation she was generating: high rate, tidal volume up to 8 mL/kg, aiming for PaCO₂ near the Winter's prediction while insulin and fluids correct the acidosis.`,
+ why:['Restores respiratory compensation: PaCO₂ falls and pH rises.','Bicarbonate generates CO₂ that a fixed minute ventilation cannot clear, and it is not advised in DKA unless pH < 6.9.','Less ventilation worsens the respiratory acidosis.','Oxygenation is not the problem; PEEP does nothing for CO₂ here.','She is not hypoxemic.']},
+{id:'phtx',title:'Alkalemia in a CO₂ retainer',topic:'COPD: acid–base',preset:'copd',over:{set:{rr:20,vt:500,flow:80,fio2:0.35,pmax:45},settle:45},run:40,
+ stem:v=>`A ${v.age}-year-old ${v.sex} with severe COPD was intubated 3 hours ago. His baseline PaCO₂ is 58 mm Hg with HCO₃⁻ 34. Ventilator: volume control, tidal volume ${v.vt} mL, rate ${v.rr}/min, PEEP ${v.peep}, FiO₂ ${v.fio2}. ABG: pH ${v.ph}, PaCO₂ ${v.paco2} mm Hg, HCO₃⁻ ${v.hco3}, PaO₂ ${v.pao2}. He had a brief run of ventricular ectopy.`,
+ opts:[{t:'Decrease the rate to 12/min',set:{rr:12}},{t:'Increase the rate to 24/min',set:{rr:24}},{t:'Increase PEEP to 10 cm H₂O',set:{peep:10}},{t:'Decrease FiO₂ to 0.28',set:{fio2:0.28}},{t:'Increase tidal volume to 600 mL',set:{vt:600}}],
+ ans:0,show:['paco2','ph','ap'],
+ explain:'His kidneys have spent weeks retaining bicarbonate to balance a PaCO₂ near 58. Ventilating him to a "normal" PaCO₂ removes the acid while the bicarbonate stays, producing post-hypercapnic metabolic alkalosis, with arrhythmia and seizure risk. Lower minute ventilation and target his baseline: a normal pH, not a normal PaCO₂. The lower rate also reduces air trapping.',
+ why:['Lets PaCO₂ drift back toward baseline so pH normalizes; less trapping too.','More ventilation lowers PaCO₂ further and worsens the alkalemia.','PEEP does not change CO₂ meaningfully here.','He is not hyperoxic enough for FiO₂ to explain this.','A bigger tidal volume raises minute ventilation and alkalemia.']},
+{id:'pbw',title:'Tidal volume in severe obesity',topic:'Predicted body weight',preset:'obese',over:{set:{peep:12,fio2:0.5}},run:20,
+ stem:v=>`A ${v.age}-year-old ${v.sex}, ${v.ht} cm and ${v.wt} kg, is ventilated after abdominal surgery. Settings: volume assist-control, tidal volume ${v.vt} mL (${(v.vt/v.wt).toFixed(1)} mL/kg of actual weight), rate ${v.rr}/min, PEEP ${v.peep}, FiO₂ ${v.fio2}. Plateau pressure ${v.pplat} cm H₂O. ABG: pH ${v.ph}, PaCO₂ ${v.paco2}, PaO₂ ${v.pao2}.`,
+ opts:[{t:'Decrease tidal volume to 315 mL and increase the rate to 24/min',set:{vt:315,rr:24}},{t:'No change: the tidal volume is under 4 mL/kg of actual weight',acts:[]},{t:'Increase tidal volume to 850 mL (6 mL/kg actual weight)',set:{vt:850}},{t:'Decrease PEEP to 5 cm H₂O',set:{peep:5}},{t:'Switch to pressure support 10 cm H₂O',set:{mode:'PSV',ps:10}}],
+ ans:0,show:['vte','pplat','dp','spo2','paco2'],
+ explain:'Lung size follows height and sex, not weight. Predicted body weight for a 160 cm woman is 45.5 + 0.91 × (160 − 152.4) ≈ 52 kg, so 550 mL is about 10.5 mL/kg PBW: well above the 6 mL/kg target (about 315 mL). Fat adds chest-wall load, not alveoli. Keep the higher PEEP: obesity pushes the dependent lung closed, and PEEP counteracts it.',
+ why:['Brings Vt to 6 mL/kg PBW; the rate increase protects minute ventilation.','Actual weight overstates lung size; the lungs are getting 10.5 mL/kg.','This nearly doubles an already excessive tidal volume.','Less PEEP lets the dependent lung collapse under the abdomen and chest wall.','A sedated patient may not trigger, and pressure support gives up control of Vt.']},
+{id:'asthma',title:'Rising pressures in status asthmaticus',topic:'Asthma: air trapping',preset:'asthma',over:{set:{rr:22},settle:8},run:20,
+ stem:v=>`A ${v.age}-year-old ${v.sex} with status asthmaticus is intubated. Ventilator: volume control, tidal volume ${v.vt} mL, rate ${v.rr}/min, flow ${v.flow} L/min, PEEP ${v.peep}. Peak pressure ${v.ppeak}, plateau ${v.pplat}, auto-PEEP ${v.ap} cm H₂O. Blood pressure ${v.sbp}/${v.dbp}. ABG: pH ${v.ph}, PaCO₂ ${v.paco2}. The resident proposes raising the rate to improve the PaCO₂.`,
+ opts:[{t:'Decrease the rate to 10/min and increase flow to 80 L/min',set:{rr:10,flow:80}},{t:'Increase the rate to 28/min',set:{rr:28}},{t:'Increase PEEP to 15 cm H₂O',set:{peep:15}},{t:'Decrease inspiratory flow to 40 L/min',set:{flow:40}},{t:'Increase tidal volume to 600 mL',set:{vt:600}}],
+ ans:0,show:['ap','pplat','map','paco2','ph'],
+ explain:'In severe asthma the danger is gas that cannot get out. Lower the rate and shorten inspiration with higher flow so each breath has a long exhalation; accept the rise in PaCO₂ (permissive hypercapnia, pH down to about 7.20). The high peak pressure mostly reflects airway resistance and is not itself dangerous; plateau and auto-PEEP are what you follow. Give bronchodilators alongside.',
+ why:['Longer exhalation: auto-PEEP and plateau fall, blood pressure recovers, at the cost of tolerable hypercapnia.','A faster rate shortens exhalation and worsens trapping and hypotension.','In a passive patient, PEEP above auto-PEEP adds to hyperinflation.','Slower flow lengthens inspiration and steals expiratory time.','More volume per breath means more trapped gas.']},
+{id:'cuff',title:'Low exhaled tidal volume alarm',topic:'Troubleshooting: leak',preset:'normal',over:{set:{vt:480}},events:[['cuff']],evMin:3,run:5,
+ stem:v=>`The ventilator of a ${v.age}-year-old ${v.sex} alarms "exhaled Vt low." Set tidal volume is ${v.vt} mL; inspired volume reads ${v.vti} mL but exhaled volume only ${v.vte} mL. The volume tracing fails to return to zero at the end of each breath. A gurgling sound is heard at the mouth during inspiration. SpO₂ ${v.spo2}%.`,
+ opts:[{t:'Check cuff pressure and reinflate the cuff',acts:[['cuffFix']]},{t:'Increase the set tidal volume to 700 mL',set:{vt:700}},{t:'Increase the respiratory rate',set:{rr:20}},{t:'Increase PEEP to 10 cm H₂O',set:{peep:10}},{t:'Replace the ventilator circuit',acts:[['circFix']]}],
+ ans:0,show:['vte','spo2'],
+ explain:'Gas going in but not coming back means a leak. Gurgling at the mouth during inspiration localizes it to the cuff: gas escapes around the tube. Check the cuff pressure (target 20–30 cm H₂O) and reinflate; if it will not hold, the tube needs exchanging. Also confirm the tube has not migrated up so the cuff sits at the vocal cords.',
+ why:['Seals the airway: exhaled volume matches inspired volume again.','Bigger breaths partly compensate but leave a leaking, unprotected airway.','Rate does not fix a leak.','Higher pressure increases the leak.','The leak is at the cuff, not the circuit; the mouth noise localizes it.']},
+{id:'sbt',title:'Passed the breathing trial?',topic:'Liberation',preset:'wean',over:{set:{mode:'PSV',ps:5,peep:5,fio2:0.35},init:{rass:0},settle:30},run:30,
+ stem:v=>`A ${v.age}-year-old ${v.sex} on day 5 of ventilation for pneumonia is afebrile and off vasopressors. After 30 minutes of a spontaneous breathing trial on pressure support 5 / PEEP 5, FiO₂ ${v.fio2}: rate ${v.ftot}/min, tidal volume ${v.vte} mL, SpO₂ ${v.spo2}%, heart rate ${v.hr}, blood pressure ${v.sbp}/${v.dbp}. ABG: pH ${v.ph}, PaCO₂ ${v.paco2}. She follows commands, has a strong cough, and secretions are minimal.`,
+ opts:[{t:'Extubate',acts:[['extubate']]},{t:'Continue the trial for another 24 hours',acts:[]},{t:'Arrange a tracheostomy',acts:[]},{t:'Increase pressure support to 15 for comfort',set:{ps:15}},{t:'Return to assist-control overnight to rest',set:{mode:'VC'}}],
+ ans:0,show:['ftot','vte','spo2','ph'],
+ explain:'She passes every element of the screen: improving cause, minimal support (FiO₂ ≤ 0.4, PEEP ≤ 8), hemodynamic stability, alertness, and a strong cough. The trial itself is reassuring: the rapid shallow breathing index (rate ÷ tidal volume in litres) is well under 105, which predicts success. Each extra day of ventilation adds risk (pneumonia, delirium, weakness) without benefit.',
+ why:['Extubation is indicated: RSBI well under 105 with all criteria met.','Prolonging a passed trial adds ventilator days without benefit.','Tracheostomy is for prolonged or failed weaning, not a passed trial.','High support masks her real breathing capacity and delays liberation.','Resting a patient who just passed delays extubation for no gain.']},
+{id:'ards-co2',title:'Hypercapnic acidosis on protective settings',topic:'ARDS: ventilation',preset:'ards',over:{set:{rr:14,peep:12,fio2:0.5,vt:425},settle:45},run:30,
+ stem:v=>`A ${v.age}-year-old ${v.sex} with ARDS (PBW ${v.pbw} kg) is ventilated on volume assist-control: tidal volume ${v.vt} mL, rate ${v.rr}/min, PEEP ${v.peep}, FiO₂ ${v.fio2}. Plateau pressure ${v.pplat} cm H₂O. ABG: pH ${v.ph}, PaCO₂ ${v.paco2} mm Hg, PaO₂ ${v.pao2}. Expiratory flow returns to zero before each breath.`,
+ opts:[{t:'Increase the respiratory rate to 28/min',set:{rr:28}},{t:'Increase tidal volume to 8 mL/kg (565 mL)',set:{vt:565}},{t:'Give sodium bicarbonate',acts:[['bicarb']]},{t:'Decrease PEEP to 5 cm H₂O',set:{peep:5}},{t:'Increase FiO₂ to 0.8',set:{fio2:0.8}}],
+ ans:0,show:['paco2','ph','pplat','ap'],
+ explain:`Minute ventilation is too low for this patient's large dead space. With Pplat near 30 there is no room to raise tidal volume, so raise the rate (ARDSnet allows up to 35/min), as long as expiratory flow still reaches zero; flow does here, so there is no auto-PEEP to worry about. Mild hypercapnia is acceptable; the target is pH ≥ 7.30.`,
+ why:['More breaths per minute clear CO₂ without raising plateau pressure.','Pushes plateau pressure past 30 and raises driving pressure.','A temporizing measure at best; the ventilator setting is the problem.','Derecruits lung and worsens oxygenation; does not fix CO₂.','Oxygenation is already adequate.']},
+{id:'prone',title:'Severe ARDS despite high PEEP',topic:'ARDS: rescue',preset:'ards',over:{patient:{cons:(side,d)=>clamp((d-0.35)/0.65,0,1)*0.9,hpv:0.08,sp:17},set:{peep:14,fio2:0.8,rr:26},settle:25},run:30,
+ stem:v=>`A ${v.age}-year-old ${v.sex} with ARDS from influenza has been ventilated for 12 hours on volume assist-control: tidal volume ${v.vt} mL (6 mL/kg PBW), rate ${v.rr}/min, PEEP ${v.peep}, FiO₂ ${v.fio2}. Plateau pressure ${v.pplat} cm H₂O. ABG: pH ${v.ph}, PaCO₂ ${v.paco2}, PaO₂ ${v.pao2} (P/F ${v.pf}). Hemodynamically stable on low-dose norepinephrine.`,
+ opts:[{t:'Prone positioning for at least 16 hours a day',acts:[['prone']]},{t:'Inhaled nitric oxide',acts:[['ino']]},{t:'Increase tidal volume to 8 mL/kg',set:{vt:565}},{t:'Decrease PEEP to 8 to limit barotrauma',set:{peep:8}},{t:'Switch to pressure support',set:{mode:'PSV',ps:12}}],
+ ans:0,show:['spo2','pao2','pplat','map'],
+ explain:'With P/F below 150 on FiO₂ ≥ 0.6 and PEEP ≥ 5, prone positioning lowered 28-day mortality from 33% to 16% in PROSEVA. Turning the patient moves the weight of the heart and edematous lung off the dorsal regions, which keep most of the blood flow, so ventilation and perfusion match better and lung stress spreads more evenly. Start early and keep sessions long.',
+ why:['Recruits dorsal lung that keeps most of the perfusion: shunt falls, with proven mortality benefit.','Improves oxygenation for a day or two, but trials show no survival benefit.','Higher volume adds injury; it does not treat shunt.','Less PEEP derecruits and worsens hypoxemia.','Gives up control of tidal volume in severe ARDS.']},
+{id:'trigger',title:'Efforts that do not trigger',topic:'COPD: patient–ventilator interaction',preset:'copd',over:{patient:{drive:2.0},set:{mode:'VC',rr:12,vt:450,flow:60,peep:0,fio2:0.35,pmax:50},init:{rass:0},settle:10},run:8,
+ stem:v=>`A ${v.age}-year-old ${v.sex} with severe COPD is awake on volume assist-control: tidal volume ${v.vt} mL, set rate ${v.rr}/min, PEEP ${v.peep}. His abdominal muscles are visibly working and his neck muscles contract repeatedly, but the ventilator counts only ${v.ftot} breaths/min. Small dips appear on the flow tracing during expiration that do not trigger a breath. An expiratory hold shows auto-PEEP ${v.ap} cm H₂O.`,
+ opts:[{t:'Apply external PEEP of about 80% of the auto-PEEP',set:v=>({peep:Math.max(3,Math.round(0.8*v._raw.ap))})},{t:'Make the trigger less sensitive (flow trigger 6 L/min)',set:{trigFlow:6}},{t:'Increase the set rate to 20/min',set:{rr:20}},{t:'Increase tidal volume to 600 mL',set:{vt:600}},{t:'Start neuromuscular blockade',acts:[['rass',-5],['nmb']]}],
+ ans:0,show:['ineff','ap','ftot'],
+ explain:'To trigger a breath the patient must first drop alveolar pressure from the auto-PEEP level to below the ventilator\'s PEEP; that threshold load makes many efforts fail. Because his airways are flow-limited, external PEEP up to about 80% of the auto-PEEP narrows the gap without adding hyperinflation (the waterfall effect), so more efforts trigger. Also reduce the trapping itself: lower minute ventilation, shorter inspiration.',
+ why:['Cuts the threshold the patient must overcome; efforts trigger without more hyperinflation.','A less sensitive trigger makes even more efforts fail.','More breaths per minute shorten exhalation and increase auto-PEEP.','Bigger breaths take longer to exhale and worsen trapping.','Paralysis hides dyssynchrony without fixing it and carries its own harms.']}
+];
+
+function loadCase(C){
+  const sim=makeSim(C.preset,Object.assign({random:false},C.over||{}));
+  let v0=null;
+  if(C.events){v0=caseVals(sim);C.events.forEach(e=>sim.event(e[0],e[1]));sim.settle(C.evMin||2);}
+  const v=caseVals(sim);v.p0=v0||v;sim.s.randomEvents=false;
+  return{sim,v};
+}
+function applyOpt(sim,opt,v){
+  if(opt.set){const ns=typeof opt.set==='function'?opt.set(v):opt.set;sim.applySettings(ns);}
+  let res=null;(opt.acts||[]).forEach(a=>{if(a[0]==='extubate')res=sim.extubate();else sim.act(a[0],a[1]);});
+  return res;
+}
+
+/* ===================== VentLab UI: core ===================== */
+const $=id=>document.getElementById(id);
+const fmt=(x,d=0)=>x==null||!isFinite(x)?'—':(+x).toFixed(d);
+const pct=x=>x==null||!isFinite(x)?'—':`${Math.round(x*100)}%`;
+const esc=s=>String(s).replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+const hms=t=>{t=Math.max(0,Math.floor(t));const h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=t%60;return[h,m,s].map(x=>String(x).padStart(2,'0')).join(':');};
+let sim=null,scenKey='ards',speed=1,pending={},selKey=null,caseState=null,caseDone={};
+let trend=[],nextTrendT=0,stepCount=0,deathShown=false,extShown=false,activeTab='lung',forecastData=null,trendWin=60;
+let loopCur=[],loopPrev=[],loopRef=null,loopT0=null,labsABG=[],exams=[];
+let audio=null,soundOn=false,silenceUntil=0,lastBeats=0,lastAlarmTone=0;
+const SW={};
+
+const PARAMS={
+ vt:{n:'Vt',u:'mL',min:100,max:1000,step:10,h:'Tidal volume of each mandatory breath. Aim for 6 mL/kg of predicted body weight.'},
+ rr:{n:'Rate',u:'/min',min:4,max:50,step:1,h:'Set (minimum) breaths per minute. The patient can trigger more.'},
+ peep:{n:'PEEP',u:'cmH₂O',min:0,max:30,step:1,h:'Pressure held at end-expiration. Keeps recruitable alveoli open.'},
+ fio2:{n:'FiO₂',u:'%',min:0.21,max:1,step:0.01,h:'Inspired oxygen fraction.'},
+ flow:{n:'Peak flow',u:'L/min',min:20,max:120,step:5,h:'Inspiratory flow. Faster flow shortens inspiration and leaves more time to exhale.'},
+ pattern:{n:'Flow pattern',u:'',opts:['square','decel'],labels:{square:'Square',decel:'Decel'},h:'Square flow allows plateau and resistance measurements; decelerating flow lowers peak pressure.'},
+ pause:{n:'Insp pause',u:'s',min:0,max:2,step:0.1,h:'End-inspiratory pause. Any pause above 0 measures Pplat every breath.'},
+ pinsp:{n:'Pinsp',u:'above PEEP',min:5,max:50,step:1,h:'Inspiratory pressure above PEEP. Tidal volume becomes the result.'},
+ ti:{n:'Ti',u:'s',min:0.3,max:3,step:0.05,h:'Inspiratory time.'},
+ rise:{n:'Rise time',u:'s',min:0.05,max:0.4,step:0.05,h:'How quickly pressure reaches its target.'},
+ ps:{n:'P support',u:'above PEEP',min:0,max:30,step:1,h:'Pressure support for each patient-triggered breath. 0 means CPAP.'},
+ ets:{n:'Cycle off',u:'% peak flow',min:5,max:70,step:5,h:'The breath ends when flow falls to this share of peak flow. Raise it in COPD to shorten inspiration.'},
+ trigFlow:{n:'Trigger',u:'L/min',min:0.5,max:10,step:0.5,h:'Flow trigger. Lower is more sensitive; too low lets leaks auto-trigger.'},
+ phigh:{n:'P high',u:'cmH₂O',min:5,max:45,step:1,h:'APRV upper pressure.'},
+ plow:{n:'P low',u:'cmH₂O',min:0,max:15,step:1,h:'APRV release pressure.'},
+ thigh:{n:'T high',u:'s',min:1,max:10,step:0.1,h:'Time at P high.'},
+ tlow:{n:'T low',u:'s',min:0.2,max:2,step:0.05,h:'Release time. End it when expiratory flow has fallen to about 75% of its peak.'},
+ pmax:{n:'P limit',u:'cmH₂O',min:20,max:80,step:1,h:'High-pressure alarm. Volume breaths stop when airway pressure reaches it.'},
+ bkRR:{n:'Backup rate',u:'/min',min:6,max:30,step:1,h:'Apnea backup rate.'},
+ bkVt:{n:'Backup Vt',u:'mL',min:200,max:800,step:10,h:'Apnea backup tidal volume.'}
+};
+const MODES={
+ VC:{n:'VC-AC',d:'Volume control, assist-control. You set volume, flow and rate; airway pressure is the result.',tiles:['vt','rr','peep','fio2','flow','pattern','pause','trigFlow','pmax']},
+ PC:{n:'PC-AC',d:'Pressure control, assist-control. You set pressure and inspiratory time; tidal volume is the result.',tiles:['pinsp','rr','peep','fio2','ti','rise','trigFlow','pmax']},
+ PRVC:{n:'PRVC',d:'Pressure-regulated volume control. Pressure-shaped breaths, adjusted breath by breath to reach the target volume.',tiles:['vt','rr','peep','fio2','ti','rise','trigFlow','pmax']},
+ SIMV:{n:'SIMV + PS',d:'Synchronized intermittent mandatory ventilation. A set number of volume breaths; extra breaths get pressure support only.',tiles:['vt','rr','ps','peep','fio2','flow','trigFlow','pmax']},
+ PSV:{n:'PSV / CPAP',d:'Pressure support. Every breath is patient-triggered and flow-cycled; backup ventilation starts after 20 s of apnea.',tiles:['ps','peep','fio2','ets','rise','trigFlow','pmax','bkRR','bkVt']},
+ APRV:{n:'APRV',d:'Airway pressure release ventilation. Long high-pressure phases with brief releases; spontaneous breathing at both levels.',tiles:['phigh','plow','thigh','tlow','fio2']}
+};
+const fmtP=(k,v)=>{const P=PARAMS[k];if(k==='fio2')return`${Math.round(v*100)}`;if(P.opts)return P.labels[String(v)];if(P.step<1)return(+v).toFixed(P.step<0.1?2:1);return String(v);};
+const roundP=(k,v)=>{const st=PARAMS[k].step;return+((Math.round(v/st)*st).toFixed(3));};
+
+/* ---------- waveform sweeps (erase-bar style, like a real monitor) ---------- */
+const nice=(v,list)=>{for(const x of list)if(v<=x)return x;return list[list.length-1];};
+const AUTO={
+ abp:(lo,hi)=>[0,nice(hi*1.06,[60,100,150,200,250])],
+ co2:(lo,hi)=>[0,nice(hi*1.08,[50,80,120])],
+ paw:(lo,hi)=>[lo<-4?-12:-4,nice(hi*1.06,[20,30,40,60,80])],
+ flow:(lo,hi)=>{const m=Math.max(Math.abs(lo),Math.abs(hi))*1.06;const r=nice(m,[30,60,90,120,180]);return[-r,r];},
+ vol:(lo,hi)=>[lo<-40?-200:0,nice(hi*1.06,[300,600,900,1200,1800])]
+};
+class Sweep{
+  constructor(cv,colors,o){this.cv=cv;this.ctx=cv.getContext('2d');this.colors=colors;this.secs=o.secs;this.r0=o.range.slice();this.range=o.range.slice();
+    this.auto=o.auto||null;this.zero=!!o.zero;this.lab=o.lab||null;this.unit=o.unit||'';this.sym=!!o.sym;this.pleth=!!o.pleth;this.buf=[];this.seen=[Infinity,-Infinity];this.resize();}
+  resize(){const r=this.cv.getBoundingClientRect(),d=Math.min(2,window.devicePixelRatio||1);this.w=Math.max(20,r.width);this.h=Math.max(20,r.height);
+    this.cv.width=Math.round(this.w*d);this.cv.height=Math.round(this.h*d);this.ctx.setTransform(d,0,0,d,0,0);this.ctx.clearRect(0,0,this.w,this.h);this.x=0;this.last=null;this.label();}
+  reset(){this.range=this.r0.slice();this.buf.length=0;this.seen=[Infinity,-Infinity];this.resize();}
+  label(){if(this.lab)this.lab.textContent=` ${this.sym?'±':''}${this.range[1]} ${this.unit}`;}
+  y(v){const a=this.range[0],b=this.range[1];return this.h-3-(v-a)/(b-a)*(this.h-6);}
+  push(vals,dt){this.buf.push(vals,dt);}
+  onWrap(){
+    const lo=this.seen[0],hi=this.seen[1];
+    if(isFinite(hi)){
+      let nr=null;
+      if(this.auto)nr=this.auto(lo,hi);
+      else if(this.pleth){const top=this.range[1];if(hi>top*0.97||hi<top*0.5)nr=[-0.06*Math.max(0.1,hi),Math.max(0.12,hi*1.18)];}
+      if(nr&&(nr[0]!==this.range[0]||nr[1]!==this.range[1])){this.range=nr;this.ctx.clearRect(0,0,this.w,this.h);this.label();}
+    }
+    this.seen=[Infinity,-Infinity];
+  }
+  flush(){
+    const B=this.buf;if(!B.length)return;
+    const c=this.ctx,n=this.colors.length,pxs=this.w/this.secs,GAP=14;
+    let x=this.x,pts=this.last?[this.last]:[];
+    const strokeSeg=()=>{
+      if(pts.length<2)return;
+      const xa=pts[0][0],xb=pts[pts.length-1][0];
+      c.clearRect(xa+0.5,0,xb-xa+GAP,this.h);
+      if(this.zero){c.strokeStyle='rgba(255,255,255,0.16)';c.lineWidth=1;c.beginPath();const yz=this.y(0);c.moveTo(xa,yz);c.lineTo(xb,yz);c.stroke();}
+      for(let j=0;j<n;j++){c.strokeStyle=this.colors[j];c.lineWidth=1.7;c.lineJoin='round';c.beginPath();let st=false;
+        for(let k=0;k<pts.length;k++){const yy=pts[k][1][j];if(!isFinite(yy)){st=false;continue;}if(!st){c.moveTo(pts[k][0],yy);st=true;}else c.lineTo(pts[k][0],yy);}c.stroke();}
+    };
+    for(let i=0;i<B.length;i+=2){
+      const vals=B[i],dt=B[i+1];
+      for(let j=0;j<n;j++){const v=vals[j];if(v<this.seen[0])this.seen[0]=v;if(v>this.seen[1])this.seen[1]=v;}
+      let nx=x+dt*pxs;
+      if(nx>=this.w){strokeSeg();nx-=this.w;if(nx>this.w)nx=0;this.onWrap();c.clearRect(0,0,Math.min(this.w,nx+GAP),this.h);pts=[];}
+      x=nx;
+      const ys=new Array(n);for(let j=0;j<n;j++)ys[j]=this.y(vals[j]);
+      pts.push([x,ys]);
+    }
+    strokeSeg();
+    const e0=x+2,e1=x+GAP;if(e0<this.w)c.clearRect(e0,0,Math.min(this.w,e1)-e0,this.h);if(e1>this.w)c.clearRect(0,0,e1-this.w,this.h);
+    this.x=x;this.last=pts.length?pts[pts.length-1]:null;B.length=0;
+  }
+}
+function makeSweeps(){
+  SW.ecg=new Sweep($('cvEcg'),['#46e36b'],{secs:6,range:[-0.7,1.35]});
+  SW.abp=new Sweep($('cvAbp'),['#ff5b5b'],{secs:6,range:[0,150],auto:AUTO.abp,lab:$('scAbp'),unit:'mmHg'});
+  SW.pleth=new Sweep($('cvPleth'),['#3fd8f6'],{secs:6,range:[-0.06,1.2],pleth:true});
+  SW.co2=new Sweep($('cvCo2'),['#f2df4b'],{secs:12,range:[0,50],auto:AUTO.co2,lab:$('scCo2'),unit:'mmHg'});
+  SW.paw=new Sweep($('cvPaw'),['#ffb547','#f27bbd'],{secs:12,range:[-4,40],auto:AUTO.paw,lab:$('scPaw'),unit:'cmH₂O',zero:true});
+  SW.flow=new Sweep($('cvFlow'),['#5bd8a8'],{secs:12,range:[-60,60],auto:AUTO.flow,lab:$('scFlow'),unit:'L/min',zero:true,sym:true});
+  SW.vol=new Sweep($('cvVol'),['#9eaaff'],{secs:12,range:[0,600],auto:AUTO.vol,lab:$('scVol'),unit:'mL'});
+}
+function resetWaves(){for(const k in SW)SW[k].reset();loopCur=[];loopPrev=[];loopT0=null;}
+function sample(dx){
+  const s=sim.s;
+  SW.ecg.push([s.ecg],dx);SW.abp.push([s.abp],dx);SW.pleth.push([s.pleth],dx);SW.co2.push([s.co2],dx);
+  SW.paw.push([s.paw,s.esoph?s.pes:NaN],dx);SW.flow.push([s.qv*60],dx);SW.vol.push([s.vol*1000],dx);
+  const t0=s.cur?s.cur.t0:loopT0;
+  if(t0!==loopT0){if(loopCur.length>20)loopPrev=loopCur;loopCur=[];loopT0=t0;}
+  if(loopCur.length<4000)loopCur.push([s.paw,s.vol*1000,s.qv*60]);
+}
+
+/* ---------- pressure–volume and flow–volume loops ---------- */
+function loopPlot(cv,series,xr,yr,xu,yu){
+  const r=cv.getBoundingClientRect(),d=Math.min(2,window.devicePixelRatio||1),W=r.width,H=r.height;if(W<20)return;
+  if(cv.width!==Math.round(W*d)||cv.height!==Math.round(H*d)){cv.width=Math.round(W*d);cv.height=Math.round(H*d);}
+  const c=cv.getContext('2d');c.setTransform(d,0,0,d,0,0);c.clearRect(0,0,W,H);
+  const L=30,R=8,T=18,B=16,pw=W-L-R,ph=H-T-B;
+  const X=v=>L+(v-xr[0])/(xr[1]-xr[0])*pw,Y=v=>T+ph-(v-yr[0])/(yr[1]-yr[0])*ph;
+  c.strokeStyle='#294558';c.lineWidth=1;c.beginPath();
+  const x0=X(Math.max(xr[0],Math.min(xr[1],0))),y0=Y(Math.max(yr[0],Math.min(yr[1],0)));
+  c.moveTo(L,y0);c.lineTo(L+pw,y0);c.moveTo(x0,T);c.lineTo(x0,T+ph);c.stroke();
+  c.fillStyle='#8fa7b7';c.font='500 10px system-ui';
+  c.fillText(`${xr[1]} ${xu}`,L+pw-c.measureText(`${xr[1]} ${xu}`).width,H-4);c.fillText(`${yr[1]}`,2,T+8);c.fillText(yu,2,T+19);
+  for(const s of series){if(!s||!s.pts||s.pts.length<2)continue;c.strokeStyle=s.col;c.lineWidth=s.w||1.6;c.setLineDash(s.dash?[4,3]:[]);c.beginPath();
+    for(let i=0;i<s.pts.length;i++){const p=s.pts[i],xx=X(p[s.x]),yy=Y(p[s.y]);if(i===0)c.moveTo(xx,yy);else c.lineTo(xx,yy);}c.stroke();}
+  c.setLineDash([]);
+}
+function drawLoops(){
+  const pr=SW.paw.range,vr=SW.vol.range,fr=SW.flow.range,v0=Math.min(0,vr[0]);
+  loopPlot($('cvPV'),[loopRef&&{pts:loopRef,x:0,y:1,col:'rgba(255,255,255,.55)',dash:true,w:1.2},{pts:loopPrev,x:0,y:1,col:'rgba(255,181,71,.33)'},{pts:loopCur,x:0,y:1,col:'#ffb547',w:2}],[Math.min(0,pr[0]),pr[1]],[v0,vr[1]],'cmH₂O','mL');
+  loopPlot($('cvFV'),[loopRef&&{pts:loopRef,x:1,y:2,col:'rgba(255,255,255,.55)',dash:true,w:1.2},{pts:loopPrev,x:1,y:2,col:'rgba(91,216,168,.33)'},{pts:loopCur,x:1,y:2,col:'#5bd8a8',w:2}],[v0,vr[1]],[fr[0],fr[1]],'mL','L/min');
+}
+
+/* ---------- monitor and ventilator numerics ---------- */
+function updMonitor(){
+  const s=sim.s,p=sim.p,ar=!!s.arrest,dd=s.dead;
+  $('nHr').textContent=dd?'0':ar?'40':fmt(s.hr);
+  $('nAbp').textContent=dd?'--/--':ar?'58/14':`${fmt(s.sbp)}/${fmt(s.dbp)}`;
+  $('nMap').textContent=`(${dd?'--':ar?'30':fmt(s.map)})`;
+  $('nSpo2').textContent=(ar||dd)?'-?-':fmt(s.spo2);
+  $('nPi').textContent=`Perf ${(ar||dd)?'—':fmt(s.perf,1)}`;
+  $('nEt').textContent=fmt(s.etco2);
+  $('nAwrr').textContent=`awRR ${fmt(s.meas.ftot)}`;
+  $('monFoot').innerHTML=`<span>Temp<b>${p.temp.toFixed(1)}</b> °C</span><span>CVP<b>${fmt(s.cvp)}</b> mmHg</span>${s.esoph?`<span>Pes<b>${fmt(s.pes)}</b> cmH₂O</span>`:''}<span>FiO₂<b>${Math.round(sim.fio2()*100)}</b>%</span>`;
+}
+const VM=[['ppeak','Ppeak','cmH₂O'],['pplat','Pplat','cmH₂O'],['pmean','Pmean',''],['peep','PEEP',''],['vti','VTi','mL'],['vte','VTe','mL'],['mve','MVe','L/min'],['ftot','f total','/min'],['ie','I:E','']];
+const VM2=[['peeptot','PEEPtot',''],['autop','Auto-PEEP',''],['cstat','Cstat',''],['raw','Raw',''],['fspont','f spont',''],['leak','Leak','%'],['rsbi','RSBI',''],['pl','PL ei/ee','']];
+function buildMeas(){
+  $('ventMeas').innerHTML=VM.map(([k,n,u])=>`<dt>${n}</dt><dd id="vm-${k}">—${u?`<small>${u}</small>`:''}</dd>`).join('');
+  $('ventMeas2').innerHTML=VM2.map(([k,n])=>`<dt>${n}</dt><dd id="vm-${k}">—</dd>`).join('');
+}
+function measured(){
+  const s=sim.s,M=s.meas,set=sim.set,now=s.t;
+  const pl=(set.mode==='VC'&&set.pause>0&&M.pplatT&&now-M.pplatT<30)?M.pplat:(M.platHoldT&&now-M.platHoldT<180&&M.platHold!=null?M.platHold:null);
+  const pt=(M.peepTotHoldT&&now-M.peepTotHoldT<180)?M.peepTotHold:null;
+  const ap=(M.peepTotHoldT&&now-M.peepTotHoldT<180)?M.autoPeepHold:null;
+  return{pplat:pl,peepTot:pt,autoPeep:ap};
+}
+function setV(k,txt){const el=$('vm-'+k);if(el&&el.textContent!==txt)el.textContent=txt;}
+function updVentMeas(){
+  const s=sim.s,M=s.meas,set=sim.set,m=measured();
+  setV('ppeak',fmt(M.ppeak));setV('pplat',fmt(m.pplat));setV('pmean',fmt(M.pmean));setV('peep',fmt(M.peep));
+  setV('vti',fmt(M.vti));setV('vte',fmt(M.vte));setV('mve',fmt(M.mve,1));setV('ftot',fmt(M.ftot));
+  setV('ie',M.ie==null?'—':M.ie>=1?`1:${fmt(M.ie,1)}`:`${fmt(1/M.ie,1)}:1`);
+  setV('peeptot',fmt(m.peepTot,1));setV('autop',fmt(m.autoPeep,1));
+  const pe=m.peepTot!=null?m.peepTot:set.peep;
+  setV('cstat',m.pplat!=null&&m.pplat-pe>0.5?fmt((M.vte||0)/(m.pplat-pe)):'—');
+  setV('raw',m.pplat!=null&&set.mode==='VC'&&set.pattern==='square'?fmt((M.ppeak-m.pplat)/(set.flow/60)):'—');
+  setV('fspont',fmt(M.fspont));setV('leak',fmt(M.leak));
+  setV('rsbi',set.mode==='PSV'?fmt(sim.rsbi()):'—');
+  setV('pl',s.esoph&&M.pesEI!=null?`${fmt(M.palvEI-M.pesEI)}/${fmt(M.peepTot-M.pesEE)}`:'—');
+  const ch=$('trigChip'),k=s.cur?s.cur.kind:M.kind,txt=k==='pt'?'Patient-triggered':k==='man'?'Manual breath':'Time-triggered';
+  if(ch.textContent!==txt){ch.textContent=txt;ch.className='trig'+(k==='pt'?' pt':'');}
+  $('pesLab').hidden=!s.esoph;
+}
+function alarmBar(el,list){
+  const html=list.length?list.slice(0,3).map(a=>`<span>${a.pri==='high'?'***':'**'} ${esc(a.msg)}</span>`).join(''):'';
+  if(el.dataset.h===html)return;el.dataset.h=html;el.innerHTML=html;
+  el.className='abar'+(list.length?(list.some(a=>a.pri==='high')?' hi':' med'):'');
+}
+function updAlarms(){const A=sim.s.alarms||[];alarmBar($('monAlarms'),A.filter(a=>a.src==='mon'));alarmBar($('ventAlarms'),A.filter(a=>a.src==='vent'));}
+function updClock(){$('clock').textContent=hms(sim.s.t-(sim.s.t0||0));}
+function updPt(){
+  const s=sim.s,p=sim.p,chips=[`RASS ${s.rass>0?'+':''}${s.rass}`];
+  if(s.nmb)chips.push('Paralyzed');if(s.norepi>0)chips.push(`Norepinephrine ${s.norepi.toFixed(2)} µg/kg/min`);
+  if(s.prone)chips.push('Prone');if(s.ino)chips.push('Inhaled NO');if(s.esoph)chips.push('Esophageal balloon');
+  if(s.ptx&&s.ptx.tube)chips.push(`Chest tube, ${s.ptx.side?'left':'right'}`);if(!sim.set.hme)chips.push('HME removed');if(s.lysisOn)chips.push('Thrombolysis');
+  if(caseState)chips.unshift(`Case: ${caseState.C.title}`);
+  const html=`<span class="pn">${esc(p.name)}</span><span>${p.age}-year-old ${p.sex==='M'?'man':'woman'}, ${p.heightCm} cm, ${p.weightKg} kg</span><span>Predicted body weight ${fmt(p.pbw)} kg, so 6 mL/kg = ${fmt(6*p.pbw)} mL</span>`+chips.map(c=>`<span class="chip">${esc(c)}</span>`).join('');
+  if($('ptbar').dataset.h!==html){$('ptbar').dataset.h=html;$('ptbar').innerHTML=html;}
+}
+
+/* ---------- settings tiles, knob, projected effect ---------- */
+function curMode(){return pending.mode||sim.set.mode;}
+function renderTiles(){
+  const mode=curMode(),el=$('tiles');
+  $('modeBtn').textContent=MODES[mode].n+(pending.mode?' (pending)':'');$('modeBtn').classList.toggle('pend',!!pending.mode);
+  el.innerHTML=MODES[mode].tiles.map(k=>{const P=PARAMS[k],cur=sim.set[k],has=k in pending,v=has?pending[k]:cur;
+    return`<button type="button" class="tile${P.opts?' txt':''}${selKey===k?' sel':''}${has?' pend':''}" data-k="${k}" aria-pressed="${selKey===k}"><span class="tl">${P.n}</span><span class="tv">${fmtP(k,v)}</span><span class="tu">${k==='fio2'?'%':P.u}</span></button>`;}).join('');
+  el.querySelectorAll('.tile').forEach(b=>b.onclick=()=>{selKey=selKey===b.dataset.k?null:b.dataset.k;renderTiles();renderKnob();});
+}
+function renderKnob(){
+  const has=Object.keys(pending).length>0,ctl=$('knCtl');
+  $('knAccept').disabled=!has;$('knCancel').disabled=!has&&!selKey;
+  if(!selKey){$('knName').textContent=has?'Review the pending change':'Select a setting to change it';
+    $('knHelp').textContent=has?'Nothing reaches the patient until you press Accept.':'Changes stay pending until you accept them, as on a real ventilator.';ctl.innerHTML='';return;}
+  const k=selKey,P=PARAMS[k],cur=sim.set[k],v=(k in pending)?pending[k]:cur;
+  $('knName').textContent=`${P.n} ${k==='fio2'?'(%)':P.u?`(${P.u})`:''}`;$('knHelp').textContent=P.h||'';
+  if(P.opts){ctl.innerHTML=P.opts.map(o=>`<button type="button" class="opt${String(o)===String(v)?' on':''}" data-o="${o}">${P.labels[o]}</button>`).join('');
+    ctl.querySelectorAll('.opt').forEach(b=>b.onclick=()=>setPending(k,P.opts.find(x=>String(x)===b.dataset.o)));return;}
+  const f=k==='fio2'?100:1;
+  ctl.innerHTML=`<button type="button" class="pm" id="knMinus" aria-label="Decrease">−</button><input type="range" id="knRange" min="${P.min*f}" max="${P.max*f}" step="${P.step*f}" value="${v*f}" aria-label="${P.n}"><button type="button" class="pm" id="knPlus" aria-label="Increase">+</button><output id="knVal">${fmtP(k,v)}</output>`;
+  $('knRange').oninput=e=>setPending(k,roundP(k,(+e.target.value)/f),true);
+  $('knMinus').onclick=()=>bump(-1);$('knPlus').onclick=()=>bump(1);
+}
+function bump(dir){const k=selKey;if(!k)return;const P=PARAMS[k],cur=(k in pending)?pending[k]:sim.set[k],st=k==='fio2'?0.05:P.step;
+  setPending(k,clamp(roundP(k,cur+dir*st),P.min,P.max));}
+function setPending(k,v,fromRange){
+  const cur=sim.set[k];
+  if(v===cur||(typeof v==='number'&&Math.abs(v-cur)<1e-9))delete pending[k];else pending[k]=v;
+  renderTiles();
+  if(fromRange&&$('knVal')){$('knVal').textContent=fmtP(k,v);$('knAccept').disabled=!Object.keys(pending).length;$('knCancel').disabled=false;}else renderKnob();
+  schedulePreview();
+}
+function chooseMode(m){
+  const set=sim.set,M=sim.s.meas;
+  if(m===set.mode){delete pending.mode;}
+  else{pending.mode=m;
+    const dp=(M.palvEI!=null&&M.peepTot!=null)?Math.round(M.palvEI-M.peepTot):12;
+    if(m==='PC')pending.pinsp=clamp(dp,8,35);
+    if(m==='PC'||m==='PRVC')pending.ti=clamp(roundP('ti',Math.min(1.0,0.33*60/set.rr)),0.5,1.5);
+    if(m==='PSV'&&set.mode!=='SIMV')pending.ps=10;
+    if(m==='APRV'){pending.phigh=clamp(Math.round(M.palvEI||25),15,32);pending.plow=0;pending.thigh=4.5;pending.tlow=0.5;}
+    if((m==='VC'||m==='SIMV'||m==='PRVC')&&['PC','PSV','APRV'].includes(set.mode))pending.vt=clamp(Math.round((M.vte||450)/10)*10,250,800);
+    for(const k of Object.keys(pending))if(k!=='mode'&&pending[k]===set[k])delete pending[k];
+  }
+  selKey=null;renderTiles();renderKnob();schedulePreview();
+}
+function acceptPending(){
+  if(!Object.keys(pending).length)return;
+  const set=sim.set,ch=Object.keys(pending).map(k=>k==='mode'?`mode ${MODES[set.mode].n} → ${MODES[pending.mode].n}`:`${PARAMS[k].n} ${fmtP(k,set[k])} → ${fmtP(k,pending[k])}${k==='fio2'?'%':''}`);
+  sim.applySettings(Object.assign({},pending));sim.log('Settings: '+ch.join(', '),'act');
+  pending={};selKey=null;renderTiles();renderKnob();$('knPrev').innerHTML='';
+}
+function cancelPending(){pending={};selKey=null;renderTiles();renderKnob();$('knPrev').innerHTML='';}
+let prevTimer=null;
+function schedulePreview(){
+  clearTimeout(prevTimer);
+  if(!Object.keys(pending).length){$('knPrev').innerHTML='';return;}
+  $('knPrev').innerHTML='<span>Projecting the effect…</span>';
+  prevTimer=setTimeout(()=>{try{const a=sim.snapshot(),b=sim.preview(Object.assign({},pending));renderPreview(a,b);}catch(e){$('knPrev').textContent='Projection unavailable';console.error(e);}},200);
+}
+function renderPreview(a,b){
+  const T=TARGETS[sim.p.cat]||TARGETS.normal;
+  const rows=[['Tidal volume','vt',0,'mL',v=>v/sim.p.pbw>8.05],['Peak pressure','ppeak',0,'',()=>false],['Plateau (true)','pplat',0,'',v=>v>30&&sim.p.cat!=='obese'],['Driving pressure','dp',0,'',v=>v>15],
+    ['Auto-PEEP','autoPeep',1,'',v=>v>4],['Exhaled minute volume','mve',1,'L/min',()=>false],['SpO₂ (steady state)','spo2',0,'%',v=>v<T.s[0]-0.5],['PaCO₂ (steady state)','paco2',0,'',()=>false],['MAP','map',0,'',v=>v<65],
+    ['Tidal recruitment','tidalRec',0,'%',v=>v>0.05],['Overdistension','od',0,'%',v=>v>0.08]];
+  const f=(k,v,d)=>(k==='tidalRec'||k==='od')?pct(v):fmt(v,d);
+  $('knPrev').innerHTML=`<table><thead><tr><th>If you accept (about a minute later)</th><th>Now</th><th>Projected</th></tr></thead><tbody>${rows.map(([n,k,d,u,bad])=>{const va=a[k],vb=b[k];
+    const ch=va!=null&&vb!=null&&Math.abs(vb-va)>(k==='tidalRec'||k==='od'?0.01:Math.pow(10,-d)*0.9);
+    return`<tr><td>${n}${u?` (${u})`:''}</td><td>${f(k,va,d)}</td><td class="${vb!=null&&bad(vb)?'bad':''}">${f(k,vb,d)}${ch?(vb>va?' ▲':' ▼'):''}</td></tr>`;}).join('')}</tbody></table>
+    <div>Red marks a projected value outside the target range. CO₂ takes 10–20 minutes to settle; the PaCO₂ shown is where it is heading.</div>`;
+}
+function modeDialog(){
+  const cur=curMode();
+  dialog(`<h3>Ventilation mode</h3><div class="modes">${Object.keys(MODES).map(m=>`<button type="button" class="modeopt${m===cur?' on':''}" data-m="${m}"><b>${MODES[m].n}</b><span>${esc(MODES[m].d)}</span></button>`).join('')}</div><p class="muted">The new mode stays pending until you press Accept.</p>`,[['Close']]);
+  document.querySelectorAll('.modeopt').forEach(b=>b.onclick=()=>{$('dlg').close();chooseMode(b.dataset.m);});
+}
+
+/* ---------- dialog ---------- */
+function dialog(html,buttons){
+  $('dlgBody').innerHTML=html;const a=$('dlgAct');a.innerHTML='';
+  (buttons||[['Close']]).forEach(([t,fn,primary])=>{const b=document.createElement('button');b.type='button';b.textContent=t;if(primary)b.className='primary';b.onclick=()=>{$('dlg').close();if(fn)fn();};a.appendChild(b);});
+  if(!$('dlg').open)$('dlg').showModal();
+}
+
+/* ---------- sound ---------- */
+function ensureAudio(){if(!audio){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return false;audio=new AC();}if(audio.state==='suspended')audio.resume();return true;}
+function tone(f,dur,vol,when){const t=audio.currentTime+(when||0),o=audio.createOscillator(),g=audio.createGain();o.type='sine';o.frequency.value=f;
+  g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+0.008);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);o.connect(g);g.connect(audio.destination);o.start(t);o.stop(t+dur+0.03);}
+function sound(){
+  if(!soundOn||!audio||!sim)return;const s=sim.s,now=performance.now();
+  if(s.beats!==lastBeats){if(speed===1&&!s.arrest&&!s.dead&&s.beats>lastBeats)tone(clamp(880-(100-s.spo2)*13,380,900),0.07,0.05);lastBeats=s.beats;}
+  if(now<silenceUntil)return;
+  const A=s.alarms||[],hi=A.some(a=>a.pri==='high'),med=A.some(a=>a.pri==='med');
+  if(hi&&now-lastAlarmTone>6000){lastAlarmTone=now;[0,0.13,0.26,0.55,0.68].forEach(w=>tone(960,0.09,0.07,w));}
+  else if(!hi&&med&&now-lastAlarmTone>12000){lastAlarmTone=now;[0,0.2,0.4].forEach(w=>tone(700,0.12,0.05,w));}
+}
+
+/* ---------- main loop ---------- */
+let lastNow=performance.now(),simAcc=0,tNum=0,tSlow=0,tCT=0,tLoop=0;
+function recordTrend(){const s=sim.s,M=s.meas;trend.push({t:s.t-(s.t0||0),spo2:s.spo2,pf:s.pao2/sim.fio2(),paco2:s.paco2,ph:s.ph,pplat:M.palvEI,dp:M.dp,map:s.map,vili:s.vili,ap:M.autoPeep,hr:s.hr});if(trend.length>20000)trend.splice(0,trend.length-20000);}
+function frame(now){
+  let rdt=(now-lastNow)/1000;lastNow=now;if(rdt>0.1)rdt=0.1;
+  if(sim&&speed>0&&!sim.s.dead&&!sim.s.extubated){
+    const dt=speed>5?0.01:0.005;simAcc+=rdt*speed;let n=Math.floor(simAcc/dt);simAcc-=n*dt;if(n>7000){n=7000;simAcc=0;}
+    const k=speed<=5?1:Math.max(1,Math.round(speed/dt/300)),comp=speed<=5?1:speed/5;
+    for(let i=0;i<n;i++){sim.step(dt);if(++stepCount%k===0)sample(dt*k/comp);if(sim.s.t>=nextTrendT){recordTrend();nextTrendT=sim.s.t+10;}if(sim.s.dead)break;}
+  }
+  if(sim){
+    for(const key in SW)SW[key].flush();
+    if(now-tLoop>50){tLoop=now;drawLoops();}
+    sound();
+    if(now-tNum>350){tNum=now;updMonitor();updVentMeas();updAlarms();updClock();}
+    if(now-tSlow>1500){tSlow=now;updCoach();updPt();updTabDyn();}
+    if(activeTab==='lung'&&now-tCT>100){tCT=now;drawCT();}
+    if(sim.s.dead&&!deathShown){deathShown=true;dialog(debriefHTML(),[['Restart',restart,true],['Close']]);}
+    if(sim.s.extubated&&!extShown){extShown=true;speed=0;markSpeed();}
+  }
+  requestAnimationFrame(frame);
+}
+function markSpeed(){document.querySelectorAll('#speedSeg button').forEach(b=>b.classList.toggle('on',+b.dataset.sp===speed));}
+function skip(min){
+  if(!sim||sim.s.dead)return;const s=sim.s,f=s.fast;s.fast=true;
+  if(s.rmReq||s.rm)sim.run(55,0.01);
+  for(let i=0;i<min;i++){sim.run(6,0.01);if(s.dead)break;sim.jump(54);recordTrend();if(s.dead)break;}
+  s.fast=f;sim.run(3,0.005);nextTrendT=s.t+10;resetWaves();updAll();
+}
+function updAll(){updMonitor();updVentMeas();updAlarms();updClock();updCoach(true);updPt();updTabDyn(true);}
+
+/* ===================== VentLab UI: panels ===================== */
+function updCoach(force){
+  const list=coach(sim),key=list.map(x=>x.lvl+x.title+x.body).join('|');
+  if(force||key!==updCoach.k){updCoach.k=key;$('coachList').innerHTML=list.map(x=>`<div class="cc ${x.lvl}"><div class="ct">${esc(x.title)}</div><div class="cb">${esc(x.body)}</div></div>`).join('');}
+  const s=sim.s,p=sim.p,M=s.meas,T=TARGETS[p.cat]||TARGETS.normal,vtkg=(M.vtPat||0)/p.pbw,pl=M.palvEI,dp=M.dp,ap=M.autoPeep;
+  const tp=pl!=null&&M.pesEI!=null?pl-M.pesEI:null;
+  const rows=[[`Tidal volume ≤ ${p.cat==='ards'?'6.5':'8'} mL/kg PBW`,`${fmt(vtkg,1)} mL/kg`,vtkg<=(p.cat==='ards'?6.5:8.05)],
+    p.cat==='obese'?['Transpulmonary pressure, end-insp ≤ 25',`${fmt(tp)} cmH₂O`,tp!=null&&tp<=25]:['Plateau pressure ≤ 30',`${fmt(pl)} cmH₂O`,pl!=null&&pl<=30],
+    ['Driving pressure ≤ 15',`${fmt(dp)} cmH₂O`,dp!=null&&dp<=15],['Auto-PEEP ≤ 4',`${fmt(ap,1)} cmH₂O`,ap!=null&&ap<=4],
+    [`SpO₂ ${T.s[0]}–${T.s[1]}%`,`${fmt(s.spo2)}%`,s.spo2>=T.s[0]-0.5&&s.spo2<=T.s[1]+0.5],
+    [`pH ${T.ph[0].toFixed(2)}–${T.ph[1].toFixed(2)}`,fmt(s.ph,2),s.ph>=T.ph[0]&&s.ph<=T.ph[1]],['MAP ≥ 65 mmHg',fmt(s.map),s.map>=65]];
+  $('checklist').innerHTML=rows.map(r=>`<span>${r[0]}</span><span class="v">${r[1]}</span><span class="${r[2]?'ok':'no'}" aria-label="${r[2]?'met':'not met'}">${r[2]?'✓':'✕'}</span>`).join('');
+  const o=outcome(sim),st=s.stats,Tt=Math.max(1,st.T);
+  $('oMort').textContent=pct(o.mort);$('oMortB').textContent=`baseline for this illness ${pct(p.mort)}`;
+  $('oVili').textContent=fmt(s.vili,1);$('oViliR').textContent=s.viliRate>1.5?`rising ${fmt(s.viliRate,1)} per hour`:'stable or healing';
+  $('oBaro').textContent=pct(1-Math.exp(-s.baroHaz*24));
+  $('oStats').textContent=st.T>30?`Time on target so far: SpO₂ ${pct(st.sat/Tt)}, plateau ${pct(st.pplat/Tt)}, driving pressure ${pct(st.dp/Tt)}, MAP ${pct(st.map/Tt)}.`:'';
+}
+function renderBrief(title,sub,hx){const p=sim.p;$('brief').innerHTML=`<h3>${esc(title)}: ${esc(sub)}</h3><p>${esc(hx)}</p>${p.goal?`<p><b>Goal.</b> ${esc(p.goal)}</p>`:''}`;}
+
+/* ---------- live CT-style lung slice ---------- */
+const VESS=(()=>{const r=rng32(42),a=[];for(let i=0;i<46;i++){const ang=r()*Math.PI*2,rad=Math.sqrt(r())*0.92;a.push([Math.cos(ang)*rad,Math.sin(ang)*rad,0.8+r()*1.6]);}return a;})();
+function zoneGray(z,zs){const air=(1-z.cons)*zs.r,col=(1-z.cons)*(1-zs.r),g=z.cons*196+col*150+air*(36-24*zs.od);const v=Math.round(clamp(g,6,215));return`rgb(${v},${v},${v})`;}
+function ell(c,x,y,rx,ry,rot){c.beginPath();c.ellipse(x,y,Math.max(1,rx),Math.max(1,ry),rot||0,0,Math.PI*2);c.fill();}
+function drawCT(){
+  const cv=$('cvCT');if(!cv||cv.offsetParent===null)return;
+  const r=cv.getBoundingClientRect(),d=Math.min(2,window.devicePixelRatio||1),W=r.width,H=r.height;if(W<40)return;
+  if(cv.width!==Math.round(W*d)||cv.height!==Math.round(H*d)){cv.width=Math.round(W*d);cv.height=Math.round(H*d);}
+  const c=cv.getContext('2d');c.setTransform(d,0,0,d,0,0);c.fillStyle='#000';c.fillRect(0,0,W,H);
+  const s=sim.s,p=sim.p;
+  c.save();if(s.prone){c.translate(0,H);c.scale(1,-1);}
+  const cx=W/2,cy=H*0.5,rx=Math.min(W*0.45,H*0.78),ry=Math.min(H*0.42,rx*0.64);
+  c.fillStyle='#3e3e3e';ell(c,cx,cy,rx,ry);c.fillStyle='#8c8c8c';ell(c,cx,cy,rx*0.93,ry*0.89);
+  const tens=s.ptx&&s.ptx.tension&&!s.ptx.needle&&!s.ptx.tube?clamp(s.ptens/24,0,1):0,shift=s.ptx?(s.ptx.side===0?1:-1)*tens*rx*0.13:0;
+  const vf=clamp((s.x+s.veq)/Math.max(0.3,s.veq+s.vtPrev),0,1.4),ex=1+0.035*vf;
+  for(let side=0;side<2;side++){
+    const sx=side===0?-1:1,ptxSide=s.ptx&&!s.ptx.tube&&s.ptx.side===side;
+    const hx=cx+sx*rx*0.46+(ptxSide?0:shift*0.7),hy=cy-ry*0.04,hrx=rx*0.39*(side?0.95:1),hry=ry*0.72;
+    c.fillStyle='#030303';ell(c,hx,hy,hrx,hry);
+    let col=1;if(ptxSide)col=s.ptx.needle?0.75:0.6-0.25*tens;
+    if(s.mainstem&&side===1){let ar=0;for(let k=0;k<8;k++)ar+=s.z[8+k].r;col*=0.72+0.28*ar/8;}
+    const lrx=hrx*ex*col,lry=hry*ex*(0.62+0.38*col),lx=hx-sx*(hrx-lrx)*0.55,ly=hy+(hry-lry)*0.25;
+    const g=c.createLinearGradient(0,ly-lry,0,ly+lry);
+    for(let k=0;k<8;k++){const i=side*8+k;g.addColorStop((k+0.5)/8,zoneGray(p.zones[i],s.z[i]));}
+    c.fillStyle=g;ell(c,lx,ly,lrx,lry);
+    c.fillStyle='rgba(140,140,140,0.5)';
+    for(const v of VESS){c.beginPath();c.arc(lx+v[0]*lrx*sx*0.86,ly+v[1]*lry*0.86,v[2],0,Math.PI*2);c.fill();}
+    if(ptxSide){c.strokeStyle='rgba(225,225,225,.85)';c.lineWidth=1;c.beginPath();c.ellipse(lx,ly,lrx,lry,0,0,Math.PI*2);c.stroke();}
+    if(s.ptx&&s.ptx.tube&&s.ptx.side===side){c.strokeStyle='#f4f4f4';c.lineWidth=3;c.beginPath();c.moveTo(cx+sx*rx*0.95,cy+ry*0.15);c.lineTo(cx+sx*rx*0.62,cy-ry*0.3);c.stroke();}
+  }
+  c.fillStyle='#a8a8a8';c.beginPath();c.ellipse(cx+rx*0.1+shift,cy-ry*0.14,rx*0.2,ry*0.3,0.5,0,Math.PI*2);c.fill();
+  c.fillStyle='#b9b9b9';c.beginPath();c.arc(cx+rx*0.07+shift*0.5,cy+ry*0.4,ry*0.09,0,Math.PI*2);c.fill();
+  c.fillStyle='#e8e8e8';c.beginPath();c.arc(cx,cy+ry*0.66,ry*0.16,0,Math.PI*2);c.fill();
+  c.fillStyle='#d8d8d8';c.fillRect(cx-ry*0.04,cy+ry*0.8,ry*0.08,ry*0.16);
+  c.restore();
+  c.fillStyle='#bdbdbd';c.font='600 11px system-ui,sans-serif';c.fillText('R',10,18);c.fillText('L',W-18,18);
+  c.fillText(s.prone?'Prone: back is up':'Supine: front is up',10,H-10);
+  c.strokeStyle='#bdbdbd';c.lineWidth=1.5;c.beginPath();c.moveTo(W-16,H*0.38);c.lineTo(W-16,H*0.62);c.moveTo(W-21,H*0.57);c.lineTo(W-16,H*0.62);c.lineTo(W-11,H*0.57);c.stroke();
+  c.save();c.translate(W-24,H*0.5);c.rotate(-Math.PI/2);c.textAlign='center';c.fillText('gravity',0,0);c.restore();
+}
+function lungTabHTML(){
+  return`<div class="cols"><div><div class="ctwrap"><canvas id="cvCT" aria-label="Simulated CT slice of both lungs"></canvas></div>
+  <div class="legend"><span><i style="background:#0c0c0c"></i>Overdistended</span><span><i style="background:#242424"></i>Aerated</span><span><i style="background:#6a6a6a"></i>Partly aerated</span><span><i style="background:#969696"></i>Collapsed, recruitable</span><span><i style="background:#c4c4c4"></i>Consolidated</span></div>
+  <p class="note">A simulated CT slice through both lungs, redrawn live. As on a real CT, the patient's right is on the left of the image. With too little PEEP you can watch the dependent lung open with each breath and close as the patient exhales; prone positioning flips which lung is dependent.</p></div>
+  <div><h3 class="kvh">Lung (true values from the model)</h3><dl class="kv" id="kvLung"></dl><h3 class="kvh">Circulation and oxygen delivery</h3><dl class="kv" id="kvCirc"></dl></div></div>`;
+}
+function kv(id,rows){const el=$(id);if(!el)return;el.innerHTML=rows.map(r=>`<dt>${r[0]}</dt><dd>${r[1]}</dd>`).join('');}
+function updLungKv(){
+  const s=sim.s,M=s.meas,pli=M.palvEI!=null&&M.pesEI!=null?M.palvEI-M.pesEI:null,ple=M.peepTot!=null&&M.pesEE!=null?M.peepTot-M.pesEE:null;
+  kv('kvLung',[['Aerated',pct(s.recFrac)],['Collapsed but recruitable',pct(s.colFrac)],['Consolidated (not recruitable)',pct(s.consFrac)],['Opening and closing each breath',pct(s.tidalRec)],['Overdistended at end-inspiration',pct(s.odFrac)],
+    ['Shunt fraction',pct(s.shunt)],['Dead space, Vd/Vt',fmt(s.vdvt,2)],['Respiratory-system compliance',`${fmt(s.crs)} mL/cmH₂O`],['Plateau pressure',`${fmt(M.palvEI)} cmH₂O`],['Driving pressure',`${fmt(M.dp)} cmH₂O`],
+    ['Total PEEP',`${fmt(M.peepTot,1)} cmH₂O`],['Transpulmonary pressure, end-insp / end-exp',`${fmt(pli)} / ${fmt(ple)}`],['Mechanical power',`${fmt(s.mp,1)} J/min`],['Patient effort (Pmus)',s.nmb||s.driveEff<0.2?'none':`${fmt(s.pmusPat)} cmH₂O at ${fmt(s.rrPat)}/min`]]);
+  kv('kvCirc',[['Cardiac output',`${fmt(s.co,1)} L/min`],['Stroke volume',`${fmt(s.sv)} mL`],['Systemic vascular resistance',`${fmt(s.svr)} dyn·s/cm⁵`],['Central venous pressure',`${fmt(s.cvp)} mmHg`],
+    ['Pulse pressure variation',`${fmt(s.ppv)}%`],['Mixed venous saturation',pct(s.svo2)],['Oxygen delivery',`${fmt(s.do2)} mL/min`],['Lactate',`${fmt(s.lac,1)} mmol/L`]]);
+}
+
+/* ---------- interventions ---------- */
+const ACTS=[
+ {g:'Airway and circuit',b:[['suction','Suction (closed, in-line)'],['biteblock','Bite block'],['withdraw','Pull the tube back 3 cm'],['cuffFix','Check and reinflate cuff'],['circFix','Replace circuit'],['reconnect','Reconnect circuit'],['disc30','Disconnect for 30 s'],['esoph','Esophageal balloon',s=>s.esoph],['hme','Heat-moisture exchanger in line',()=>sim.set.hme]]},
+ {g:'Chest',b:[['needle:0','Needle decompression, right'],['needle:1','Needle decompression, left'],['tube:0','Chest tube, right'],['tube:1','Chest tube, left']]},
+ {g:'Lungs',b:[['rm','Recruitment maneuver'],['prone','Prone position',s=>s.prone],['ino','Inhaled nitric oxide',s=>s.ino],['albuterol','Albuterol, in-line']]},
+ {g:'Circulation and drugs',b:[['fluid','Crystalloid 500 mL'],['lasix','Furosemide 40 mg'],['bicarb','Sodium bicarbonate 50 mEq'],['tpa','Thrombolysis (alteplase)']]},
+ {g:'Liberation',b:[['extubate','Assess and extubate']]}
+];
+const EVENTS=[['ptx:0','Pneumothorax'],['tptx:0','Tension pneumothorax'],['mucus','Mucus plug'],['bronch','Bronchospasm'],['cuff','Cuff leak'],['circuit','Circuit leak'],['disc','Disconnection'],['mainstem','Tube slips into right mainstem'],['agit','Agitation, biting the tube']];
+function actTabHTML(){
+  return`<div class="actgrid">${ACTS.map(g=>`<div class="grp"><h3>${g.g}</h3><div class="btns">${g.b.map(b=>`<button type="button" data-a="${b[0]}"${b[2]?' aria-pressed="false"':''}>${b[1]}</button>`).join('')}</div></div>`).join('')}
+  <div class="grp"><h3>Sedation and paralysis</h3><div class="btns" id="rassBtns">${[-5,-4,-3,-2,-1,0,1,2].map(r=>`<button type="button" data-r="${r}">RASS ${r>0?'+':''}${r}</button>`).join('')}</div>
+   <div class="btns" style="margin-top:6px"><button type="button" data-a="nmb" aria-pressed="false">Neuromuscular blockade</button></div></div>
+  <div class="grp"><h3>Vasopressor</h3><div class="rng"><span>Norepinephrine</span><input type="range" id="neRange" min="0" max="0.6" step="0.01" aria-label="Norepinephrine dose"><b id="neVal" class="tlbl"></b></div><div class="note">µg/kg/min</div></div>
+  <div class="grp"><h3>Complications</h3><div class="btns">${EVENTS.map(e=>`<button type="button" data-e="${e[0]}">${e[1]}</button>`).join('')}</div>
+   <label class="rng"><input type="checkbox" id="randChk"> Random barotrauma when pressures run high</label></div></div>`;
+}
+function wireActs(){
+  const el=$('tab-act');
+  el.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{const [a,v]=b.dataset.a.split(':');
+    if(a==='hme'){sim.set.hme=!sim.set.hme;sim.log(sim.set.hme?'Heat-moisture exchanger replaced (adds about 50 mL of dead space)':'Heat-moisture exchanger removed: dead space falls by about 50 mL','act');}
+    else if(a==='extubate')doExtubate();
+    else sim.act(a,v!=null?+v:undefined);updActToggles();updPt();});
+  el.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{sim.act('rass',+b.dataset.r);updActToggles();updPt();});
+  el.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>{const [e,v]=b.dataset.e.split(':');sim.event(e,v!=null?+v:undefined);});
+  $('neRange').oninput=e=>{sim.s.norepi=+e.target.value;$('neVal').textContent=sim.s.norepi.toFixed(2);};
+  $('neRange').onchange=()=>sim.log(`Norepinephrine set to ${sim.s.norepi.toFixed(2)} µg/kg/min`,'act');
+  $('randChk').onchange=e=>{sim.s.randomEvents=e.target.checked;};
+  updActToggles();
+}
+function updActToggles(){
+  const el=$('tab-act');if(!el.firstChild)return;const s=sim.s;
+  ACTS.forEach(g=>g.b.forEach(b=>{if(!b[2])return;const btn=el.querySelector(`[data-a="${b[0]}"]`);if(btn){const on=!!b[2](s);btn.classList.toggle('on',on);btn.setAttribute('aria-pressed',on);}}));
+  const nm=el.querySelector('[data-a="nmb"]');if(nm){nm.classList.toggle('on',s.nmb);nm.setAttribute('aria-pressed',s.nmb);}
+  el.querySelectorAll('[data-r]').forEach(b=>b.classList.toggle('on',+b.dataset.r===s.rass));
+  if(document.activeElement!==$('neRange')){$('neRange').value=s.norepi;$('neVal').textContent=s.norepi.toFixed(2);}
+  $('randChk').checked=!!s.randomEvents;
+}
+function doExtubate(){
+  const r=sim.extubate();
+  dialog(`<h3>${r.success?'Extubated':'Extubation failed'}</h3><p>Readiness checklist at the moment of extubation:</p><ul class="crit">${r.criteria.map(c=>`<li class="${c.ok?'ok':'no'}">${c.ok?'✓':'✕'} ${esc(c.t)}</li>`).join('')}</ul>
+   <p>${r.success?'The patient is breathing comfortably on high-flow nasal cannula. The case is complete.':'Within two hours the patient developed respiratory distress and was reintubated. Fix the unmet items and try again.'} With this checklist, the model puts success at about ${pct(r.prob)}.</p>`,[['Close']]);
+}
+
+/* ---------- labs and exam ---------- */
+function interpABG(g){
+  const ph=g.ph,co2=g.paco2,h=g.hco3;let t;
+  if(ph<7.35){if(co2>45&&h>=22)t='Respiratory acidosis';else if(h<22&&co2<=45)t='Metabolic acidosis';else t='Combined respiratory and metabolic acidosis';}
+  else if(ph>7.45){if(co2<35&&h<=26)t='Respiratory alkalosis';else if(h>26&&co2>=35)t='Metabolic alkalosis';else t='Combined respiratory and metabolic alkalosis';}
+  else{if(co2>45&&h>26)t='Normal pH with high PaCO₂ and HCO₃⁻ (compensated respiratory acidosis or metabolic alkalosis)';else if(co2<35&&h<22)t='Normal pH with low PaCO₂ and HCO₃⁻ (compensated)';else t='Normal acid–base status';}
+  if(t.startsWith('Metabolic acidosis')||t.startsWith('Combined respiratory and metabolic acidosis')){const e=1.5*h+8;t+=`. Winter's formula predicts PaCO₂ ${(e-2).toFixed(0)}–${(e+2).toFixed(0)}`+(co2>e+2?', so there is also a respiratory acidosis':co2<e-2?', so there is also a respiratory alkalosis':', so compensation is appropriate');}
+  if(t==='Respiratory acidosis'){const ac=7.4-0.008*(co2-40),chr=7.4-0.003*(co2-40);t+=Math.abs(ph-ac)<Math.abs(ph-chr)?', acute':', chronic with renal compensation';}
+  return t+`. P/F ${g.pf.toFixed(0)}.`;
+}
+function labsTabHTML(){
+  return`<div class="btns"><button type="button" id="abgBtn" class="primary">Draw arterial blood gas</button><button type="button" id="auscBtn">Auscultate</button><button type="button" id="cxrBtn">Chest radiograph</button><button type="button" id="usBtn">Lung ultrasound</button></div>
+  <h3 class="kvh" style="margin-top:14px">Blood gases</h3><div class="scroll" id="abgTable"><p class="muted">No gases drawn yet.</p></div>
+  <div class="cols" style="margin-top:12px"><div><h3 class="kvh">Exam and imaging</h3><ul class="finds" id="findList"><li class="muted">Nothing examined yet.</li></ul></div>
+  <div><h3 class="kvh">Calculated indices (now)</h3><dl class="kv" id="kvIdx"></dl></div></div>`;
+}
+function wireLabs(){
+  $('abgBtn').onclick=()=>{const g=sim.abg();g.txt=interpABG(g);labsABG.unshift(g);sim.log(`ABG: pH ${g.ph.toFixed(2)}, PaCO₂ ${g.paco2.toFixed(0)}, PaO₂ ${g.pao2.toFixed(0)}, HCO₃⁻ ${g.hco3.toFixed(0)}`,'info');renderLabs();};
+  const ex=(k,fn)=>()=>{exams.unshift({t:sim.s.t-(sim.s.t0||0),k,txt:fn()});renderLabs();};
+  $('auscBtn').onclick=ex('Auscultation',()=>sim.ausc());$('cxrBtn').onclick=ex('Chest radiograph',()=>sim.cxr());$('usBtn').onclick=ex('Lung ultrasound',()=>sim.us());
+  renderLabs();
+}
+function renderLabs(){
+  if(!$('abgTable'))return;
+  if(labsABG.length)$('abgTable').innerHTML=`<table class="data"><thead><tr><th>Time</th><th>FiO₂</th><th>PEEP</th><th>pH</th><th>PaCO₂</th><th>PaO₂</th><th>HCO₃⁻</th><th>BE</th><th>SaO₂</th><th>Lactate</th><th>P/F</th></tr></thead><tbody>${labsABG.slice(0,12).map(g=>`<tr><td>${hms(g.t-(sim.s.t0||0))}</td><td>${g.fio2.toFixed(2)}</td><td>${g.peep}</td><td>${g.ph.toFixed(2)}</td><td>${g.paco2.toFixed(0)}</td><td>${g.pao2.toFixed(0)}</td><td>${g.hco3.toFixed(0)}</td><td>${g.be.toFixed(0)}</td><td>${g.sao2.toFixed(0)}%</td><td>${g.lac.toFixed(1)}</td><td>${g.pf.toFixed(0)}</td></tr><tr><td colspan="11" class="muted" style="text-align:left;white-space:normal">${esc(g.txt)}</td></tr>`).join('')}</tbody></table>`;
+  if(exams.length)$('findList').innerHTML=exams.slice(0,10).map(e=>`<li><span class="tlbl">${hms(e.t)}</span> <b>${e.k}.</b> ${esc(e.txt)}</li>`).join('');
+  updIdx();
+}
+function updIdx(){
+  const s=sim.s,M=s.meas,fi=sim.fio2();
+  kv('kvIdx',[['PaO₂/FiO₂',fmt(s.pao2/fi)],['A–a gradient',`${fmt(s.paAO2-s.pao2)} mmHg`],['Oxygenation index',fmt(fi*100*(M.pmean||0)/Math.max(1,s.pao2),1)],['Dead space, Vd/Vt',fmt(s.vdvt,2)],
+    ['PaCO₂ − etCO₂ gap',`${fmt(s.paco2-s.etco2)} mmHg`],['Rapid shallow breathing index',fmt(sim.rsbi())],['Static compliance (true)',`${fmt(s.crs)} mL/cmH₂O`]]);
+}
+
+/* ---------- trends and forecast ---------- */
+const TCH=[{k:'spo2',n:'SpO₂',u:'%',lo:80,hi:100},{k:'pf',n:'PaO₂/FiO₂',u:'',lo:0,hi:300,ref:[100,200,300]},{k:'paco2',n:'PaCO₂',u:'mmHg',lo:30,hi:60},{k:'ph',n:'pH',u:'',lo:7.25,hi:7.45,d:2,ref:[7.3]},
+  {k:'pplat',n:'Plateau pressure (true)',u:'cmH₂O',lo:10,hi:35,ref:[30]},{k:'dp',n:'Driving pressure (true)',u:'cmH₂O',lo:0,hi:20,ref:[15]},{k:'map',n:'Mean arterial pressure',u:'mmHg',lo:50,hi:100,ref:[65]},{k:'vili',n:'Lung injury index',u:'',lo:0,hi:20,d:1}];
+function cssv(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim();}
+function miniChart(cv,ser,o){
+  const r=cv.getBoundingClientRect(),dpr=Math.min(2,window.devicePixelRatio||1),W=r.width,H=r.height;if(W<20)return;
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);const c=cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);c.clearRect(0,0,W,H);
+  const ink=cssv('--ink'),mut=cssv('--muted'),line=cssv('--line'),warn=cssv('--warn');
+  let y0=o.lo,y1=o.hi;ser.forEach(sr=>sr.pts.forEach(p=>{if(p[1]!=null&&isFinite(p[1])){if(p[1]<y0)y0=p[1];if(p[1]>y1)y1=p[1];}}));
+  if(y1-y0<1e-6)y1=y0+1;
+  const L=36,R=8,T=20,B=16,pw=W-L-R,ph=H-T-B,X=x=>L+(x-o.x0)/((o.x1-o.x0)||1)*pw,Y=y=>T+ph-(y-y0)/(y1-y0)*ph;
+  c.font='600 11px system-ui,sans-serif';c.fillStyle=ink;c.fillText(o.title,L,13);
+  c.font='500 10px system-ui,sans-serif';c.lineWidth=1;
+  [y0,(y0+y1)/2,y1].forEach(v=>{const yy=Y(v);c.strokeStyle=line;c.beginPath();c.moveTo(L,yy);c.lineTo(L+pw,yy);c.stroke();c.fillStyle=mut;c.fillText(fmt(v,o.d||0),3,yy+3);});
+  c.fillStyle=mut;c.fillText(o.xl0||'',L,H-3);const xr=o.xl1||'';c.fillText(xr,L+pw-c.measureText(xr).width,H-3);
+  (o.ref||[]).forEach(v=>{if(v<y0||v>y1)return;c.strokeStyle=warn;c.setLineDash([4,3]);c.beginPath();c.moveTo(L,Y(v));c.lineTo(L+pw,Y(v));c.stroke();c.setLineDash([]);});
+  ser.forEach(sr=>{c.strokeStyle=sr.col;c.lineWidth=1.8;c.setLineDash(sr.dash?[5,4]:[]);c.beginPath();let st=false;
+    sr.pts.forEach(p=>{if(p[1]==null||!isFinite(p[1])){st=false;return;}const xx=X(p[0]),yy=Y(p[1]);if(!st){c.moveTo(xx,yy);st=true;}else c.lineTo(xx,yy);});c.stroke();c.setLineDash([]);});
+  if(o.last!=null&&isFinite(o.last)){c.font='600 11px system-ui,sans-serif';c.fillStyle=ink;const t=fmt(o.last,o.d||0)+(o.u?' '+o.u:'');c.fillText(t,L+pw-c.measureText(t).width,13);}
+}
+function trendTabHTML(){
+  return`<div class="btns" id="winBtns"><span class="muted" style="align-self:center">History window</span>${[[15,'15 min'],[60,'1 h'],[360,'6 h'],[1440,'24 h']].map(w=>`<button type="button" data-w="${w[0]}">${w[1]}</button>`).join('')}</div>
+  <div class="charts" style="margin-top:10px">${TCH.map(t=>`<canvas id="tc-${t.k}" aria-label="${t.n} trend"></canvas>`).join('')}</div>
+  <h3 class="kvh" style="margin-top:18px">Where this is heading</h3>
+  <p class="note">Runs a copy of this patient for 24 simulated hours on the current settings and treatments, including slow processes such as renal compensation, ventilator-induced lung injury, edema clearance and barotrauma risk.</p>
+  <div class="btns"><button type="button" id="fcRun" class="primary">Forecast the next 24 hours</button></div><div id="fcOut"></div>`;
+}
+function wireTrend(){
+  document.querySelectorAll('#winBtns [data-w]').forEach(b=>b.onclick=()=>{trendWin=+b.dataset.w;drawTrends();});
+  $('fcRun').onclick=runForecast;drawTrends();if(forecastData)renderForecast();
+}
+function drawTrends(){
+  if(!$('tc-spo2'))return;
+  document.querySelectorAll('#winBtns [data-w]').forEach(b=>b.classList.toggle('on',+b.dataset.w===trendWin));
+  const now=sim.s.t-(sim.s.t0||0),x0=Math.max(0,now-trendWin*60),pts=trend.filter(p=>p.t>=x0),acc=cssv('--accent');
+  const lab=t=>t<3600?`${Math.round(t/60)} min`:`${(t/3600).toFixed(1)} h`;
+  TCH.forEach(t=>miniChart($('tc-'+t.k),[{pts:pts.map(p=>[p.t,p[t.k]]),col:acc}],{x0,x1:Math.max(now,x0+60),lo:t.lo,hi:t.hi,d:t.d,ref:t.ref,title:t.n,u:t.u,xl0:lab(x0),xl1:lab(now),last:pts.length?pts[pts.length-1][t.k]:null}));
+}
+function runForecast(){
+  if(!$('fcOut'))return;$('fcOut').innerHTML='<p class="muted">Running 24 simulated hours…</p>';
+  setTimeout(()=>{try{forecastData=sim.forecast(24);renderForecast();}catch(e){console.error(e);$('fcOut').textContent='Forecast failed.';}},30);
+}
+function renderForecast(){
+  const F=forecastData;if(!F||!F.length||!$('fcOut'))return;
+  const a=F[0],b=F[F.length-1],arr=F.find(x=>x.arrest),dead=F.find(x=>x.dead);
+  let txt=`On the current settings: lung injury index ${fmt(a.vili,1)} → ${fmt(b.vili,1)}, P/F ${fmt(a.pf)} → ${fmt(b.pf)}, PaCO₂ ${fmt(a.paco2)} → ${fmt(b.paco2)} with pH ${fmt(a.ph,2)} → ${fmt(b.ph,2)}, MAP ${fmt(a.map)} → ${fmt(b.map)}. Cumulative barotrauma risk ${pct(b.baro)}. Projected mortality ${pct(a.mort)} → ${pct(b.mort)}.`;
+  if(dead)txt+=` The model projects death at about hour ${dead.h.toFixed(1)} without a change in management.`;else if(arr)txt+=` The model projects cardiac arrest at about hour ${arr.h.toFixed(1)}.`;
+  $('fcOut').innerHTML=`<p class="fcnarr">${esc(txt)}</p><div class="charts">${['pf','paco2','ph','pplat','vili','map','baro','mort'].map(k=>`<canvas id="fc-${k}"></canvas>`).join('')}</div>`;
+  const col=cssv('--warn'),defs={pf:['P/F',0,300],paco2:['PaCO₂',30,60],ph:['pH',7.25,7.45,2],pplat:['Plateau (true)',10,35],vili:['Lung injury index',0,20,1],map:['MAP',50,100],baro:['Barotrauma risk (cumulative)',0,0.2,2],mort:['Projected mortality',0,1,2]};
+  for(const k in defs){const dd=defs[k];miniChart($('fc-'+k),[{pts:F.map(x=>[x.h,x[k]]),col,dash:true}],{x0:0,x1:24,lo:dd[1],hi:dd[2],d:dd[3],title:dd[0],xl0:'now',xl1:'+24 h',last:b[k]});}
+}
+
+/* ---------- board-style cases ---------- */
+const SHOWN={spo2:['SpO₂','%',0],pao2:['PaO₂','mmHg',0],paco2:['PaCO₂','mmHg',0],ph:['pH','',2],ppeak:['Peak pressure','cmH₂O',0],pplat:['Plateau pressure','cmH₂O',0],dp:['Driving pressure','cmH₂O',0],
+  ap:['Auto-PEEP','cmH₂O',1],map:['MAP','mmHg',0],vte:['Exhaled Vt','mL',0],hr:['Heart rate','/min',0],etco2:['etCO₂','mmHg',0],ftot:['Rate','/min',0],ineff:['Ineffective efforts','/min',0]};
+function renderCases(){
+  const el=$('tab-cases');
+  if(!caseState){
+    const n=Object.keys(caseDone).length,right=Object.values(caseDone).filter(x=>x==='right').length;
+    el.innerHTML=`<p class="explain">Fifteen exam-style ventilator questions. Each one builds a live patient, so the numbers in the stem are on the monitors in front of you. Pick an answer and the simulator plays it forward, then explains why each option is right or wrong.${n?` You have answered ${n}, ${right} correctly.`:''}</p>
+    <div class="caselist">${CASES.map((C,i)=>`<button type="button" class="casebtn" data-i="${i}">${caseDone[C.id]?`<span class="st ${caseDone[C.id]==='right'?'ok':'no'}">${caseDone[C.id]==='right'?'✓':'✕'}</span>`:''}<b>${esc(C.title)}</b><span>${esc(C.topic)}</span></button>`).join('')}</div>`;
+    el.querySelectorAll('.casebtn').forEach(b=>b.onclick=()=>startCase(+b.dataset.i));return;
+  }
+  const cs=caseState,C=cs.C,L='ABCDE';
+  let h=`<div class="btns"><button type="button" id="caseBack">All cases</button><span class="muted" style="align-self:center">${esc(C.topic)}, case ${cs.i+1} of ${CASES.length}</span></div>
+   <h3 style="margin:12px 0 6px">${esc(C.title)}</h3><p class="stem">${esc(C.stem(cs.v))}</p><p class="qline">Which is the most appropriate next step?</p>
+   <div class="opts">${C.opts.map((o,j)=>{let cls='';if(cs.answered!=null){if(j===C.ans)cls='right';else if(j===cs.answered)cls='wrong';}
+     return`<button type="button" class="${cls}" data-j="${j}"${cs.answered!=null?' disabled':''}><b>${L[j]}.</b> ${esc(o.t)}</button>`;}).join('')}</div>`;
+  if(cs.answered!=null){
+    const ok=cs.answered===C.ans;
+    h+=`<div class="verdict ${ok?'right':'wrong'}">${ok?'Correct.':'Not the best answer.'} The answer is ${L[C.ans]}.</div><p class="explain">${esc(C.explain)}</p>
+     <h3 class="kvh">What happened in the ${C.run} simulated minutes after your choice (${L[cs.answered]})</h3>
+     <div class="scroll"><table class="data"><thead><tr><th></th><th>Before</th><th>After</th></tr></thead><tbody>${C.show.map(k=>{const sd=SHOWN[k];return`<tr><td>${sd[0]}${sd[1]?` (${sd[1]})`:''}</td><td>${fmt(cs.before[k],sd[2])}</td><td>${fmt(cs.after[k],sd[2])}</td></tr>`;}).join('')}</tbody></table></div>
+     ${cs.ext?`<p class="explain">Extubation ${cs.ext.success?'succeeded':'failed'}.</p>`:''}
+     <h3 class="kvh" style="margin-top:12px">Why each option is right or wrong</h3><ol class="why" type="A">${C.why.map((w,j)=>`<li class="${j===C.ans?'correct':''}">${esc(w)}</li>`).join('')}</ol>
+     <div class="btns"><button type="button" id="caseRetry">Try a different answer</button><button type="button" id="caseNext" class="primary">${cs.i+1<CASES.length?'Next case':'Back to all cases'}</button></div>
+     <p class="note">The simulation keeps running from your choice. Change settings, open the Lung tab, or draw a gas to explore further.</p>`;
+  }
+  el.innerHTML=h;
+  $('caseBack').onclick=()=>{caseState=null;renderCases();};
+  el.querySelectorAll('.opts [data-j]').forEach(b=>b.onclick=()=>answerCase(+b.dataset.j));
+  if($('caseRetry'))$('caseRetry').onclick=retryCase;
+  if($('caseNext'))$('caseNext').onclick=()=>{if(cs.i+1<CASES.length)startCase(cs.i+1);else{caseState=null;renderCases();}};
+}
+function startCase(i){
+  const C=CASES[i],r=loadCase(C);sim=r.sim;
+  caseState={i,C,v:r.v,sim0:Sim.clone(sim,3),answered:null};
+  $('scenSel').value='__case';afterLoad();renderBrief(C.title,C.topic,'Board-style case. Read the stem, look at the monitors and the ventilator, then choose an answer. The simulator shows what each choice does.');
+  renderCases();showTab('cases');
+}
+function retryCase(){
+  const cs=caseState;sim=Sim.clone(cs.sim0,3);cs.answered=null;cs.ext=null;afterLoad();renderCases();
+}
+function answerCase(j){
+  const cs=caseState;if(!cs||cs.answered!=null)return;
+  const C=cs.C;cs.before=caseVals(sim)._raw;
+  cs.ext=applyOpt(sim,C.opts[j],cs.v);
+  sim.log(`Case answer ${'ABCDE'[j]}: ${C.opts[j].t}`,'act');
+  if(!sim.s.extubated)skip(C.run||20);
+  cs.after=caseVals(sim)._raw;cs.answered=j;caseDone[C.id]=j===C.ans?'right':'wrong';
+  renderTiles();renderKnob();renderCases();
+}
+
+/* ---------- reference ---------- */
+function refTabHTML(){
+  const p=sim.p,fi=Math.round(sim.set.fio2*10)/10,pe=sim.set.peep;
+  const fis=[0.3,0.4,0.5,0.6,0.7,0.8,0.9,1];
+  const peepFor=f=>PFT_LO.filter(r=>Math.abs(r[0]-f)<0.01).map(r=>r[1]).join(', ');
+  const peepHi=f=>PFT_HI.filter(r=>Math.abs(r[0]-f)<0.01).map(r=>r[1]).join(', ');
+  return`<div class="refgrid">
+  <div class="refcard"><h3>Predicted body weight</h3><p>Men: 50 + 0.91 × (height in cm − 152.4). Women: 45.5 + 0.91 × (height in cm − 152.4). Lungs scale with height and sex, not weight.</p>
+   <table class="data"><thead><tr><th>This patient (PBW ${fmt(p.pbw)} kg)</th><th>4 mL/kg</th><th>6 mL/kg</th><th>8 mL/kg</th></tr></thead><tbody><tr><td>Tidal volume</td><td>${fmt(4*p.pbw)}</td><td>${fmt(6*p.pbw)}</td><td>${fmt(8*p.pbw)}</td></tr></tbody></table></div>
+  <div class="refcard"><h3>ARDSnet PEEP/FiO₂ tables</h3><div class="scroll"><table class="data"><thead><tr><th>FiO₂</th>${fis.map(f=>`<th class="${Math.abs(f-fi)<0.01?'hl':''}">${f.toFixed(1)}</th>`).join('')}</tr></thead>
+   <tbody><tr><td>Lower PEEP</td>${fis.map(f=>`<td class="${Math.abs(f-fi)<0.01?'hl':''}">${peepFor(f)}</td>`).join('')}</tr><tr><td>Higher PEEP</td>${fis.map(f=>`<td>${peepHi(f)}</td>`).join('')}</tr></tbody></table></div>
+   <p>Current FiO₂ ${fi.toFixed(1)} with PEEP ${pe}. ${esc(tableAdvice(sim.set.fio2,pe).text)}</p></div>
+  <div class="refcard"><h3>Lung-protective targets</h3><p>Tidal volume 6 mL/kg PBW (4–8). Plateau pressure ≤ 30 cmH₂O. Driving pressure (Pplat − PEEP) ≤ 15. SpO₂ 88–95% or PaO₂ 55–80 mmHg in ARDS. pH ≥ 7.30 (down to 7.20–7.25 when hypercapnia is permitted). Rate up to 35/min. Prone positioning for P/F < 150 on FiO₂ ≥ 0.6.</p></div>
+  <div class="refcard"><h3>Reading airway pressures</h3><p>Ppeak = resistive pressure + elastic pressure + PEEP. An inspiratory hold removes flow, so Pplat is the elastic (alveolar) part.</p>
+   <p><b>Peak up, plateau unchanged:</b> resistance. Secretions or plug, kinked or bitten tube, bronchospasm.</p><p><b>Peak and plateau both up:</b> compliance. Pneumothorax, mainstem intubation, atelectasis, pulmonary edema, abdominal distension, auto-PEEP.</p>
+   <p>Cstat = Vt ÷ (Pplat − total PEEP). Raw = (Ppeak − Pplat) ÷ flow (L/s), with square flow.</p></div>
+  <div class="refcard"><h3>Sudden deterioration: DOPES</h3><p><b>D</b>isplacement of the tube, <b>O</b>bstruction, <b>P</b>neumothorax, <b>E</b>quipment failure, <b>S</b>tacked breaths (auto-PEEP). First, take the patient off the ventilator and bag with 100% oxygen: if it is easy to bag, the problem is the ventilator; if not, it is the patient or the tube.</p></div>
+  <div class="refcard"><h3>Asthma and COPD</h3><p>Give time to exhale: low rate (10–12), Vt 6–8 mL/kg, high inspiratory flow (60–100 L/min), short Ti, I:E 1:4 or longer. Accept hypercapnia down to pH about 7.20. Measure auto-PEEP with an expiratory hold; if hypotensive, disconnect for 20–30 s. In flow-limited COPD, external PEEP around 80% of auto-PEEP eases triggering. In CO₂ retainers, target the patient's baseline PaCO₂ and a normal pH.</p></div>
+  <div class="refcard"><h3>Equations</h3><p>PAO₂ = FiO₂ × (760 − 47) − PaCO₂ ÷ 0.8. A–a gradient = PAO₂ − PaO₂.</p><p>Oxygenation index = FiO₂ × mean airway pressure × 100 ÷ PaO₂.</p><p>Winter's formula: expected PaCO₂ = 1.5 × HCO₃⁻ + 8 ± 2.</p><p>Acute respiratory acidosis: pH falls about 0.08 per 10 mmHg PaCO₂; chronic, about 0.03.</p><p>Berlin ARDS (PEEP ≥ 5): P/F 200–300 mild, 100–200 moderate, < 100 severe.</p><p>RSBI = rate ÷ Vt in litres; under 105 predicts successful extubation.</p></div>
+  <div class="refcard"><h3>Modes at a glance</h3><table class="data"><thead><tr><th>Mode</th><th>You set</th><th>Result</th></tr></thead><tbody>
+   <tr><td>VC-AC</td><td>Vt, flow, rate</td><td>Pressure</td></tr><tr><td>PC-AC</td><td>Pressure, Ti, rate</td><td>Vt</td></tr><tr><td>PRVC</td><td>Target Vt, Ti, rate</td><td>Pressure adapts</td></tr>
+   <tr><td>SIMV</td><td>Mandatory Vt and rate, PS</td><td>Extra breaths vary</td></tr><tr><td>PSV</td><td>Support, PEEP, cycle</td><td>Vt, rate, Ti</td></tr><tr><td>APRV</td><td>P high/low, T high/low</td><td>Vt, ventilation</td></tr></tbody></table></div>
+  <div class="refcard"><h3>Liberation</h3><p>Screen daily: cause improving, FiO₂ ≤ 0.4 with PEEP ≤ 8, stable without high-dose pressors, awake. Pair a sedation pause with a 30–120 minute spontaneous breathing trial on PS 5–8 with PEEP 5 or a T-piece. Pass: RSBI < 105 and no distress. Then check cough, secretions and mental status before extubating.</p></div>
+  </div>`;
+}
+
+/* ---------- log, tabs, debrief, init ---------- */
+function renderLog(){const el=$('tab-log');const L=sim.s.log.slice(-200).reverse();
+  el.innerHTML=L.length?`<ul class="loglist">${L.map(e=>`<li class="${e.lvl}"><span class="lt">${hms(e.t-(sim.s.t0||0))}</span>${esc(e.msg)}</li>`).join('')}</ul>`:'<p class="muted">Nothing has happened yet. Settings changes, actions and complications will appear here.</p>';}
+function showTab(name){
+  activeTab=name;document.querySelectorAll('#tablist [role=tab]').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===name));
+  document.querySelectorAll('.tabpane').forEach(p=>p.hidden=p.id!=='tab-'+name);updTabDyn(true);
+}
+function renderTabStatic(){
+  $('tab-lung').innerHTML=lungTabHTML();$('tab-act').innerHTML=actTabHTML();wireActs();
+  $('tab-labs').innerHTML=labsTabHTML();wireLabs();$('tab-trend').innerHTML=trendTabHTML();wireTrend();
+  $('tab-ref').innerHTML=refTabHTML();renderCases();
+}
+function updTabDyn(force){
+  if(!sim)return;
+  if(activeTab==='lung')updLungKv();else if(activeTab==='act')updActToggles();else if(activeTab==='labs')updIdx();
+  else if(activeTab==='trend')drawTrends();else if(activeTab==='log')renderLog();else if(activeTab==='ref'&&force)$('tab-ref').innerHTML=refTabHTML();
+}
+function debriefHTML(){
+  const s=sim.s,st=s.stats,T=Math.max(1,st.T),L=s.log.slice(-8).reverse();
+  return`<h3>${s.dead?'The patient died':'Debrief'}</h3><p>${s.dead?'Resuscitation was stopped after 15 minutes without a pulse.':''} Here is how the time went:</p>
+   <table class="data"><tbody><tr><td>Time with SpO₂ on target</td><td>${pct(st.sat/T)}</td></tr><tr><td>Time with plateau ≤ 30</td><td>${pct(st.pplat/T)}</td></tr><tr><td>Time with driving pressure ≤ 15</td><td>${pct(st.dp/T)}</td></tr>
+   <tr><td>Time with MAP ≥ 65</td><td>${pct(st.map/T)}</td></tr><tr><td>Highest plateau pressure</td><td>${fmt(st.maxPplat)} cmH₂O</td></tr><tr><td>Highest auto-PEEP</td><td>${fmt(st.maxAP,1)} cmH₂O</td></tr>
+   <tr><td>Lowest SpO₂</td><td>${fmt(st.minSat)}%</td></tr><tr><td>Lowest MAP</td><td>${fmt(st.minMap)} mmHg</td></tr><tr><td>Peak lung injury index</td><td>${fmt(st.maxVili,1)}</td></tr></tbody></table>
+   <p class="kvh" style="margin-top:10px">Last events</p><ul class="finds">${L.map(e=>`<li><span class="tlbl">${hms(e.t-(s.t0||0))}</span> ${esc(e.msg)}</li>`).join('')}</ul>`;
+}
+function afterLoad(){
+  pending={};selKey=null;trend=[];nextTrendT=sim.s.t;forecastData=null;deathShown=false;extShown=false;loopRef=null;labsABG=[];exams=[];lastBeats=sim.s.beats;
+  if(speed===0){speed=1;markSpeed();}
+  resetWaves();renderTiles();renderKnob();$('knPrev').innerHTML='';renderTabStatic();updAll();
+}
+function loadPreset(key){scenKey=key;caseState=null;sim=makeSim(key);const pr=PRESETS[key];$('scenSel').value=key;afterLoad();renderBrief(pr.title,pr.sub,pr.hx);}
+function restart(){if(caseState)startCase(caseState.i);else loadPreset(scenKey);}
+function init(){
+  const sel=$('scenSel');
+  sel.innerHTML=`<optgroup label="Patients">${Object.keys(PRESETS).map(k=>`<option value="${k}">${esc(PRESETS[k].title)}: ${esc(PRESETS[k].sub)}</option>`).join('')}</optgroup><optgroup label="Exam practice"><option value="__cases">Board-style cases…</option><option value="__case" hidden>Case in progress</option></optgroup>`;
+  sel.onchange=()=>{if(sel.value==='__cases'){showTab('cases');caseState=null;renderCases();sel.value=caseState?'__case':scenKey;$('tab-cases').scrollIntoView({behavior:'smooth',block:'start'});}else if(sel.value!=='__case')loadPreset(sel.value);};
+  $('restartBtn').onclick=restart;
+  document.querySelectorAll('#speedSeg button').forEach(b=>b.onclick=()=>{speed=+b.dataset.sp;markSpeed();});
+  $('skipBtn').onclick=()=>skip(10);
+  $('soundBtn').onclick=()=>{soundOn=!soundOn;if(soundOn&&!ensureAudio())soundOn=false;$('soundBtn').textContent=soundOn?'Sound on':'Sound off';$('soundBtn').setAttribute('aria-pressed',soundOn);$('silenceBtn').hidden=!soundOn;};
+  $('silenceBtn').onclick=()=>{silenceUntil=performance.now()+120000;};
+  $('modeBtn').onclick=modeDialog;$('knAccept').onclick=acceptPending;$('knCancel').onclick=cancelPending;
+  document.querySelectorAll('.v-quick [data-act]').forEach(b=>b.onclick=()=>sim.act(b.dataset.act));
+  $('refLoopBtn').onclick=()=>{loopRef=(loopCur.length>40?loopCur:loopPrev).slice();};
+  document.querySelectorAll('#tablist [role=tab]').forEach(b=>b.onclick=()=>showTab(b.dataset.tab));
+  $('fcBtn').onclick=()=>{showTab('trend');runForecast();$('tab-trend').scrollIntoView({behavior:'smooth',block:'start'});};
+  buildMeas();makeSweeps();
+  let rt=null;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{for(const k in SW)SW[k].resize();},150);});
+  loadPreset('ards');
+  requestAnimationFrame(t=>{lastNow=t;requestAnimationFrame(frame);});
+}
+document.addEventListener('DOMContentLoaded',init);
+
+</script>
+</body>
+</html>
