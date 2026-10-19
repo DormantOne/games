@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baby MILO: Autonomous AI Pipeline</title>
+    <!-- TensorFlow.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #121212; color: #e0e0e0; margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: auto; background: #1e1e1e; padding: 30px; border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h1 { color: #4db8ff; text-align: center; font-weight: 300; letter-spacing: 2px;}
+        .grid { display: flex; gap: 20px; margin-top: 20px;}
+        .panel { flex: 1; padding: 20px; background: #2a2a2a; border-radius: 8px; border-left: 4px solid #4db8ff;}
+        .log-panel { flex: 1; background: #000; color: #00ffcc; padding: 20px; border-radius: 8px; font-family: 'Courier New', Courier, monospace; height: 600px; overflow-y: auto; white-space: pre-wrap; box-shadow: inset 0 0 10px rgba(0,255,204,0.1);}
+        button { display: block; width: 100%; padding: 15px; font-size: 18px; color: #121212; background: #4db8ff; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: all 0.3s;}
+        button:hover { background: #3aa3e3; box-shadow: 0 0 15px rgba(77, 184, 255, 0.4);}
+        button:disabled { background: #555; color: #888; cursor: not-allowed; box-shadow: none;}
+        .step-title { font-weight: bold; color: #ff6b6b; margin-top: 15px; border-bottom: 1px solid #444; padding-bottom: 5px;}
+        p { line-height: 1.6; color: #bbb; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🤖 BABY MILO PIPELINE</h1>
+    <p style="text-align: center; color: #888;">An Automated Machine Learning (AutoML) Blueprint - Code As Paper</p>
+    
+    <button id="runBtn" onclick="runBabyMilo()">🚀 Initialize Autonomous Training</button>
+
+    <div class="grid">
+        <!-- Theory Panel -->
+        <div class="panel">
+            <h3 style="color: #fff;">System Architecture</h3>
+            
+            <div class="step-title">Phase 1: The Data Forge</div>
+            <p>Generates synthetic patient data. Solves the "Cold Start" problem and protects patient privacy by using statistically accurate simulations rather than raw PHI (Protected Health Information).</p>
+
+            <div class="step-title">Phase 2: Permutation Feature Importance</div>
+            <p>Trains a Scout Network, freezes its weights, and systematically scrambles inputs. Measures output degradation to mathematically prove which features are signals and which are noise.</p>
+
+            <div class="step-title">Phase 3: Architecture Crucible</div>
+            <p>Tests varying neural depths using Inverted Holdouts (K-Fold Cross-Validation). Prevents brittle models by forcing the architecture to maintain high accuracy even when training and testing sets are swapped.</p>
+
+            <div class="step-title">Phase 4: Elite Clone Army</div>
+            <p>Solves initialization variance. Even the best architecture can initialize with poor random math. Clones the winner, trains independently, and prunes the weakest (Survival of the Fittest).</p>
+
+            <div class="step-title">Phase 5: Ensemble Voting</div>
+            <p>A single AI is a single point of failure. The surviving networks cast independent predictions on unseen data, utilizing a "Diff/Majority" logic to drastically reduce false positives/negatives.</p>
+        </div>
+
+        <!-- Live Terminal -->
+        <div class="log-panel" id="consoleLog">SYSTEM BOOT...
+Awaiting user initialization.
+        </div>
+    </div>
+</div>
+
+<script>
+/**
+ * =========================================================================================
+ * 📄 BLUEPRINT: BABY MILO ARCHITECTURE (CODE AS PAPER)
+ * =========================================================================================
+ * AUTHOR: AI Assistant (Modeled after Rashidi et al. & user-defined logic)
+ * CONCEPT: Fault-Tolerant Automated Machine Learning (AutoML) for Medical Diagnostics
+ * 
+ * ABSTRACT:
+ * Traditional Deep Learning models suffer from "black box" logic, overfitting, and brittle 
+ * architecture. A model might achieve 99% accuracy on a test set merely by memorizing data 
+ * or getting lucky with its random initialization. In medical diagnostics, this is fatal. 
+ * "Baby MILO" is designed as a highly redundant, evolutionary pipeline to ensure absolute 
+ * robustness through permutation, cross-validation, and ensemble consensus.
+ * 
+ * SCALING THIS CODE FOR PRODUCTION (Future Development Guide):
+ * 
+ * PHASE 1: SYNTHETIC DATA
+ * - Current State: Math.random() simulation based on a hardcoded rule (Age + Fever > 1).
+ * - How to Scale: Replace this with Generative Adversarial Networks (GANs) or SMOTE. 
+ *   Feed it 1,000 real EMR (Electronic Medical Record) rows, and let a GAN generate 
+ *   1,000,000 statistically indistinguishable, HIPAA-compliant synthetic records.
+ * 
+ * PHASE 2: FEATURE IMPORTANCE (THE SHAKE-OUT)
+ * - Current State: Single-column data shuffling (Permutation Feature Importance).
+ * - How to Scale: Implement SHAP (SHapley Additive exPlanations) values. Instead of just 
+ *   dropping columns, measure the exact marginal contribution of every single variable 
+ *   (e.g., Blood Pressure contributes 14% to the final decision vector).
+ * 
+ * PHASE 3: NEURAL ARCHITECTURE SEARCH (THE CRUCIBLE)
+ * - Current State: Hardcoded test between a Shallow Net (4 neurons) and Deep Net (16x8).
+ *   Uses a 2-fold inverted holdout (Train A/Test B -> Train B/Test A).
+ * - How to Scale: Implement a Genetic Algorithm. Generate 100 random architectures 
+ *   (varying layers, dropouts, learning rates). Use 10-k-fold cross validation. 
+ *   Breed the architectures that yield the highest validation AUC.
+ * 
+ * PHASE 4: WEIGHT INITIALIZATION ROBUSTNESS (ELITE CLONES)
+ * - Current State: Trains 5 clones, keeps top 3 based on final accuracy.
+ * - How to Scale: Train 100 clones across distributed GPU clusters. Save the `.h5` / 
+ *   `.pb` weight files of the top 10% to cloud storage (AWS S3) to deploy instantly.
+ * 
+ * PHASE 5: ENSEMBLE CONSENSUS (THE COUNCIL)
+ * - Current State: Hard Voting (Majority rules).
+ * - How to Scale: Implement Soft Voting. Instead of counting "Positive/Negative", 
+ *   aggregate the raw confidence floats (e.g., Net 1: 0.9, Net 2: 0.85, Net 3: 0.4 
+ *   -> Average Confidence = 0.71). Flag low-confidence outputs for human doctor review.
+ * =========================================================================================
+ */
+
+    // --- UI HELPER ---
+    function log(message) {
+        const consoleDiv = document.getElementById('consoleLog');
+        consoleDiv.innerHTML += `\n> ${message}`;
+        consoleDiv.scrollTop = consoleDiv.scrollHeight;
+    }
+
+    // --- DATA GENERATION UTILITIES ---
+    // Rule: Age + Fever > 1.0 = Disease (1). Else = Healthy (0).
+    // ShoeSize and FavColor are pure noise.
+    function generateSyntheticData(numRows) {
+        let data = [];
+        for(let i=0; i<numRows; i++) {
+            let age = Math.random();       // Signal
+            let fever = Math.random();     // Signal
+            let shoeSize = Math.random();  // Noise
+            let favColor = Math.random();  // Noise
+            let isSick = (age + fever > 1.0) ? 1 : 0; 
+            data.push({ features: [age, fever, shoeSize, favColor], label: isSick });
+        }
+        return data;
+    }
+
+    // Converts JavaScript arrays into TensorFlow Matrices (Tensors)
+    function toTensors(dataSubset, featureIndices = [0,1,2,3]) {
+        let xs = dataSubset.map(d => featureIndices.map(idx => d.features[idx]));
+        let ys = dataSubset.map(d => [d.label]);
+        return { xs: tf.tensor2d(xs), ys: tf.tensor2d(ys) };
+    }
+
+    // --- MAIN PIPELINE EXECUTION ---
+    async function runBabyMilo() {
+        document.getElementById('runBtn').disabled = true;
+        document.getElementById('runBtn').innerText = "Processing Pipeline... (Do not close tab)";
+        document.getElementById('consoleLog').innerHTML = "SYSTEM ENGAGED.";
+
+        // ==== PHASE 1: SYNTHETIC DATA ====
+        log("\n[PHASE 1] FORGING SYNTHETIC DATA...");
+        let dataset = generateSyntheticData(250);
+        log(`Forged 250 Synthetic Patient Profiles.`);
+        log(`Features: [Age, Fever, ShoeSize, FavColor]`);
+
+        // ==== PHASE 2: PERMUTATION FEATURE IMPORTANCE ====
+        log("\n[PHASE 2] INITIATING FEATURE SHAKE-OUT...");
+        log("Deploying Scout Network to establish baseline...");
+        
+        let scoutNet = tf.sequential();
+        scoutNet.add(tf.layers.dense({units: 8, activation: 'relu', inputShape: [4]}));
+        scoutNet.add(tf.layers.dense({units: 1, activation: 'sigmoid'}));
+        scoutNet.compile({optimizer: 'adam', loss: 'binaryCrossentropy', metrics: ['accuracy']});
+        
+        let tensors = toTensors(dataset);
+        await scoutNet.fit(tensors.xs, tensors.ys, {epochs: 30, verbose: 0});
+        
+        let baselineAcc = scoutNet.evaluate(tensors.xs, tensors.ys)[1].dataSync()[0];
+        log(`Scout Baseline Accuracy: ${(baselineAcc*100).toFixed(1)}%`);
+
+        let featureNames = ["Age", "Fever", "ShoeSize", "FavColor"];
+        let keptFeatures = [];
+        
+        for(let i=0; i<4; i++) {
+            let shakenData = JSON.parse(JSON.stringify(dataset)); // Deep copy
+            // Scramble just this one column to break its pattern
+            for(let j=0; j<shakenData.length; j++) {
+                let r = Math.floor(Math.random() * shakenData.length);
+                shakenData[j].features[i] = dataset[r].features[i]; 
+            }
+            
+            let shakenTensors = toTensors(shakenData);
+            let shakenAcc = scoutNet.evaluate(shakenTensors.xs, shakenTensors.ys)[1].dataSync()[0];
+            let drop = baselineAcc - shakenAcc;
+            
+            log(`Perturbing '${featureNames[i]}' -> Accuracy drop: ${(drop*100).toFixed(1)}%`);
+            
+            // If the model's accuracy drops by more than 5%, the feature was doing real work.
+            if(drop > 0.05) { 
+                keptFeatures.push(i);
+                log(`   [Action] KEEPING ${featureNames[i]} (High Impact)`);
+            } else {
+                log(`   [Action] DELETING ${featureNames[i]} (Detected as Noise)`);
+            }
+        }
+
+        // ==== PHASE 3: THE CRUCIBLE (Inverted Holdouts) ====
+        log("\n[PHASE 3] ARCHITECTURE CRUCIBLE (Inverted Holdouts)...");
+        let groupA = dataset.slice(0, 125);
+        let groupB = dataset.slice(125, 250);
+
+        function buildShallowNet() {
+            let m = tf.sequential();
+            m.add(tf.layers.dense({units: 4, activation: 'relu', inputShape: [keptFeatures.length]}));
+            m.add(tf.layers.dense({units: 1, activation: 'sigmoid'}));
+            m.compile({optimizer: 'adam', loss: 'binaryCrossentropy', metrics: ['accuracy']});
+            return m;
+        }
+
+        function buildDeepNet() {
+            let m = tf.sequential();
+            m.add(tf.layers.dense({units: 16, activation: 'relu', inputShape: [keptFeatures.length]}));
+            m.add(tf.layers.dense({units: 8, activation: 'relu'}));
+            m.add(tf.layers.dense({units: 1, activation: 'sigmoid'}));
+            m.compile({optimizer: 'adam', loss: 'binaryCrossentropy', metrics: ['accuracy']});
+            return m;
+        }
+
+        async function testArchitecture(name, builder) {
+            log(`\nValidating ${name}...`);
+            let netFwd = builder();
+            let netInv = builder();
+            
+            let tA = toTensors(groupA, keptFeatures);
+            let tB = toTensors(groupB, keptFeatures);
+
+            await netFwd.fit(tA.xs, tA.ys, {epochs: 30, verbose: 0});
+            let accFwd = netFwd.evaluate(tB.xs, tB.ys)[1].dataSync()[0];
+
+            await netInv.fit(tB.xs, tB.ys, {epochs: 30, verbose: 0});
+            let accInv = netInv.evaluate(tA.xs, tA.ys)[1].dataSync()[0];
+
+            let avg = (accFwd + accInv) / 2;
+            log(`  - Train A / Test B: ${(accFwd*100).toFixed(1)}%`);
+            log(`  - Train B / Test A: ${(accInv*100).toFixed(1)}%`);
+            log(`  - Survival Metric: ${(avg*100).toFixed(1)}%`);
+            return avg;
+        }
+
+        let scoreShallow = await testArchitecture("Shallow Architecture", buildShallowNet);
+        let scoreDeep = await testArchitecture("Deep Architecture", buildDeepNet);
+
+        let winningBuilder = scoreShallow > scoreDeep ? buildShallowNet : buildDeepNet;
+        log(`\nWINNING ARCHITECTURE: ${scoreShallow > scoreDeep ? 'Shallow Architecture' : 'Deep Architecture'}`);
+
+        // ==== PHASE 4: ELITE CLONE ARMY ====
+        log("\n[PHASE 4] BREEDING ELITE CLONE ARMY...");
+        log(`Training 5 independent clones to defeat initialization variance...`);
+        let cloneArmy = [];
+        let tAll = toTensors(dataset, keptFeatures);
+
+        for(let i=0; i<5; i++) {
+            let clone = winningBuilder();
+            await clone.fit(tAll.xs, tAll.ys, {epochs: 40, verbose: 0});
+            let cloneAcc = clone.evaluate(tAll.xs, tAll.ys)[1].dataSync()[0];
+            cloneArmy.push({ model: clone, acc: cloneAcc, id: i+1 });
+            log(`   Clone #${i+1} Final Accuracy: ${(cloneAcc*100).toFixed(1)}%`);
+        }
+
+        cloneArmy.sort((a, b) => b.acc - a.acc); // Sort Highest to Lowest
+        let eliteCouncil = cloneArmy.slice(0, 3); // Keep top 3
+        log(`\nPruning weakest branches. The Council is formed by Clones #${eliteCouncil[0].id}, #${eliteCouncil[1].id}, and #${eliteCouncil[2].id}.`);
+
+        // ==== PHASE 5: ENSEMBLE VOTING (THE COUNCIL) ====
+        log("\n[PHASE 5] THE COUNCIL CONVENES (Ensemble Prediction)...");
+        log("Importing unseen patient data...");
+        
+        let testPatient = generateSyntheticData(1)[0];
+        let trueStatus = testPatient.label === 1 ? "POSITIVE" : "NEGATIVE";
+        let inputData = keptFeatures.map(idx => testPatient.features[idx]);
+        
+        log(`Patient Ground Truth: ${trueStatus}`);
+        
+        let testTensor = tf.tensor2d([inputData]);
+        let votes = [];
+
+        for(let i=0; i<eliteCouncil.length; i++) {
+            let pred = eliteCouncil[i].model.predict(testTensor).dataSync()[0];
+            let vote = pred > 0.5 ? "POSITIVE" : "NEGATIVE";
+            votes.push(vote);
+            log(`   Council Member #${eliteCouncil[i].id} Votes: ${vote} (Raw Vector: ${pred.toFixed(3)})`);
+        }
+
+        let positiveVotes = votes.filter(v => v === "POSITIVE").length;
+        let finalDiagnosis = positiveVotes > 1 ? "POSITIVE" : "NEGATIVE";
+
+        log(`\n===================================`);
+        log(`FINAL ENSEMBLE DIAGNOSIS: ${finalDiagnosis}`);
+        log(`===================================`);
+        
+        if(finalDiagnosis === trueStatus) {
+            log(`[SUCCESS] The architecture held up. Correct diagnosis achieved.`);
+        } else {
+            log(`[FAILURE] Anomalous false prediction detected.`);
+        }
+
+        log("\nPIPELINE EXECUTION COMPLETE.");
+        document.getElementById('runBtn').innerText = "Pipeline Completed Successfully";
+        document.getElementById('runBtn').style.background = "#0be881";
+        document.getElementById('runBtn').style.color = "#000";
+    }
+</script>
+
+</body>
+</html>
