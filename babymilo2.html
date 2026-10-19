@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Baby MILO v2</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel2:#1e222b; --line:#2b313d; --text:#e4e7ec; --muted:#9aa3b2; --dim:#6b7383;
+    --accent:#5cb8ff; --good:#3ddc97; --warn:#ffc857; --bad:#ff6b6b; --mono:'SFMono-Regular',Consolas,'Liberation Mono',monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.55 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;padding:20px}
+  .wrap{max-width:1280px;margin:0 auto}
+  header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px}
+  h1{margin:0;font-weight:600;font-size:22px;letter-spacing:.5px}
+  h1 small{font-weight:400;color:var(--muted);font-size:14px;margin-left:8px}
+  .sub{color:var(--muted);margin:4px 0 0;max-width:720px}
+  .controls{display:flex;gap:10px;align-items:center}
+  .controls label{color:var(--muted);font-size:12px}
+  .controls input{width:80px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:8px;font-family:var(--mono)}
+  button{padding:11px 22px;font-size:15px;font-weight:600;color:#081018;background:var(--accent);border:0;border-radius:8px;cursor:pointer}
+  button:disabled{background:#3a404c;color:#8890a0;cursor:not-allowed}
+  .layout{display:grid;grid-template-columns:300px 1fr;gap:18px}
+  @media (max-width:900px){.layout{grid-template-columns:1fr}}
+  .side{display:flex;flex-direction:column;gap:10px}
+  .phase{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--line);border-radius:8px;padding:10px 12px}
+  .phase h3{margin:0 0 4px;font-size:13px;display:flex;justify-content:space-between}
+  .phase p{margin:0;color:var(--muted);font-size:12.5px}
+  .phase .st{font-family:var(--mono);font-size:11px;color:var(--dim)}
+  .phase.run{border-left-color:var(--warn)} .phase.run .st{color:var(--warn)}
+  .phase.done{border-left-color:var(--good)} .phase.done .st{color:var(--good)}
+  .phase.fail{border-left-color:var(--bad)} .phase.fail .st{color:var(--bad)}
+  .main{display:flex;flex-direction:column;gap:16px;min-width:0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px;min-width:0}
+  .card h2{margin:0 0 2px;font-size:16px}
+  .card .how{color:var(--muted);font-size:12.5px;margin:0 0 12px}
+  .hidden{display:none}
+  #log{background:#07090c;color:#8ff0c8;font:12px/1.5 var(--mono);height:260px;overflow:auto;white-space:pre-wrap;border-radius:8px;padding:12px;border:1px solid var(--line)}
+  #log .w{color:var(--warn)} #log .e{color:var(--bad)} #log .h{color:#fff;font-weight:bold}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:10px}
+  .stat{background:var(--panel2);border-radius:8px;padding:10px}
+  .stat b{display:block;font-size:20px;font-family:var(--mono)}
+  .stat span{color:var(--muted);font-size:12px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+  th{color:var(--muted);font-weight:500}
+  td.num{font-family:var(--mono);text-align:right}
+  .scroll{overflow-x:auto}
+  .bar{position:relative;height:14px;background:var(--panel2);border-radius:3px;min-width:160px}
+  .bar i{position:absolute;top:2px;bottom:2px;background:var(--accent);border-radius:2px}
+  .bar u{position:absolute;top:6px;height:2px;background:#fff;opacity:.55}
+  .bar s{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--warn)}
+  .tag{display:inline-block;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:600}
+  .keep{background:#123c2b;color:var(--good)} .drop{background:#3a1c1f;color:var(--bad)} .rescue{background:#3a3214;color:var(--warn)}
+  .t-signal{color:var(--good)} .t-bystander{color:var(--warn)} .t-noise{color:var(--dim)}
+  .two{display:grid;grid-template-columns:3fr 2fr;gap:14px}
+  @media (max-width:1000px){.two{grid-template-columns:1fr}}
+  canvas{width:100%;display:block;background:var(--panel2);border-radius:8px}
+  .legend{color:var(--muted);font-size:12px;margin-top:6px}
+  .callout{background:var(--panel2);border-left:3px solid var(--accent);padding:10px 12px;border-radius:6px;color:var(--text);font-size:13px;margin-top:10px}
+  .callout.warn{border-left-color:var(--warn)}
+  .relpos{position:relative}
+  #tip{position:absolute;pointer-events:none;background:#000d;border:1px solid var(--line);padding:6px 8px;border-radius:6px;font:11.5px var(--mono);color:#fff;display:none;max-width:320px;z-index:5}
+  .best td{background:#14251d}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div>
+    <h1>Baby MILO <small>v2 · AutoML with a nearest-neighbor architecture search</small></h1>
+    <p class="sub">One button runs the whole pipeline in your browser: no server, no libraries, no patient data. Every number comes from a seeded random generator, so the same seed in the same browser reproduces the run exactly.</p>
+  </div>
+  <div class="controls">
+    <label for="seed">seed</label><input id="seed" type="number" value="42">
+    <button id="runBtn">Run pipeline</button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="side">
+    <div class="phase" id="ph1"><h3>1 · Data Forge <span class="st">idle</span></h3>
+      <p>Synthetic patients with a known answer key. Labels are drawn from true risk, so even a perfect model can't hit 100%: the <b>oracle</b> score is the ceiling. A locked test set is split off here and not opened until Phase 5.</p></div>
+    <div class="phase" id="ph2"><h3>2 · Feature Shake-out <span class="st">idle</span></h3>
+      <p>Shuffle one input at a time on <b>held-out</b> folds (10 scouts, 12 shuffles each) and measure how much the score drops. Decoy columns of pure noise, scored inside the same scout, set the bar a real feature must clear. Correlated inputs are also shuffled as a group so twins can't hide each other.</p></div>
+    <div class="phase" id="ph3"><h3>3 · Landscape Navigator <span class="st">idle</span></h3>
+      <p>Each architecture is a point in a 10-D space. Tested points form a <b>nearest-neighbor graph</b>; neighbors predict how untested points would score, and the search spends its budget where predicted score plus uncertainty is highest. The winner must sit on a broad plateau, not a lucky spike.</p></div>
+    <div class="phase" id="ph4"><h3>4 · Bagged Council <span class="st">idle</span></h3>
+      <p>Seven copies of the winner, each trained on a different resample and graded only on rows it never saw. Only statistical outliers are removed. The decision threshold is set here, not on the test set.</p></div>
+    <div class="phase" id="ph5"><h3>5 · Locked-Test Verdict <span class="st">idle</span></h3>
+      <p>Open the vault once. Compare against the oracle and a plain logistic regression, with confidence intervals. Patients go to human review when the council is unsure, its members disagree, or the nearest-neighbor check says the patient looks unlike anyone in training.</p></div>
+  </aside>
+
+  <main class="main">
+    <div class="card">
+      <h2>Run log</h2>
+      <div id="log">Press "Run pipeline". A full run takes about 30–90 seconds depending on your machine.</div>
+    </div>
+
+    <div class="card hidden" id="cardData">
+      <h2>Phase 1 · The cohort</h2>
+      <p class="how">The oracle AUC is what the true risk formula itself scores on the test set. No model can reliably beat it; the gap to it is the room left to improve.</p>
+      <div class="stats" id="dataStats"></div>
+    </div>
+
+    <div class="card hidden" id="cardFeat">
+      <h2>Phase 2 · Which inputs carry signal?</h2>
+      <p class="how">Bar = mean drop in held-out AUC when that input is scrambled (10 scouts × 12 shuffles each); white whisker = ±2 standard errors; yellow line = the average decoy. The verdict uses the <b>edge over decoys</b> column: inside each scout the input is compared with the decoys from that same scout, so a lucky scout can't lift everything at once. Keep if the edge is more than 2 standard errors above zero. The "truth" column is the answer key from the generator, shown so you can grade the selector.</p>
+      <div class="scroll"><table id="featTable"></table></div>
+      <div id="featNote"></div>
+    </div>
+
+    <div class="card hidden" id="cardSearch">
+      <h2>Phase 3 · The architecture landscape</h2>
+      <p class="how">Every dot is one tested architecture, placed by a 2-D projection (PCA) of its 10-D settings vector. Lines connect each architecture to its nearest neighbors <i>in the full 10-D space</i>, so a long line means the flat picture is squashing two close points apart. Colour = cross-validated AUC; size = number of weights; ring = the chosen winner. Hover a dot for details.</p>
+      <div class="two">
+        <div class="relpos"><canvas id="mapCanvas" height="420"></canvas><div id="tip"></div>
+          <div class="legend" id="mapLegend"></div></div>
+        <div>
+          <canvas id="convCanvas" height="200"></canvas>
+          <div class="legend">Each dot is one evaluation in order; the line is the best score so far. Left of the dashed line: space-filling seeds. Right: points chosen by the neighbor-based search.</div>
+          <div class="stats" id="searchStats" style="margin-top:10px"></div>
+        </div>
+      </div>
+      <div id="searchNote"></div>
+      <div class="scroll" style="margin-top:10px"><table id="leaderTable"></table></div>
+    </div>
+
+    <div class="card hidden" id="cardCouncil">
+      <h2>Phase 4 · The council</h2>
+      <p class="how">Out-of-bag (OOB) AUC grades each member only on patients left out of its resample, so it's an honest score. A member is pruned only if it falls far below the others (a failed initialization), never just for ranking last.</p>
+      <div class="stats" id="councilStats"></div>
+      <div class="scroll"><table id="councilTable"></table></div>
+    </div>
+
+    <div class="card hidden" id="cardFinal">
+      <h2>Phase 5 · Locked-test verdict</h2>
+      <p class="how">All scores on patients the pipeline never touched. The key row is the paired comparison with logistic regression: if its interval includes zero, the neural network has not earned its complexity on this data.</p>
+      <div class="scroll"><table id="finalTable"></table></div>
+      <div id="finalNote"></div>
+      <h2 style="margin-top:18px">Human-review routing</h2>
+      <p class="how">The patient map projects test patients from the selected-feature space to 2-D. Fill colour = council risk (blue low → red high). Circles = ordinary test patients; triangles = a deliberately out-of-range cohort (very old, deeply hypothermic) the model never saw. Red ring = sent to human review.</p>
+      <div class="two">
+        <canvas id="patCanvas" height="360"></canvas>
+        <div><div class="stats" id="referStats"></div><div class="scroll"><table id="referTable"></table></div></div>
+      </div>
+      <div id="referNote"></div>
+    </div>
+  </main>
+</div>
+</div>
+
+<script>
+/*
+ * =====================================================================================
+ *  BABY MILO v2 — CODE AS PAPER
+ * =====================================================================================
+ *  CONCEPT. A small, honest AutoML pipeline for a binary clinical-style prediction, in
+ *  the spirit of the MILO platform (Rashidi lab). Five phases: synthetic data → feature
+ *  selection → architecture search → ensemble → locked-test evaluation with referral.
+ *
+ *  AUDIT OF v1 (what was wrong, and what replaced it)
+ *  ---------------------------------------------------------------------------------
+ *  Data
+ *   1. Label was a deterministic line (age + fever > 1): any model reaches ~100%, so
+ *      nothing downstream could be judged. → Labels are now drawn from a true risk
+ *      probability with interactions and noise, giving a measurable oracle ceiling.
+ *   2. No locked test set; every phase reused the same 250 rows. → 30% stratified test
+ *      vault, opened once in Phase 5.
+ *   3. No input scaling. → z-scoring fitted on training rows only.
+ *  Feature selection
+ *   4. Importance was measured on the scout's own training data (rewards memorisation).
+ *      → Measured on held-out folds of 4-fold cross-validation.
+ *   5. The "shuffle" drew rows with replacement (a bootstrap), not a permutation, and
+ *      ran once. → True Fisher–Yates permutation, repeated, with standard errors.
+ *   6. Arbitrary 5-point accuracy cutoff. → Paired decoy test: 10 scouts (2 CV splits ×
+ *      5 folds) × 12 shuffles; inside each scout the input's drop minus the decoys' drop;
+ *      keep if that edge > 2 SE. SE uses the Nadeau–Bengio correction because scouts share
+ *      patients. Over 24 seeds: 117/120 true signals kept, 1/96 noise slots kept
+ *      (vs 110/120 and 0/96 with the earlier unpaired rule).
+ *   7. Correlated twins split importance and can both be dropped. → Group permutation
+ *      for correlated clusters; a significant group keeps its best member.
+ *   8. If nothing passed the cutoff, the next layer got inputShape [0] and crashed.
+ *      → Guaranteed fallback to the top-ranked input.
+ *  Architecture search
+ *   9. Two hand-picked nets, one random seed each, so the "winner" was mostly init luck;
+ *      ties silently went to the deep net. → A 10-D search space explored with a
+ *      nearest-neighbor surrogate (see Phase 3 below); every config uses the same folds
+ *      (paired comparison).
+ *  10. Called 2-fold holdout "K-fold". → Real stratified 3-fold CV per config.
+ *  11. Picked the raw maximum (winner's curse). → Neighborhood-smoothed score plus a
+ *      one-standard-error rule, which prefers the simplest net on a broad plateau. The SE is
+ *      of the paired fold-by-fold gap to the top config (shared fold difficulty cancels),
+ *      pooled over 10-D graph neighbours and shrunk toward the global median, because a
+ *      variance from 3 folds alone made the tie band swing run to run.
+ *  Ensemble
+ *  12. Clones were ranked by accuracy on data they trained on, so "pruning" kept the
+ *      best memorisers. → Bagging with out-of-bag grading; prune only MAD outliers.
+ *  13. Majority rule hard-coded to 3 voters. → Soft vote (mean probability) as primary,
+ *      hard vote reported for comparison; threshold tuned on OOB predictions.
+ *  Evaluation
+ *  14. Judged on ONE test patient and printed "SUCCESS". → Hundreds of locked-test
+ *      patients, AUC with bootstrap CI, sensitivity, specificity, Brier, calibration
+ *      error, and a paired comparison against logistic regression and the oracle.
+ *  Engineering
+ *  15. tensors and models never disposed (memory leak on every run); unpinned
+ *      tfjs@latest CDN; innerHTML log (quadratic and unsafe); no error handling, so a
+ *      failure left the button dead; unseeded randomness, so no run was reproducible.
+ *      → Dependency-free seeded engine, textContent logging, try/finally UI.
+ *  16. Overclaims ("mathematically prove", "absolute robustness", "HIPAA-compliant"
+ *      GAN output). → Removed; each card states what its number does and doesn't show.
+ *
+ *  PHASE 3 IN DETAIL — the high-dimensional nearest-neighbor layer
+ *  ---------------------------------------------------------------------------------
+ *  Encoding: config → 10-D vector in [0,1]: depth, three layer widths (log scale,
+ *  0 = layer absent), activation one-hot (scaled so any two activations are ~1 apart),
+ *  log learning rate, dropout, log L2. Distances are Euclidean in this space.
+ *  Seeding: 8 Latin-hypercube points cover the space evenly.
+ *  Surrogate: for any candidate, find its k=5 nearest evaluated configs (exact
+ *  brute-force search; at thousands of points swap in an approximate index such as
+ *  HNSW). Predicted score μ = inverse-distance-weighted neighbor mean; uncertainty σ =
+ *  neighbor spread + distance to the closest evaluated point (far = unknown).
+ *  Acquisition: score = μ + κσ over 600 candidates (half global, half mutations of the
+ *  leaders); κ decays so the search explores early and exploits late.
+ *  Self-check: leave-one-out Spearman ρ of the surrogate. If ρ is near zero the
+ *  landscape has no exploitable neighborhood structure and the search is effectively
+ *  random — the log says so.
+ *  Selection: score smoothed over the kNN graph; tie band = pooled SE of the paired gap
+ *  to the top config; among tied configs, fewest weights wins.
+ *  Map: PCA to 2-D, with explained variance and kNN-preservation reported so the
+ *  picture's distortion is visible rather than hidden.
+ *
+ *  LIMITS. Feature selection uses the same training rows as the architecture CV, so CV
+ *  scores in Phase 3 are slightly optimistic (nested CV would fix it at ~4× cost); the
+ *  locked test set is unaffected. Synthetic data proves the machinery works, not that
+ *  any clinical model would. Real deployment would need external validation.
+ * =====================================================================================
+ */
+
+/*ENGINE-START*/
+const MILO = (() => {
+'use strict';
+
+// ---------------------------------------------------------------- random numbers
+function mulberry32(a){return function(){a|=0;a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};}
+function hashSeed(seed, tag){let h=(2166136261^(seed>>>0))>>>0;for(const c of String(tag)){h^=c.charCodeAt(0);h=Math.imul(h,16777619)>>>0;}return h;}
+function makeRng(seed, tag){
+  const r=mulberry32(hashSeed(seed,tag));
+  r.normal=()=>{let u=0;while(u===0)u=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*r());};
+  r.int=n=>Math.floor(r()*n);
+  r.uniform=(a,b)=>a+(b-a)*r();
+  return r;
+}
+function shuffleInPlace(a,rng){for(let i=a.length-1;i>0;i--){const j=rng.int(i+1);const t=a[i];a[i]=a[j];a[j]=t;}return a;}
+
+// ---------------------------------------------------------------- small stats
+const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
+const sigmoid=z=>z>=0?1/(1+Math.exp(-z)):Math.exp(z)/(1+Math.exp(z));
+const mean=a=>{let s=0;for(const v of a)s+=v;return a.length?s/a.length:NaN;};
+const sd=a=>{if(a.length<2)return 0;const m=mean(a);let s=0;for(const v of a)s+=(v-m)**2;return Math.sqrt(s/(a.length-1));};
+const median=a=>{const s=[...a].sort((x,y)=>x-y);const n=s.length;return n?(n%2?s[(n-1)/2]:(s[n/2-1]+s[n/2])/2):NaN;};
+const quantile=(a,q)=>{const s=[...a].sort((x,y)=>x-y);if(!s.length)return NaN;const p=(s.length-1)*q,lo=Math.floor(p),hi=Math.ceil(p);return s[lo]+(s[hi]-s[lo])*(p-lo);};
+const mad=a=>{const m=median(a);return median(a.map(v=>Math.abs(v-m)));};
+function ranks(a){const n=a.length,idx=[...Array(n).keys()].sort((i,j)=>a[i]-a[j]),r=new Float64Array(n);let i=0;while(i<n){let j=i;while(j+1<n&&a[idx[j+1]]===a[idx[i]])j++;const v=(i+j)/2+1;for(let k=i;k<=j;k++)r[idx[k]]=v;i=j+1;}return r;}
+function pearson(x,y){const mx=mean(x),my=mean(y);let sxy=0,sx=0,sy=0;for(let i=0;i<x.length;i++){const a=x[i]-mx,b=y[i]-my;sxy+=a*b;sx+=a*a;sy+=b*b;}return sx&&sy?sxy/Math.sqrt(sx*sy):0;}
+const spearman=(x,y)=>pearson(Array.from(ranks(x)),Array.from(ranks(y)));
+function auc(y,p){const r=ranks(Array.from(p));let nP=0,s=0;for(let i=0;i<y.length;i++)if(y[i]===1){nP++;s+=r[i];}const nN=y.length-nP;return nP&&nN?(s-nP*(nP+1)/2)/(nP*nN):NaN;}
+function logloss(y,p){let s=0;for(let i=0;i<y.length;i++){const q=clamp(p[i],1e-7,1-1e-7);s-=y[i]?Math.log(q):Math.log(1-q);}return s/y.length;}
+function brier(y,p){let s=0;for(let i=0;i<y.length;i++)s+=(p[i]-y[i])**2;return s/y.length;}
+function ece(y,p,bins=10){const c=new Array(bins).fill(0),sp=new Array(bins).fill(0),sy=new Array(bins).fill(0);for(let i=0;i<y.length;i++){const b=Math.min(bins-1,Math.floor(p[i]*bins));c[b]++;sp[b]+=p[i];sy[b]+=y[i];}let e=0;for(let b=0;b<bins;b++)if(c[b])e+=c[b]/y.length*Math.abs(sp[b]/c[b]-sy[b]/c[b]);return e;}
+function confusion(y,p,thr){let tp=0,tn=0,fp=0,fn=0;for(let i=0;i<y.length;i++){const yh=p[i]>=thr?1:0;if(yh&&y[i])tp++;else if(yh)fp++;else if(y[i])fn++;else tn++;}return{tp,tn,fp,fn,acc:(tp+tn)/y.length,sens:tp/Math.max(1,tp+fn),spec:tn/Math.max(1,tn+fp)};}
+function youden(y,p){const cand=[...new Set(Array.from(p).map(v=>+v.toFixed(3)))].sort((a,b)=>a-b);let best=0.5,bj=-1;for(const t of cand){const c=confusion(y,p,t);const j=c.sens+c.spec-1;if(j>bj){bj=j;best=t;}}return best;}
+const pick=(arr,idx)=>idx.map(i=>arr[i]);
+const dist=(a,b)=>{let s=0;for(let i=0;i<a.length;i++){const d=a[i]-b[i];s+=d*d;}return Math.sqrt(s);};
+
+// ---------------------------------------------------------------- Phase 1: synthetic cohort
+// Answer key. "signal" enters the risk formula; "bystander" is correlated with signals
+// through a hidden infection state but has no direct effect; "noise" is unrelated.
+const FEATURES=[
+  {name:'Age',truth:'signal'},{name:'Temp',truth:'signal'},{name:'HeartRate',truth:'bystander'},
+  {name:'Pulse_Dev2',truth:'bystander'},{name:'WBC',truth:'signal'},{name:'Lactate',truth:'signal'},
+  {name:'SysBP',truth:'signal'},{name:'RespRate',truth:'bystander'},{name:'ShoeSize',truth:'noise'},
+  {name:'FavColor',truth:'noise'},{name:'ZipDigit',truth:'noise'},{name:'MoonPhase',truth:'noise'}];
+const B0=-2.4;  // intercept tuned for ~30% prevalence
+
+function forgeCohort(n,rng,mode){
+  const X=[],y=[],pTrue=[];
+  for(let i=0;i<n;i++){
+    const inf=rng()<0.35?1:0;                                     // hidden infection state
+    let age=clamp(55+16*rng.normal(),18,95);
+    const coldSeptic=inf&&rng()<0.25;                              // a quarter of infections run cold
+    let temp=coldSeptic?35.5+0.45*rng.normal():36.9+inf*(1.2+0.6*rng.normal())+0.35*rng.normal();
+    if(mode==='shift'){age=clamp(92+3*rng.normal(),85,100);temp=33.0+0.4*rng.normal();} // out-of-range probe
+    const hr=72+16*(temp-37)+10*rng.normal();
+    const pulse2=hr+4*rng.normal();                               // second device, near-duplicate
+    const wbc=Math.exp(Math.log(7.5)+0.28*rng.normal()+inf*(0.45+0.25*rng.normal()));
+    const lac=Math.exp(Math.log(1.1)+0.35*rng.normal()+inf*(0.35+0.3*rng.normal()));
+    const sbp=128+17*rng.normal()-inf*(10+8*rng.normal());
+    const rr=16+0.07*(hr-72)+2.5*rng.normal();
+    const shoe=9.5+1.6*rng.normal(),fav=rng.int(6),zip=rng.int(10),moon=rng();
+    const hypo=Math.max(0,(115-sbp)/12);                          // hypotension amplifies lactate (interaction)
+    const fever=Math.max(0,temp-37.0),cold=Math.max(0,36.4-temp); // U-shape: fever AND hypothermia raise risk
+    const logit=B0+0.035*(age-55)+1.5*fever+2.2*cold+1.0*Math.log(wbc/7.5)+1.1*Math.log(lac/1.1)*(1+2*hypo)+0.8*hypo;
+    const p=sigmoid(logit);
+    X.push(Float64Array.from([age,temp,hr,pulse2,wbc,lac,sbp,rr,shoe,fav,zip,moon]));
+    pTrue.push(p); y.push(rng()<p?1:0);
+  }
+  return{X,y,pTrue};
+}
+function stratifiedSplit(y,frac,rng){
+  const pos=[],neg=[];y.forEach((v,i)=>(v?pos:neg).push(i));shuffleInPlace(pos,rng);shuffleInPlace(neg,rng);
+  const kp=Math.round(pos.length*frac),kn=Math.round(neg.length*frac);
+  return{a:[...pos.slice(0,kp),...neg.slice(0,kn)].sort((a,b)=>a-b),b:[...pos.slice(kp),...neg.slice(kn)].sort((a,b)=>a-b)};
+}
+function stratifiedFolds(y,k,rng){ // y indexed 0..n-1, returns k arrays of row indices
+  const pos=[],neg=[];y.forEach((v,i)=>(v?pos:neg).push(i));shuffleInPlace(pos,rng);shuffleInPlace(neg,rng);
+  const f=Array.from({length:k},()=>[]);pos.forEach((r,i)=>f[i%k].push(r));neg.forEach((r,i)=>f[(i+pos.length)%k].push(r));return f;
+}
+function fitScaler(X){const d=X[0].length,mu=new Float64Array(d),sg=new Float64Array(d);for(let j=0;j<d;j++){const c=X.map(r=>r[j]);mu[j]=mean(c);sg[j]=sd(c)||1;}return{mu,sg};}
+const applyScaler=(X,s)=>X.map(r=>Float64Array.from(r,(v,j)=>(v-s.mu[j])/s.sg[j]));
+const selectCols=(X,cols)=>X.map(r=>Float64Array.from(cols,c=>r[c]));
+
+// ---------------------------------------------------------------- tiny dependency-free MLP (Adam, L2, dropout)
+const ACT={
+  relu:{f:z=>z>0?z:0,g:z=>z>0?1:0},
+  tanh:{f:z=>Math.tanh(z),g:z=>{const t=Math.tanh(z);return 1-t*t;}},
+  elu:{f:z=>z>0?z:Math.expm1(z),g:z=>z>0?1:Math.exp(z)}};
+const EPOCHS=40,BATCH=32;
+function buildNet(nIn,cfg,rng){
+  const hidden=cfg.depth?cfg.widths.slice(0,cfg.depth):[];
+  const sizes=[nIn,...hidden,1],W=[],b=[],mW=[],vW=[],mb=[],vb=[];
+  for(let l=0;l<sizes.length-1;l++){
+    const fi=sizes[l],fo=sizes[l+1],last=l===sizes.length-2;
+    const std=Math.sqrt((last||cfg.act==='tanh'?1:2)/fi);       // He for relu/elu, Xavier for tanh/output
+    W.push(Float64Array.from({length:fi*fo},()=>std*rng.normal()));b.push(new Float64Array(fo));
+    mW.push(new Float64Array(fi*fo));vW.push(new Float64Array(fi*fo));mb.push(new Float64Array(fo));vb.push(new Float64Array(fo));
+  }
+  return{cfg,sizes,W,b,mW,vW,mb,vb,t:0,act:ACT[cfg.act]};
+}
+function forward(net,x,a,z,m,p,rng){
+  const L=net.W.length,S=net.sizes,act=net.act;a[0].set(x);
+  for(let l=0;l<L;l++){
+    const nin=S[l],nout=S[l+1],W=net.W[l],b=net.b[l],al=a[l];
+    for(let o=0;o<nout;o++){
+      let s=b[o];const off=o*nin;for(let k=0;k<nin;k++)s+=W[off+k]*al[k];
+      z[l+1][o]=s;
+      if(l<L-1){let v=act.f(s);if(p>0){if(rng()<p){m[l+1][o]=0;v=0;}else{m[l+1][o]=1/(1-p);v*=m[l+1][o];}}a[l+1][o]=v;}
+      else a[L][0]=sigmoid(s);
+    }
+  }
+  return a[L][0];
+}
+async function trainNet(net,X,y,idx,rng,tick){
+  const L=net.W.length,S=net.sizes,p=net.cfg.depth?net.cfg.dropout:0,l2=net.cfg.l2,lr=net.cfg.lr,act=net.act;
+  const a=S.map(s=>new Float64Array(s)),z=S.map(s=>new Float64Array(s)),m=S.map(s=>new Float64Array(s).fill(1)),d=S.map(s=>new Float64Array(s));
+  const gW=net.W.map(w=>new Float64Array(w.length)),gb=net.b.map(v=>new Float64Array(v.length));
+  const order=Array.from(idx),b1=0.9,b2=0.999,eps=1e-8;
+  for(let ep=0;ep<EPOCHS;ep++){
+    shuffleInPlace(order,rng);
+    for(let s0=0;s0<order.length;s0+=BATCH){
+      const s1=Math.min(order.length,s0+BATCH),B=s1-s0;
+      for(let l=0;l<L;l++){gW[l].fill(0);gb[l].fill(0);}
+      for(let ii=s0;ii<s1;ii++){
+        const r=order[ii];forward(net,X[r],a,z,m,p,rng);
+        d[L][0]=a[L][0]-y[r];                                    // dLoss/dlogit for sigmoid + cross-entropy
+        for(let l=L-1;l>=0;l--){
+          const nin=S[l],nout=S[l+1],W=net.W[l],gw=gW[l],g=gb[l],al=a[l],dn=d[l+1];
+          for(let o=0;o<nout;o++){const dv=dn[o];if(dv===0)continue;g[o]+=dv;const off=o*nin;for(let k=0;k<nin;k++)gw[off+k]+=dv*al[k];}
+          if(l>0){const dl=d[l],zl=z[l],ml=m[l];for(let k=0;k<nin;k++){let s=0;for(let o=0;o<nout;o++)s+=W[o*nin+k]*dn[o];dl[k]=s*act.g(zl[k])*ml[k];}}
+        }
+      }
+      net.t++;const c1=1-b1**net.t,c2=1-b2**net.t;
+      for(let l=0;l<L;l++){
+        const W=net.W[l],mw=net.mW[l],vw=net.vW[l],gw=gW[l];
+        for(let j=0;j<W.length;j++){const g=gw[j]/B+l2*W[j];mw[j]=b1*mw[j]+(1-b1)*g;vw[j]=b2*vw[j]+(1-b2)*g*g;W[j]-=lr*(mw[j]/c1)/(Math.sqrt(vw[j]/c2)+eps);}
+        const bb=net.b[l],mbb=net.mb[l],vbb=net.vb[l],g2=gb[l];
+        for(let j=0;j<bb.length;j++){const g=g2[j]/B;mbb[j]=b1*mbb[j]+(1-b1)*g;vbb[j]=b2*vbb[j]+(1-b2)*g*g;bb[j]-=lr*(mbb[j]/c1)/(Math.sqrt(vbb[j]/c2)+eps);}
+      }
+    }
+    if(tick&&ep%10===9)await tick();
+  }
+  return net;
+}
+function predict(net,X,idx){
+  const S=net.sizes,a=S.map(s=>new Float64Array(s)),z=S.map(s=>new Float64Array(s)),m=S.map(s=>new Float64Array(s).fill(1));
+  const rows=idx||X.map((_,i)=>i),out=new Float64Array(rows.length);
+  rows.forEach((r,i)=>{out[i]=forward(net,X[r],a,z,m,0,null);});return out;
+}
+
+// ---------------------------------------------------------------- Phase 3 search space (config ↔ 10-D vector)
+const SPACE={wMin:4,wMax:48,lr:[-3,-1.3],drop:[0,0.4],l2:[-6,-2],acts:['relu','tanh','elu']};
+const LW=(w)=>(Math.log(w)-Math.log(SPACE.wMin))/(Math.log(SPACE.wMax)-Math.log(SPACE.wMin));
+function canon(c){
+  c.depth=clamp(Math.round(c.depth),0,3);
+  c.widths=c.widths.map(w=>clamp(Math.round(w),SPACE.wMin,SPACE.wMax));
+  c.lr=clamp(c.lr,10**SPACE.lr[0],10**SPACE.lr[1]);c.l2=clamp(c.l2,10**SPACE.l2[0],10**SPACE.l2[1]);
+  c.dropout=c.depth?clamp(c.dropout,SPACE.drop[0],SPACE.drop[1]):0;return c;
+}
+function encode(c){
+  const v=new Float64Array(10);v[0]=c.depth/3;
+  for(let i=0;i<3;i++)v[1+i]=i<c.depth?0.25+0.75*LW(c.widths[i]):0;     // 0 = layer absent
+  if(c.depth){const k=SPACE.acts.indexOf(c.act);v[4+k]=0.7071;}           // any two activations differ by 1.0
+  v[7]=(Math.log10(c.lr)-SPACE.lr[0])/(SPACE.lr[1]-SPACE.lr[0]);
+  v[8]=(c.dropout-SPACE.drop[0])/(SPACE.drop[1]-SPACE.drop[0]);
+  v[9]=(Math.log10(c.l2)-SPACE.l2[0])/(SPACE.l2[1]-SPACE.l2[0]);
+  return v;
+}
+const ENC_NAMES=['depth','width1','width2','width3','relu','tanh','elu','log lr','dropout','log L2'];
+function randomWidth(rng){return Math.exp(rng.uniform(Math.log(SPACE.wMin),Math.log(SPACE.wMax)));}
+function randomConfig(rng){return canon({depth:rng.int(4),widths:[0,0,0].map(()=>randomWidth(rng)),act:SPACE.acts[rng.int(3)],lr:10**rng.uniform(...SPACE.lr),dropout:rng.uniform(...SPACE.drop),l2:10**rng.uniform(...SPACE.l2)});}
+function latinHypercube(n,rng){
+  const strata=d=>shuffleInPlace([...Array(n).keys()],rng).map(i=>(i+rng())/n);
+  const u=[strata(),strata(),strata(),strata(),strata(),strata()],depths=shuffleInPlace([...Array(n).keys()].map(i=>i%4),rng);
+  return [...Array(n).keys()].map(i=>canon({depth:depths[i],widths:[u[0][i],u[1][i],u[2][i]].map(t=>Math.exp(Math.log(SPACE.wMin)+t*(Math.log(SPACE.wMax)-Math.log(SPACE.wMin)))),
+    act:SPACE.acts[i%3],lr:10**(SPACE.lr[0]+u[3][i]*(SPACE.lr[1]-SPACE.lr[0])),dropout:SPACE.drop[0]+u[4][i]*(SPACE.drop[1]-SPACE.drop[0]),l2:10**(SPACE.l2[0]+u[5][i]*(SPACE.l2[1]-SPACE.l2[0]))}));
+}
+function mutate(c,rng,scale){
+  const n={depth:c.depth,widths:[...c.widths],act:c.act,lr:c.lr,dropout:c.dropout,l2:c.l2};
+  if(rng()<0.3)n.depth+=rng()<0.5?-1:1;
+  n.widths=n.widths.map(w=>w*Math.exp(0.45*scale*rng.normal()));
+  if(rng()<0.15)n.act=SPACE.acts[rng.int(3)];
+  n.lr*=10**(0.3*scale*rng.normal());n.l2*=10**(0.6*scale*rng.normal());n.dropout+=0.08*scale*rng.normal();
+  if(!c.depth&&n.depth)n.dropout=rng.uniform(0,0.2);
+  return canon(n);
+}
+function paramCount(c,nIn){const s=[nIn,...(c.depth?c.widths.slice(0,c.depth):[]),1];let p=0;for(let i=0;i<s.length-1;i++)p+=s[i]*s[i+1]+s[i+1];return p;}
+function describe(c){
+  const tail=`lr ${c.lr.toExponential(1)} · L2 ${c.l2.toExponential(0)}`;
+  return c.depth?`${c.widths.slice(0,c.depth).join('×')} ${c.act} · drop ${c.dropout.toFixed(2)} · ${tail}`:`logistic (no hidden layer) · ${tail}`;
+}
+
+// ---------------------------------------------------------------- nearest neighbors (exact) + projection
+function kNearest(q,points,k,skip){const h=[];for(let i=0;i<points.length;i++){if(i===skip)continue;h.push([dist(q,points[i]),i]);}h.sort((a,b)=>a[0]-b[0]);return h.slice(0,k);}
+function knnGraph(points,k){const E=new Set(),edges=[];points.forEach((p,i)=>kNearest(p,points,k,i).forEach(([,j])=>{const key=i<j?i+'-'+j:j+'-'+i;if(!E.has(key)){E.add(key);edges.push([i,j]);}}));return edges;}
+function surrogate(q,arch,k,h){
+  const nn=kNearest(q,arch.map(e=>e.vec),Math.min(k,arch.length));
+  let sw=0,s=0;nn.forEach(([d,i])=>{const w=1/((d+1e-3)**2);sw+=w;s+=w*arch[i].score;});const mu=s/sw;
+  let v=0;nn.forEach(([d,i])=>{const w=1/((d+1e-3)**2);v+=w*(arch[i].score-mu)**2;});
+  const sigma=Math.sqrt(v/sw)+0.02*(nn[0][0]/h);              // spread of neighbors + "how far from anything tested"
+  return{mu,sigma,dmin:nn[0][0]};
+}
+function pca2(V){
+  const n=V.length,D=V[0].length,mu=new Float64Array(D);V.forEach(v=>v.forEach((x,j)=>mu[j]+=x/n));
+  const C=V.map(v=>Float64Array.from(v,(x,j)=>x-mu[j]));
+  const cov=Array.from({length:D},()=>new Float64Array(D));C.forEach(r=>{for(let i=0;i<D;i++)for(let j=0;j<D;j++)cov[i][j]+=r[i]*r[j]/Math.max(1,n-1);});
+  let total=0;for(let i=0;i<D;i++)total+=cov[i][i];
+  const comps=[],vals=[];
+  for(let c=0;c<Math.min(2,D);c++){
+    let v=Float64Array.from({length:D},(_,i)=>Math.sin(1.7*i+c+1)),lam=0;   // deterministic start vector
+    for(let it=0;it<200;it++){const w=new Float64Array(D);for(let i=0;i<D;i++)for(let j=0;j<D;j++)w[i]+=cov[i][j]*v[j];
+      comps.forEach(u=>{let dt=0;for(let i=0;i<D;i++)dt+=w[i]*u[i];for(let i=0;i<D;i++)w[i]-=dt*u[i];});
+      const nm=Math.hypot(...w);if(nm<1e-12){lam=0;break;}lam=nm;v=w.map(x=>x/nm);}
+    comps.push(v);vals.push(lam);
+  }
+  while(comps.length<2){comps.push(new Float64Array(D));vals.push(0);}
+  return{coords:C.map(r=>comps.map(u=>{let s=0;for(let i=0;i<D;i++)s+=r[i]*u[i];return s;})),explained:vals.map(l=>total?l/total:0),comps};
+}
+function neighborPreservation(hi,lo,k){
+  if(hi.length<=k)return 1;let s=0;
+  hi.forEach((p,i)=>{const A=new Set(kNearest(p,hi,k,i).map(e=>e[1]));const B=kNearest(lo[i],lo,k,i).map(e=>e[1]);s+=B.filter(j=>A.has(j)).length/k;});
+  return s/hi.length;
+}
+
+// ---------------------------------------------------------------- the pipeline
+async function run(seed,hooks){
+  const H=Object.assign({log(){},phase(){},result(){},tick:()=>Promise.resolve()},hooks||{});
+  const log=H.log,T0=Date.now();
+  const R=tag=>makeRng(seed,tag);
+  const out={seed};
+
+  // ====== PHASE 1
+  H.phase(1,'run');log('PHASE 1 · DATA FORGE','h');
+  const N_PAT=1500,cohort=forgeCohort(N_PAT,R('cohort'));
+  const split=stratifiedSplit(cohort.y,0.7,R('split'));
+  const trI=split.a,teI=split.b;
+  const yTr=pick(cohort.y,trI),yTe=pick(cohort.y,teI),pTrueTe=pick(cohort.pTrue,teI);
+  const scaler=fitScaler(pick(cohort.X,trI));
+  const XtrAll=applyScaler(pick(cohort.X,trI),scaler),XteAll=applyScaler(pick(cohort.X,teI),scaler);
+  const shift=forgeCohort(60,R('shift'),'shift');const XshAll=applyScaler(shift.X,scaler);
+  const prev=mean(cohort.y),oracleAUC=auc(yTe,pTrueTe);
+  out.data={n:N_PAT,nTr:trI.length,nTe:teI.length,prevalence:prev,oracleAUC,nFeat:FEATURES.length};
+  log(`${N_PAT} synthetic patients · ${FEATURES.length} inputs · prevalence ${(prev*100).toFixed(1)}%`);
+  log(`Train ${trI.length} / locked test ${teI.length} (stratified). Scaling fitted on train only.`);
+  log(`Oracle AUC on test (true risk formula): ${oracleAUC.toFixed(3)} — the practical ceiling.`);
+  H.result('data',out.data);H.phase(1,'done');await H.tick();
+
+  // ====== PHASE 2
+  H.phase(2,'run');log('\nPHASE 2 · FEATURE SHAKE-OUT (CV permutation importance)','h');
+  const rP=R('probes'),NPROBE=4;
+  const Xp=XtrAll.map(r=>{const v=new Float64Array(r.length+NPROBE);v.set(r);for(let j=0;j<NPROBE;j++)v[r.length+j]=rP.normal();return v;});
+  const colNames=[...FEATURES.map(f=>f.name),...Array.from({length:NPROBE},(_,j)=>`Decoy_${j+1}`)];
+  const nCol=colNames.length;
+  // correlated clusters (single linkage, |r| ≥ 0.85) among real features
+  const cols=[...Array(FEATURES.length).keys()].map(j=>XtrAll.map(r=>r[j]));
+  const parent=[...Array(FEATURES.length).keys()],find=i=>parent[i]===i?i:(parent[i]=find(parent[i]));
+  for(let i=0;i<FEATURES.length;i++)for(let j=i+1;j<FEATURES.length;j++)if(Math.abs(pearson(cols[i],cols[j]))>=0.85)parent[find(i)]=find(j);
+  const groupsMap={};for(let i=0;i<FEATURES.length;i++)(groupsMap[find(i)]=groupsMap[find(i)]||[]).push(i);
+  const groups=Object.values(groupsMap).filter(g=>g.length>1);
+  groups.forEach(g=>log(`Correlated cluster (|r|≥0.85): ${g.map(i=>FEATURES[i].name).join(' + ')} → will also shuffle together`,'w'));
+  const scoutCfg={depth:1,widths:[16,0,0],act:'relu',lr:0.01,dropout:0,l2:1e-3};
+  // Repeated CV: CV_RUNS different fold splits × NF2 folds = 10 independent scouts, each scrambling every input REP times.
+  // More repeats shrink shuffle luck; more scouts shrink fold/initialisation luck. Both feed the standard error.
+  const NF2=5,CV_RUNS=2,REP=12,DECOY_REF=v=>mean(v);   // average of the decoys inside each scout
+  const splits2=[];for(let run=0;run<CV_RUNS;run++)stratifiedFolds(yTr,NF2,R('folds2-'+run)).forEach((val,f,all)=>splits2.push({run,f,val,trn:all.filter((_,g)=>g!==f).flat()}));
+  const drops=Array.from({length:nCol},()=>[]),gDrops=groups.map(()=>[]),baseAUCs=[];   // [feature][scout] = mean drop over repeats
+  for(const {run,f,val,trn} of splits2){
+    const tag=run+'-'+f;
+    const net=buildNet(nCol,scoutCfg,R('scout'+tag));await trainNet(net,Xp,yTr,trn,R('scoutT'+tag),H.tick);
+    const Xv=val.map(r=>Float64Array.from(Xp[r])),yv=pick(yTr,val);
+    const base=auc(yv,predict(net,Xv));baseAUCs.push(base);
+    const rp=R('perm'+tag);
+    const permuteCols=(cs)=>{const saved=cs.map(c=>Xv.map(r=>r[c]));const perm=shuffleInPlace([...Array(Xv.length).keys()],rp);
+      cs.forEach((c,ci)=>Xv.forEach((r,i)=>{r[c]=saved[ci][perm[i]];}));const s=auc(yv,predict(net,Xv));
+      cs.forEach((c,ci)=>Xv.forEach((r,i)=>{r[c]=saved[ci][i];}));return base-s;};
+    for(let c=0;c<nCol;c++){let s=0;for(let k=0;k<REP;k++)s+=permuteCols([c]);drops[c].push(s/REP);}
+    groups.forEach((g,gi)=>{let s=0;for(let k=0;k<REP;k++)s+=permuteCols(g);gDrops[gi].push(s/REP);});
+    log(`  split ${run+1}·fold ${f+1}/${NF2} · scout held-out AUC ${base.toFixed(3)} · ${REP} shuffles per input`);await H.tick();
+  }
+  // Standard error across scouts. Scouts share patients (overlapping training sets, two splits of the same rows),
+  // so plain sd/√J is too small and lets noise through. Nadeau–Bengio correction: var = s²·(1/J + n_val/n_train).
+  const nbSE=d=>sd(d)*Math.sqrt(1/d.length+1/(NF2-1));
+  const imp=drops.map(d=>({mean:mean(d),se:nbSE(d)}));
+  // Paired test: inside each scout, compare the input's drop with the decoys' drop in that SAME scout.
+  // A lucky or overfit scout inflates every drop together; pairing cancels that shared noise, which is
+  // most of the variance, so weak true signals (e.g. Age) become separable without letting noise in.
+  const decCols=drops.slice(FEATURES.length),J=drops[0].length;
+  const decRef=Array.from({length:J},(_,j)=>DECOY_REF(decCols.map(d=>d[j])));
+  const dec=imp.slice(FEATURES.length).reduce((a,b)=>a.mean>=b.mean?a:b);        // strongest decoy, for display
+  const paired=d=>{const diff=d.map((v,j)=>v-decRef[j]);return{m:mean(diff),se:nbSE(diff)};};
+  const beats=d=>{const p=paired(d);return mean(d)>0&&p.m>2*p.se;};
+  const probeCeil=mean(decRef);
+  log(`  decoy reference (per scout, averaged): drop ${probeCeil.toFixed(3)} — a spuriously-used input still costs a little AUC when shuffled; real inputs must beat this inside every scout`);
+  const rows=FEATURES.map((f,i)=>{const s=imp[i];return{i,name:f.name,truth:f.truth,mean:s.mean,se:s.se,verdict:beats(drops[i])?'keep':'drop',pm:paired(drops[i]).m,pse:paired(drops[i]).se};});
+  groups.forEach((g,gi)=>{
+    const gm=mean(gDrops[gi]),gse=nbSE(gDrops[gi]);
+    const sig=beats(gDrops[gi]);
+    log(`  group ${g.map(i=>FEATURES[i].name).join('+')}: joint drop ${gm.toFixed(3)} ± ${(2*gse).toFixed(3)} → ${sig?'significant':'not significant'}`);
+    if(sig&&!g.some(i=>rows[i].verdict==='keep')){const best=g.reduce((a,b)=>rows[a].mean>=rows[b].mean?a:b);rows[best].verdict='rescue';log(`  → rescued ${FEATURES[best].name} (twins were masking each other)`,'w');}
+  });
+  let kept=rows.filter(r=>r.verdict!=='drop').map(r=>r.i);
+  if(!kept.length){const top=rows.reduce((a,b)=>a.mean>=b.mean?a:b);top.verdict='rescue';kept=[top.i];log('  No input cleared the bar; keeping the top-ranked one so the pipeline can continue.','e');}
+  rows.forEach(r=>log(`  ${r.name.padEnd(11)} drop ${r.mean.toFixed(3).padStart(6)} · edge over decoys ${r.pm.toFixed(3).padStart(6)} ± ${(2*r.pse).toFixed(3)}  → ${r.verdict.toUpperCase()}`));
+  const probes=imp.slice(FEATURES.length).map((p,j)=>{const q=paired(drops[FEATURES.length+j]);return{name:`Decoy_${j+1}`,mean:p.mean,se:p.se,pm:q.m,pse:q.se};});
+  const recovered=FEATURES.filter((f,i)=>f.truth==='signal'&&kept.includes(i)).length,nSignal=FEATURES.filter(f=>f.truth==='signal').length;
+  const falseKeeps=FEATURES.filter((f,i)=>f.truth==='noise'&&kept.includes(i)).length;
+  log(`Kept ${kept.length}: ${kept.map(i=>FEATURES[i].name).join(', ')} · recovered ${recovered}/${nSignal} true signals, ${falseKeeps} pure-noise inputs kept`);
+  out.features={rows,probes,probeCeil,decMean:dec.mean,groups:groups.map(g=>g.map(i=>FEATURES[i].name)),kept,recovered,nSignal,falseKeeps,scoutAUC:mean(baseAUCs)};
+  H.result('features',out.features);H.phase(2,'done');await H.tick();
+
+  // ====== PHASE 3
+  H.phase(3,'run');log('\nPHASE 3 · LANDSCAPE NAVIGATOR (kNN-surrogate architecture search)','h');
+  const Xtr=selectCols(XtrAll,kept),Xte=selectCols(XteAll,kept),Xsh=selectCols(XshAll,kept),nIn=kept.length;
+  const POOL_SE=true,folds3=stratifiedFolds(yTr,3,R('folds3'+(H.foldSalt||''))),N_SEED=8,N_GUIDED=16,K_SUR=5;
+  log(`Search space: 10-D (${ENC_NAMES.join(', ')}). Budget ${N_SEED} seeds + ${N_GUIDED} guided, 3-fold CV each, same folds for every config.`);
+  const arch=[];
+  const evaluate=async(cfg,origin)=>{
+    const t=Date.now(),aucs=[],lls=[];let diverged=false;
+    for(let f=0;f<3;f++){const val=folds3[f],trn=folds3.filter((_,g)=>g!==f).flat();
+      const net=buildNet(nIn,cfg,R(`init${arch.length}-${f}`));await trainNet(net,Xtr,yTr,trn,R(`trn${arch.length}-${f}`),H.tick);
+      const p=predict(net,Xtr,val),yv=pick(yTr,val);
+      if(p.some(v=>!Number.isFinite(v))||Math.max(...p)-Math.min(...p)<1e-6){diverged=true;aucs.push(0.5);lls.push(Math.log(2));continue;} // blew up or collapsed to a constant
+      aucs.push(auc(yv,p));lls.push(logloss(yv,p));}
+    if(diverged)log(`  #${arch.length+1} training diverged or collapsed on ≥1 fold; scored as chance (0.5) there`,'w');
+    const e={id:arch.length+1,cfg,vec:encode(cfg),foldAUC:aucs,score:mean(aucs),se:sd(aucs)/Math.sqrt(3),ll:mean(lls),params:paramCount(cfg,nIn),origin,ms:Date.now()-t};
+    arch.push(e);return e;
+  };
+  const emit=(final)=>{
+    const V=arch.map(e=>e.vec),P=pca2(V),edges=knnGraph(V,3);
+    H.result('search',{arch:arch.map(e=>({id:e.id,desc:describe(e.cfg),score:e.score,se:e.se,params:e.params,origin:e.origin,pred:e.pred})),coords:P.coords,explained:P.explained,edges,final:final||null});
+  };
+  const seeds=latinHypercube(N_SEED,R('lhs'));
+  for(const c of seeds){const e=await evaluate(c,'seed');log(`  #${String(e.id).padStart(2)} seed    AUC ${e.score.toFixed(3)} ± ${e.se.toFixed(3)} · ${describe(c)}`);emit();await H.tick();}
+  const rC=R('cand');
+  for(let it=0;it<N_GUIDED;it++){
+    const V=arch.map(e=>e.vec);
+    const h=median(V.map((v,i)=>kNearest(v,V,1,i)[0][0]))||0.1;
+    const kappa=2.0-1.5*it/(N_GUIDED-1);
+    const leaders=[...arch].sort((a,b)=>b.score-a.score).slice(0,3);
+    let best=null;
+    for(let c=0;c<600;c++){
+      const cfg=c<300?randomConfig(rC):mutate(leaders[c%3].cfg,rC,1-0.6*it/N_GUIDED);
+      const s=surrogate(encode(cfg),arch,K_SUR,h);if(s.dmin<0.03)continue;            // already tested this region
+      const acq=s.mu+kappa*s.sigma;if(!best||acq>best.acq)best={cfg,acq,...s};
+    }
+    if(!best){best={cfg:randomConfig(rC),mu:NaN,sigma:NaN};}
+    const e=await evaluate(best.cfg,'guided');e.pred=best.mu;
+    log(`  #${String(e.id).padStart(2)} guided  AUC ${e.score.toFixed(3)} (predicted ${best.mu.toFixed(3)} ± ${best.sigma.toFixed(3)}, κ=${kappa.toFixed(2)}) · ${describe(e.cfg)}`);
+    emit();await H.tick();
+  }
+  // surrogate self-check: leave-one-out prediction quality
+  const V3=arch.map(e=>e.vec),h3=median(V3.map((v,i)=>kNearest(v,V3,1,i)[0][0]));
+  const loo=arch.map((e,i)=>surrogate(e.vec,arch.filter((_,j)=>j!==i),K_SUR,h3).mu);
+  const rho=spearman(loo,arch.map(e=>e.score));
+  log(`Surrogate self-check: leave-one-out Spearman ρ = ${rho.toFixed(2)} ${rho>0.4?'(neighbors are informative — the landscape has structure)':rho>0.15?'(weak structure — search is only partly better than random)':'(no usable structure — treat this search as random)'}`,rho>0.15?'':'w');
+  // robust selection: kNN-smoothed score + one-SE rule → fewest weights
+  arch.forEach((e,i)=>{const nn=kNearest(e.vec,V3,4,i);let sw=1,s=e.score;nn.forEach(([d,j])=>{const w=Math.exp(-((d/h3)**2));sw+=w;s+=w*arch[j].score;});e.smooth=s/sw;});
+  // Tie band, done properly. Every config is scored on the SAME 3 folds, so much of its fold-to-fold
+  // scatter is shared ("fold 2 is just hard") and says nothing about whether two architectures differ.
+  // So the error bar is on the PAIRED difference from the top config, fold by fold. Three folds give a
+  // very noisy variance, so it is pooled: kernel-weighted over the config's neighbours on the 10-D graph
+  // and shrunk toward the median across all configs (one pseudo-observation). One SE of that difference
+  // is the tie band.
+  const topS=arch.reduce((a,b)=>a.smooth>=b.smooth?a:b),rawTop=arch.reduce((a,b)=>a.score>=b.score?a:b);
+  const vd=arch.map(e=>e===topS?NaN:sd(e.foldAUC.map((v,f)=>topS.foldAUC[f]-v))**2);
+  const vdMed=median(vd.filter(Number.isFinite));
+  arch.forEach((e,i)=>{
+    if(!POOL_SE){e.band=e===topS?0:Math.sqrt(vd[i]/3);return;}
+    let sw=1,sv=vdMed;if(Number.isFinite(vd[i])){sw+=1;sv+=vd[i];}
+    kNearest(e.vec,V3,4,i).forEach(([d,j])=>{if(!Number.isFinite(vd[j]))return;const w=Math.exp(-((d/h3)**2));sw+=w;sv+=w*vd[j];});
+    e.band=Math.sqrt(sv/sw/3);});
+  topS.band=Math.sqrt(vdMed/3);
+  const eligible=arch.filter(e=>e===topS||topS.smooth-e.smooth<=e.band);
+  const bandMed=median(arch.filter(e=>e!==topS).map(e=>e.band));
+  const winner=eligible.reduce((a,b)=>a.params<b.params||(a.params===b.params&&a.smooth>b.smooth)?a:b);
+  log(`Raw top: #${rawTop.id} (${rawTop.score.toFixed(3)}). Smoothed top: #${topS.id} (${topS.smooth.toFixed(3)}). Tie band (1 SE of the paired gap, pooled over graph neighbours) ≈ ${bandMed.toFixed(3)} → ${eligible.length} configs tied with the top.`);
+  log(`WINNER #${winner.id}: ${describe(winner.cfg)} · ${winner.params} weights · CV AUC ${winner.score.toFixed(3)}`,'h');
+  const P3=pca2(V3);
+  out.search={nEval:arch.length,rho,winnerId:winner.id,band:bandMed,winnerParams:winner.params,rawTopId:rawTop.id,smoothTopId:topS.id,eligible:eligible.length,
+    explained:P3.explained,preservation:neighborPreservation(V3,P3.coords,3),
+    table:(()=>{const t=[...arch].sort((a,b)=>b.smooth-a.smooth).slice(0,8);if(!t.includes(winner))t.push(winner);return t;})().map(e=>({id:e.id,desc:describe(e.cfg),score:e.score,se:e.se,band:e.band,smooth:e.smooth,params:e.params,origin:e.origin})),
+    seedBest:Math.max(...arch.filter(e=>e.origin==='seed').map(e=>e.score)),finalBest:rawTop.score};
+  emit(out.search);H.phase(3,'done');await H.tick();
+
+  // ====== PHASE 4
+  H.phase(4,'run');log('\nPHASE 4 · BAGGED COUNCIL','h');
+  const NM=7,members=[],rB=R('bag');const nTr=Xtr.length;
+  for(let m=0;m<NM;m++){
+    const boot=Array.from({length:nTr},()=>rB.int(nTr)),inBag=new Uint8Array(nTr);boot.forEach(i=>inBag[i]=1);
+    const oob=[...Array(nTr).keys()].filter(i=>!inBag[i]);
+    const net=buildNet(nIn,winner.cfg,R('minit'+m));await trainNet(net,Xtr,yTr,boot,R('mtrn'+m),H.tick);
+    const pO=predict(net,Xtr,oob),oobAUC=auc(pick(yTr,oob),pO);
+    members.push({id:m+1,net,oob,pO,oobAUC});log(`  member ${m+1}: OOB AUC ${oobAUC.toFixed(3)} on ${oob.length} unseen rows`);await H.tick();
+  }
+  const med=median(members.map(m=>m.oobAUC)),md=mad(members.map(m=>m.oobAUC))||0.005,cut=med-3*1.4826*md;
+  members.forEach(m=>{m.kept=m.oobAUC>=cut;});
+  let council=members.filter(m=>m.kept);
+  if(council.length<3)council=[...members].sort((a,b)=>b.oobAUC-a.oobAUC).slice(0,3),members.forEach(m=>m.kept=council.includes(m));
+  log(`Prune rule: OOB AUC < median − 3·MAD (${cut.toFixed(3)}). Kept ${council.length}/${NM}.`);
+  const sumO=new Float64Array(nTr),cntO=new Float64Array(nTr);
+  council.forEach(m=>m.oob.forEach((r,i)=>{sumO[r]+=m.pO[i];cntO[r]++;}));
+  const oobRows=[...Array(nTr).keys()].filter(i=>cntO[i]>0),oobP=oobRows.map(i=>sumO[i]/cntO[i]),oobY=pick(yTr,oobRows);
+  const thr=youden(oobY,oobP);
+  const memPredTr=council.map(m=>predict(m.net,Xtr));
+  const diversity=mean([...Array(nTr).keys()].map(i=>sd(memPredTr.map(p=>p[i]))));
+  log(`Council OOB AUC ${auc(oobY,oobP).toFixed(3)} · decision threshold (Youden J on OOB) = ${thr.toFixed(3)} · member spread ${diversity.toFixed(3)}`);
+  out.council={members:members.map(m=>({id:m.id,oobAUC:m.oobAUC,nOob:m.oob.length,kept:m.kept})),cut,thr,oobAUC:auc(oobY,oobP),diversity};
+  H.result('council',out.council);H.phase(4,'done');await H.tick();
+
+  // ====== PHASE 5
+  H.phase(5,'run');log('\nPHASE 5 · LOCKED-TEST VERDICT (vault opened once)','h');
+  const memTe=council.map(m=>predict(m.net,Xte)),memSh=council.map(m=>predict(m.net,Xsh));
+  const avg=ps=>Float64Array.from(ps[0],(_,i)=>mean(ps.map(p=>p[i])));
+  const soft=avg(memTe),hard=Float64Array.from(soft,(_,i)=>mean(memTe.map(p=>p[i]>=thr?1:0)));
+  const bestMem=council.reduce((a,b)=>a.oobAUC>=b.oobAUC?a:b),single=memTe[council.indexOf(bestMem)];
+  const lrCfg={depth:0,widths:[8,8,8],act:'relu',lr:0.03,dropout:0,l2:1e-4};
+  const lrNet=buildNet(nIn,lrCfg,R('lrinit'));await trainNet(lrNet,Xtr,yTr,[...Array(nTr).keys()],R('lrtrn'),H.tick);
+  const lrThr=youden(yTr,predict(lrNet,Xtr)),lrTe=predict(lrNet,Xte);
+  const rBS=R('boot'),NB=500,nTe=yTe.length,bIdx=Array.from({length:NB},()=>Array.from({length:nTe},()=>rBS.int(nTe)));
+  const ci=(p)=>{const v=bIdx.map(ix=>auc(pick(yTe,ix),pick(p,ix))).filter(Number.isFinite);return[quantile(v,0.025),quantile(v,0.975)];};
+  const row=(name,p,t,note)=>{const c=confusion(yTe,p,t);return{name,auc:auc(yTe,p),ci:ci(p),acc:c.acc,sens:c.sens,spec:c.spec,brier:brier(yTe,p),ece:ece(yTe,p),note};};
+  const table=[row('Oracle (true risk)',pTrueTe,0.5,'ceiling'),row('Council · soft vote',soft,thr,'primary'),row('Council · hard vote',hard,0.5,''),
+    row(`Best single member (#${bestMem.id})`,single,thr,''),row('Logistic regression',lrTe,lrThr,'baseline')];
+  const diffs=bIdx.map(ix=>{const yy=pick(yTe,ix);return auc(yy,pick(soft,ix))-auc(yy,pick(lrTe,ix));}).filter(Number.isFinite);
+  const dLR={mean:auc(yTe,soft)-auc(yTe,lrTe),lo:quantile(diffs,0.025),hi:quantile(diffs,0.975)};
+  table.forEach(r=>log(`  ${r.name.padEnd(28)} AUC ${r.auc.toFixed(3)} [${r.ci[0].toFixed(3)}–${r.ci[1].toFixed(3)}] · sens ${(r.sens*100).toFixed(0)}% · spec ${(r.spec*100).toFixed(0)}% · Brier ${r.brier.toFixed(3)}`));
+  log(`Council − logistic: ΔAUC ${dLR.mean>=0?'+':''}${dLR.mean.toFixed(3)} [${dLR.lo.toFixed(3)}, ${dLR.hi.toFixed(3)}] → ${dLR.lo>0?'network beats the baseline':dLR.hi<0?'baseline is better':'no demonstrated advantage over the baseline'}`,dLR.lo>0?'':'w');
+  // referral: uncertainty band, disagreement, kNN out-of-distribution
+  const KO=5,trPts=Xtr;
+  const looK=trPts.map((p,i)=>kNearest(p,trPts,KO,i)[KO-1][0]),oodCut=quantile(looK,0.99);
+  const kd=X=>X.map(p=>kNearest(p,trPts,KO)[KO-1][0]);
+  const kdTe=kd(Xte),kdSh=kd(Xsh);
+  const disagreement=mem=>Float64Array.from(mem[0],(_,i)=>sd(mem.map(p=>p[i])));
+  const dTe=disagreement(memTe),dSh=disagreement(memSh),softSh=avg(memSh);
+  const BAND=0.08,DIS=Math.max(0.08,quantile(Array.from(dTe),0.95));
+  const reasons=(p,dd,k)=>{const r=[];if(Math.abs(p-thr)<BAND)r.push('uncertain');if(dd>DIS)r.push('disagree');if(k>oodCut)r.push('unfamiliar');return r;};
+  const refTe=[...soft].map((p,i)=>reasons(p,dTe[i],kdTe[i])),refSh=[...softSh].map((p,i)=>reasons(p,dSh[i],kdSh[i]));
+  const auto=[],flag=[];refTe.forEach((r,i)=>(r.length?flag:auto).push(i));
+  const accOn=ix=>ix.length?confusion(pick(yTe,ix),pick(soft,ix),thr).acc:NaN;
+  const count=(arr,k)=>arr.filter(r=>r.includes(k)).length;
+  const refer={coverage:auto.length/nTe,accAuto:accOn(auto),accFlag:accOn(flag),nFlag:flag.length,
+    reasons:['uncertain','disagree','unfamiliar'].map(k=>({k,te:count(refTe,k),sh:count(refSh,k)})),
+    shiftFlagRate:refSh.filter(r=>r.includes('unfamiliar')).length/refSh.length,testOODRate:count(refTe,'unfamiliar')/nTe,
+    shiftMeanRisk:mean(Array.from(softSh)),shiftTrueRisk:mean(shift.pTrue),oodCut,band:BAND,dis:DIS};
+  log(`Referral: ${flag.length}/${nTe} test patients to human review · accuracy auto-decided ${(refer.accAuto*100).toFixed(1)}% vs referred ${(refer.accFlag*100).toFixed(1)}%`);
+  log(`Out-of-range probe: ${(refer.shiftFlagRate*100).toFixed(0)}% flagged "unfamiliar" by kNN distance (vs ${(refer.testOODRate*100).toFixed(1)}% of ordinary test patients). Council's mean risk for them: ${(refer.shiftMeanRisk*100).toFixed(0)}% vs true ${(refer.shiftTrueRisk*100).toFixed(0)}%.`);
+  const Pp=pca2([...Xte,...Xsh]);
+  out.final={table,dLR,thr,refer,patients:{coords:Pp.coords,explained:Pp.explained,risk:[...soft,...softSh],shift:[...soft].map(()=>0).concat([...softSh].map(()=>1)),flag:[...refTe,...refSh].map(r=>r.length>0),y:[...yTe,...shift.y]}};
+  H.result('final',out.final);H.phase(5,'done');
+  out.seconds=(Date.now()-T0)/1000;log(`\nDone in ${out.seconds.toFixed(1)} s · seed ${seed}. Same seed + same browser → identical run.`,'h');
+  return out;
+}
+
+return{run,FEATURES,internals:{auc,forgeCohort,makeRng,pca2,encode,mutate,randomConfig,latinHypercube,canon,kNearest,buildNet,trainNet,predict}};
+})();
+if(typeof module!=='undefined')module.exports=MILO;
+/*ENGINE-END*/
+
+// ===================================================================== UI
+(() => {
+const $=id=>document.getElementById(id);
+const fmt=(v,d=3)=>Number.isFinite(v)?v.toFixed(d):'—';
+const pct=v=>Number.isFinite(v)?(v*100).toFixed(1)+'%':'—';
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function log(msg,cls){const el=$('log'),s=document.createElement('span');if(cls)s.className=cls;s.textContent=msg+'\n';el.appendChild(s);el.scrollTop=el.scrollHeight;}
+function phase(n,st){const el=$('ph'+n);el.classList.remove('run','done','fail');if(st)el.classList.add(st);el.querySelector('.st').textContent={run:'running…',done:'done',fail:'failed'}[st]||'idle';}
+const stat=(v,l)=>`<div class="stat"><b>${v}</b><span>${l}</span></div>`;
+
+// colour ramps
+function lerp(a,b,t){return a.map((x,i)=>Math.round(x+(b[i]-x)*t));}
+function ramp(stops,t){t=Math.min(1,Math.max(0,t));const n=stops.length-1,i=Math.min(n-1,Math.floor(t*n));const c=lerp(stops[i],stops[i+1],t*n-i);return`rgb(${c})`;}
+const VIR=[[68,1,84],[59,82,139],[33,145,140],[94,201,98],[253,231,37]];
+const RISK=[[70,130,220],[150,150,170],[230,70,70]];
+
+function canvasCtx(cv){const dpr=window.devicePixelRatio||1,w=cv.clientWidth,h=+cv.getAttribute('height');cv.width=w*dpr;cv.height=h*dpr;cv.style.height=h+'px';const c=cv.getContext('2d');c.scale(dpr,dpr);c.clearRect(0,0,w,h);return{c,w,h};}
+function scaler(coords,w,h,pad){const xs=coords.map(p=>p[0]),ys=coords.map(p=>p[1]);const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+  const sx=(w-2*pad)/((x1-x0)||1),sy=(h-2*pad)/((y1-y0)||1);return p=>[pad+(p[0]-x0)*sx,h-pad-(p[1]-y0)*sy];}
+
+let mapPts=[],mapData=null;
+function drawMap(d){
+  mapData=d;const {c,w,h}=canvasCtx($('mapCanvas'));if(d.arch.length<2)return;
+  const S=scaler(d.coords,w,h,30),P=d.coords.map(S),sc=d.arch.map(a=>a.score),lo=Math.min(...sc),hi=Math.max(...sc);
+  c.strokeStyle='rgba(180,190,210,.28)';c.lineWidth=1;d.edges.forEach(([i,j])=>{c.beginPath();c.moveTo(...P[i]);c.lineTo(...P[j]);c.stroke();});
+  const pm=Math.max(...d.arch.map(a=>a.params));
+  mapPts=d.arch.map((a,i)=>{const r=4+8*Math.sqrt(a.params/pm);return{x:P[i][0],y:P[i][1],r,a};});
+  mapPts.forEach(({x,y,r,a})=>{c.beginPath();c.arc(x,y,r,0,7);c.fillStyle=ramp(VIR,(a.score-lo)/((hi-lo)||1));c.fill();
+    c.lineWidth=1;c.strokeStyle=a.origin==='seed'?'#fff8':'#0008';c.stroke();
+    c.fillStyle='#cfd5e0';c.font='10px monospace';c.fillText(a.id,x+r+2,y-r);});
+  if(d.final){const wv=mapPts.find(p=>p.a.id===d.final.winnerId);if(wv){c.beginPath();c.arc(wv.x,wv.y,wv.r+6,0,7);c.strokeStyle='#ff6b6b';c.lineWidth=2.5;c.stroke();}}
+  const L=$('mapLegend');
+  L.innerHTML=`Colour: purple = AUC ${fmt(lo)} → yellow = ${fmt(hi)}. White outline = space-filling seed; dark outline = chosen by the search.`+
+    (d.final?` This 2-D view keeps ${pct(d.final.explained[0]+d.final.explained[1])} of the variance and ${pct(d.final.preservation)} of each point's 3 nearest 10-D neighbors.`:'');
+}
+function drawConv(arch){
+  const {c,w,h}=canvasCtx($('convCanvas'));if(!arch.length)return;
+  const pad=28,sc=arch.map(a=>a.score),lo=Math.min(...sc)-0.01,hi=Math.max(...sc)+0.01,N=Math.max(24,arch.length);
+  const X=i=>pad+(w-2*pad)*i/(N-1),Y=v=>h-pad-(h-2*pad)*(v-lo)/(hi-lo);
+  c.strokeStyle='#2b313d';c.fillStyle='#9aa3b2';c.font='10px monospace';
+  [lo,(lo+hi)/2,hi].forEach(v=>{c.beginPath();c.moveTo(pad,Y(v));c.lineTo(w-pad/2,Y(v));c.stroke();c.fillText(v.toFixed(3),2,Y(v)+3);});
+  const nSeed=arch.filter(a=>a.origin==='seed').length;c.setLineDash([4,4]);c.strokeStyle='#ffc857';c.beginPath();c.moveTo(X(nSeed-0.5),pad/2);c.lineTo(X(nSeed-0.5),h-pad);c.stroke();c.setLineDash([]);
+  let best=-1;c.strokeStyle='#3ddc97';c.lineWidth=2;c.beginPath();arch.forEach((a,i)=>{best=Math.max(best,a.score);i?c.lineTo(X(i),Y(best)):c.moveTo(X(i),Y(best));});c.stroke();
+  arch.forEach((a,i)=>{c.beginPath();c.arc(X(i),Y(a.score),3,0,7);c.fillStyle=a.origin==='seed'?'#ffffff':'#5cb8ff';c.fill();});
+  c.fillStyle='#9aa3b2';c.fillText('evaluation →',w-90,h-8);
+}
+$('mapCanvas').addEventListener('mousemove',ev=>{
+  const r=ev.target.getBoundingClientRect(),x=ev.clientX-r.left,y=ev.clientY-r.top,tip=$('tip');
+  const hit=mapPts.find(p=>Math.hypot(p.x-x,p.y-y)<=p.r+3);
+  if(!hit){tip.style.display='none';return;}
+  tip.style.display='block';tip.style.left=Math.min(x+14,r.width-240)+'px';tip.style.top=(y+10)+'px';
+  tip.textContent=`#${hit.a.id} (${hit.a.origin})\n${hit.a.desc}\nCV AUC ${fmt(hit.a.score)} ± ${fmt(hit.a.se)}\n${hit.a.params} weights`+(Number.isFinite(hit.a.pred)?`\nsurrogate had predicted ${fmt(hit.a.pred)}`:'');
+  tip.style.whiteSpace='pre';
+});
+$('mapCanvas').addEventListener('mouseleave',()=>{$('tip').style.display='none';});
+window.addEventListener('resize',()=>{if(mapData){drawMap(mapData);drawConv(mapData.arch);}if(lastPat)drawPatients(lastPat);});
+
+let lastPat=null;
+function drawPatients(pt){
+  lastPat=pt;const {c,w,h}=canvasCtx($('patCanvas'));const S=scaler(pt.coords,w,h,20);
+  pt.coords.forEach((p,i)=>{const [x,y]=S(p);c.beginPath();
+    if(pt.shift[i]){c.moveTo(x,y-6);c.lineTo(x+5.5,y+4);c.lineTo(x-5.5,y+4);c.closePath();}else c.arc(x,y,3.6,0,7);
+    c.fillStyle=ramp(RISK,pt.risk[i]);c.globalAlpha=.9;c.fill();c.globalAlpha=1;
+    if(pt.flag[i]){c.lineWidth=1.6;c.strokeStyle='#ff6b6b';c.beginPath();c.arc(x,y,7,0,7);c.stroke();}});
+  c.fillStyle='#9aa3b2';c.font='10px monospace';c.fillText(`PCA view keeps ${pct(pt.explained[0]+pt.explained[1])} of variance`,8,h-6);
+}
+
+function onResult(key,d){
+  if(key==='data'){$('cardData').classList.remove('hidden');
+    $('dataStats').innerHTML=stat(d.n,'synthetic patients')+stat(`${d.nTr} / ${d.nTe}`,'train / locked test')+stat(pct(d.prevalence),'prevalence')+stat(fmt(d.oracleAUC),'oracle AUC (ceiling)');}
+  if(key==='features'){$('cardFeat').classList.remove('hidden');
+    const all=[...d.rows,...d.probes.map(p=>({...p,truth:'decoy',verdict:'decoy'}))];
+    const mx=Math.max(...all.map(r=>r.mean+2*r.se),d.probeCeil,0.01),mn=Math.min(0,...all.map(r=>r.mean-2*r.se)),X=v=>(v-mn)/(mx-mn)*100;
+    $('featTable').innerHTML='<tr><th>input</th><th>importance (AUC drop when shuffled)</th><th class="num">drop ± 2SE</th><th class="num">edge over decoys ± 2SE</th><th>verdict</th><th>truth</th></tr>'+
+      all.map(r=>`<tr><td>${esc(r.name)}</td><td><div class="bar"><i style="left:${X(Math.min(0,r.mean))}%;width:${Math.abs(X(r.mean)-X(0))}%"></i><u style="left:${X(r.mean-2*r.se)}%;width:${X(r.mean+2*r.se)-X(r.mean-2*r.se)}%"></u><s style="left:${X(d.probeCeil)}%"></s></div></td>
+      <td class="num">${fmt(r.mean)} ± ${fmt(2*r.se)}</td><td class="num">${fmt(r.pm)} ± ${fmt(2*r.pse)}</td><td>${r.verdict==='decoy'?'<span class="tag" style="background:#2b313d;color:#9aa3b2">decoy</span>':`<span class="tag ${r.verdict==='keep'?'keep':r.verdict==='rescue'?'rescue':'drop'}">${r.verdict}</span>`}</td>
+      <td class="t-${r.truth}">${r.truth}</td></tr>`).join('');
+    $('featNote').innerHTML=`<div class="callout">Recovered <b>${d.recovered} of ${d.nSignal}</b> true signals; kept <b>${d.falseKeeps}</b> pure-noise inputs. `+
+      (d.groups.length?`Correlated cluster${d.groups.length>1?'s':''} ${d.groups.map(g=>g.join(' + ')).join('; ')} ${d.groups.length>1?'were':'was'} also shuffled jointly. `:'')+
+      `Weak signals can fall below the decoy bar; that's the price of not keeping noise. A kept bystander isn't an error: it genuinely predicts, it just isn't a cause, so it can break if the measurement changes.</div>`;}
+  if(key==='search'){$('cardSearch').classList.remove('hidden');drawMap(d);drawConv(d.arch);
+    if(d.final){const f=d.final;
+      $('searchStats').innerHTML=stat(f.nEval,'architectures tested')+stat(fmt(f.rho,2),'surrogate LOO ρ')+stat(`${fmt(f.seedBest)} → ${fmt(f.finalBest)}`,'best AUC: seeds → after search')+stat(`${f.eligible} · ±${fmt(f.band)}`,'tied with top · tie band');
+      $('leaderTable').innerHTML='<tr><th>#</th><th>architecture</th><th class="num">CV AUC ± SE</th><th class="num">neighborhood-smoothed</th><th class="num">tie band</th><th class="num">weights</th><th>origin</th></tr>'+
+        f.table.map(r=>`<tr class="${r.id===f.winnerId?'best':''}"><td>${r.id}${r.id===f.winnerId?' ★':''}</td><td>${esc(r.desc)}</td><td class="num">${fmt(r.score)} ± ${fmt(r.se)}</td><td class="num">${fmt(r.smooth)}</td><td class="num">${r.id===f.smoothTopId?'top':'±'+fmt(r.band)}</td><td class="num">${r.params}</td><td>${r.origin}</td></tr>`).join('');
+      $('searchNote').innerHTML=`<div class="callout ${f.rho<0.15?'warn':''}">Winner ★ #${f.winnerId}: the <b>fewest-weights</b> architecture statistically tied with the best. "Tied" means its gap to the top is within one standard error of the <i>paired</i> fold-by-fold difference (shared fold difficulty cancels), with that error pooled over its graph neighbours so three folds' worth of luck can't make the band swing.`+
+        (f.rawTopId!==f.winnerId?` The raw highest single score (#${f.rawTopId}) was passed over: its edge is inside the noise, and a simpler net or a flatter region is the safer bet.`:'')+
+        ` Surrogate ρ = ${fmt(f.rho,2)}: ${f.rho>0.4?'nearby architectures really do score alike, so the neighbor search was informed.':f.rho>0.15?'some neighborhood structure — the search was partly informed.':'little structure — on this data most reasonable architectures tie, which is itself a finding.'}</div>`;}}
+  if(key==='council'){$('cardCouncil').classList.remove('hidden');
+    $('councilStats').innerHTML=stat(fmt(d.oobAUC),'council OOB AUC')+stat(fmt(d.thr),'decision threshold (Youden)')+stat(fmt(d.cut),'prune cut-off')+stat(fmt(d.diversity),'mean member spread');
+    $('councilTable').innerHTML='<tr><th>member</th><th class="num">OOB AUC</th><th class="num">unseen rows</th><th>status</th></tr>'+
+      d.members.map(m=>`<tr><td>#${m.id}</td><td class="num">${fmt(m.oobAUC)}</td><td class="num">${m.nOob}</td><td><span class="tag ${m.kept?'keep':'drop'}">${m.kept?'seated':'pruned'}</span></td></tr>`).join('');}
+  if(key==='final'){$('cardFinal').classList.remove('hidden');
+    $('finalTable').innerHTML='<tr><th>model</th><th class="num">AUC</th><th class="num">95% CI</th><th class="num">sens</th><th class="num">spec</th><th class="num">Brier ↓</th><th class="num">calib. error ↓</th></tr>'+
+      d.table.map(r=>`<tr class="${r.note==='primary'?'best':''}"><td>${esc(r.name)}</td><td class="num">${fmt(r.auc)}</td><td class="num">${fmt(r.ci[0])}–${fmt(r.ci[1])}</td><td class="num">${pct(r.sens)}</td><td class="num">${pct(r.spec)}</td><td class="num">${fmt(r.brier)}</td><td class="num">${fmt(r.ece)}</td></tr>`).join('');
+    const g=d.dLR,orc=d.table[0].auc,cou=d.table[1].auc;
+    $('finalNote').innerHTML=`<div class="callout ${g.lo>0?'':'warn'}">Council − logistic regression: ΔAUC <b>${g.mean>=0?'+':''}${fmt(g.mean)}</b> (95% CI ${fmt(g.lo)} to ${fmt(g.hi)}). `+
+      (g.lo>0?'The network captured structure a straight-line model missed (the generator has a U-shaped temperature risk and a lactate × blood-pressure interaction, which a straight line cannot draw).':g.hi<0?'The simple baseline won; the extra machinery did not pay for itself.':'No demonstrated advantage over the baseline at this sample size; in practice you would ship the simpler model.')+
+      ` The council recovers ${pct((cou-0.5)/((orc-0.5)||1))} of the achievable lift above chance (oracle ${fmt(orc)}).</div>`;
+    const r=d.refer;
+    $('referStats').innerHTML=stat(pct(r.coverage),'auto-decided')+stat(`${pct(r.accAuto)} / ${pct(r.accFlag)}`,'accuracy: auto / referred')+stat(pct(r.shiftFlagRate),'out-of-range cohort flagged')+stat(`${pct(r.shiftMeanRisk)} / ${pct(r.shiftTrueRisk)}`,'that cohort: council risk / true risk');
+    $('referTable').innerHTML='<tr><th>reason</th><th>rule</th><th class="num">test</th><th class="num">out-of-range</th></tr>'+
+      r.reasons.map(x=>`<tr><td>${x.k}</td><td>${{uncertain:`risk within ±${r.band} of threshold`,disagree:`member SD > ${fmt(r.dis,2)}`,unfamiliar:'5th-nearest training neighbor farther than 99% of training patients'}[x.k]}</td><td class="num">${x.te}</td><td class="num">${x.sh}</td></tr>`).join('');
+    $('referNote').innerHTML=`<div class="callout">Referred patients are harder (accuracy ${pct(r.accFlag)} vs ${pct(r.accAuto)}), which is the point of routing them. The out-of-range cohort is the key safety check: the council gives these very old, deeply hypothermic patients an average risk of ${pct(r.shiftMeanRisk)} while their true risk is ${pct(r.shiftTrueRisk)}. That number is extrapolated from a region with no training data, and the nearest-neighbor check flags ${pct(r.shiftFlagRate)} of them as unlike anyone in training.</div>`;
+    drawPatients(d.patients);}
+}
+
+$('runBtn').addEventListener('click',async()=>{
+  const btn=$('runBtn'),seed=parseInt($('seed').value,10)||0;btn.disabled=true;btn.textContent='Running…';
+  $('log').textContent='';['cardData','cardFeat','cardSearch','cardCouncil','cardFinal'].forEach(id=>$(id).classList.add('hidden'));
+  [1,2,3,4,5].forEach(n=>phase(n,null));mapData=null;lastPat=null;let cur=0;
+  try{
+    await MILO.run(seed,{log,phase:(n,s)=>{cur=n;phase(n,s);},result:onResult,tick:()=>new Promise(r=>setTimeout(r,0))});
+    btn.textContent='Run again';
+  }catch(err){log('ERROR: '+(err&&err.stack||err),'e');if(cur)phase(cur,'fail');btn.textContent='Retry';}
+  finally{btn.disabled=false;}
+});
+})();
+</script>
+</body>
+</html>
