@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Acid–Base Force Field</title>
+<style>
+:root{--ink:#1c3043;--muted:#65788b;--paper:#f3f6f8;--card:#fff;--line:#dce5ec;--red:#c95c60;--red-soft:#fff0ee;--teal:#278a7b;--teal-soft:#eaf7f3;--blue:#397bb9;--blue-soft:#edf5fc;--gold:#b47c2e;--shadow:0 6px 22px rgba(29,54,76,.055)}
+*{box-sizing:border-box} body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.48 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{padding:22px max(18px,calc((100vw - 1180px)/2)) 19px;background:#eaf0f5;border-bottom:1px solid var(--line)}.eyebrow{text-transform:uppercase;letter-spacing:.12em;font-size:10px;font-weight:800;color:#59748d}h1{font-size:clamp(25px,3.1vw,35px);letter-spacing:-.04em;line-height:1.15;margin:4px 0 6px}header p{max-width:780px;margin:0;color:#586e81;font-size:14px}main{max-width:1180px;margin:20px auto 30px;padding:0 16px}
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px}.scenario{display:flex;align-items:center;gap:9px;min-width:min(100%,400px)}select,button,input{font:inherit}select{color:var(--ink);background:white;border:1px solid #cbd7e0;border-radius:9px;padding:9px 11px;min-width:0}button{border:1px solid #cbd7e0;background:white;color:var(--ink);padding:9px 13px;border-radius:9px;font-weight:700;cursor:pointer}button:hover{background:#f7fafc}button.primary{background:#246eaa;border-color:#246eaa;color:white}.time-control{background:white;border:1px solid var(--line);border-radius:12px;padding:9px 13px;flex:1;min-width:min(100%,360px);max-width:570px}.time-top{display:flex;justify-content:space-between;gap:12px;align-items:center}.time-top label{font-weight:750;font-size:13px}.time-read{color:#2e678f;font-weight:800;font-size:13px}input[type=range]{width:100%;accent-color:#327aa8;display:block;margin:8px 0 2px;cursor:pointer}.time-marks{display:flex;justify-content:space-between;gap:8px;font-size:10px;color:#7c8c9a}.time-marks span{min-width:0}.time-marks span:first-child{text-align:left}.time-marks span:not(:first-child):not(:last-child){text-align:center}.time-marks span:last-child{text-align:right}.time-hint{font-size:11px;line-height:1.4;color:#708294;margin-top:6px}.time-ends{display:flex;justify-content:space-between;gap:12px;margin-top:5px;font-size:10px;line-height:1.35;color:#425f74;font-weight:800}.time-ends span{min-width:0;max-width:48%}.time-ends span:last-child{text-align:right}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);min-width:0}.hero{padding:17px 18px 15px}.card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;min-width:0}.card-head>div{min-width:0}.card-head .sub{max-width:720px}.card h2{font-size:17px;margin:0;letter-spacing:-.02em}.sub{font-size:12px;color:var(--muted);margin:3px 0 0}.tag{font-size:11px;font-weight:800;color:#486b85;background:#eef4f8;padding:5px 9px;border-radius:999px;white-space:nowrap}.tag.normal{background:#e9f6ef;color:#217052}.tag.acid{background:var(--red-soft);color:#a53e42}.tag.alk{background:var(--blue-soft);color:#276aa3}
+.stage{position:relative;margin-top:8px;border-radius:13px;background:radial-gradient(ellipse at center,#fbfdfe 0%,#f8fafc 58%,#f3f7f9 100%);border:1px solid #e9eff3;overflow:hidden}.stage svg{display:block;width:100%;height:auto;max-height:370px}.stage-note{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:9px 2px 0;color:#768696;font-size:11px}.stage-note span{display:flex;align-items:center;gap:6px}.dot{width:8px;height:8px;border-radius:50%;display:inline-block}.outputs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-top:14px}.metric{border:1px solid #e5ebf0;border-radius:11px;padding:10px 12px;background:#fcfdfe;min-width:0}.metric .mlabel{text-transform:uppercase;letter-spacing:.065em;color:#718396;font-size:10px;font-weight:800}.metric .mvalue{font-size:22px;letter-spacing:-.035em;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}.metric .munit{font-size:11px;color:var(--muted);font-weight:550}.metric .mnote{font-size:10px;color:#7b8a98;line-height:1.3}
+.controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:14px}.force-card{padding:15px}.force-title{display:flex;align-items:center;gap:9px;margin-bottom:4px;min-width:0}.force-title h3{min-width:0;overflow-wrap:anywhere}.force-icon{width:29px;height:29px;display:grid;place-items:center;border-radius:9px;font-size:15px;font-weight:800}.resp .force-icon{background:var(--red-soft);color:var(--red)}.met .force-icon{background:var(--teal-soft);color:var(--teal)}.acid .force-icon{background:#fff4e4;color:var(--gold)}.force-title h3{font-size:14px;margin:0}.force-desc{color:var(--muted);font-size:11px;min-height:32px;margin:0 0 10px}.slider-head{display:flex;align-items:baseline;justify-content:space-between;gap:7px;flex-wrap:wrap}.slider-head label{font-size:12px;font-weight:750;min-width:0;overflow-wrap:anywhere}.slider-head .current{white-space:nowrap}.current{font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}.resp .current{color:var(--red)}.met .current{color:var(--teal)}.acid .current{color:var(--gold)}.limits{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;color:#748494;font-size:10px;margin-top:4px;align-items:start}.limits span{display:block;min-width:0;line-height:1.35;overflow-wrap:anywhere}.limits span:last-child{text-align:right}.limits strong{display:block;color:#425a6d;font-size:10px;font-weight:800}.limits small{display:block;font-size:10px;line-height:1.35;color:#7b8c99;margin-top:2px}.hint{font-size:11px;color:#63788b;line-height:1.45;margin-top:9px;min-height:45px;overflow-wrap:anywhere}.mini-select{width:100%;margin-top:9px;padding:7px 8px;font-size:12px}
+.explain-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:12px;margin-top:14px}.insight{padding:15px 17px}.insight h2{font-size:15px}.insight p{margin:7px 0 0;font-size:13px;color:#51667a}.case-note{border-left:2px solid #a9c2d2;padding:2px 0 2px 10px!important;color:#61778a!important;font-size:12px!important;line-height:1.5;overflow-wrap:anywhere}.case-state{font-size:12px!important;color:#3f596e!important;background:#f7fafc;border:1px solid #e7edf1;border-radius:9px;padding:9px 10px!important;margin-top:10px!important;line-height:1.5!important;overflow-wrap:anywhere}.mobile-forces{display:none}.mobile-force-item{display:flex;align-items:flex-start;gap:7px;min-width:0;border:1px solid #e6edf1;border-radius:8px;padding:7px 8px;background:#fff}.mobile-force-dot{width:8px;height:8px;flex:0 0 8px;border-radius:50%;margin-top:4px}.mobile-force-copy{min-width:0;overflow-wrap:anywhere}.mobile-force-copy strong{display:block;font-size:11px;line-height:1.3}.mobile-force-copy small{display:block;font-size:10px;line-height:1.35;color:#6b7f90;margin-top:2px}.comp-status{display:flex;gap:10px;align-items:flex-start}.comp-symbol{font-size:18px;color:#327aa8;line-height:1}.comp-status strong{font-size:13px;display:block}.comp-status span{font-size:12px;color:var(--muted);display:block;margin-top:3px}.chem{margin-top:14px;overflow:hidden}.chem summary{cursor:pointer;list-style:none;padding:14px 17px;font-size:14px;font-weight:800;display:flex;justify-content:space-between;align-items:center}.chem summary::-webkit-details-marker{display:none}.chem summary:after{content:'＋';font-size:18px;color:#698096}.chem[open] summary:after{content:'−'}.chem-content{border-top:1px solid var(--line);padding:13px 17px 16px}.lab-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.lab label{display:block;font-size:11px;font-weight:750;color:#536a7e;margin-bottom:4px}.lab input{width:100%;border:1px solid #ccd8e1;border-radius:8px;padding:8px 9px;font-variant-numeric:tabular-nums}.lab-note{color:#798a99;font-size:11px;margin:10px 0 0}.ag-summary{display:flex;gap:9px;flex-wrap:wrap;margin-top:11px}.ag-pill{background:#f5f8fa;border:1px solid #e1e9ef;border-radius:9px;padding:8px 11px;font-size:12px}.ag-pill strong{font-size:14px}.foot{color:#7a8a98;font-size:11px;margin:15px 3px 0}.reset-row{display:flex;justify-content:flex-end;margin-top:12px}.quiet{font-size:11px;color:#7d8b98}
+input:focus-visible,select:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid #b4d7ed;outline-offset:2px}
+@media(max-width:960px){.controls{grid-template-columns:repeat(2,minmax(0,1fr))}.force-desc,.hint{min-height:0}.time-control{max-width:none}}
+@media(max-width:800px){.controls{grid-template-columns:1fr}.explain-grid{grid-template-columns:1fr}.outputs{grid-template-columns:repeat(2,minmax(0,1fr))}.stage svg{min-height:220px}.scenario{width:100%}}
+@media(max-width:700px){#forceSvg>text,#arrows text,#forceSvg g[transform="translate(0 0)"] text{display:none}.mobile-forces{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-top:8px}.mobile-force-item{padding:7px 6px}}
+@media(max-width:520px){header{padding:18px 16px}main{padding:0 10px;margin-top:12px}.hero{padding:12px}.stage svg{min-height:0}.outputs{gap:6px}.metric{padding:8px}.metric .mvalue{font-size:19px}.scenario{align-items:stretch;flex-wrap:wrap}.scenario select{flex:1;width:100%}.scenario button{flex:1}.time-control{padding:9px}.card-head{gap:7px;flex-wrap:wrap}.tag{font-size:10px}.lab-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.lab:last-child{grid-column:span 2}.stage-note{font-size:10px}.time-marks{gap:3px;font-size:9px}.time-marks span{overflow-wrap:anywhere}.time-ends{font-size:9px;gap:8px}.limits{gap:8px}.force-card{padding:13px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <div class="eyebrow">Interactive physiology model</div>
+  <h1>Acid–Base Force Field</h1>
+  <p>Change a cause, move through time, and watch the pH balance respond. Arrows show each process’s relative contribution to pH—not literal physical forces.</p>
+</header>
+<main>
+  <div class="toolbar">
+    <div class="scenario">
+      <select id="scenario" aria-label="Choose a teaching scenario">
+        <option value="normal">Normal reference</option>
+        <option value="dka">DKA · metabolic acidosis</option>
+        <option value="copd">COPD · chronic CO₂ retention</option>
+        <option value="vomiting">Vomiting · metabolic alkalosis</option>
+        <option value="lactate">Lactic acidosis</option>
+        <option value="diuretic">Diuretic · alkalosis + low K⁺</option>
+        <option value="salicylate">Salicylate · mixed disorder</option>
+      </select>
+      <button class="primary" id="loadScenario" type="button">Load case</button>
+      <button id="reset" type="button">Reset</button>
+    </div>
+    <div class="time-control">
+      <div class="time-top"><label for="time">Time since disturbance began</label><span class="time-read" id="timeLabel">6 hours</span></div>
+      <input type="range" id="time" min="0" max="8" step="1" value="5" aria-label="Time since disturbance began">
+      <div class="time-marks"><span>0 min</span><span>15 min</span><span>1 h</span><span>24 h</span><span>5 days</span></div><div class="time-ends"><span>EARLIER · LESS COMPENSATION</span><span>LATER · MORE COMPENSATION</span></div><div class="time-hint" id="timeHint">Earlier = less compensation; later = more ventilatory and renal adaptation.</div>
+    </div>
+  </div>
+
+  <section class="card hero" aria-labelledby="balanceTitle">
+    <div class="card-head">
+      <div><h2 id="balanceTitle">The pH balance</h2><p class="sub">Acidifying influences enter from the left; alkalinizing influences enter from the right.</p></div>
+      <span id="pHStatus" class="tag normal">Normal pH</span>
+    </div>
+    <div class="stage">
+      <svg id="forceSvg" viewBox="0 0 900 360" role="img" aria-label="A central pH ball with arrows showing the relative acidifying and alkalinizing contributions from respiratory, metabolic, acid-load and compensation processes">
+        <defs>
+          <radialGradient id="ballGradient" cx="32%" cy="25%" r="78%"><stop id="ballStop1" offset="0%" stop-color="#d5eee2"/><stop id="ballStop2" offset="100%" stop-color="#84c8ad"/></radialGradient>
+          <filter id="ballShadow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur in="SourceAlpha" stdDeviation="10"/><feOffset dy="5"/><feComponentTransfer><feFuncA type="linear" slope=".17"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <marker id="arrowAcid" markerWidth="7" markerHeight="7" refX="5.4" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#c95c60"/></marker>
+          <marker id="arrowBase" markerWidth="7" markerHeight="7" refX="5.4" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#318a7b"/></marker>
+          <marker id="arrowNeutral" markerWidth="7" markerHeight="7" refX="5.4" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="#9baab5"/></marker>
+          <linearGradient id="axisGradient"><stop offset="0" stop-color="#cb6565"/><stop offset=".48" stop-color="#b7c8bf"/><stop offset=".55" stop-color="#a6ccb9"/><stop offset="1" stop-color="#5d9ed0"/></linearGradient>
+        </defs>
+        <text x="20" y="27" font-size="11" font-weight="800" letter-spacing="1.1" fill="#b65a5d">ACIDIFIES · pH DOWN</text>
+        <text x="880" y="27" text-anchor="end" font-size="11" font-weight="800" letter-spacing="1.1" fill="#367f9d">ALKALINIZES · pH UP</text>
+        <line x1="18" y1="42" x2="882" y2="42" stroke="#e5ebef" stroke-width="1"/>
+        <g id="arrows"></g>
+        <circle cx="450" cy="177" r="86" fill="none" stroke="#d9e4e8" stroke-width="1" stroke-dasharray="3 7"/>
+        <circle cx="450" cy="177" r="72" fill="url(#ballGradient)" stroke="#ffffff" stroke-width="3" filter="url(#ballShadow)"/>
+        <ellipse cx="427" cy="150" rx="23" ry="12" fill="#ffffff" opacity=".3" transform="rotate(-26 427 150)"/>
+        <text x="450" y="164" text-anchor="middle" font-size="11" letter-spacing="1.5" font-weight="800" fill="#315466">pH</text>
+        <text id="orbPH" x="450" y="198" text-anchor="middle" font-size="31" font-weight="850" letter-spacing="-1.2" fill="#1d3b4b">7.40</text>
+        <text id="orbDescription" x="450" y="222" text-anchor="middle" font-size="10" font-weight="700" fill="#315466">IN BALANCE</text>
+        <g transform="translate(0 0)">
+          <rect x="225" y="288" width="450" height="35" rx="17.5" fill="#eef3f5" stroke="#e3eaee"/>
+          <rect id="pHBar" x="225" y="288" width="225" height="35" rx="17.5" fill="url(#axisGradient)" opacity=".94"/>
+          <line x1="431.25" y1="283" x2="431.25" y2="328" stroke="#fff" stroke-width="2" opacity=".9"/>
+          <line x1="468.75" y1="283" x2="468.75" y2="328" stroke="#fff" stroke-width="2" opacity=".9"/>
+          <circle id="pHThumb" cx="450" cy="305.5" r="7" fill="#20364a" stroke="#fff" stroke-width="2"/>
+          <text x="225" y="344" font-size="10" fill="#7e8b97">6.8 · ACIDEMIA</text>
+          <text x="450" y="344" text-anchor="middle" font-size="10" fill="#627f72">7.35–7.45 · NORMAL</text>
+          <text x="675" y="344" text-anchor="end" font-size="10" fill="#6389a4">ALKALEMIA · 8.0</text>
+        </g>
+      </svg>
+    </div>
+    <div class="stage-note"><span><i class="dot" style="background:#c95c60"></i>Red arrow = lowers pH</span><span><i class="dot" style="background:#318a7b"></i>Teal arrow = raises pH</span><span>Longer / stronger arrows = larger modeled pH contribution</span></div>
+    <div class="mobile-forces" id="mobileForces" aria-label="Labeled force contributions for narrow screens"></div>
+    <div class="outputs">
+      <div class="metric"><div class="mlabel">Modeled pH</div><div class="mvalue" id="outPH">7.40</div><div class="mnote" id="outPHnote">Normal reference</div></div>
+      <div class="metric"><div class="mlabel">PaCO₂</div><div class="mvalue"><span id="outCO2">40</span> <span class="munit">mmHg</span></div><div class="mnote" id="outCO2note">Respiratory component</div></div>
+      <div class="metric"><div class="mlabel">HCO₃⁻ pool</div><div class="mvalue"><span id="outHCO3">24.0</span> <span class="munit">mEq/L</span></div><div class="mnote">Includes modeled compensation</div></div>
+      <div class="metric"><div class="mlabel">Net pH shift</div><div class="mvalue" id="outShift">0.00</div><div class="mnote">Compared with pH 7.40 baseline</div></div>
+    </div>
+  </section>
+
+  <section class="controls" aria-label="Adjust the contributing processes">
+    <article class="card force-card resp">
+      <div class="force-title"><span class="force-icon">CO₂</span><h3>1. Respiratory drive</h3></div>
+      <p class="force-desc">Change ventilation. CO₂ retention acidifies; blowing off CO₂ alkalinizes.</p>
+      <div class="slider-head"><label for="resp">Primary PaCO₂ shift</label><span class="current" id="respValue">0 mmHg</span></div>
+      <input type="range" id="resp" min="-25" max="60" step="1" value="0">
+      <div class="limits"><span><strong>LESS CO₂</strong><small>More ventilation · pH tends ↑</small></span><span><strong>MORE CO₂</strong><small>Less ventilation · pH tends ↓</small></span></div>
+      <div class="hint" id="respHint">Primary PaCO₂ before metabolic compensation: 40 mmHg.</div>
+    </article>
+    <article class="card force-card met">
+      <div class="force-title"><span class="force-icon">HCO₃</span><h3>2. Metabolic base pool</h3></div>
+      <p class="force-desc">Shift bicarbonate through GI loss, renal handling, alkali gain, or other metabolic processes.</p>
+      <div class="slider-head"><label for="met">Primary ΔHCO₃⁻</label><span class="current" id="metValue">0 mEq/L</span></div>
+      <input type="range" id="met" min="-18" max="18" step="1" value="0">
+      <div class="limits"><span><strong>LESS HCO₃⁻</strong><small>Less base · pH tends ↓</small></span><span><strong>MORE HCO₃⁻</strong><small>More base · pH tends ↑</small></span></div>
+      <div class="hint" id="metHint">Primary bicarbonate pool before acid burden: 24 mEq/L.</div>
+    </article>
+    <article class="card force-card acid">
+      <div class="force-title"><span class="force-icon">H⁺</span><h3>3. Fixed acid burden</h3></div>
+      <p class="force-desc">Model additional acid that consumes bicarbonate buffer, such as lactate, ketones, or retained renal acids.</p>
+      <div class="slider-head"><label for="acid">Buffer consumed</label><span class="current" id="acidValue">0 mEq/L</span></div>
+      <input type="range" id="acid" min="0" max="18" step="1" value="0">
+      <div class="limits"><span><strong>LESS ADDED ACID</strong><small>Less buffer consumed · pH tends ↑</small></span><span><strong>MORE ADDED ACID</strong><small>More buffer consumed · pH tends ↓</small></span></div>
+      <select class="mini-select" id="acidSource" aria-label="Type of fixed acid burden"><option value="none">Source: none</option><option value="lactate">Source: lactate / shock</option><option value="ketones">Source: ketones / DKA</option><option value="renal">Source: retained renal acids</option><option value="other">Source: other fixed acids</option></select>
+      <div class="hint" id="acidHint">This is an illustrative bicarbonate-equivalent burden, not a conversion from lactate level.</div>
+    </article>
+  </section>
+
+  <section class="explain-grid">
+    <article class="card insight">
+      <h2>What the forces are doing</h2>
+      <p id="caseNote" class="case-note">Baseline: PaCO₂ 40 mmHg and HCO₃⁻ 24 mEq/L, with no added fixed-acid burden.</p>
+      <p id="interpretation">With all primary inputs at baseline, respiratory and metabolic influences are balanced.</p>
+      <p class="quiet" id="mixNote">A normal pH alone does not exclude opposing disorders.</p><p class="case-state" id="caseState">Current setting: respiratory and metabolic inputs are near baseline.</p>
+    </article>
+    <article class="card insight">
+      <div class="comp-status"><span class="comp-symbol">◷</span><div><strong>Compensation over time</strong><span id="timeExplain">Ventilatory compensation is fast; kidney adaptation to a respiratory disturbance develops over days.</span></div></div>
+      <p id="compExplain">At the selected time, secondary responses offset part of the primary disturbance.</p>
+    </article>
+  </section>
+
+  <details class="card chem" id="chemistry">
+    <summary>Additional chemistry clues <span class="quiet" style="font-weight:500;margin-left:8px">Na⁺ · Cl⁻ · K⁺ · albumin · lactate</span></summary>
+    <div class="chem-content">
+      <div class="lab-grid">
+        <div class="lab"><label for="na">Sodium · mEq/L</label><input id="na" type="number" min="80" max="200" step="1" value="140"></div>
+        <div class="lab"><label for="cl">Chloride · mEq/L</label><input id="cl" type="number" min="40" max="160" step="1" value="104"></div>
+        <div class="lab"><label for="k">Potassium · mEq/L</label><input id="k" type="number" min="1" max="10" step="0.1" value="4.0"></div>
+        <div class="lab"><label for="albumin">Albumin · g/dL</label><input id="albumin" type="number" min="0.1" max="7" step="0.1" value="4.0"></div>
+        <div class="lab"><label for="lactate">Measured lactate · mmol/L</label><input id="lactate" type="number" min="0" max="30" step="0.1" value="1.0"></div>
+      </div>
+      <div class="ag-summary">
+        <div class="ag-pill">Calculated anion gap* <strong id="ag">12</strong> mEq/L</div>
+        <div class="ag-pill">Albumin-corrected gap <strong id="agCorrected">12</strong> mEq/L</div>
+        <div class="ag-pill">Potassium <strong id="kRead">4.0</strong> mEq/L</div>
+      </div>
+      <p class="lab-note">*Uses the model's final HCO₃⁻ pool in AG = Na⁺ − (Cl⁻ + HCO₃⁻). The measured lactate is contextual information; it does not automatically change the acid-burden slider. Avoid counting the same acid process twice when recreating a real patient.</p>
+    </div>
+  </details>
+  <div class="reset-row"><span class="quiet">Teaching model · adjust one force at a time, then add a second process.</span></div>
+  <p class="foot">Model: pH = 6.1 + log₁₀(HCO₃⁻ / (0.03 × PaCO₂)). Arrow contributions are calculated as changes in log pH relative to a 24 mEq/L bicarbonate and 40 mmHg CO₂ baseline, then displayed as a force-field metaphor. Compensation follows simplified rules (Winter’s formula for metabolic acidosis; approximate expected CO₂ for metabolic alkalosis; acute-to-chronic bicarbonate response to respiratory changes). This is not a validated clinical calculator, kinetic simulator, or substitute for measured blood gases and clinical judgment.</p>
+</main>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id);
+const normal={resp:0,met:0,acid:0,time:5,source:'none',na:140,cl:104,k:4,albumin:4,lactate:1};
+const timepoints=[
+ {label:'0 minutes',vent:0,renal:0},
+ {label:'5 minutes',vent:.30,renal:0},
+ {label:'15 minutes',vent:.60,renal:0},
+ {label:'30 minutes',vent:.78,renal:.01},
+ {label:'1 hour',vent:.92,renal:.03},
+ {label:'6 hours',vent:1,renal:.08},
+ {label:'24 hours',vent:1,renal:.33},
+ {label:'3 days',vent:1,renal:.90},
+ {label:'5 days',vent:1,renal:1}
+];
+const cases={
+ normal:{...normal,note:'Baseline: the model begins with PaCO₂ 40 mmHg, HCO₃⁻ 24 mEq/L, and no added fixed-acid burden.'},
+ dka:{resp:0,met:0,acid:16,time:5,source:'ketones',na:137,cl:99,k:5.4,albumin:4,lactate:1.8,note:'DKA pattern: ketoacid burden consumes bicarbonate, raising the anion gap. Ventilatory compensation lowers PaCO₂. Change the time setting to see the respiratory response develop.'},
+ copd:{resp:28,met:0,acid:0,time:8,source:'none',na:140,cl:99,k:4.2,albumin:3.6,lactate:1.3,note:'Chronic CO₂ retention: the respiratory process pushes pH down, while buffering and renal adaptation gradually raise bicarbonate. Change to 0 minutes to contrast the acute pattern.'},
+ vomiting:{resp:0,met:12,acid:0,time:5,source:'none',na:136,cl:88,k:3.1,albumin:4,lactate:1.0,note:'Vomiting: loss of gastric acid produces a higher bicarbonate pool; chloride depletion and low potassium are useful contextual clues. Ventilatory compensation is limited in real patients by oxygenation.'},
+ lactate:{resp:0,met:0,acid:10,time:5,source:'lactate',na:140,cl:101,k:4,albumin:4,lactate:6.5,note:'Lactic acidosis pattern: fixed acid consumes bicarbonate and widens the modeled anion gap. Lactate is a clinical clue; the acid-burden control is a separate schematic input, not a lactate-to-bicarbonate conversion.'},
+ diuretic:{resp:0,met:10,acid:0,time:5,source:'none',na:138,cl:92,k:2.8,albumin:4,lactate:1.1,note:'Diuretic-associated alkalosis: a larger base pool raises pH; low chloride and low potassium commonly accompany the clinical pattern. The chosen case is illustrative, not a diagnostic rule.'},
+ salicylate:{resp:-9,met:0,acid:10,time:5,source:'other',na:140,cl:105,k:3.7,albumin:4,lactate:2.2,note:'Mixed salicylate-like pattern: fixed acid lowers bicarbonate while a separate primary respiratory alkalosis lowers CO₂. The pH may be alkalemic despite a real metabolic acidosis; suspected toxicity is an emergency.'}
+};
+function num(id, fallback=0){const x=Number($(id).value);return Number.isFinite(x)?x:fallback}
+function clamp(x,min,max){return Math.max(min,Math.min(max,x))}
+function log10(x){return Math.log(x)/Math.LN10}
+function fmt(x,d=1){return Number(x).toFixed(d)}
+function signed(x,d=1){return (x>0?'+':'')+Number(x).toFixed(d)}
+function setTag(ph){const t=$('pHStatus');if(ph<7.35){t.textContent='Acidemia';t.className='tag acid'}else if(ph>7.45){t.textContent='Alkalemia';t.className='tag alk'}else{t.textContent='Normal pH range';t.className='tag normal'}}
+function render(){
+ let respShift=num('resp'),metShift=num('met'),acidWanted=num('acid'),tp=timepoints[Number($('time').value)||0];
+ const primaryCO2=clamp(40+respShift,10,100), hBase=clamp(24+metShift,4,50);
+ const maxAcid=Math.max(0,Math.floor(hBase-2));$('acid').max=String(Math.min(18,maxAcid));
+ if(acidWanted>maxAcid){$('acid').value=String(maxAcid);acidWanted=maxAcid}
+ const acid=acidWanted,hAfterAcid=clamp(hBase-acid,2,50);
+ let targetCO2=40,targetText='No material metabolic ventilatory target';
+ if(hAfterAcid<22){targetCO2=1.5*hAfterAcid+8;targetText='Winter target ≈ '+fmt(targetCO2,1)+' ± 2 mmHg'}
+ else if(hAfterAcid>26){targetCO2=40+0.7*(hAfterAcid-24);targetText='Approx. alkalosis target ≈ '+fmt(targetCO2,1)+' mmHg'}
+ const ventDelta=(targetCO2-40)*tp.vent;
+ const finalCO2=clamp(primaryCO2+ventDelta,5,150);
+ const renalProgress=tp.renal;
+ const renalCoefficient=respShift>=0 ? 0.10+(0.35-0.10)*renalProgress : 0.20+(0.45-0.20)*renalProgress;
+ const renalDelta=respShift*renalCoefficient;
+ const finalHCO3=clamp(hAfterAcid+renalDelta,2,80);
+ const pH=6.1+log10(finalHCO3/(0.03*finalCO2));
+ let shift=pH-7.40103; if(Math.abs(shift)<0.005) shift=0;
+ const components=[
+   {id:'resp',label:'Respiratory drive',short:'CO₂ drive',value:-log10(primaryCO2/40),kind:'resp'},
+   {id:'met',label:'Metabolic base pool',short:'Base pool',value:log10(hBase/24),kind:'met'},
+   {id:'acid',label:'Fixed acid burden',short:'Fixed acid',value:log10(hAfterAcid/hBase),kind:'acid'},
+   {id:'renal',label:'Buffer + renal adaptation',short:'Buffer / kidneys',value:log10(finalHCO3/hAfterAcid),kind:'renal'},
+   {id:'vent',label:'Ventilatory compensation',short:'Ventilation',value:-log10(finalCO2/primaryCO2),kind:'vent'}
+ ];
+ // The SVG stages all influences at the pH sphere. Length and opacity encode the component's absolute log-pH contribution.
+ const leftSlots=[112,146,180,214,246],rightSlots=[112,146,180,214,246];let left=0,right=0;
+ const targetCoord=(side,y)=>{const dy=y-177;const xx=Math.sqrt(Math.max(0,72*72-dy*dy));return side==='left'?450-xx:450+xx};
+ let arrowMarkup='';
+ components.forEach(c=>{
+   const sign=c.value<-0.004?-1:c.value>0.004?1:0;
+   const neutralSide={resp:'left',met:'right',acid:'left',renal:'right',vent:'left'}[c.kind];
+   const side=sign<0?'left':sign>0?'right':neutralSide;
+   const slot=side==='left'?leftSlots[Math.min(left++,leftSlots.length-1)]:rightSlots[Math.min(right++,rightSlots.length-1)];
+   const y=slot;const target=targetCoord(side,y);const mag=Math.abs(c.value);
+   const length=mag<0.006?24:clamp(18+mag*500,18,190);
+   const start=side==='left'?target-length:target+length;
+   const color=sign<0?'#c95c60':sign>0?'#318a7b':'#9baab5';
+   const opacity=sign===0?.23:clamp(.19+mag*2.0,.2,.88);
+   const width=sign===0?1.1:clamp(1.2+mag*9,1.4,4.6);
+   const marker=sign<0?'url(#arrowAcid)':sign>0?'url(#arrowBase)':'url(#arrowNeutral)';
+   const x1=clamp(start,90,810),x2=target;
+   const edgeAnchor=side==='left'?'start':'end';
+   const labX=side==='left'?18:882;
+   const labColor=sign<0?'#b9585d':sign>0?'#287e72':'#7b8c99';
+   const impact=(sign===0?'≈0':signed(c.value,2)+' pH');
+   arrowMarkup+=`<g opacity="${opacity.toFixed(2)}"><line x1="${x1.toFixed(1)}" y1="${y}" x2="${x2.toFixed(1)}" y2="${y}" stroke="${color}" stroke-width="${width.toFixed(1)}" stroke-linecap="round" marker-end="${marker}"/><circle cx="${side==='left'?x1:x1}" cy="${y}" r="${Math.max(2,width)}" fill="${color}"/></g>`;
+   arrowMarkup+=`<text x="${labX}" y="${y-7}" text-anchor="${edgeAnchor}" font-size="11" font-weight="800" fill="${labColor}">${c.short}</text><text x="${labX}" y="${y+9}" text-anchor="${edgeAnchor}" font-size="10" fill="#738394">${impact}</text>`;
+ });
+ $('arrows').innerHTML=arrowMarkup;
+ $('mobileForces').innerHTML=components.map(c=>{const sign=c.value<-0.004?-1:c.value>0.004?1:0;const color=sign<0?'#c95c60':sign>0?'#318a7b':'#9baab5';const direction=sign<0?'↓ pH tendency':sign>0?'↑ pH tendency':'Near zero';const impact=sign===0?'≈ 0 contribution':signed(c.value,2)+' contribution';return `<div class="mobile-force-item"><i class="mobile-force-dot" style="background:${color}"></i><div class="mobile-force-copy"><strong>${c.short}</strong><small>${direction} · ${impact}</small></div></div>`}).join('');
+ // Ball palette follows the resulting pH. Keep the normal state deliberately quiet.
+ let c1,c2,ballText,descr;
+ if(pH<7.35){c1='#f5d9d6';c2='#d77e78';ballText='#6f292a';descr='ACIDEMIA'}
+ else if(pH>7.45){c1='#d7eafa';c2='#79add7';ballText='#204f73';descr='ALKALEMIA'}
+ else{c1='#d5eee2';c2='#84c8ad';ballText='#1d3b4b';descr='IN BALANCE'}
+ $('ballStop1').setAttribute('stop-color',c1);$('ballStop2').setAttribute('stop-color',c2);$('orbPH').setAttribute('fill',ballText);$('orbDescription').setAttribute('fill',ballText);$('orbPH').textContent=fmt(pH,2);$('orbDescription').textContent=descr;
+ const pHX=clamp(225+(pH-6.8)/1.2*450,225,675);$('pHThumb').setAttribute('cx',String(pHX));$('pHBar').setAttribute('width',String(pHX-225));
+ $('outPH').textContent=fmt(pH,2);$('outPHnote').textContent=pH<7.35?'Acidemia':pH>7.45?'Alkalemia':'Within usual pH range';$('outCO2').textContent=fmt(finalCO2,1);$('outHCO3').textContent=fmt(finalHCO3,1);$('outShift').textContent=signed(shift,2);setTag(pH);
+ $('respValue').textContent=signed(respShift,0)+' mmHg';$('metValue').textContent=signed(metShift,0)+' mEq/L';$('acidValue').textContent=fmt(acid,0)+' mEq/L';
+ $('respHint').textContent='Now: PaCO₂ '+fmt(primaryCO2,0)+' mmHg before compensation (reference 40). Move left: CO₂ falls and pH tends up. Move right: CO₂ rises and pH tends down.';
+ $('metHint').textContent='Now: HCO₃⁻ base pool '+fmt(hBase,1)+' mEq/L before added acid (reference 24). Move left: less base, pH tends down. Move right: more base, pH tends up.';
+ $('acidHint').textContent='Now: '+fmt(acid,0)+' mEq/L modeled acid burden; HCO₃⁻ before compensation changes from '+fmt(hBase,1)+' to '+fmt(hAfterAcid,1)+'. Move left for less added acid; move right for more acid and more buffer consumed.';
+ $('timeLabel').textContent=tp.label;
+ $('timeHint').textContent='At '+tp.label+': modeled ventilatory response '+Math.round(tp.vent*100)+'% developed; renal adaptation '+Math.round(tp.renal*100)+'% of its chronic response. Moving right increases time and allows more compensation.';
+ // Interpret primary processes separately from compensatory arrows.
+ const primaryResp=Math.abs(respShift)>=6, primaryMet=Math.abs(metShift)>=4, fixedAcid=acid>=3;
+ let lines=[];
+ if(!primaryResp&&!primaryMet&&!fixedAcid) lines.push('Primary inputs are near baseline. The pH ball stays near the center because the CO₂ and bicarbonate ratio is close to normal.');
+ if(primaryResp) lines.push(respShift>0?'The primary respiratory shift retains CO₂, adding an acidifying pull.':'The primary respiratory shift lowers CO₂, adding an alkalinizing pull.');
+ if(primaryMet) lines.push(metShift<0?'The metabolic base pool is smaller, pulling pH downward.':'The metabolic base pool is larger, pulling pH upward.');
+ if(fixedAcid) lines.push('The fixed-acid burden consumes bicarbonate buffer, pulling pH downward and generally widening the anion gap if chloride and sodium stay similar.');
+ if(!primaryResp&&!primaryMet&&!fixedAcid) lines.push('Move one slider first to see its direction, then add a second process to create a mixed picture.');
+ $('interpretation').textContent=lines.join(' ');
+ const caseKey=$('scenario').value;
+ $('caseNote').textContent=(cases[caseKey]&&cases[caseKey].note)||'Custom mixture: compare the arrows and use the left/right slider labels to predict the direction of change.';
+ const caseTitle=$('scenario').selectedOptions[0]?.textContent||'Custom mixture';
+ const respDesc=respShift>0?'PaCO₂ higher by '+fmt(respShift,0)+' mmHg':respShift<0?'PaCO₂ lower by '+fmt(Math.abs(respShift),0)+' mmHg':'PaCO₂ at reference';
+ const metDesc=metShift>0?'base pool higher by '+fmt(metShift,0)+' mEq/L':metShift<0?'base pool lower by '+fmt(Math.abs(metShift),0)+' mEq/L':'base pool at reference';
+ const acidDesc=acid>0?fmt(acid,0)+' mEq/L added acid consumes modeled bicarbonate':'no additional fixed acid added';
+ const timeDesc='at '+tp.label+', compensation is '+Math.round(tp.vent*100)+'% developed for ventilation and '+Math.round(tp.renal*100)+'% for renal adaptation';
+ $('caseState').textContent=caseTitle+' → '+respDesc+'; '+metDesc+'; '+acidDesc+'; '+timeDesc+'. Rightward movement increases that slider’s named quantity; use its endpoint labels to see the expected pH direction.';
+ const mixed=(primaryResp&&(primaryMet||fixedAcid)) || (fixedAcid&&primaryMet);
+ $('mixNote').textContent=mixed?'Mixed primary inputs are active. A near-normal pH can still hide opposing processes; inspect each arrow, not only the final number.':'The final pH is the net result. Opposing arrows can offset one another, so a normal-looking pH does not by itself exclude a mixed disorder.';
+ const compLines=[];
+ if(primaryResp){
+   const acuteCoeff=respShift>=0?.10:.20, chronicCoeff=respShift>=0?.35:.45;
+   const acuteH=24+respShift*acuteCoeff, chronicH=24+respShift*chronicCoeff;
+   compLines.push('For the respiratory shift, the illustrative bicarbonate response progresses from about '+fmt(acuteH,1)+' mEq/L with acute buffering toward '+fmt(chronicH,1)+' mEq/L with chronic adaptation.');
+ }
+ if(hAfterAcid<22 || hAfterAcid>26){
+   compLines.push(targetText+'. Modeled PaCO₂ is '+fmt(finalCO2,1)+' mmHg.');
+   const diff=finalCO2-targetCO2;
+   if(tp.vent>.8 && Math.abs(diff)>2.5) compLines.push(diff<0?'CO₂ is lower than the expected compensation target, suggesting an additional respiratory-alkalosis component in this simplified model.':'CO₂ is higher than the expected compensation target, suggesting an additional respiratory-acidosis component in this simplified model.');
+   else if(tp.vent>.8) compLines.push('CO₂ is close to the expected compensatory target in this simplified model.');
+ } else if(!primaryResp) compLines.push('No major respiratory or metabolic disturbance has been set, so there is little compensatory response to display.');
+ if(!compLines.length)compLines.push('Secondary responses are limited at this time point. Use the time slider to compare immediate buffering, early ventilation, and slower kidney adaptation.');
+ $('compExplain').textContent=compLines.join(' ');
+ const renalWord=tp.renal<.1?'Kidney adaptation is still near its early phase.':tp.renal<.8?'Renal adaptation is developing.':'Renal adaptation is near its chronic plateau.';
+ const ventWord=tp.vent<.5?'The ventilatory response is still building.':tp.vent<1?'The ventilatory response is mostly developed.':'The rapid ventilatory response is modeled as complete.';
+ $('timeExplain').textContent=ventWord+' '+renalWord;
+ // Chemistry clue readouts use modeled final bicarbonate, but do not feed back into acid-load control.
+ const na=num('na',140),cl=num('cl',104),k=num('k',4),alb=num('albumin',4),lac=num('lactate',1);
+ const ag=na-(cl+finalHCO3),agc=ag+2.5*(4-alb);
+ $('ag').textContent=fmt(ag,1);$('agCorrected').textContent=fmt(agc,1);$('kRead').textContent=fmt(k,1);
+ const scenarioObj=cases[$('scenario').value];
+ if(scenarioObj && scenarioObj.note){ $('loadScenario').title=scenarioObj.note; }
+}
+function sourceName(source){return ({none:'no added fixed acids',lactate:'lactate-like acids',ketones:'ketoacids',renal:'retained renal acids',other:'other fixed acids'})[source]||'fixed acids'}
+function applyCase(key){const c=cases[key]||cases.normal;for(const id of ['resp','met','acid','time','na','cl','k','albumin','lactate']) if(c[id]!==undefined)$(id).value=String(c[id]);$('acidSource').value=c.source||'none';$('scenario').value=key;render();}
+['resp','met','acid','time','acidSource','na','cl','k','albumin','lactate'].forEach(id=>$(id).addEventListener('input',render));
+$('loadScenario').addEventListener('click',()=>applyCase($('scenario').value));
+$('scenario').addEventListener('change',()=>applyCase($('scenario').value));
+$('reset').addEventListener('click',()=>applyCase('normal'));
+render();
+})();
+</script>
+</body>
+</html>
