@@ -1,0 +1,177 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fascicular Axis Lab v6 — refined bundle-branch morphology</title><style>
+:root{font-family:Inter,system-ui,Arial,sans-serif;color:#e7edf9;background:#0a1020}*{box-sizing:border-box}body{margin:0}header{padding:28px max(20px,calc((100vw - 1200px)/2));background:linear-gradient(110deg,#172d50,#101a31);border-bottom:1px solid #30415b}h1{margin:0;font-size:2rem}h2{margin:0 0 14px;font-size:1.25rem}p{line-height:1.55;color:#c0cee2}.sub{color:#9fd4ee}.wrap{max-width:1200px;margin:auto;padding:24px 18px 60px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.card{background:#141f34;border:1px solid #34455f;border-radius:16px;padding:20px;margin-bottom:18px}.wide{grid-column:1/-1}.pill{display:inline-block;border-radius:20px;padding:6px 11px;background:#273a54;color:#b8e6ff;font-size:.83rem;margin:3px}button,select,input{font:inherit}button{background:#2476c8;color:white;border:0;border-radius:9px;padding:10px 14px;cursor:pointer;margin:4px 4px 4px 0}button:hover{background:#3998e8}.secondary{background:#30425b}.success{background:#117b63}.danger{background:#8d4654}input,select{background:#0b1426;color:#eef4ff;border:1px solid #49617f;border-radius:8px;padding:9px;max-width:100%}input[type=number]{width:88px}label{display:inline-flex;align-items:center;gap:8px;margin:7px 12px 7px 0}.muted{color:#9cafc7}.readout{font-size:2rem;font-weight:800;color:#75dbf0}.warn{color:#ffd18b}.ok{color:#8de7ba}.bad{color:#ff9f9f}svg{width:100%;height:auto}.axisbox{max-width:510px;margin:auto}.strip{background:#f7fafc;border-radius:9px;overflow:hidden;margin:10px 0}.strip svg{display:block}.small{font-size:.88rem}.result{border-left:4px solid #54cbb6;padding:12px;background:#203047;border-radius:8px;margin-top:12px}details{border-top:1px solid #30435f;padding:10px 0}summary{cursor:pointer;font-weight:700}table{width:100%;border-collapse:collapse;font-size:.93rem}td,th{padding:10px;text-align:left;border-bottom:1px solid #33435b}th{color:#8ad5f5}.hide{display:none}.flex{display:flex;flex-wrap:wrap;align-items:center;gap:9px}.check{display:block}.legend{font-size:.88rem;color:#c8d7e7}footer{font-size:.84rem;color:#a5b4c7;margin-top:20px}@media(max-width:800px){.grid{grid-template-columns:1fr}.wide{grid-column:auto}header{padding:22px}h1{font-size:1.6rem}}
+</style></head><body><header><h1>⚡ Fascicular Axis Lab</h1><p class="sub">Interactive Einthoven / hexaxial circle • net-QRS measurements • blinded synthetic ECG cases • fascicular-block reasoning</p><span class="pill">Offline • single HTML file</span><span class="pill">Teaching simulator, not a diagnostic device</span></header><main class="wrap">
+<section class="card"><h2>1. The anatomy and the rule</h2><div class="grid"><div><svg viewBox="0 0 470 270" role="img" aria-label="Simplified conduction system diagram"><rect x="0" y="0" width="470" height="270" rx="14" fill="#0d192d"/><path d="M230 25 Q195 55 214 105 L210 145" stroke="#8fe4f4" stroke-width="11" fill="none" stroke-linecap="round"/><path d="M210 145 Q150 175 120 230" stroke="#a4bbff" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M210 145 Q260 155 290 210" stroke="#d4b6ff" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M210 145 Q165 105 140 80" stroke="#8ef0bc" stroke-width="8" fill="none" stroke-linecap="round"/><circle cx="210" cy="145" r="11" fill="#fff"/><text x="244" y="40" fill="#dce9fc" font-size="16">His bundle</text><text x="18" y="77" fill="#8ef0bc" font-size="15">Left anterior fascicle</text><text x="294" y="213" fill="#d4b6ff" font-size="15">Left posterior</text><text x="294" y="231" fill="#d4b6ff" font-size="15">fascicle</text><text x="15" y="249" fill="#a4bbff" font-size="15">Right bundle</text></svg></div><div><p><b>LAFB:</b> posterior fascicle conducts first; delayed forces go superiorly and leftward. Look for <b>−45° to −90°</b>, qR in aVL, rS inferiorly, and QRS &lt;120 ms.</p><p><b>LPFB:</b> anterior fascicle conducts first; delayed forces go inferiorly and rightward. Look for <b>+90° to +180°</b>, rS in I/aVL, qR inferiorly, QRS &lt;120 ms, and <b>exclude other right-axis causes</b>.</p><p class="warn"><b>Axis alone never proves a fascicular block.</b> RV hypertrophy, emphysema, infarction, congenital variation and lead misplacement can mimic the axis.</p></div></div></section>
+<div class="grid"><section class="card"><h2>2. Einthoven / hexaxial circle: all 12 vertices</h2><p class="small">The frontal axis uses six limb-lead directions. Green arrow = calculated mean QRS vector. Each lead has positive and negative poles.</p><p class="small"><span style="color:#c5b5ff">■ LAFB range (−45° to −90°)</span> · <span style="color:#ffd8a3">■ LPFB range (+90° to +180°)</span> · <span style="color:#9bdffb">RBBB/LBBB are QRS morphology diagnoses, not fixed axis sectors.</span></p><div class="axisbox"><svg id="circle" viewBox="0 0 440 440" aria-label="Hexaxial ECG reference circle"></svg></div><p id="axisSummary" class="result">Enter lead measurements to see the vector.</p></section><section class="card"><h2>3. Measure QRS and estimate axis</h2><p>Use the largest representative beat. Count millimeters above and below baseline. <b>Net QRS = R − |Q| − |S|.</b> For an R-only complex, Q and S are zero.</p><div id="measureRows"></div><button onclick="compute()">Calculate axis</button><button class="secondary" onclick="loadMeasurements(60)">Normal example</button><button class="secondary" onclick="loadMeasurements(-60)">LAFB example</button><button class="secondary" onclick="loadMeasurements(120)">LPFB example</button><div id="measureResult" class="result">Waiting for measurements.</div><p class="small">Calculation: lead I = X and aVF = Y (orthogonal frontal projections); angle = atan2(Y,X). Lead II is an independent consistency check. This is an <b>estimate</b> from manually measured net amplitudes, not an automated ECG interpretation.</p></section></div>
+<section class="card"><h2>4. Morphology matters: what to check</h2><div class="grid"><div><h3>LAFB checklist</h3><label class="check"><input type="checkbox" id="laf1"> Axis −45° to −90°</label><label class="check"><input type="checkbox" id="laf2"> qR in aVL</label><label class="check"><input type="checkbox" id="laf3"> rS in II, III, aVF</label><label class="check"><input type="checkbox" id="laf4"> QRS &lt;120 ms</label><label class="check"><input type="checkbox" id="laf5"> No convincing alternative cause</label></div><div><h3>LPFB checklist</h3><label class="check"><input type="checkbox" id="lpf1"> Axis +90° to +180°</label><label class="check"><input type="checkbox" id="lpf2"> rS in I and aVL</label><label class="check"><input type="checkbox" id="lpf3"> qR in III/aVF (often II)</label><label class="check"><input type="checkbox" id="lpf4"> QRS &lt;120 ms</label><label class="check"><input type="checkbox" id="lpf5"> Excluded RVH, lateral MI, vertical heart, etc.</label></div></div><button onclick="checkMorph()">Evaluate checklist</button><div id="morphResult" class="result">Check the findings before evaluating.</div></section>
+<section class="card"><h2>5. Blinded ECG + Einthoven challenge</h2><p>These are <b>synthetic, schematic teaching ECGs</b>, not copied patient tracings. The frontal-lead QRS shapes and axes are constructed to be internally consistent. Both the ECG and Einthoven circle appear together. The axis arrow and force annotations stay hidden until you reveal the answer. Enter an axis to preview your own vector.</p><div class="flex"><button onclick="newCase()">New random case</button><button class="secondary" onclick="nextCase()">Next case</button><button class="secondary" onclick="toggleHints()" id="hintBtn">Hide lead labels</button><span id="caseCounter" class="pill"></span></div><div class="grid"><div><div id="caseStrip" class="strip"></div><p class="small">Green ↑ means net positive QRS toward that lead's positive electrode; coral ↓ means net negative (away). The magnitude represents the projection, not a second electrical vector.</p></div><div><h3>Axis alongside the ECG: 30° vertices</h3><svg id="caseCircle" viewBox="0 0 440 440" aria-label="Live hexaxial axis during ECG review"></svg><div class="small">Pale purple: LAFB axis zone. Pale amber: LPFB axis zone. Both require morphology and clinical exclusions.</div><div id="projectionLegend" class="result small">Enter your axis estimate to project its forces onto each lead.</div></div></div><label><input type="checkbox" id="showForces" checked onchange="showCase()"> Overlay positive/negative QRS forces on the ECG (lead names remain visible)</label><p id="caseInfo" class="small muted"></p><div class="flex"><label>Estimated axis <input id="guessAxis" type="number" min="-180" max="180" placeholder="degrees">°</label><label>Pattern <select id="guessPattern"><option value="">Choose</option><option value="normal">Normal axis / no block</option><option value="lafb">LAFB</option><option value="lpfb">LPFB</option><option value="rad">Right axis deviation, not proven LPFB</option><option value="rbbb">RBBB</option><option value="lbbb">LBBB</option><option value="rbbblafb">RBBB + LAFB</option><option value="rbbblpfb">RBBB + LPFB</option><option value="lad">Left axis deviation, not proven LAFB</option></select></label></div><button class="success" onclick="gradeCase()">Check answer and explain</button><button class="secondary" onclick="copyCaseToCalc()">Reveal and send idealized amplitudes to calculator</button><div id="caseFeedback" class="result">Case is blinded. Estimate the axis and choose the interpretation.</div></section>
+<section class="card"><h2>6. Common traps and quick rules</h2><table><thead><tr><th>Finding</th><th>Interpretation</th></tr></thead><tbody><tr><td>I + / aVF +</td><td>Axis 0° to +90°</td></tr><tr><td>I + / aVF −</td><td>Axis −90° to 0°; lead II distinguishes borderline −30°</td></tr><tr><td>I − / aVF +</td><td>Axis +90° to +180°; LPFB only if morphology and exclusions fit</td></tr><tr><td>I − / aVF −</td><td>Extreme axis, not typical isolated LPFB</td></tr><tr><td>RBBB + LAFB or LPFB</td><td>Bifascicular block</td></tr><tr><td>PR prolongation + bifascicular pattern</td><td>Does not alone prove three fascicles are diseased</td></tr><tr><td>QRS ≥120 ms</td><td>Evaluate bundle-branch block; isolated fascicular criteria no longer sufficient</td></tr></tbody></table></section>
+<section class="card"><h2>References and safeguards</h2><p class="small">Teaching criteria: AHA/ACCF/HRS ECG standardization (JACC 2009;53:976–981); ECG Stampede LPFB review; LITFL ECG Library; ECG Pro LAFB criteria. Examples here are <b>synthetic</b> and intentionally simplified, not real ECGs. Axis calculations do not account for calibration errors, artifact, lead misplacement, QRS fragmentation, or clinical context. Confirm diagnoses using the full 12-lead ECG and clinical assessment.</p><p class="small">Sources: <a style="color:#86d5ff" href="https://www.ecgstampede.com/glossary/left-posterior-fascicular-block/" target="_blank">LPFB review</a> · <a style="color:#86d5ff" href="https://litfl.com/left-posterior-fascicular-block-lpfb-ecg-library/" target="_blank">LITFL LPFB</a> · <a style="color:#86d5ff" href="https://www.ecgpro.app/left-anterior-fascicular-block-ecg/" target="_blank">LAFB review</a></p></section><footer>Fascicular Axis Lab v6 • Refined RBBB/LBBB morphology • Correct clinical axis orientation • Blind/reveal practice • Synthetic ECG data only.</footer></main>
+<script>
+const rad=d=>d*Math.PI/180,deg=r=>r*180/Math.PI,round=n=>Math.round(n*10)/10;const leads={I:0,II:60,III:120,aVR:-150,aVL:-30,aVF:90};let angle=60;function vector(a,l,mag=8){return round(mag*Math.cos(rad(a-leads[l])))}
+function axisDiagram(target,a,revealed=true){
+ const cx=220,cy=220,R=126,LR=186,svg=document.getElementById(target);
+ let h=`<circle cx="220" cy="220" r="${R}" fill="#101b30" stroke="#637f9e" stroke-width="2"/>`;
+ function sector(a1,a2,color){let pts=[];for(let t=a1;t<=a2;t+=3)pts.push(`${cx+R*Math.cos(rad(t))},${cy+R*Math.sin(rad(t))}`);pts.push(`${cx+R*Math.cos(rad(a2))},${cy+R*Math.sin(rad(a2))}`);h+=`<polygon points="${cx},${cy} ${pts.join(' ')}" fill="${color}" opacity=".18"/>`}
+ sector(-90,-45,'#b49aff');sector(90,180,'#ffca7d');
+ for(let t=-180;t<180;t+=30){let x=cx+R*Math.cos(rad(t)),y=cy+R*Math.sin(rad(t));h+=`<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#405a78" stroke-width="1"/>`;let tx=cx+146*Math.cos(rad(t)),ty=cy+146*Math.sin(rad(t));h+=`<text x="${tx}" y="${ty}" fill="#7f9ab7" font-size="11" text-anchor="middle" dominant-baseline="middle">${t}°</text>`}
+ for(let [n,t] of Object.entries(leads)){let x=cx+R*Math.cos(rad(t)),y=cy+R*Math.sin(rad(t)),lx=cx+LR*Math.cos(rad(t)),ly=cy+LR*Math.sin(rad(t));h+=`<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="#82a5c9" stroke-width="2"/><rect x="${lx-30}" y="${ly-19}" width="60" height="38" rx="7" fill="#1c3048" stroke="#3a5d7b"/><text x="${lx}" y="${ly-3}" text-anchor="middle" fill="#a5f1cb" font-size="15" font-weight="bold">${n}</text><text x="${lx}" y="${ly+12}" text-anchor="middle" fill="#d5e7f7" font-size="12">${t>0?'+':''}${t}°</text>`}
+ if(a!==null){let x=cx+112*Math.cos(rad(a)),y=cy+112*Math.sin(rad(a));h+=`<line x1="${cx}" y1="${cy}" x2="${x}" y2="${y}" stroke="${revealed?'#5ee0c5':'#ffd17d'}" stroke-width="6"/><circle cx="${x}" cy="${y}" r="7" fill="white"/>`}
+ h+=`<circle cx="${cx}" cy="${cy}" r="5" fill="white"/>`;svg.innerHTML=h;
+}
+function drawCircle(){axisDiagram('circle',angle);document.getElementById('axisSummary').innerHTML=`<span class="readout">${round(angle)}°</span> ${classAxis(angle)}. +90° points down; −90° points up. Shaded zones are suggestive, not diagnostic.`}
+function classAxis(a){if(a>=-30&&a<=90)return 'Normal frontal QRS axis';if(a < -30&&a>=-90)return 'Left axis deviation';if(a>90&&a<=180)return 'Right axis deviation';return 'Extreme axis deviation'}
+const inputs=['I','aVF','II'];document.getElementById('measureRows').innerHTML=inputs.map(n=>`<div><b style="display:inline-block;width:45px">${n}</b><label>R <input id="${n}R" type="number" step="0.5" min="0" value="0"></label><label>Q <input id="${n}Q" type="number" step="0.5" min="0" value="0"></label><label>S <input id="${n}S" type="number" step="0.5" min="0" value="0"></label><span id="${n}net" class="muted"></span></div>`).join('');
+function loadMeasurements(a){for(const n of inputs){let v=vector(a,n);document.getElementById(n+'R').value=Math.max(v,0);document.getElementById(n+'Q').value=0;document.getElementById(n+'S').value=Math.max(-v,0)}compute()}
+function net(n){let r=+document.getElementById(n+'R').value,q=+document.getElementById(n+'Q').value,s=+document.getElementById(n+'S').value;if([r,q,s].some(x=>!Number.isFinite(x)||x<0))throw Error('All amplitudes must be nonnegative numbers');let v=r-q-s;document.getElementById(n+'net').textContent=`Net ${round(v)} mm`;return v}
+function compute(){try{let x=net('I'),y=net('aVF'),ii=net('II');if(Math.hypot(x,y)<.05)throw Error('Both net I and aVF are nearly zero: axis indeterminate');angle=deg(Math.atan2(y,x));drawCircle();let pred=.5*x+Math.sqrt(3)/2*y;let residual=Math.abs(pred-ii);document.getElementById('measureResult').innerHTML=`<b>Estimated axis: ${round(angle)}° (${classAxis(angle)})</b><br>Net I = ${round(x)} mm, net aVF = ${round(y)} mm, measured II = ${round(ii)} mm.<br>Predicted lead II from I/aVF = ${round(pred)} mm. Difference = ${round(residual)} mm. <span class="${residual>2?'warn':'ok'}">${residual>2?'Measurements do not agree well; recheck baseline, beats and calibration.':'Measurements are reasonably consistent.'}</span><br><span class="warn">An axis category is not a fascicular-block diagnosis.</span>`}catch(e){document.getElementById('measureResult').textContent=e.message}}
+function checkMorph(){let a=[1,2,3,4,5].filter(i=>document.getElementById('laf'+i).checked).length,b=[1,2,3,4,5].filter(i=>document.getElementById('lpf'+i).checked).length;document.getElementById('morphResult').innerHTML=`LAFB checklist ${a}/5; LPFB checklist ${b}/5. ${a===5?'Pattern supports LAFB.':b===5?'Pattern supports LPFB, after exclusion of mimics.':'Incomplete criteria. Do not assign a fascicular block from axis alone.'}`}
+const cases=[
+{id:'N1',axis:55,type:'normal',qrs:90,desc:'Normal axis; narrow QRS.',detail:'Positive I and aVF, without fascicular morphology.'},
+{id:'A1',axis:-62,type:'lafb',qrs:105,desc:'Left anterior fascicular block.',detail:'Marked left axis, qR in aVL, rS in inferior leads, narrow QRS.'},
+{id:'P1',axis:125,type:'lpfb',qrs:104,desc:'Left posterior fascicular block.',detail:'Right axis, rS in I/aVL and qR inferiorly, narrow QRS; assume RVH and other mimics excluded.'},
+{id:'R1',axis:112,type:'rad',qrs:94,desc:'Right axis deviation, not diagnostic of LPFB.',detail:'Clinical context: emphysema / right ventricular loading. Axis alone is insufficient.'},
+{id:'A2',axis:-42,type:'lad',qrs:92,desc:'Left axis deviation without definite LAFB.',detail:'Axis is not sufficiently leftward for strict LAFB criteria, and morphology is not characteristic.'},
+{id:'BA',axis:-68,type:'rbbblafb',qrs:146,desc:'RBBB plus LAFB: bifascicular block.',detail:'Bifascicular pattern: rsR′ in V1–V2 and broad lateral S waves, plus superior-leftward limb-lead forces and LAFB morphology.'},
+{id:'BP',axis:132,type:'rbbblpfb',qrs:142,desc:'RBBB plus LPFB: bifascicular block.',detail:'Bifascicular pattern: rsR′ in V1–V2 and broad lateral S waves, plus rightward limb-lead forces and LPFB morphology after excluding mimics.'},
+{id:'RB',axis:65,type:'rbbb',qrs:146,desc:'Right bundle branch block (RBBB).',detail:'Wide rsR′ complexes in V1–V2, a delayed terminal R′, broad slurred S in I/V5–V6, and discordant T inversion in V1–V3. The axis can remain normal.'},
+{id:'LB',axis:-5,type:'lbbb',qrs:154,desc:'Left bundle branch block (LBBB).',detail:'Broad QS/rS in V1–V3; prolonged notched monophasic R without septal q in I, aVL and V5–V6; appropriately discordant ST–T waves. The axis may vary.'},
+{id:'N2',axis:12,type:'normal',qrs:94,desc:'Normal axis, borderline leftward.',detail:'Lead I strongly positive and aVF slightly positive.'},
+{id:'P2',axis:108,type:'lpfb',qrs:108,desc:'Another LPFB example.',detail:'Rightward axis, lateral rS and inferior qR; other right-axis causes excluded.'},
+{id:'A3',axis:-75,type:'lafb',qrs:102,desc:'Another LAFB example.',detail:'Superior leftward vector and inferior rS complexes.'}
+];let index=0,labels=true,answered=false;
+function qrsShape(c,l){let netv=vector(c.axis,l,7.5),m=Math.abs(netv),r=Math.max(0,netv),s=Math.max(0,-netv),q=0;if(c.type==='lafb'||c.type==='rbbblafb'){if(['I','aVL'].includes(l)){q=.8;r=Math.max(2.5,r+q)}else if(['II','III','aVF'].includes(l)){r=.9;s=Math.max(1,s)}}if(c.type==='lpfb'||c.type==='rbbblpfb'){if(['I','aVL'].includes(l)){r=.8;s=Math.max(1,s)}else if(['II','III','aVF'].includes(l)){q=.7;r=Math.max(1.5,r+q)}}if(!q&&!r&&!s)r=.5;return {q,r,s}}
+// Dedicated bundle-branch morphology.  Each template uses normalized QRS time,
+// so a 146-154 ms bundle block occupies 36-39 small-grid pixels at 25 mm/s.
+// Shapes are synthetic teaching illustrations, not diagnostic tracings.
+function bundleProfile(c,lead){
+ const rbbb=c.type.startsWith('rbbb'), chest=lead[0]==='V', v=chest?+lead.slice(1):0;
+ const net=chest?0:vector(c.axis,lead,7.5);
+ const lateral=['I','aVL','V5','V6'].includes(lead);
+ const qrs=[];
+ let st=0,t=0;
+ if(rbbb){
+  if(chest && v<=3){
+   // V1-V2: initial r, S below baseline, delayed broad terminal R-prime.
+   // The later R' is deliberately larger than the first r (true rsR').
+   const size=v===1?1:v===2?0.94:0.70;
+   qrs.push([0,0],[.13,.15],[.22,3.0*size],[.33,-3.3*size],
+    [.45,-2.5*size],[.57,2.2*size],[.70,7.4*size],
+    [.79,8.9*size],[.88,7.8*size],[.95,3.5*size],[1,0]);
+   st=-0.55; t=-2.7*size;  // right-precordial secondary ST depression / inverted T
+  }else if(lateral || (chest && v===4)){
+   // Lateral lead I/V5/V6: relatively early R, then wide/slurred terminal S.
+   // With accompanying LPFB, axis-driven limb R/S balance remains rightward.
+   const early=chest?(v===4?7.0:v===5?8.2:8.5):Math.max(1.6,Math.min(9,2.2+Math.max(0,net)*.8));
+   const late=chest?(v===4?2.5:v===5?4.3:4.8):Math.max(3.3,Math.min(10,3.1+Math.max(0,-net)*.85));
+   qrs.push([0,0],[.10,-.25],[.20,early*.4],[.31,early],
+    [.41,early*.7],[.51,early*.10],[.62,-late*.45],
+    [.73,-late],[.83,-late*.84],[.93,-late*.41],[1,0]);
+   st=0.25; t=1.75;
+  }else if(lead==='aVR'){
+   qrs.push([0,0],[.14,-1],[.30,-5.0],[.44,-4.2],[.59,-2.0],
+    [.73,1.8],[.84,3.0],[.94,1.4],[1,0]);
+   st=-.1;t=-1.0;
+  }else{
+   // Inferior limb-lead patterns follow the associated fascicular axis.
+   const positive=net>=0, a=Math.max(1.0,Math.min(9,Math.abs(net)+1.2));
+   if(positive){
+    qrs.push([0,0],[.12,-.55],[.23,a*.3],[.34,a],[.46,a*.82],
+     [.57,a*.51],[.68,a*.40],[.77,a*.28],[.88,-.70],[1,0]);
+    st=-.15;t=1.5;
+   }else{
+    qrs.push([0,0],[.12,.7],[.24,1.6],[.34,-a*.3],[.49,-a*.9],
+     [.62,-a],[.74,-a*.85],[.85,-a*.48],[.94,-a*.15],[1,0]);
+    st=.2;t=1.3;
+   }
+  }
+ }else{ // LBBB
+  if(lateral || (chest && v===4)){
+   // Lateral leads: no septal q; a single, prolonged, mid-QRS-notched R.
+   // Two positive peaks separated by a saddle, not separate R and R-prime.
+   const height=lead==='aVL'?7.0:v===4?4.9:9.1;
+   qrs.push([0,0],[.12,.7],[.23,height*.39],[.38,height*.81],
+    [.48,height],[.58,height*.79],[.68,height*.88],
+    [.79,height*.98],[.90,height*.51],[1,0]);
+   st=-.6;t=-2.4;  // lateral ST/T discordant to broad positive R
+  }else if(chest && v<=3){
+   // V1-V2 QS or tiny-r/deep-S; V3 still predominantly negative.
+   const depth=v===1?9.2:v===2?9.4:7.2;
+   const tinyR=v===1?0:v===2?.65:1.4;
+   qrs.push([0,0],[.10,tinyR],[.20,-depth*.24],[.37,-depth*.69],
+    [.54,-depth],[.65,-depth*.88],[.76,-depth*.94],
+    [.88,-depth*.51],[1,0]);
+   st=.75;t=2.5;  // upright T discordant to deep QS/rS
+  }else if(lead==='aVR' || net < -1){
+   const depth=Math.max(3.3,Math.min(8.2,Math.abs(net)+1));
+   qrs.push([0,0],[.14,-depth*.25],[.31,-depth*.72],
+    [.51,-depth],[.64,-depth*.86],[.77,-depth*.91],
+    [.89,-depth*.48],[1,0]);
+   st=.4;t=1.8;
+  }else{
+   const height=Math.max(2.8,Math.min(8.8,Math.abs(net)+1));
+   qrs.push([0,0],[.12,.35],[.28,height*.62],[.45,height],
+    [.56,height*.82],[.69,height*.90],[.82,height*.81],
+    [.94,height*.37],[1,0]);
+   st=-.35;t=-1.7;
+  }
+ }
+ return {qrs,st,t};
+}
+function bundleBeat(c,lead,bx,base,scale){
+ const p=bundleProfile(c,lead),q0=bx+38,qw=c.qrs*.25,q1=q0+qw;
+ // P wave before QRS; secondary ST/T after QRS, without overlapping next beat.
+ const pts=[[bx,0],[bx+9,0],[bx+15,.35],[bx+21,.85],
+  [bx+26,.62],[bx+32,0],[q0,0]];
+ for(const [f,a] of p.qrs)pts.push([q0+qw*f,a]);
+ pts.push([q1+5,p.st],[q1+11,p.st],[q1+18,p.st+p.t*.30],
+  [q1+24,p.t*.87],[q1+28,p.t],[q1+32,p.t*.40],[q1+35,0]);
+ return pts.map(([x,a])=>`${x.toFixed(1)},${(base-a*scale).toFixed(1)}`).join(' ');
+}
+function ecgSvg(c){
+ let W=1050,H=550,leadOrder=['I','aVR','V1','V4','II','aVL','V2','V5','III','aVF','V3','V6'];
+ let wide=c.type.startsWith('rbbb')||c.type==='lbbb';
+ let h=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Synthetic 12-lead ECG practice example"><rect width="${W}" height="${H}" fill="#fff"/>`;
+ for(let x=0;x<W;x+=10)h+=`<line x1="${x}" y1="0" x2="${x}" y2="${H}" stroke="${x%50===0?'#e6b8bd':'#f3d9dc'}" stroke-width="${x%50===0?1:.45}"/>`;
+ for(let y=0;y<H;y+=10)h+=`<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="${y%50===0?'#e6b8bd':'#f3d9dc'}" stroke-width="${y%50===0?1:.45}"/>`;
+ for(let i=0;i<12;i++){
+  let l=leadOrder[i],col=i%4,row=Math.floor(i/4),left=col*262+10,base=row*175+96,scale=5.2;
+  if(wide){
+   // Two carefully spaced complete beats reveal true QRS widening and T polarity.
+   for(let beat=0;beat<2;beat++){
+    let bx=left+7+beat*119;
+    h+=`<polyline points="${bundleBeat(c,l,bx,base,scale)}" stroke="#222" stroke-width="2.05" fill="none" stroke-linejoin="round" stroke-linecap="round"/>`;
+   }
+  }else{
+   // Preserve v5's original non-bundle fascicular and ordinary ECG shapes.
+   let shape=qrsShape(c,l);
+   if(l[0]==='V'){
+    let v=+l.slice(1),rr=Math.max(.5,(v-1)*1.7),ss=Math.max(.5,(6-v)*1.8);
+    shape={q:0,r:rr,s:ss};
+   }
+   for(let beat=0;beat<3;beat++){
+    let bx=left+22+beat*77;
+    let points=[[bx,base],[bx+8,base],[bx+15,base-4],[bx+21,base],
+     [bx+29,base],[bx+35,base+shape.q*scale],[bx+39,base-shape.r*scale],
+     [bx+45,base+shape.s*scale],[bx+51,base],[bx+60,base-8],
+     [bx+69,base-5],[bx+76,base]];
+    h+=`<polyline points="${points.map(p=>p.join(',')).join(' ')}" stroke="#222" stroke-width="2" fill="none" stroke-linejoin="round"/>`;
+   }
+  }
+  if(answered && document.getElementById('showForces')?.checked && Object.prototype.hasOwnProperty.call(leads,l)){
+   let v=vector(c.axis,l,7.5),positive=v>=0,xx=left+175,yy=base-63;
+   h+=`<text x="${xx}" y="${yy}" text-anchor="middle" fill="${positive?'#087b53':'#bd3644'}" font-size="17" font-weight="bold">${positive?'↑ +':'↓ −'} ${Math.abs(v).toFixed(1)} mm</text>`;
+  }
+  if(labels)h+=`<text x="${left+6}" y="${base-66}" fill="#203447" font-size="17" font-weight="bold">${l}</text>`;
+ }
+ return h+'</svg>';
+}
+
+function showCase(){let c=cases[index];answered=false;document.getElementById('caseStrip').innerHTML=ecgSvg(c);document.getElementById('caseCounter').textContent=`Case ${index+1} / ${cases.length}`;document.getElementById('caseInfo').textContent=`Synthetic tracing • QRS duration ${c.qrs} ms • limb-lead gain represented schematically`;document.getElementById('caseFeedback').textContent='Blinded: estimate the axis and select the most likely interpretation.';document.getElementById('guessAxis').value='';document.getElementById('guessPattern').value='';drawCaseCircle(null,false)}
+function newCase(){let j=index;while(j===index)j=Math.floor(Math.random()*cases.length);index=j;showCase()}function nextCase(){index=(index+1)%cases.length;showCase()}function toggleHints(){labels=!labels;document.getElementById('hintBtn').textContent=labels?'Hide lead labels':'Show lead labels';document.getElementById('caseStrip').innerHTML=ecgSvg(cases[index])}
+function gradeCase(){let c=cases[index],v=document.getElementById('guessAxis').value,g=document.getElementById('guessPattern').value;if(v===''||!g){document.getElementById('caseFeedback').textContent='Enter an axis estimate and select a pattern first.';return}let delta=Math.abs(((+v-c.axis+540)%360)-180),correct=g===c.type;answered=true;drawCaseCircle(c.axis,true);document.getElementById('caseStrip').innerHTML=ecgSvg(c);document.getElementById('caseFeedback').innerHTML=`<b>${correct?'Correct interpretation.':'Interpretation to review.'}</b> ${delta<=15?'Axis within 15°!':'Axis difference '+Math.round(delta)+'°.'}<br><b>Answer:</b> ${c.desc} Mean axis ${c.axis}°. QRS ${c.qrs} ms.<br>${c.detail}<br><span class="small">Note: waveform is schematic; the definitive distinction requires clinical context and full ECG morphology.</span>`;answered=true}
+function copyCaseToCalc(){let c=cases[index];answered=true;document.getElementById('caseStrip').innerHTML=ecgSvg(c);drawCaseCircle(c.axis,true);for(let n of inputs){let v=vector(c.axis,n,7.5);document.getElementById(n+'R').value=Math.max(0,v);document.getElementById(n+'Q').value=0;document.getElementById(n+'S').value=Math.max(0,-v)}compute();document.getElementById('measureResult').innerHTML+='<br><b>Loaded idealized net amplitudes for the current case. For actual practice, measure the displayed ECG yourself.</b>'}
+function drawCaseCircle(a,revealed){axisDiagram('caseCircle',a,revealed);document.getElementById('projectionLegend').innerHTML=a===null?'Unknown axis. Inspect ECG first; enter a guess or reveal.':`<b>${revealed?'Revealed':'Estimated'} axis ${round(a)}°</b><br>${Object.keys(leads).map(n=>`${n}: ${vector(a,n,7.5)>=0?'+':'−'}${Math.abs(vector(a,n,7.5)).toFixed(1)} mm`).join(' · ')}`}
+document.getElementById('guessAxis').addEventListener('input',e=>{let a=Number(e.target.value);if(e.target.value!==''&&a>=-180&&a<=180)drawCaseCircle(a,false)});
+loadMeasurements(60);showCase();
+</script></body></html>
