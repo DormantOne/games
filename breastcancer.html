@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Breast Cancer Atlas · Interactive Receptor & Treatment Explorer</title>
+<style>
+  :root {--bg:#f6f7fb;--ink:#1a2440;--muted:#64718a;--line:#e4e9f2;--paper:#ffffff;--navy:#1b264a;--rose:#db5c84;--indigo:#7667d6;--teal:#219a9c;--shadow:0 12px 35px rgba(37,57,100,.075);--round:24px;--accent:#5266c6}
+  *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:linear-gradient(145deg,#fbfcff 0%,#f3f5fa 45%,#f9f7fb 100%);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Arial,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased}
+  button,input,select{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid #95b4fb;outline-offset:3px}a{color:#425bb6}a:hover{text-decoration:underline}
+  .wrap{max-width:1320px;margin:auto;padding:28px 28px 70px}
+  .header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:22px}.topline{display:flex;align-items:center;gap:9px;margin-bottom:13px;font-size:11px;font-weight:800;letter-spacing:.15em;color:#586caa;text-transform:uppercase}.small-diamond{width:11px;height:11px;border-radius:3px;background:linear-gradient(135deg,#dd759b,#6e70c5);transform:rotate(45deg)}h1{margin:0;font-size:clamp(29px,3.1vw,46px);font-weight:800;letter-spacing:-.05em;line-height:1.13}h1 span{color:#6e72bb}.sub{margin:12px 0 0;color:#68758a;max-width:600px;font-size:15px}
+  .header-actions{display:flex;gap:9px;flex-wrap:wrap;justify-content:flex-end;padding-top:13px}.action{border:1px solid #dce3ef;background:white;color:#3f4e71;border-radius:13px;font-size:12px;font-weight:750;letter-spacing:.005em;padding:10px 14px;box-shadow:0 2px 5px rgba(30,45,80,.025);display:inline-flex;gap:8px;align-items:center;justify-content:center;transition:.2s}.action:hover{border-color:#a9b9df;background:#f8faff}.action.primary{background:#293960;color:white;border-color:#293960}.action.primary:hover{background:#455789}.action svg{width:16px;height:16px}
+  .cases{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:20px 0 21px}.cases .eyebrow{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.11em;color:#8290a7;margin-right:4px}.case{background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 15px;font-size:12px;font-weight:750;color:#52617d;transition:.18s}.case.selected{background:#e9edf9;color:#40519a;border-color:#aebcf1;box-shadow:inset 0 0 0 1px rgba(115,133,211,.15)}.case:hover{border-color:#aab8d9}
+  .layout{display:grid;grid-template-columns:minmax(330px, .91fr) minmax(0,1.43fr);gap:20px;align-items:start}.left{display:grid;gap:20px}.card{background:var(--paper);border:1px solid #e4e9f2;border-radius:var(--round);box-shadow:var(--shadow)}.wheel-card{padding:25px 22px 22px}.case-card{padding:23px 24px 24px}.card-head{display:flex;align-items:start;gap:10px;justify-content:space-between;margin-bottom:6px}.sectitle{margin:0;font-size:16px;letter-spacing:-.025em;line-height:1.3;font-weight:820}.desc{color:#8590a3;font-size:12.5px;margin:4px 0 0}.count{background:#f1f3fa;color:#8090b4;border-radius:100px;min-width:28px;height:28px;display:grid;place-items:center;font-size:11px;font-weight:800}
+  .wheel-wrap{position:relative;max-width:350px;width:100%;aspect-ratio:1;margin:4px auto -1px}.wheel-svg{width:100%;height:100%;overflow:visible;filter:drop-shadow(0 9px 14px rgba(65,73,111,.07))}.ring-path{cursor:pointer;transition:fill .16s ease,filter .2s}.ring-path:hover{filter:brightness(1.05)}.ring-text{pointer-events:none;text-anchor:middle;font-size:17px;letter-spacing:.02em;font-weight:800;fill:white}.ring-text.inactive{fill:#67738c}.ring-status{pointer-events:none;text-anchor:middle;font-size:13px;font-weight:700;fill:rgba(255,255,255,.9)}.ring-status.inactive{fill:#9da6b8}
+  .center-hub{position:absolute;width:49%;height:49%;left:25.5%;top:25.5%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none}.hub-title{font-weight:800;font-size:10px;letter-spacing:.15em;color:#8692ad;text-transform:uppercase;margin:0 0 9px}.meno-inner{display:flex;background:#ebedf6;border:1px solid #e0e5ef;border-radius:12px;padding:4px;gap:3px;width:90%;pointer-events:auto}.meno-inner button{flex:1;border:0;background:transparent;font-weight:800;color:#6c7893;font-size:11.5px;border-radius:9px;padding:8px 0}.meno-inner button.active{background:#fff;color:#354a87;box-shadow:0 2px 8px rgba(28,46,92,.09)}.hub-hint{font-size:10.5px;color:#8692a6;margin-top:10px;line-height:1.25}.legend{margin-top:-3px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}.legenditem{border:1px solid #e8ebf2;background:#fafbfe;border-radius:100px;padding:7px 12px;color:#74829a;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px}.legenditem i{width:9px;height:9px;border-radius:50%;display:block}.legenditem b{color:#34435e}
+  .labelish{display:block;margin:18px 0 8px;font-size:11px;font-weight:800;color:#77849b;text-transform:uppercase;letter-spacing:.105em}.seg{display:flex;flex-wrap:wrap;gap:7px}.seg button{background:#f9fafc;border:1px solid #e5e9f0;color:#66738d;border-radius:10px;padding:8px 13px;font-size:12px;font-weight:750;min-height:37px;transition:.16s}.seg button[aria-pressed="true"]{background:#eaf0ff;color:#3a59a8;border-color:#aabce9;box-shadow:inset 0 0 0 1px #cfdbf7}.seg button:hover{border-color:#b4c1dc}
+  .inputs{display:grid;grid-template-columns:1fr 1fr;gap:15px 12px;margin-top:16px}.field label{font-size:11px;color:#687793;font-weight:800;letter-spacing:.02em;display:block;margin-bottom:6px}.field input,.field select{width:100%;border-radius:11px;background:#f9fafe;color:#24314d;border:1px solid #dfe5ed;min-height:40px;padding:9px 10px;font-weight:690;font-size:13px}.field input:disabled,.field select:disabled{opacity:.45;cursor:not-allowed}.field .unit{position:relative}.field .unit:after{content:'cm';position:absolute;right:13px;top:10px;color:#8996ac;font-size:12px;pointer-events:none}.field .unit input{padding-right:37px}.help{font-size:11px;color:#98a3b4;margin:7px 0 0}.wide{grid-column:1/-1}.hidden{display:none!important}
+  .right{display:grid;gap:15px}.summary{padding:26px 27px 22px;position:relative;overflow:hidden;background:linear-gradient(130deg,#ffffff,#fbfbff)}.summary:before{content:'';position:absolute;width:220px;height:220px;right:-70px;top:-116px;background:radial-gradient(circle,#f4e8f3,rgba(255,255,255,0) 70%);pointer-events:none}.summary-top{display:flex;align-items:center;justify-content:space-between;gap:15px}.overline{font-size:10px;font-weight:900;color:#8996ae;letter-spacing:.16em;text-transform:uppercase}.tag{border-radius:100px;background:#eaf7f3;color:#268269;font-size:11px;font-weight:850;padding:6px 10px;white-space:nowrap}.summary h2{font-size:clamp(22px,2.5vw,30px);letter-spacing:-.038em;margin:12px 0 6px;line-height:1.23}.summary p{font-size:13px;line-height:1.58;color:#64738e;margin:0;max-width:630px}.factline{margin-top:18px;display:flex;gap:8px;flex-wrap:wrap}.fact{font-size:11.5px;font-weight:750;background:#f3f5fb;border:1px solid #e9edf4;padding:6px 10px;border-radius:8px;color:#586887}
+  .plan-head{display:flex;justify-content:space-between;align-items:end;gap:15px;padding:7px 2px 0}.plan-head h2{font-size:20px;margin:0;letter-spacing:-.035em}.plan-head p{margin:0;color:#8792a5;font-size:11px;text-align:right}
+  .treatments{display:grid;grid-template-columns:1fr 1fr;gap:13px}.treatment{border-radius:20px;padding:21px 21px 20px;background:#fff;border:1px solid #e5eaf2;min-height:198px;box-shadow:0 5px 18px rgba(47,61,99,.035);display:flex;flex-direction:column}.t-head{display:flex;align-items:center;gap:10px}.t-icon{height:37px;width:37px;border-radius:11px;display:grid;place-items:center;font-size:16px;font-weight:850}.treatment[data-kind="chemo"] .t-icon{background:#fbecf1;color:#d25880}.treatment[data-kind="endocrine"] .t-icon{background:#eff0fb;color:#7a67d3}.treatment[data-kind="targeted"] .t-icon{background:#eaf9f7;color:#168e87}.treatment[data-kind="radiation"] .t-icon{background:#fff5e7;color:#cb8a37}.t-name{font-size:13px;font-weight:830;color:#263451;line-height:1.25}.status{color:#728098;font-size:10.5px;font-weight:850;letter-spacing:.01em}.t-main{font-size:14px;line-height:1.39;font-weight:850;margin:13px 0 7px;letter-spacing:-.012em}.t-body{font-size:12px;color:#69778e;line-height:1.5;margin:0;flex:1}.duration{display:flex;gap:8px;align-items:center;margin-top:17px;font-size:11px;font-weight:850;color:#3a4b66}.duration .line{height:5px;border-radius:50px;background:#e9eef5;flex:1;overflow:hidden}.duration .line span{height:100%;display:block;border-radius:inherit;background:linear-gradient(90deg,#92a6e8,#7369d9);width:55%}
+  .timeline{padding:22px 26px 24px}.minititle{margin:0 0 15px;font-size:14px;font-weight:820}.journey{display:flex;flex-wrap:wrap;align-items:stretch;gap:5px}.journey-step{flex:1;min-width:85px;background:#f6f8fc;border:1px solid #e8edf5;border-radius:12px;padding:12px 9px;text-align:center}.journey-step strong{font-size:11px;display:block;color:#324360;line-height:1.4}.journey-step em{font-size:10px;display:block;font-style:normal;color:#8b97aa;margin-top:4px;line-height:1.3}.journey-arrow{display:grid;place-items:center;color:#9eabc0;font-size:20px;font-weight:400}.timeline-footer{margin:14px 0 0;font-size:11px;color:#7c89a0;line-height:1.6}
+  .notes{display:grid;grid-template-columns:1fr 1fr;gap:12px}.note{padding:19px 20px;background:#fbfcff;border:1px solid #e4eaf4;border-radius:16px}.note h3{font-size:12px;margin:0 0 7px;color:#405073}.note p{font-size:11.5px;line-height:1.55;margin:0;color:#70809b}
+  .fine{border-top:1px solid #e4e9f2;margin-top:22px;padding-top:21px;color:#71809a;font-size:11.5px;display:flex;justify-content:space-between;gap:25px;align-items:flex-start}.fine strong{color:#4d5974}.sources{margin-top:8px;display:flex;gap:10px 18px;flex-wrap:wrap}.sources a{font-size:11px}.fine .version{white-space:nowrap;color:#9aa6b8}
+  .tour{position:fixed;right:23px;bottom:23px;z-index:20;width:min(378px,calc(100vw - 36px));border-radius:21px;background:#202d50;color:#fff;padding:21px 22px 20px;box-shadow:0 20px 60px rgba(13,24,54,.28);display:none}.tour.visible{display:block}.tour .top{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#a6b8e0;text-transform:uppercase;letter-spacing:.1em;font-size:10px;font-weight:850}.tour .close{color:#cbd7f5;border:0;background:transparent;font-size:22px;padding:1px 4px}.tour h2{font-size:19px;line-height:1.3;margin:12px 0 9px;letter-spacing:-.02em}.tour p{font-size:12.5px;line-height:1.62;color:#d2dbef;min-height:62px;margin:0}.tour-controls{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:17px}.tour-dots{display:flex;gap:5px}.tour-dots b{width:6px;height:6px;background:#677699;border-radius:50%;display:block}.tour-dots b.on{background:#a5e4d9;width:20px;border-radius:20px}.tour-nav{display:flex;gap:7px}.tour-nav button{border:1px solid #6d7fa3;background:transparent;color:white;padding:8px 12px;font-size:11px;border-radius:9px;font-weight:800}.tour-nav button.next{background:#e7ecff;color:#29385d;border-color:transparent}.tour-nav button:disabled{opacity:.35;cursor:default}.tour-focus{outline:3px solid #9abcfb!important;outline-offset:4px!important;z-index:2;position:relative}
+  .snackbar{position:fixed;bottom:23px;left:50%;transform:translate(-50%,18px);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;background:#253655;color:white;border-radius:11px;padding:11px 19px;font-size:12px;z-index:30;box-shadow:0 10px 30px #0003}.snackbar.show{opacity:1;transform:translate(-50%,0)}
+  @media(max-width:990px){.layout{grid-template-columns:1fr}.left{grid-template-columns:1fr 1fr;align-items:start}.wheel-card,.case-card{height:100%}.wheel-wrap{max-width:310px}.wrap{padding:23px 20px 60px}}
+  @media(max-width:760px){.header{display:block}.header-actions{justify-content:flex-start}.left{grid-template-columns:1fr}.treatments{grid-template-columns:1fr}.treatment{min-height:initial}.wrap{padding:20px 13px 85px}.summary,.timeline{padding:20px}.wheel-card,.case-card{padding:20px}.notes{grid-template-columns:1fr}.plan-head{display:block}.plan-head p{text-align:left;margin-top:3px}.fine{display:block}.fine .version{margin-top:9px}.tour{right:12px;bottom:12px}.cases{gap:6px}.case{padding:7px 10px}.summary h2{font-size:24px}}
+  @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
+  @media print{body{background:white}.wrap{max-width:100%;padding:0}.header-actions,.cases,.tour,.legend,.sources,.fine,.help{display:none!important}.layout{grid-template-columns:38% 60%;gap:2%}.left{display:block}.left .card+.card{margin-top:10px}.card,.treatment{box-shadow:none;break-inside:avoid}.treatment{min-height:180px}.wheel-wrap{width:250px}.timeline{break-inside:avoid}button{box-shadow:none}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="header">
+    <div>
+      <div class="topline"><span class="small-diamond"></span> Interactive medical learning atlas <span style="color:#b6c1d2;letter-spacing:0">/</span> Early breast cancer</div>
+      <h1>Breast cancer, <span>made visual.</span></h1>
+      <p class="sub">Tap the receptor pie. Change menopause and clinical context. See how the usual treatment path — and its duration — changes.</p>
+    </div>
+    <div class="header-actions">
+      <button class="action primary" id="tourStart" type="button">✦ Guided tutorial</button>
+      <button class="action" id="copy" type="button">▤ Copy summary</button>
+      <button class="action" id="print" type="button">↗ Print</button>
+    </div>
+  </header>
+
+  <nav class="cases" aria-label="Example cases">
+    <span class="eyebrow">Quick examples</span>
+    <button class="case selected" type="button" data-preset="boards">Today's question</button>
+    <button class="case" type="button" data-preset="her2">HER2+ · larger tumor</button>
+    <button class="case" type="button" data-preset="triple">Triple-negative</button>
+    <button class="case" type="button" data-preset="dcis">DCIS</button>
+    <button class="case" type="button" data-preset="nodes">Node-positive ER+</button>
+  </nav>
+
+  <div class="layout">
+    <div class="left">
+      <section class="card wheel-card" id="wheelPanel">
+        <div class="card-head"><div><h2 class="sectitle">The receptor pie</h2><p class="desc">Click any third to toggle positive ↔ negative.</p></div><span class="count">01</span></div>
+        <div class="wheel-wrap">
+          <svg id="receptorPie" class="wheel-svg" viewBox="0 0 360 360" role="group" aria-label="Interactive estrogen, progesterone, and HER2 receptor pie">
+            <circle cx="180" cy="180" r="153" fill="#f0f2f9"/>
+            <g id="slices"></g>
+            <circle cx="180" cy="180" r="85" fill="#fff" stroke="#fff" stroke-width="5"/>
+          </svg>
+          <div class="center-hub" id="menoGroup">
+            <div class="hub-title">Menopause</div>
+            <div class="meno-inner" role="group" aria-label="Menopausal status">
+              <button id="pre" type="button" class="active" aria-pressed="true">Pre</button>
+              <button id="post" type="button" aria-pressed="false">Post</button>
+            </div>
+            <div class="hub-hint">Changes endocrine<br>therapy choices</div>
+          </div>
+        </div>
+        <div class="legend" id="receptorLegend" aria-live="polite"></div>
+      </section>
+      <section class="card case-card" id="casePanel">
+        <div class="card-head"><div><h2 class="sectitle">Clinical context</h2><p class="desc">A few details that change the pathway.</p></div><span class="count">02</span></div>
+        <span class="labelish">Pathology</span>
+        <div class="seg" id="kindSeg" role="group" aria-label="Pathology type">
+          <button type="button" data-val="invasive" aria-pressed="true">Invasive</button>
+          <button type="button" data-val="dcis" aria-pressed="false">DCIS · stage 0</button>
+        </div>
+        <span class="labelish">Surgery</span>
+        <div class="seg" id="surgerySeg" role="group" aria-label="Surgical procedure">
+          <button type="button" data-val="lumpectomy" aria-pressed="true">Lumpectomy</button>
+          <button type="button" data-val="mastectomy" aria-pressed="false">Mastectomy</button>
+        </div>
+        <div class="inputs">
+          <div class="field"><label for="age">Age at diagnosis</label><input id="age" type="number" inputmode="numeric" min="18" max="100" value="40"></div>
+          <div class="field"><label for="size">Tumor diameter</label><div class="unit"><input id="size" type="number" inputmode="decimal" min="0.1" max="30" step="0.1" value="2.5"></div></div>
+          <div class="field" id="nodeField"><label for="nodes">Positive axillary nodes</label><select id="nodes"><option value="0">0 · negative</option><option value="1">1–3</option><option value="4">4 or more</option></select></div>
+          <div class="field" id="gradeField"><label for="grade">Histologic grade</label><select id="grade"><option value="1">Grade 1</option><option value="2" selected>Grade 2</option><option value="3">Grade 3</option></select></div>
+          <div class="field" id="scoreField"><label for="score">21-gene recurrence score</label><input id="score" type="number" inputmode="numeric" min="0" max="100" value="8" placeholder="Unknown"><p class="help">Leave blank if not available.</p></div>
+          <div class="field"><label for="brca">Germline BRCA1/2</label><select id="brca"><option value="unknown">Unknown / not tested</option><option value="negative">No pathogenic variant</option><option value="positive">Pathogenic variant</option></select></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="right">
+      <section class="card summary" id="summaryPanel" aria-live="polite">
+        <div class="summary-top"><span class="overline">Your selected phenotype</span><span class="tag" id="caseTag">Education · nonmetastatic</span></div>
+        <h2 id="phenotype">HR-positive / HER2-negative</h2>
+        <p id="overview">Endocrine therapy is the foundation; chemotherapy is driven by recurrence risk, nodal status and genomic results.</p>
+        <div class="factline" id="facts"></div>
+      </section>
+      <div class="plan-head"><h2>Likely treatment components</h2><p>Examples, not personalized prescriptions</p></div>
+      <section class="treatments" id="treatments" aria-label="Therapy types and approximate durations">
+        <article class="treatment" id="chemoCard" data-kind="chemo"><div class="t-head"><div class="t-icon">✦</div><div><div class="t-name">Chemotherapy</div><div class="status" id="chemoStatus"></div></div></div><h3 class="t-main" id="chemoTitle"></h3><p class="t-body" id="chemoText"></p><div class="duration"><span id="chemoDuration"></span><span class="line"><span id="chemoBar"></span></span></div></article>
+        <article class="treatment" id="targetedCard" data-kind="targeted"><div class="t-head"><div class="t-icon">◎</div><div><div class="t-name">Targeted / immune therapy</div><div class="status" id="targetedStatus"></div></div></div><h3 class="t-main" id="targetedTitle"></h3><p class="t-body" id="targetedText"></p><div class="duration"><span id="targetedDuration"></span><span class="line"><span id="targetedBar"></span></span></div></article>
+        <article class="treatment" id="endocrineCard" data-kind="endocrine"><div class="t-head"><div class="t-icon">◈</div><div><div class="t-name">Endocrine therapy</div><div class="status" id="endocrineStatus"></div></div></div><h3 class="t-main" id="endocrineTitle"></h3><p class="t-body" id="endocrineText"></p><div class="duration"><span id="endocrineDuration"></span><span class="line"><span id="endocrineBar"></span></span></div></article>
+        <article class="treatment" id="radiationCard" data-kind="radiation"><div class="t-head"><div class="t-icon">☼</div><div><div class="t-name">Radiation therapy</div><div class="status" id="radiationStatus"></div></div></div><h3 class="t-main" id="radiationTitle"></h3><p class="t-body" id="radiationText"></p><div class="duration"><span id="radiationDuration"></span><span class="line"><span id="radiationBar"></span></span></div></article>
+      </section>
+      <section class="card timeline" id="timelinePanel"><h2 class="minititle">How it usually unfolds</h2><div class="journey" id="journey"></div><p class="timeline-footer" id="timelineFoot"></p></section>
+      <section class="notes" id="followPanel"><div class="note"><h3>🔎 &nbsp;Surveillance after treatment</h3><p id="followup"></p></div><div class="note"><h3>🧬 &nbsp;Genetics &amp; important caveats</h3><p id="genetics"></p></div></section>
+    </div>
+  </div>
+  <footer class="fine"><div><strong>Educational decision explorer — not a clinical decision-support or treatment-ordering system.</strong> Assumes a newly diagnosed, potentially curable, nonmetastatic case and uses illustrative pathways. True TNM stage, grade, margins, genomic assay eligibility, pathologic response, comorbidities, pregnancy, patient preferences and local protocols can change management. Durations are approximate and can overlap. HER2+ here means IHC 3+ or IHC 2+ with ISH amplification, not simply “HER2-low.”<div class="sources"><a href="https://www.cancer.gov/types/breast/hp/breast-treatment-pdq" target="_blank" rel="noopener">NCI treatment PDQ ↗</a><a href="https://ascopubs.org/doi/10.1200/JCO.22.00069" target="_blank" rel="noopener">ASCO biomarkers ↗</a><a href="https://www.fda.gov/drugs/resources-information-approved-drugs/fda-approves-two-separate-indications-fam-trastuzumab-deruxtecan-nxki-her2-positive-early-stage" target="_blank" rel="noopener">FDA: 2026 HER2 update ↗</a><a href="https://ascopubs.org/doi/full/10.1200/JCO.23.02225" target="_blank" rel="noopener">ASCO genetic testing ↗</a><a href="https://ascopubs.org/doi/full/10.1200/JCO-26-01700" target="_blank" rel="noopener">ASCO surveillance 2026 ↗</a></div></div><div class="version">Offline-ready · v1.0 · Oct 2026</div></footer>
+</main>
+<div class="tour" id="tour" role="dialog" aria-modal="false" aria-label="Guided tutorial" aria-hidden="true"><div class="top"><span id="tourCount">STEP 1 OF 6</span><button id="tourClose" class="close" type="button" title="Close tutorial" aria-label="Close tutorial">×</button></div><h2 id="tourTitle"></h2><p id="tourText"></p><div class="tour-controls"><div class="tour-dots" id="tourDots"></div><div class="tour-nav"><button type="button" id="tourBack">Back</button><button type="button" class="next" id="tourNext">Next →</button></div></div></div>
+<div class="snackbar" id="snack" role="status" aria-live="polite">Copied.</div>
+<script>
+(() => {
+  'use strict';
+  const presets={
+    boards:{er:true,pr:true,her2:false,meno:'pre',kind:'invasive',surgery:'lumpectomy',age:40,size:2.5,nodes:'0',grade:'2',score:'8',brca:'unknown'},
+    her2:{er:true,pr:false,her2:true,meno:'post',kind:'invasive',surgery:'lumpectomy',age:58,size:3.2,nodes:'0',grade:'3',score:'',brca:'unknown'},
+    triple:{er:false,pr:false,her2:false,meno:'pre',kind:'invasive',surgery:'lumpectomy',age:42,size:3.1,nodes:'0',grade:'3',score:'',brca:'unknown'},
+    dcis:{er:true,pr:true,her2:false,meno:'post',kind:'dcis',surgery:'lumpectomy',age:61,size:1.1,nodes:'0',grade:'2',score:'',brca:'unknown'},
+    nodes:{er:true,pr:true,her2:false,meno:'pre',kind:'invasive',surgery:'mastectomy',age:45,size:3.1,nodes:'1',grade:'3',score:'13',brca:'negative'}
+  };
+  const state={...presets.boards};
+  const $=id=>document.getElementById(id);
+  const set=(id,val)=>{$(id).textContent=val;};
+  const cap=(num,min,max,def)=>{const n=Number(num);return num===''||!Number.isFinite(n)?def:Math.max(min,Math.min(max,n));};
+  function polar(cx,cy,r,angle){const a=(angle-90)*Math.PI/180;return {x:cx+r*Math.cos(a),y:cy+r*Math.sin(a)};}
+  function arc(start,end){const a=polar(180,180,152,end),b=polar(180,180,152,start),c=polar(180,180,89,start),d=polar(180,180,89,end);return `M ${b.x} ${b.y} A 152 152 0 0 1 ${a.x} ${a.y} L ${d.x} ${d.y} A 89 89 0 0 0 ${c.x} ${c.y} Z`;}
+  const svgNS='http://www.w3.org/2000/svg';
+  const pieOptions=[{key:'er',name:'ER',start:0,end:120,color:'#db5c84',point:60},{key:'pr',name:'PR',start:120,end:240,color:'#7868d2',point:180},{key:'her2',name:'HER2',start:240,end:360,color:'#239ea6',point:300}];
+  // Angle 0 starts at twelve o'clock; each wedge spans 120 degrees.
+  function renderWheel(){
+    const group=$('slices');group.replaceChildren();
+    const leg=[];
+    pieOptions.forEach(o=>{
+      const on=!!state[o.key];const g=document.createElementNS(svgNS,'g');
+      const p=document.createElementNS(svgNS,'path');p.setAttribute('d',arc(o.start,o.end));p.setAttribute('fill',on?o.color:'#e8ebf3');p.setAttribute('stroke','#fff');p.setAttribute('stroke-width','5');p.classList.add('ring-path');p.setAttribute('tabindex','0');p.setAttribute('role','button');p.setAttribute('aria-label',`${o.name} ${on?'positive':'negative'}. Click to toggle`);p.setAttribute('aria-pressed',String(on));
+      p.addEventListener('click',()=>toggleReceptor(o.key));p.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleReceptor(o.key);}});g.appendChild(p);
+      const loc=polar(180,180,121,o.point),t=document.createElementNS(svgNS,'text');t.setAttribute('x',loc.x);t.setAttribute('y',loc.y-3);t.classList.add('ring-text');if(!on)t.classList.add('inactive');t.textContent=o.name;g.appendChild(t);
+      const s=document.createElementNS(svgNS,'text');s.setAttribute('x',loc.x);s.setAttribute('y',loc.y+18);s.classList.add('ring-status');if(!on)s.classList.add('inactive');s.textContent=on?'+':'−';g.appendChild(s);group.appendChild(g);
+      leg.push(`<span class="legenditem"><i style="background:${on?o.color:'#c7cfde'}"></i>${o.name}<b>${on?'+':'−'}</b></span>`);
+    });
+    $('receptorLegend').innerHTML=leg.join('');
+    ['pre','post'].forEach(m=>{$(m).classList.toggle('active',state.meno===m);$(m).setAttribute('aria-pressed',String(state.meno===m));});
+  }
+  function toggleReceptor(k){state[k]=!state[k];markCustom();render();}
+  function segRender(id,k){document.querySelectorAll('#'+id+' button[data-val]').forEach(b=>b.setAttribute('aria-pressed',String(state[k]===b.dataset.val)));}
+  function markCustom(){document.querySelectorAll('.case').forEach(b=>b.classList.remove('selected'));}
+  function applyPreset(name){Object.assign(state,presets[name]);document.querySelectorAll('.case').forEach(b=>b.classList.toggle('selected',b.dataset.preset===name));render();}
+  function classify(s){if(s.kind==='dcis')return 'Ductal carcinoma in situ (DCIS)';if(s.her2&&s.er&&s.pr)return 'Triple-positive · ER+/PR+/HER2+';if(s.her2&& (s.er||s.pr))return 'HR-positive / HER2-positive';if(s.her2)return 'HR-negative / HER2-positive';if(s.er||s.pr)return 'HR-positive / HER2-negative';return 'Triple-negative breast cancer';}
+  function analyze(s){
+    const hr=s.er||s.pr, small=s.size<=2, larger=s.size>2||s.nodes!=='0', score=s.score===''?null:cap(s.score,0,100,null), highN=s.nodes==='4';
+    let chemo={status:'Usually omitted',title:'No routine chemotherapy',text:'',duration:'None',width:'8%'};
+    let targeted={status:'Not routine',title:'No HER2-directed or immune therapy',text:'',duration:'None',width:'8%'};
+    let endocrine={status:'Not indicated',title:'No standard endocrine treatment',text:'',duration:'None',width:'8%'};
+    let radiation={status:'Typical after lumpectomy',title:'Whole or partial breast radiation',text:'',duration:'~1–4 weeks',width:'32%'};
+    let overview='',steps=[],foot='Order and overlap vary; systemic therapy often starts before radiation when chemotherapy is indicated.';
+    const surgeryName=s.surgery==='lumpectomy'?'Breast-conserving surgery':'Mastectomy';
+    if(s.kind==='dcis'){
+      overview='Noninvasive disease confined to the ductal system. Local treatment comes first; chemotherapy and anti-HER2 therapy are not used for pure DCIS.';
+      chemo.text='Pure DCIS has no indication for cytotoxic chemotherapy.';
+      targeted.text='HER2 testing does not guide routine anti-HER2 treatment for pure DCIS.';
+      if(s.er){endocrine={status:'Consider if ER+',title:s.meno==='pre'?'Tamoxifen for risk reduction':'Tamoxifen or an aromatase inhibitor',text:'After breast-conserving surgery, reduces subsequent breast events; generally does not improve overall survival in DCIS. Individualize adverse effects and benefit.',duration:'Typically 5 years',width:'100%'};}
+      else {endocrine.text='With ER-negative DCIS, endocrine risk-reduction treatment is not routinely used. PR positivity alone warrants pathology review.';}
+      if(s.surgery==='lumpectomy'){
+        radiation={status:'Usually recommended',title:'Radiation after excision',text:'Reduces ipsilateral recurrence. Carefully selected low-risk DCIS can sometimes omit radiation after shared decision-making.',duration:'~1–4 weeks',width:'35%'};
+        steps=[['Lumpectomy','clear margins'],['Radiation','usually'],...(s.er?[['Endocrine','optional · 5 y']]:[]),['Follow-up','yearly mammogram']];
+      } else {
+        radiation={status:'Usually omitted',title:'No routine postmastectomy radiation',text:'After complete mastectomy for pure DCIS, postoperative radiation is generally unnecessary.',duration:'None',width:'8%'};
+        steps=[['Mastectomy','definitive local therapy'],...(s.er?[['Endocrine','mainly contralateral risk; discuss']]:[]),['Follow-up','remaining breast']];
+      }
+      foot='If mastectomy is planned for DCIS, sentinel-node biopsy is often done at surgery because occult invasion may be discovered.';
+    } else {
+      if(s.her2){
+        overview=hr?'Both HER2-targeted systemic therapy and endocrine therapy matter. The chemotherapy strategy depends particularly on tumor size and nodal status.':'HER2-directed systemic therapy is central for tumors that warrant chemotherapy; size and nodes determine the intensity.';
+        if(s.nodes==='0'&&s.size<=0.5){
+          chemo={status:'Often omitted for very small tumors',title:'Individualize treatment',text:'For a very small (≤0.5 cm), node-negative tumor, chemo/HER2 therapy may be omitted. Grade and other risk factors still matter.',duration:'If chosen: variable',width:'18%'};
+          targeted={status:'Not automatically indicated',title:'Small node-negative HER2+',text:'Discuss whether any adjuvant anti-HER2 treatment is justified; avoid treating receptor positivity as an automatic one-year drug course.',duration:'If chosen: variable',width:'18%'};
+        }else if(s.nodes==='0'&&s.size<=2){
+          chemo={status:s.size<=1?'Consider based on risk':'Often recommended',title:'Weekly paclitaxel + trastuzumab (TH)',text:'Common de-escalated option for selected small, node-negative HER2+ tumors. Paclitaxel is usually weekly for 12 doses.',duration:'Paclitaxel ~12 weeks',width:'36%'};
+          targeted={status:'HER2 treatment usually accompanies chemo',title:'Trastuzumab',text:'Given with paclitaxel, then continued to approximately one year total if TH is selected.',duration:'About 1 year total',width:'80%'};
+        }else{
+          chemo={status:'Usually recommended',title:'Neoadjuvant systemic therapy',text:'A common option is TCHP (docetaxel, carboplatin, trastuzumab, pertuzumab), six 3-week cycles. Other regimens are possible.',duration:'TCHP ~18 weeks',width:'54%'};
+          targeted={status:'Core treatment',title:'Trastuzumab ± pertuzumab',text:'Anti-HER2 therapy often runs ~1 year total. NEW in 2026: selected stage II–III disease can receive T-DXd ×4 cycles then THP ×4 before surgery (~24 weeks). Residual invasive disease after taxane/trastuzumab-based therapy can be treated with adjuvant T-DXd ×14 cycles (~42 weeks); T-DM1 is another established regimen. T-DXd carries significant ILD/pneumonitis risk.',duration:'~1 year; depends on response',width:'86%'};
+        }
+        steps=larger?[['Neoadjuvant','~18–24 wk'],['Surgery','then pathology'],['Post-op treatment','HER2-directed'],['Radiation','if indicated'],...(hr?[['Endocrine','5–10 y']]:[])]:[['Surgery','first'],['TH, if selected','12 wk taxane'],['HER2-directed','to ~1 yr'],['Radiation','if indicated'],...(hr?[['Endocrine','5–10 y']]:[])];
+      } else if(!hr){
+        overview='Triple-negative disease lacks established hormone and HER2 targets. Chemotherapy matters most, with pembrolizumab added for appropriate higher-risk early disease.';
+        if(s.nodes==='0'&&s.size<=0.5){
+          chemo={status:'Usually not recommended',title:'Very small, node-negative TNBC',text:'T1aN0 disease generally does not require adjuvant chemotherapy. Confirm margins and complete staging.',duration:'None routinely',width:'8%'};
+          targeted.text='Pembrolizumab is not routinely used for very small node-negative tumors.';
+          steps=[['Surgery','first'],['Radiation','if indicated'],['Surveillance','long-term']];
+        }else if(s.nodes==='0'&&s.size<=1){
+          chemo={status:'Consider',title:'Adjuvant chemotherapy is individualized',text:'For T1bN0 (0.6–1 cm), weigh grade, risk, and toxicity; taxane-based options may be considered. The full neoadjuvant pembrolizumab pathway is not routine.',duration:'If chosen ~3–5 months',width:'42%'};
+          targeted.text='Checkpoint inhibition is not a routine standard for T1bN0.';
+          steps=[['Surgery','first'],['Chemo','if chosen'],['Radiation','if indicated'],['Surveillance','long-term']];
+        }else if(s.nodes!=='0'||s.size>2){
+          chemo={status:'Usually recommended',title:'Taxane/platinum → AC (often pre-op)',text:'For stage II–III high-risk disease, a KEYNOTE-522-style regimen uses paclitaxel/carboplatin then anthracycline/cyclophosphamide before surgery.',duration:'~24 weeks pre-op',width:'66%'};
+          targeted={status:'Often indicated for stage II–III',title:'Pembrolizumab + chemotherapy',text:'For eligible high-risk early TNBC, pembrolizumab is given with preoperative chemotherapy and continued alone after surgery. Eligibility and contraindications matter.',duration:'~24 wk pre + ~27 wk post-op',width:'92%'};
+          steps=[['Chemo + immune','~24 wk'],['Surgery','assess response'],['Pembrolizumab','~27 wk post-op'],['Radiation','if indicated'],['Surveillance','long-term']];
+        }else{
+          chemo={status:'Usually recommended',title:'Adjuvant multiagent chemotherapy',text:'For T1cN0 (1.1–2 cm), adjuvant chemotherapy is commonly offered. A taxane/anthracycline-containing or selected alternative regimen may be used.',duration:'Commonly ~3–5 months',width:'54%'};
+          targeted.text='Routine pembrolizumab is not established for an otherwise T1cN0 stage I case.';
+          steps=[['Surgery','often first'],['Chemo','~3–5 mo'],['Radiation','if indicated'],['Surveillance','long-term']];
+        }
+      }else{
+        overview='Endocrine therapy is the foundation. Chemotherapy is determined by clinical risk and, in eligible patients, the 21-gene recurrence score.';
+        if(highN){
+          chemo={status:'Usually recommended',title:'Higher-risk, node-positive disease',text:'With ≥4 positive nodes, chemotherapy is usually recommended; genomic testing should not substitute for this risk assessment. Common examples: TC or anthracycline/taxane regimens.',duration:'~3–5 months',width:'54%'};
+        } else if(s.nodes==='1'){
+          if(s.meno==='pre')chemo={status:'Generally favored',title:'Premenopausal + 1–3 positive nodes',text:'Clinical-trial evidence supports chemo benefit even with recurrence score ≤25. Oncotype should not be used alone to exclude chemotherapy in this group.',duration:'~3–5 months',width:'54%'};
+          else if(score!==null&&score<=25)chemo={status:'Often omitted',title:'Postmenopausal + score ≤25',text:'For 1–3 positive nodes, a score ≤25 generally supports endocrine treatment without chemotherapy in appropriate candidates.',duration:'None usually',width:'8%'};
+          else if(score!==null&&score>=26)chemo={status:'Generally recommended',title:'Higher genomic risk (≥26)',text:'Consider a regimen such as TC ×4 or anthracycline/taxane therapy based on nodal burden and risk.',duration:'~3–5 months',width:'54%'};
+          else chemo={status:'Needs genomic / risk review',title:'1–3 positive nodes',text:'A postmenopausal woman may use an appropriate genomic assay to inform the chemo decision; clinical and pathological factors remain important.',duration:'If used ~3–5 months',width:'45%'};
+        }else if(s.size<=0.5&&score===null){
+          chemo={status:'Usually omitted',title:'Very small, node-negative HR+',text:'For many T1aN0 cases, chemotherapy is not used and a genomic assay may not be needed. Grade and unusual features can change that.',duration:'None usually',width:'8%'};
+        }else if(score===null){
+          chemo={status:'Undetermined',title:'Clinical risk + genomic assay',text:'Consider an appropriate 21-gene assay in eligible node-negative disease before concluding whether chemotherapy will help.',duration:'If needed ~3–5 months',width:'35%'};
+        }else if(score>=26){
+          chemo={status:'Usually recommended',title:'Recurrence score ≥26',text:'Chemoendocrine therapy is generally offered when an appropriately used 21-gene assay returns ≥26.',duration:'~3–5 months',width:'54%'};
+        }else if(score<=15){
+          chemo={status:'Usually omitted',title:'Low genomic recurrence score',text:'With node-negative HR+/HER2− disease, scores 0–15 generally support endocrine therapy without chemotherapy; reassess unusual high-risk features.',duration:'None usually',width:'8%'};
+        }else if(s.age<=50){
+          chemo={status:'Discuss potential benefit',title:'Age ≤50 and score 16–25',text:'Some younger, node-negative patients benefit from chemotherapy, particularly toward the higher scores; benefit from ovarian suppression may contribute.',duration:'If chosen ~3–5 months',width:'45%'};
+        }else{
+          chemo={status:'Usually omitted',title:'Age >50 and score 16–25',text:'In typical node-negative disease, endocrine therapy is generally sufficient without chemotherapy.',duration:'None usually',width:'8%'};
+        }
+        if((s.nodes!=='0'||s.size>5||s.grade==='3')&&s.size>2 || highN){
+          targeted={status:'Assess higher-risk eligibility',title:'Possible adjuvant CDK4/6 inhibitor',text:'Some high-risk HR+/HER2− stage II–III patients qualify for abemaciclib (2 years) or ribociclib (3 years) with endocrine therapy. Eligibility requires more detail than this calculator captures.',duration:'2–3 years if eligible',width:'85%'};
+        }else{
+          targeted.text='No routine HER2-directed therapy or immunotherapy. Selected higher-risk HR+/HER2− disease may need additional targeted therapy.';
+        }
+        steps=[['Surgery','often first'],...(chemo.status.includes('omitted')?[]:[['Chemo decision','score + risk']]),['Radiation','if indicated'],['Endocrine','5–10 y'],...(targeted.status.startsWith('Assess')?[['CDK4/6','if eligible']]:[])];
+      }
+      if(hr){
+        if(s.meno==='pre') endocrine={status:'Core treatment',title:'Tamoxifen ± ovarian suppression',text:'Lower-risk: tamoxifen. Higher-risk: ovarian suppression with tamoxifen or an aromatase inhibitor. Aromatase inhibitors must NOT be used alone with functioning ovaries.',duration:'5 years; sometimes 7–10',width:'100%'};
+        else endocrine={status:'Core treatment',title:'Aromatase inhibitor (often preferred)',text:'Letrozole, anastrozole or exemestane; tamoxifen is an alternative. Some high-risk patients receive extended endocrine treatment.',duration:'5 years; sometimes 7–10',width:'100%'};
+      } else endocrine.text='ER−/PR− invasive cancer does not benefit from routine endocrine therapy.';
+      if(s.surgery==='lumpectomy'){
+        radiation={status:'Usually indicated',title:'Breast irradiation after lumpectomy',text:'Usually whole-breast radiation or selected partial-breast radiation; boost and nodal fields depend on pathology. Some carefully selected older low-risk ER+ patients may omit.',duration:'Often ~1–4 weeks',width:'35%'};
+      }else if(highN||s.size>5){
+        radiation={status:'Usually indicated',title:'Chest wall ± regional-node radiation',text:'Often recommended after mastectomy with ≥4 positive nodes or T3 disease; exact fields and duration require radiation-oncology assessment.',duration:'Often ~3–5 weeks',width:'48%'};
+      }else if(s.nodes==='1'){
+        radiation={status:'Strongly consider',title:'Postmastectomy regional radiation',text:'For 1–3 positive nodes, treatment depends on tumor size, biologic risk, nodal details and systemic response.',duration:'Often ~3–5 weeks if used',width:'43%'};
+      }else{
+        radiation={status:'Usually omitted',title:'No routine postmastectomy radiation',text:'For a smaller tumor with negative nodes and adequate margins, radiation is usually unnecessary.',duration:'None usually',width:'8%'};
+      }
+    }
+    if(s.brca==='positive' && s.kind==='invasive' && !s.her2){
+      targeted.text+=' A germline pathogenic BRCA1/2 variant can make adjuvant olaparib (1 year) relevant for selected high-risk HER2-negative cases; eligibility is NOT determined by mutation status alone.';
+      if(targeted.status==='Not routine')targeted.status='Review BRCA-directed options';
+    }
+    if(s.er===false&&s.pr===true){overview+=' Isolated ER−/PR+ staining is uncommon; verify pathology before relying on endocrine sensitivity.';}
+    if(s.kind==='dcis'){
+      if(s.her2)overview+=' HER2 expression does not alter standard systemic therapy for pure DCIS.';
+      if(!s.er&&s.pr)overview+=' Confirm unusual ER−/PR+ receptor discordance.';
+    }
+    return {chemo,targeted,endocrine,radiation,overview,steps,foot};
+  }
+  function therapy(which,obj){set(which+'Status',obj.status);set(which+'Title',obj.title);set(which+'Text',obj.text);set(which+'Duration',obj.duration);$(which+'Bar').style.width=obj.width;}
+  function updateDetails(s){
+    const follow=s.surgery==='lumpectomy'?'Annual mammography of the conserved breast(s); first postradiation exam usually ≥6 months after radiation.':'Annual mammography of any remaining native breast. No routine mammogram of the mastectomy side.';
+    set('followup',follow+(s.brca==='positive'?' With a pathogenic BRCA variant, add annual contrast MRI when native breast tissue remains.':' Supplemental breast MRI is individualized for genetics, dense breasts, or diagnosis at younger age.')+' Routine PET/CT or tumor markers are not used in an asymptomatic survivor.');
+    const gene=(s.brca==='positive'?'Known BRCA pathogenic variant: refer for genetic counseling, contralateral risk management, and possible risk-reducing surgery.':s.brca==='negative'?'No pathogenic BRCA variant reported; other genetic risks and family history can still matter.':s.age<=65?'Offer germline BRCA1/2 testing at diagnosis (ASCO/SSO recommendation for age ≤65); family history need not be positive.':'Genetic testing can still be appropriate after 65 based on subtype, ancestry, personal/family history or PARP eligibility.');
+    const qualifier=s.kind==='dcis'?' Pure DCIS requires separate risk assessment; testing recommendations can depend on the clinical setting.':s.her2?' Selected post-neoadjuvant HER2+ residual disease now has FDA-approved T-DXd options (May 2026), with important pulmonary toxicity.':(!s.er&&!s.pr)?' Germline BRCA results are especially relevant in many TNBC presentations.':' Receptor positivity by itself cannot specify chemo need.';
+    set('genetics',gene+qualifier);
+  }
+  function render(){
+    state.age=cap(state.age,18,100,40);state.size=cap(state.size,.1,30,2.5);
+    renderWheel();segRender('kindSeg','kind');segRender('surgerySeg','surgery');
+    $('age').value=state.age;$('size').value=state.size;$('nodes').value=state.nodes;$('grade').value=state.grade;$('brca').value=state.brca;$('score').value=state.score;
+    const showClinical=state.kind==='invasive';$('nodeField').classList.toggle('hidden',!showClinical);$('gradeField').classList.toggle('hidden',!showClinical);
+    const relevant=showClinical && !state.her2 && (state.er||state.pr);
+    $('scoreField').classList.toggle('hidden',!relevant);
+    set('phenotype',classify(state));
+    const model=analyze(state);set('overview',model.overview);
+    const facts=[state.kind==='dcis'?'Stage 0 · noninvasive':'Invasive · nonmetastatic',state.meno==='pre'?'Premenopausal':'Postmenopausal',state.surgery==='lumpectomy'?'Lumpectomy':'Mastectomy',`${state.size} cm`,...(showClinical?[state.nodes==='0'?'N0':state.nodes==='1'?'1–3 nodes':'4+ nodes']:[]),...(relevant&&state.score!==''?[`Recurrence score ${state.score}`]:[])];
+    $('facts').replaceChildren(...facts.map(str=>{const x=document.createElement('span');x.className='fact';x.textContent=str;return x;}));
+    for(const n of ['chemo','targeted','endocrine','radiation'])therapy(n,model[n]);
+    const seq=$('journey');seq.replaceChildren();model.steps.forEach((step,i)=>{if(i){const ar=document.createElement('div');ar.className='journey-arrow';ar.textContent='›';seq.appendChild(ar);}const el=document.createElement('div');el.className='journey-step';const heading=document.createElement('strong');heading.textContent=step[0];const detail=document.createElement('em');detail.textContent=step[1];el.append(heading,detail);seq.appendChild(el);});
+    set('timelineFoot',model.foot+' Therapeutic durations do not add linearly because some treatments overlap.');updateDetails(state);
+  }
+  for(const id of ['kindSeg','surgerySeg'])$(id).addEventListener('click',e=>{const b=e.target.closest('button[data-val]');if(!b)return;state[id==='kindSeg'?'kind':'surgery']=b.dataset.val;markCustom();render();});
+  for(const m of ['pre','post'])$(m).addEventListener('click',()=>{state.meno=m;markCustom();render();});
+  for(const key of ['age','size','nodes','grade','score','brca'])$(key).addEventListener('change',e=>{state[key]=e.target.value;markCustom();render();});
+  document.querySelectorAll('.case').forEach(b=>b.addEventListener('click',()=>applyPreset(b.dataset.preset)));
+  $('print').addEventListener('click',()=>window.print());
+  let toastTimer;
+  function snackbar(msg){set('snack',msg);$('snack').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('snack').classList.remove('show'),2500);}
+  function summaryText(){const m=analyze(state);return ['BREAST CANCER RECEPTOR EXPLORER','Educational example — not a treatment recommendation',classify(state),`ER ${state.er?'+':'−'} · PR ${state.pr?'+':'−'} · HER2 ${state.her2?'+':'−'}`,`${state.kind}; ${state.meno}menopausal; ${state.size} cm; nodes ${state.nodes}; ${state.surgery}; age ${state.age}`,'',...['chemo','targeted','endocrine','radiation'].map((k)=>`${k.toUpperCase()}: ${m[k].status} — ${m[k].title}. ${m[k].duration}. ${m[k].text}`),'',m.overview,'Sources: NCI PDQ, ASCO biomarkers/genetics, FDA May 2026 HER2 approval.'].join('\n');}
+  $('copy').addEventListener('click',async()=>{const value=summaryText();try{await navigator.clipboard.writeText(value);snackbar('Summary copied.');}catch(e){const t=document.createElement('textarea');t.value=value;document.body.appendChild(t);t.select();const ok=document.execCommand('copy');t.remove();snackbar(ok?'Summary copied.':'Clipboard unavailable; try Print.');}});
+  const tourSteps=[
+    {title:'Read the three receptors',text:'Each wedge is a switch. ER and PR are hormone receptors; HER2 is a growth-signal receptor. Click a wedge to flip + or − and watch the treatment cards respond.',focus:'wheelPanel'},
+    {title:'Menopause changes the endocrine plan',text:'Try PRE and POST in the center of the pie. Tamoxifen works in premenopausal patients; an aromatase inhibitor requires ovarian suppression if ovarian function persists.',focus:'menoGroup'},
+    {title:'Biology is only half the story',text:'Tumor size, involved nodes, age, surgery and (for eligible HR+/HER2− disease) the 21-gene recurrence score strongly influence therapy. Try the example cases at the top.',focus:'casePanel'},
+    {title:'Read the chemotherapy card',text:'The card distinguishes usually indicated, optional and often omitted chemotherapy. The duration shown is a typical regimen length — not an appointment schedule.',focus:'chemoCard'},
+    {title:'Watch targeted drugs change',text:'HER2-positive tumors typically use trastuzumab-based treatment; higher-risk triple-negative tumors may use pembrolizumab. Higher-risk HR+/HER2− cases may qualify for CDK4/6 inhibition.',focus:'targetedCard'},
+    {title:'Then follow the pathway',text:'Surgery, radiation, endocrine treatment, and surveillance are not interchangeable. Some treatments overlap. This explorer is for rapid board-review pattern recognition, not patient-specific oncology decisions.',focus:'timelinePanel'}
+  ];
+  let tourStep=0;
+  function updateTour(){const data=tourSteps[tourStep];set('tourCount',`STEP ${tourStep+1} OF ${tourSteps.length}`);set('tourTitle',data.title);set('tourText',data.text);$('tourDots').innerHTML=tourSteps.map((_,i)=>`<b class="${i===tourStep?'on':''}"></b>`).join('');$('tourBack').disabled=tourStep===0;set('tourNext',tourStep===tourSteps.length-1?'Finish ✓':'Next →');document.querySelectorAll('.tour-focus').forEach(e=>e.classList.remove('tour-focus'));$(data.focus).classList.add('tour-focus');const elem=$(data.focus);if(elem.getBoundingClientRect().top<0||elem.getBoundingClientRect().bottom>window.innerHeight-240){elem.scrollIntoView({behavior:'smooth',block:'center'});}}
+  function closeTour(){$('tour').classList.remove('visible');$('tour').setAttribute('aria-hidden','true');document.querySelectorAll('.tour-focus').forEach(e=>e.classList.remove('tour-focus'));$('tourStart').focus();}
+  $('tourStart').addEventListener('click',()=>{tourStep=0;$('tour').classList.add('visible');$('tour').setAttribute('aria-hidden','false');updateTour();});
+  $('tourClose').addEventListener('click',closeTour);
+  $('tourBack').addEventListener('click',()=>{tourStep=Math.max(0,tourStep-1);updateTour();});
+  $('tourNext').addEventListener('click',()=>{if(tourStep===tourSteps.length-1)closeTour();else{tourStep++;updateTour();}});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('tour').classList.contains('visible'))closeTour();});
+  render();
+  // Tiny public test harness; use ?selftest=1 in address bar for local smoke tests.
+  if(new URLSearchParams(location.search).get('selftest')==='1'){
+    const tests=[];const add=(name,pass)=>tests.push({name,pass:!!pass});
+    add('Oncotype 8 ER+ case: no routine chemo',analyze({...presets.boards}).chemo.status==='Usually omitted');
+    add('HER2 large: neoadjuvant chemo',analyze({...presets.her2}).chemo.title==='Neoadjuvant systemic therapy');
+    add('Triple-negative stage II: pembrolizumab',analyze({...presets.triple}).targeted.title.includes('Pembrolizumab'));
+    add('DCIS: no cytotoxic chemo',analyze({...presets.dcis}).chemo.title==='No routine chemotherapy');
+    add('Premenopausal node positive: chemo usually favored',analyze({...presets.nodes}).chemo.status==='Generally favored');
+    add('Score 16–25 age 40: consider',analyze({...presets.boards,score:'20'}).chemo.status==='Discuss potential benefit');
+    add('Postmenopausal node positive score 13: omit',analyze({...presets.nodes,meno:'post'}).chemo.status==='Often omitted');
+    add('Triple-negative with ≤0.5 cm: no chemo',analyze({...presets.triple,size:0.4}).chemo.status==='Usually not recommended');
+    console.table(tests);const failed=tests.filter(t=>!t.pass);if(failed.length)throw new Error(`Failed ${failed.length} self-tests`);
+  }
+})();
+</script>
+</body>
+</html>
