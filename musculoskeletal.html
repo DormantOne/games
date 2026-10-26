@@ -1,0 +1,1292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Special Tests Atlas: orthopedic maneuvers on a working skeleton</title>
+<style>
+:root{
+  --bg:#e6ebef; --panel:#f5f7f9; --panel-2:#edf1f4; --ink:#1b2430; --ink-2:#4b5866; --ink-3:#6f7c89;
+  --line:#c7d0d8; --stage-a:#e3e9ee; --stage-b:#b7c4cf;
+  --bone:#b9a57c; --muscle:#b0413e; --ligament:#4f7fab; --nerve:#b88a12; --force:#cf7422; --torque:#6a46c2; --glove:#3f78de;
+  --accent:#6a46c2; --accent-ink:#ffffff; --ok:#2c7a4b; --part:#a1660f; --bad:#b3343a; --floor:#cdd6dd;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua","Hoefler Text",Georgia,serif;
+  --sans:"Avenir Next","Avenir","Segoe UI Variable Text","Segoe UI","Helvetica Neue",system-ui,sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0d1620; --panel:#12202b; --panel-2:#172734; --ink:#e2e8ee; --ink-2:#a3b2bf; --ink-3:#7d8e9c;
+    --line:#26394a; --stage-a:#1b2b39; --stage-b:#070f16;
+    --bone:#e3d3ae; --ligament:#8ab6dd; --nerve:#e6bf52; --force:#f2a24e; --torque:#a98fff; --glove:#7aa8ff;
+    --accent:#a98fff; --accent-ink:#140d2a; --ok:#62c28d; --part:#e5b25e; --bad:#f07079; --floor:#172533;
+    color-scheme: dark;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+#app{display:grid;grid-template-columns:248px minmax(0,1fr) 372px;grid-template-rows:auto minmax(0,1fr);height:100vh;min-height:560px}
+header#top{grid-column:1/-1;display:flex;align-items:center;gap:20px;padding:10px 18px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;margin-right:auto}
+.brand svg{width:34px;height:34px;flex:none}
+.brand h1{font-family:var(--serif);font-weight:600;font-size:21px;letter-spacing:.005em;margin:0;line-height:1.1}
+.brand p{margin:1px 0 0;color:var(--ink-3);font-size:12.5px}
+.modes{display:flex;background:var(--panel-2);border:1px solid var(--line);border-radius:999px;padding:3px}
+.modes button{border:0;background:transparent;padding:6px 18px;border-radius:999px;cursor:pointer;font-weight:600;color:var(--ink-2)}
+.modes button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.layers{display:flex;gap:6px;flex-wrap:wrap}
+.layer{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:transparent;border-radius:8px;padding:5px 9px;cursor:pointer;font-size:12.5px;color:var(--ink-2)}
+.layer i{width:9px;height:9px;border-radius:50%;background:var(--c);opacity:.35;flex:none}
+.layer[aria-pressed="true"]{background:var(--panel-2);color:var(--ink);border-color:color-mix(in srgb,var(--ink-3) 55%,var(--line))}
+.layer[aria-pressed="true"] i{opacity:1}
+#list{border-right:1px solid var(--line);background:var(--panel);overflow:auto;padding:14px 10px 18px}
+.list-note{margin:0 8px 10px;color:var(--ink-3);font-size:12.5px}
+#mlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+#mlist button{width:100%;display:grid;grid-template-columns:26px 1fr;gap:4px 8px;align-items:baseline;text-align:left;border:0;background:transparent;border-radius:10px;padding:8px 10px;cursor:pointer}
+#mlist button:hover{background:var(--panel-2)}
+#mlist button[aria-current="true"]{background:var(--panel-2);box-shadow:inset 3px 0 0 var(--accent)}
+#mlist .rk{font-family:var(--serif);font-size:17px;color:var(--ink-3);text-align:right;font-variant-numeric:lining-nums}
+#mlist .nm{font-weight:600;color:var(--ink)}
+#mlist .jt{grid-column:2;font-size:12px;color:var(--ink-3)}
+#mlist .freq{grid-column:2;height:3px;border-radius:2px;background:var(--line);overflow:hidden;margin-top:2px}
+#mlist .freq b{display:block;height:100%;background:var(--ink-3);opacity:.6}
+#list.quiz-locked #mlist{opacity:.35;pointer-events:none;filter:blur(1.5px)}
+#list .lock-note{display:none;margin:8px;color:var(--ink-2);font-size:13px}
+#list.quiz-locked .lock-note{display:block}
+#stage{position:relative;overflow:hidden;background:radial-gradient(120% 90% at 50% 30%,var(--stage-a),var(--stage-b))}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#gl.dragging{cursor:grabbing}
+#labels{position:absolute;inset:0;pointer-events:none}
+.lbl{position:absolute;left:0;top:0;transform:translate(-9999px,-9999px);white-space:nowrap;font-size:12px;font-weight:600;padding:2px 7px 2px 6px;border-radius:6px;background:color-mix(in srgb,var(--panel) 86%,transparent);color:var(--ink);border-left:3px solid var(--c);box-shadow:0 1px 3px rgba(0,0,0,.18);transition:opacity .2s}
+.lbl::before{content:"";position:absolute;left:-7px;top:50%;width:5px;height:5px;margin-top:-2.5px;border-radius:50%;background:var(--c)}
+#caption{position:absolute;left:16px;top:14px;right:16px;display:flex;gap:10px;align-items:flex-start;pointer-events:none}
+#caption .box{max-width:560px;background:color-mix(in srgb,var(--panel) 90%,transparent);border:1px solid var(--line);border-radius:12px;padding:9px 13px;box-shadow:0 6px 18px rgba(0,0,0,.08)}
+#cap-title{font-family:var(--serif);font-size:18px;font-weight:600;line-height:1.2}
+#cap-text{color:var(--ink-2);margin-top:2px;font-size:13.5px}
+#cap-text b{color:var(--ink);font-weight:600}
+#hud{position:absolute;left:14px;bottom:64px;width:330px;height:188px;pointer-events:none}
+#hud .bg{fill:var(--panel);fill-opacity:.9;stroke:var(--line)}
+#hud text{font-family:var(--sans);fill:var(--ink-2);font-size:11.5px;font-variant-numeric:tabular-nums}
+#hud .val{fill:var(--ink);font-weight:600}
+#hud .ttl{fill:var(--ink);font-weight:600;font-size:12.5px}
+#hud .axis{stroke:var(--line)}
+#controls{position:absolute;left:14px;right:14px;bottom:12px;display:flex;align-items:center;gap:10px;background:color-mix(in srgb,var(--panel) 92%,transparent);border:1px solid var(--line);border-radius:12px;padding:7px 10px}
+#controls button{border:1px solid var(--line);background:var(--panel-2);border-radius:8px;padding:5px 10px;cursor:pointer;font-weight:600;font-size:12.5px;white-space:nowrap}
+#play{width:38px;display:grid;place-items:center}
+#play svg{width:14px;height:14px;fill:var(--ink)}
+.track{position:relative;flex:1;height:28px;display:flex;align-items:center}
+#scrub{width:100%;margin:0;accent-color:var(--accent);cursor:pointer}
+#ticks{position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none}
+#ticks span{position:absolute;top:2px;width:2px;height:6px;background:var(--ink-3);opacity:.55;border-radius:1px}
+#tclock{font-variant-numeric:tabular-nums;color:var(--ink-3);font-size:12px;min-width:66px;text-align:right}
+#tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--panel);font-size:12px;padding:4px 8px;border-radius:6px;transform:translate(12px,12px);white-space:nowrap;z-index:5}
+#loading{position:absolute;inset:0;display:grid;place-items:center;color:var(--ink-2);font-size:15px;background:radial-gradient(120% 90% at 50% 30%,var(--stage-a),var(--stage-b));z-index:9}
+#loading.err{color:var(--bad);padding:30px;text-align:center}
+#detail{border-left:1px solid var(--line);background:var(--panel);overflow:auto}
+.pad{padding:18px 20px 26px}
+#detail h2{font-family:var(--serif);font-size:28px;font-weight:600;line-height:1.12;margin:0 0 6px;letter-spacing:.003em}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 14px}
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:3px 9px;border-radius:999px;background:var(--panel-2);border:1px solid var(--line);color:var(--ink-2)}
+.tag.joint{color:var(--ink);font-weight:600}
+#detail h3{font-size:13px;font-weight:700;margin:18px 0 6px;color:var(--ink)}
+#detail p{margin:0 0 8px;color:var(--ink-2);max-width:62ch}
+#detail p.lead{color:var(--ink);font-size:15px}
+ol.steps{margin:0;padding:0;list-style:none;counter-reset:s}
+ol.steps li{counter-increment:s;position:relative;padding:6px 8px 6px 34px;border-radius:8px;color:var(--ink-2);margin-bottom:2px;transition:background .25s,color .25s}
+ol.steps li::before{content:counter(s);position:absolute;left:8px;top:6px;width:19px;height:19px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;background:var(--panel-2);border:1px solid var(--line);color:var(--ink-3)}
+ol.steps li.on{background:var(--panel-2);color:var(--ink)}
+ol.steps li.on::before{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.toggle{display:flex;align-items:center;gap:10px;margin:10px 0 4px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel-2);cursor:pointer;width:100%;text-align:left}
+.toggle .sw{width:34px;height:20px;border-radius:999px;background:var(--line);position:relative;flex:none;transition:background .2s}
+.toggle .sw::after{content:"";position:absolute;left:3px;top:3px;width:14px;height:14px;border-radius:50%;background:var(--panel);transition:transform .2s}
+.toggle[aria-pressed="true"] .sw{background:var(--bad)}
+.toggle[aria-pressed="true"] .sw::after{transform:translateX(14px)}
+.toggle b{display:block;color:var(--ink);font-weight:600}
+.toggle small{color:var(--ink-3);font-size:12px}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px}
+.chip{border:1px solid var(--line);background:transparent;border-radius:999px;padding:3px 10px 3px 8px;font-size:12.5px;display:inline-flex;align-items:center;gap:6px;cursor:default;color:var(--ink)}
+.chip i{width:8px;height:8px;border-radius:50%;background:var(--c)}
+.chip.sec{color:var(--ink-3);border-style:dashed}
+.chip:hover{background:var(--panel-2)}
+.grp{font-size:12px;color:var(--ink-3);margin:8px 0 4px}
+.note{font-size:12px;color:var(--ink-3)}
+.pearl{border-left:3px solid var(--accent);padding:6px 0 6px 12px;margin:6px 0 0;color:var(--ink-2)}
+/* quiz */
+.qhead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.qprog{font-size:12.5px;color:var(--ink-3)}
+.qscore{font-family:var(--serif);font-size:22px;font-weight:600}
+.dots{display:flex;gap:4px;margin:0 0 16px;flex-wrap:wrap}
+.dots span{width:18px;height:6px;border-radius:3px;background:var(--line)}
+.dots span.cur{background:var(--accent)}
+.dots span.r2{background:var(--ok)} .dots span.r1{background:var(--part)} .dots span.r0{background:var(--bad)}
+label.f{display:block;font-weight:600;margin:12px 0 5px;font-size:13px}
+input.t{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);font-size:15px}
+input.t:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.btn{border:1px solid var(--line);background:var(--panel-2);border-radius:10px;padding:9px 14px;cursor:pointer;font-weight:600}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.fb{margin-top:16px;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--bg)}
+.fb .line{display:grid;grid-template-columns:22px 1fr;gap:8px;margin:6px 0}
+.fb .ic{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff}
+.ic.ok{background:var(--ok)} .ic.part{background:var(--part)} .ic.bad{background:var(--bad)}
+.fb .ans{color:var(--ink);font-weight:600}
+.fb .why{color:var(--ink-2);font-size:13px}
+.hint{margin-top:12px;padding:9px 12px;border-radius:10px;border:1px dashed var(--line);color:var(--ink-2);font-size:13px}
+.opts{display:flex;gap:8px;margin:10px 0}
+.opts button{flex:1}
+.opts button[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.sumlist{list-style:none;padding:0;margin:10px 0}
+.sumlist li{display:grid;grid-template-columns:28px 1fr auto;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);align-items:baseline}
+.sumlist .pt{font-variant-numeric:tabular-nums;color:var(--ink-3)}
+.kbd{font-size:11.5px;color:var(--ink-3);margin-top:10px}
+@media (max-width:1180px){#app{grid-template-columns:212px minmax(0,1fr) 330px}#hud{width:300px}}
+@media (max-width:900px){
+  #app{display:flex;flex-direction:column;height:auto}
+  #stage{height:64vh;min-height:420px;order:2}
+  #list{order:3;border-right:0;border-top:1px solid var(--line);padding:10px}
+  #mlist{flex-direction:row;overflow-x:auto;gap:6px}
+  #mlist li{flex:none;width:172px}
+  #detail{order:4;border-left:0;border-top:1px solid var(--line)}
+  .layers{width:100%}
+  #hud{transform:scale(.86);transform-origin:left bottom}
+}
+@media (max-width:560px){#hud{display:none}.brand p{display:none}#caption .box{max-width:none}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="top">
+    <div class="brand">
+      <svg viewBox="0 0 34 34" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="9" fill="var(--accent)"/><path d="M13 4c0 5 1 8 2 10.4M21 4c0 5-1 8-2 10.4M12.6 16.2c1.6-1.6 7.2-1.6 8.8 0M14 30c0-5 .6-8 1.6-11.5M20 30c0-5-.6-8-1.6-11.5" stroke="var(--accent-ink)" stroke-width="2.2" fill="none" stroke-linecap="round"/><path d="M8 18.5h5.2m7.6 0H26" stroke="var(--accent-ink)" stroke-width="1.6" stroke-linecap="round" opacity=".7"/></svg>
+      <div><h1>Special Tests Atlas</h1><p>Twelve orthopedic maneuvers on a working skeleton, with muscles, ligaments, nerves and joint torques</p></div>
+    </div>
+    <nav class="modes" role="tablist" aria-label="Mode">
+      <button role="tab" id="tab-learn" aria-selected="true">Learn</button>
+      <button role="tab" id="tab-quiz" aria-selected="false">Quiz</button>
+    </nav>
+    <div class="layers" role="group" aria-label="Visible layers">
+      <button class="layer" data-layer="muscles" aria-pressed="true"><i style="--c:var(--muscle)"></i>Muscles</button>
+      <button class="layer" data-layer="ligaments" aria-pressed="true"><i style="--c:var(--ligament)"></i>Ligaments</button>
+      <button class="layer" data-layer="nerves" aria-pressed="true"><i style="--c:var(--nerve)"></i>Nerves</button>
+      <button class="layer" data-layer="forces" aria-pressed="true"><i style="--c:var(--torque)"></i>Forces and torques</button>
+      <button class="layer" data-layer="hands" aria-pressed="true"><i style="--c:var(--glove)"></i>Examiner hands</button>
+      <button class="layer" data-layer="focus" aria-pressed="true"><i style="--c:var(--accent)"></i>Fade untested</button>
+      <button class="layer" data-layer="skin" aria-pressed="false"><i style="--c:var(--ink-3)"></i>Skin outline</button>
+      <button class="layer" data-layer="labels" aria-pressed="true"><i style="--c:var(--ink)"></i>Labels</button>
+    </div>
+  </header>
+  <aside id="list" aria-label="Maneuvers">
+    <p class="list-note">Ranked from most to least commonly performed in routine exams</p>
+    <p class="lock-note">The list is hidden during the quiz so it can't give answers away.</p>
+    <ol id="mlist"></ol>
+  </aside>
+  <main id="stage">
+    <canvas id="gl" aria-label="3D skeleton demonstrating the selected maneuver"></canvas>
+    <div id="labels" aria-hidden="true"></div>
+    <div id="caption" aria-live="polite"><div class="box"><div id="cap-title"></div><div id="cap-text"></div></div></div>
+    <svg id="hud" viewBox="0 0 330 188" aria-hidden="true"></svg>
+    <div id="controls">
+      <button id="play" aria-label="Pause"><svg viewBox="0 0 14 14"><rect x="2" y="1.5" width="3.6" height="11" rx="1"/><rect x="8.4" y="1.5" width="3.6" height="11" rx="1"/></svg></button>
+      <div class="track"><div id="ticks"></div><input id="scrub" type="range" min="0" max="1000" value="0" aria-label="Maneuver timeline"></div>
+      <span id="tclock">0.0 s</span>
+      <button id="speed" aria-label="Playback speed">1× speed</button>
+      <button id="resetView">Reset view</button>
+    </div>
+    <div id="tip" hidden></div>
+    <div id="loading">Building the skeleton…</div>
+  </main>
+  <aside id="detail" aria-live="polite">
+    <section id="learn-panel" class="pad"></section>
+    <section id="quiz-panel" class="pad" hidden></section>
+  </aside>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>[hidden]{display:none!important}.toggle.acc[aria-pressed="true"] .sw{background:var(--accent)} #learn-panel .note+.meta{margin-top:8px}</style>
+<script>
+(function(){
+'use strict';
+const LOAD=document.getElementById('loading');
+const fail=m=>{LOAD.textContent=m;LOAD.classList.add('err');LOAD.hidden=false;};
+if(!window.THREE){fail('three.js could not be loaded from cdnjs.cloudflare.com. Check the connection and reload the page.');return;}
+const T=THREE,D2R=Math.PI/180;
+const clamp=(x,a,b)=>x<a?a:x>b?b:x,lerp=(a,b,t)=>a+(b-a)*t;
+const sstep=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t);};
+const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+const V=(x=0,y=0,z=0)=>new T.Vector3(x,y,z),VA=a=>new T.Vector3(a[0],a[1],a[2]);
+const col=h=>new T.Color(h).convertSRGBToLinear();
+const cssVar=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const add3=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]];
+const _v=V(),_ax=V();
+
+/* ---------- geometry helpers ---------- */
+function geoFrom(pos,nor,idx){const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));if(nor)g.setAttribute('normal',new T.Float32BufferAttribute(nor,3));g.setIndex(idx);if(!nor)g.computeVertexNormals();return g;}
+function crSample(P,sub){
+  const n=P.length,out=[];if(n<2){out.push(P[0].clone());return out;}
+  const m1=V(),m2=V();
+  for(let i=0;i<n-1;i++){
+    const p0=P[i>0?i-1:0],p1=P[i],p2=P[i+1],p3=P[i+2<n?i+2:n-1],d=p1.distanceTo(p2);
+    m1.subVectors(p2,p0);m1.multiplyScalar(d/(m1.length()||1));
+    m2.subVectors(p3,p1);m2.multiplyScalar(d/(m2.length()||1));
+    for(let s=0;s<sub;s++){const t=s/sub,t2=t*t,t3=t2*t,a=2*t3-3*t2+1,b=t3-2*t2+t,c=-2*t3+3*t2,e=t3-t2;
+      out.push(V(a*p1.x+b*m1.x+c*p2.x+e*m2.x,a*p1.y+b*m1.y+c*p2.y+e*m2.y,a*p1.z+b*m1.z+c*p2.z+e*m2.z));}
+  }
+  out.push(P[n-1].clone());return out;
+}
+function resample(D,N,out){
+  const L=new Float32Array(D.length);for(let i=1;i<D.length;i++)L[i]=L[i-1]+D[i].distanceTo(D[i-1]);
+  const tot=L[D.length-1]||1e-6;let j=0;
+  for(let k=0;k<=N;k++){const s=tot*k/N;while(j<D.length-2&&L[j+1]<s)j++;const seg=(L[j+1]-L[j])||1e-6;out[k].lerpVectors(D[j],D[j+1],clamp((s-L[j])/seg,0,1));}
+  return tot;
+}
+function tube(pts,rf,o={}){
+  const seg=o.seg||18,rad=o.rad||12,P=pts.map(VA),D=P.length>2?crSample(P,10):P,S=[];
+  for(let i=0;i<=seg;i++)S.push(V());resample(D,seg,S);
+  const pos=[],nor=[],idx=[],up=o.up?VA(o.up).normalize():null,Tg=V(),B=V(),tmp=V();let N=null;
+  for(let i=0;i<=seg;i++){
+    if(i===0)Tg.subVectors(S[1],S[0]);else if(i===seg)Tg.subVectors(S[seg],S[seg-1]);else Tg.subVectors(S[i+1],S[i-1]);Tg.normalize();
+    let n=o.nfn?o.nfn(S[i]):up?up.clone():N?N.clone():(Math.abs(Tg.y)<.9?V(0,1,0):V(1,0,0));
+    n.sub(tmp.copy(Tg).multiplyScalar(n.dot(Tg)));
+    if(n.lengthSq()<1e-9){n=Math.abs(Tg.x)<.9?V(1,0,0):V(0,0,1);n.sub(tmp.copy(Tg).multiplyScalar(n.dot(Tg)));}
+    n.normalize();N=n;B.crossVectors(Tg,n).normalize();
+    const r=rf(i/seg),rx=Math.max(Array.isArray(r)?r[0]:r,.003),ry=Math.max(Array.isArray(r)?r[1]:r,.003);
+    for(let j=0;j<=rad;j++){const a=j/rad*Math.PI*2,c=Math.cos(a),s=Math.sin(a);
+      pos.push(S[i].x+n.x*c*rx+B.x*s*ry,S[i].y+n.y*c*rx+B.y*s*ry,S[i].z+n.z*c*rx+B.z*s*ry);
+      const nx=n.x*c/rx+B.x*s/ry,ny=n.y*c/rx+B.y*s/ry,nz=n.z*c/rx+B.z*s/ry,l=Math.hypot(nx,ny,nz)||1;nor.push(nx/l,ny/l,nz/l);}
+  }
+  for(let i=0;i<seg;i++)for(let j=0;j<rad;j++){const a=i*(rad+1)+j,b=a+rad+1;idx.push(a,a+1,b,b,a+1,b+1);}
+  if(o.caps!==false)for(const end of [0,1]){
+    const i=end?seg:0,ring=i*(rad+1),d=end?V().subVectors(S[seg],S[seg-1]).normalize():V().subVectors(S[0],S[1]).normalize(),ci=pos.length/3;
+    pos.push(S[i].x,S[i].y,S[i].z);nor.push(d.x,d.y,d.z);
+    for(let j=0;j<rad;j++){if(end)idx.push(ci,ring+j,ring+j+1);else idx.push(ci,ring+j+1,ring+j);}
+  }
+  return geoFrom(pos,nor,idx);
+}
+const SPH=new T.SphereGeometry(1,16,12);
+const E=(p,r,q)=>({g:SPH,p,s:Array.isArray(r)?r:[r,r,r],q:q||null});
+const Tb=(pts,r,o)=>({g:tube(pts,typeof r==='function'?r:()=>r,o||{})});
+function Cy(a,b,r1,r2,seg){const A=VA(a),B=VA(b),d=V().subVectors(B,A),L=d.length();return {g:new T.CylinderGeometry(r2==null?r1:r2,r1,L,seg||10,1),p:A.clone().add(B).multiplyScalar(.5).toArray(),q:new T.Quaternion().setFromUnitVectors(V(0,1,0),d.normalize())};}
+function Cn(p,r,h,dir){const d=VA(dir).normalize();return {g:new T.ConeGeometry(r,h,10,1),p:VA(p).add(d.clone().multiplyScalar(h/2)).toArray(),q:new T.Quaternion().setFromUnitVectors(V(0,1,0),d)};}
+function cap(center,radius,thetaLen,dir){return {g:new T.SphereGeometry(radius,20,8,0,Math.PI*2,0,thetaLen),p:center,q:new T.Quaternion().setFromUnitVectors(V(0,1,0),VA(dir).normalize())};}
+function ring(center,radius,tubeR,axis,arcDeg,startDeg,s){const g=new T.TorusGeometry(radius,tubeR,8,40,(arcDeg||360)*D2R);if(startDeg)g.rotateZ(startDeg*D2R);return {g,p:center,s:s||null,q:new T.Quaternion().setFromUnitVectors(V(0,0,1),VA(axis).normalize())};}
+function merge(parts){
+  const P=[],N=[],I=[];let off=0;const v=V(),m=new T.Matrix4(),nm=new T.Matrix3(),q=new T.Quaternion();
+  for(const pt of parts){if(!pt)continue;const g=pt.g;q.set(0,0,0,1);if(pt.q)q.copy(pt.q);
+    m.compose(pt.p?VA(pt.p):V(),q,pt.s?VA(pt.s):V(1,1,1));nm.getNormalMatrix(m);
+    const pa=g.attributes.position,na=g.attributes.normal;
+    for(let i=0;i<pa.count;i++){v.fromBufferAttribute(pa,i).applyMatrix4(m);P.push(v.x,v.y,v.z);v.fromBufferAttribute(na,i).applyMatrix3(nm).normalize();N.push(v.x,v.y,v.z);}
+    if(g.index){const ia=g.index;for(let i=0;i<ia.count;i++)I.push(ia.getX(i)+off);}else for(let i=0;i<pa.count;i++)I.push(i+off);
+    off+=pa.count;}
+  return geoFrom(P,N,I);
+}
+function mirrorGeo(g){const m=g.clone(),p=m.attributes.position,n=m.attributes.normal;for(let i=0;i<p.count;i++){p.setX(i,-p.getX(i));n.setX(i,-n.getX(i));}const ix=m.index;for(let i=0;i<ix.count;i+=3){const b=ix.getX(i+1);ix.setX(i+1,ix.getX(i+2));ix.setX(i+2,b);}return m;}
+function surface(fn,nu,nv){const pos=[],idx=[];for(let j=0;j<=nv;j++)for(let i=0;i<=nu;i++){const p=fn(i/nu,j/nv);pos.push(p.x,p.y,p.z);}for(let j=0;j<nv;j++)for(let i=0;i<nu;i++){const a=j*(nu+1)+i,b=a+1,c=a+nu+1,d=c+1;idx.push(a,b,d,a,d,c);}return {g:geoFrom(pos,null,idx)};}
+
+/* ---------- anatomy constants (decimetres, left side, pelvis frame, anatomical position) ---------- */
+const JL={hip:[.85,0,0],knee:[.85,-4.35,-.05],ankle:[.85,-8.3,-.05],girdle:[1.0,4.9,-.95],sc:[.22,5.36,.88],gh:[1.8,5.1,0],elbow:[1.8,2.05,.03],radhead:[1.96,1.85,.08],wrist:[1.8,-.61,.05],patella:[.85,-3.95,.32]};
+const ULNAR_HEAD=[1.6,-.5,.01],AC_L=[1.72,5.56,.04];
+const FING=[['I','index',[.17,-1.12,.02],[.07,-1,0],[.42,.25,.18]],['M','middle',[0,-1.14,.02],[0,-1,0],[.46,.29,.19]],['Rg','ring',[-.16,-1.08,.01],[-.06,-1,0],[.43,.27,.19]],['Lt','little',[-.3,-.98,0],[-.13,-1,0],[.33,.2,.17]]];
+const TH={cmc:[.3,-.38,.08],dir:[.45,-.85,.3],len:[.44,.31,.24],pad:[-.55,-.1,.83]};
+const ARCH=[[1.62,5.45,-.42],[1.88,5.47,-.2],[1.95,5.45,0],[1.83,5.43,.13],[1.7,5.37,.22],[1.57,5.3,.32]];
+const GT_C=[.2,-.05,.04],GT_R=.13;
+
+/* ---------- renderer, scene, lights ---------- */
+const canvas=$('#gl');
+const renderer=new T.WebGLRenderer({canvas,antialias:true,alpha:true,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.outputEncoding=T.sRGBEncoding;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.setClearColor(0x000000,0);
+const scene=new T.Scene();
+const camera=new T.PerspectiveCamera(34,1,.1,400);
+scene.add(new T.HemisphereLight(0xf1f4ff,0x3d454f,.62));
+const key=new T.DirectionalLight(0xfff3e4,1.2);key.position.set(9,24,14);key.castShadow=true;key.shadow.mapSize.set(2048,2048);
+Object.assign(key.shadow.camera,{left:-13,right:13,top:13,bottom:-13,near:1,far:70});key.shadow.bias=-.0004;key.shadow.normalBias=.02;
+key.target.position.set(0,7,0);scene.add(key,key.target);
+const rimL=new T.DirectionalLight(0xbcd2ff,.55);rimL.position.set(-12,9,-14);scene.add(rimL);
+const fillL=new T.DirectionalLight(0xffffff,.28);fillL.position.set(-7,5,12);scene.add(fillL);
+
+/* ---------- materials ---------- */
+const BONE_C=col(0xe9dcc3),CART_C=col(0xa6cfdd),BLACK=new T.Color(0,0,0);
+const boneMat=dbl=>new T.MeshStandardMaterial({color:BONE_C.clone(),roughness:.6,metalness:0,side:dbl?T.DoubleSide:T.FrontSide,transparent:true,opacity:1});
+const cartMat=()=>new T.MeshStandardMaterial({color:CART_C.clone(),roughness:.32,metalness:0,transparent:true,opacity:.95});
+const darkMat=new T.MeshStandardMaterial({color:col(0x2b2622),roughness:.9});
+
+/* ---------- rig: frames ---------- */
+const RIG={frames:{},bones:{},cords:{},list:[]},PICK=[];
+const body=new T.Group();scene.add(body);
+const pelvisF=new T.Group();pelvisF.userData.rest=V();pelvisF.userData.restL=[0,0,0];body.add(pelvisF);RIG.frames.P=pelvisF;
+const BASE={P:[0,0,0],S:[0,0,0],C:[0,0,0],H:JL.gh,U:JL.elbow,R:JL.elbow,W:JL.wrist,F:JL.hip,K:JL.knee,Pa:JL.patella,Ft:JL.ankle};
+function frame(type,S,parent,restL){
+  const lat=S==='R'?-1:1,g=new T.Group();g.name=type+'_'+S;
+  g.userData.restL=restL;g.userData.rest=V(restL[0]*lat,restL[1],restL[2]);g.userData.side=S;
+  const par=RIG.frames[parent];g.position.copy(g.userData.rest).sub(par.userData.rest);g.userData.home=g.position.clone();
+  par.add(g);RIG.frames[type+'_'+S]=g;return g;}
+for(const S of ['L','R']){
+  frame('S',S,'P',JL.girdle);frame('C',S,'P',JL.sc);frame('H',S,'S_'+S,JL.gh);frame('U',S,'H_'+S,JL.elbow);frame('R',S,'U_'+S,JL.radhead);frame('W',S,'R_'+S,JL.wrist);
+  for(const [k,,mc,dir,len] of FING){const d=VA(dir).normalize(),p=add3(JL.wrist,mc);frame(k+'1',S,'W_'+S,p);BASE[k+'1']=p;
+    const p2=add3(p,d.clone().multiplyScalar(len[0]).toArray());frame(k+'2',S,k+'1_'+S,p2);BASE[k+'2']=p2;
+    const p3=add3(p2,d.clone().multiplyScalar(len[1]).toArray());frame(k+'3',S,k+'2_'+S,p3);BASE[k+'3']=p3;}
+  const td=VA(TH.dir).normalize(),t1=add3(JL.wrist,TH.cmc);frame('T1',S,'W_'+S,t1);BASE.T1=t1;
+  const t2=add3(t1,td.clone().multiplyScalar(TH.len[0]).toArray());frame('T2',S,'T1_'+S,t2);BASE.T2=t2;
+  const t3=add3(t2,td.clone().multiplyScalar(TH.len[1]).toArray());frame('T3',S,'T2_'+S,t3);BASE.T3=t3;
+  frame('F',S,'P',JL.hip);frame('K',S,'F_'+S,JL.knee);frame('Pa',S,'F_'+S,JL.patella);frame('Ft',S,'K_'+S,JL.ankle);
+}
+function localOf(type,S,p){const fr=RIG.frames[type+'_'+S]||RIG.frames[type],b=BASE[type],r=fr.userData.restL;return V((p[0]+b[0]-r[0])*(S==='R'?-1:1),p[1]+b[1]-r[1],p[2]+b[2]-r[2]);}
+function frameOf(type,S){return RIG.frames[type+'_'+S]||RIG.frames[type];}
+function regBone(id,name,frameKey,g,o={}){
+  const mat=o.matf?o.matf():boneMat(o.dbl),mesh=new T.Mesh(g,mat);mesh.castShadow=o.shadow!==false;mesh.receiveShadow=true;RIG.frames[frameKey].add(mesh);
+  const s={id,name,kind:o.kind||'bone',mesh,mat,frame:frameKey,layer:o.layer||'bones'};mesh.userData.struct=s;RIG.bones[id]=s;RIG.list.push(s);PICK.push(mesh);return s;}
+function bilat(id,name,type,parts,o={}){const g=merge(parts),b=BASE[type],r=RIG.frames[type+'_L'].userData.restL;g.translate(b[0]-r[0],b[1]-r[1],b[2]-r[2]);
+  regBone(id+'_L',name+' (left)',type+'_L',g,o);regBone(id+'_R',name+' (right)',type+'_R',mirrorGeo(g),o);}
+const CART={matf:cartMat,kind:'cartilage',layer:'ligaments'};
+
+/* ---------- skeleton ---------- */
+function buildSkeleton(){
+  // vertebral column
+  const ctrl=[[0,1.3,-.42],[0,2.0,-.24],[0,2.7,-.3],[0,3.5,-.5],[0,4.4,-.64],[0,5.2,-.55],[0,5.68,-.4],[0,6.2,-.2],[0,6.78,-.1]].map(VA);
+  const dense=crSample(ctrl,12),Ls=[0];for(let i=1;i<dense.length;i++)Ls.push(Ls[i-1]+dense[i].distanceTo(dense[i-1]));const tot=Ls[Ls.length-1];
+  const at=s=>{s=clamp(s,0,tot);let j=0;while(j<dense.length-2&&Ls[j+1]<s)j++;const t=(s-Ls[j])/((Ls[j+1]-Ls[j])||1e-6);return {p:V().lerpVectors(dense[j],dense[j+1],t),tg:V().subVectors(dense[j+1],dense[j]).normalize()};};
+  const vL=merge([{...Cy([0,-.13,0],[0,.13,0],.24,.24,16),s:[1,1,.74]},Cy([.14,0,-.12],[.13,0,-.3],.055),Cy([-.14,0,-.12],[-.13,0,-.3],.055),E([0,0,-.33],[.16,.09,.06]),E([0,-.02,-.52],[.045,.11,.17]),Cy([.12,.02,-.2],[.44,.04,-.25],.04,.03),Cy([-.12,.02,-.2],[-.44,.04,-.25],.04,.03),E([.13,.11,-.32],.055),E([-.13,.11,-.32],.055)]);
+  const vT=merge([{...Cy([0,-.09,0],[0,.09,0],.18,.18,14),s:[1,1,.82]},Cy([.1,.02,-.12],[.1,.02,-.25],.035),Cy([-.1,.02,-.12],[-.1,.02,-.25],.035),E([0,0,-.28],[.12,.08,.045]),Cy([0,-.02,-.3],[0,-.3,-.56],.035,.022),Cy([.08,.02,-.24],[.3,.05,-.33],.035,.028),Cy([-.08,.02,-.24],[-.3,.05,-.33],.035,.028)]);
+  const vC=merge([{...Cy([0,-.055,0],[0,.055,0],.12,.12,12),s:[1,1,.72]},E([0,0,-.19],[.11,.05,.04]),Cy([0,0,-.2],[0,-.06,-.34],.026,.02),Cy([.09,0,-.04],[.21,-.01,-.06],.03,.022),Cy([-.09,0,-.04],[-.21,-.01,-.06],.03,.022),E([.1,.03,-.16],.04),E([-.1,.03,-.16],.04)]);
+  const types='LLLLLTTTTTTTTTTTTCCCCCCC'.split(''),sp={L:.35,T:.235,C:.165};let total=0;types.forEach(t=>total+=sp[t]);const k=tot/total;
+  const lum=[],vP=[],dP=[],cent=[];let s=0;
+  types.forEach((ty,i)=>{const h=sp[ty]*k,c=at(s+h/2);const Y=c.tg.clone(),Z=V(0,0,1).sub(Y.clone().multiplyScalar(Y.z)).normalize(),X=V().crossVectors(Y,Z).normalize();
+    const q=new T.Quaternion().setFromRotationMatrix(new T.Matrix4().makeBasis(X,Y,Z));
+    const sc=ty==='L'?1-.025*i:ty==='T'?1.05-.035*(i-5):(i===17?1.1:1);
+    (ty==='L'?lum:vP).push({g:ty==='L'?vL:ty==='T'?vT:vC,p:c.p.toArray(),q,s:[sc,sc,sc]});cent.push({p:c.p,ty});
+    if(i>0){const b=at(s),r=ty==='C'?.11:ty==='T'?.17*sc:.23*sc;dP.push({g:new T.CylinderGeometry(r,r,.05,14),p:b.p.toArray(),q:new T.Quaternion().setFromUnitVectors(V(0,1,0),b.tg),s:[1,1,ty==='C'?.72:.78]});}
+    s+=h;});
+  regBone('lumbar','Lumbar vertebrae','P',merge(lum));regBone('spine','Thoracic and cervical vertebrae','P',merge(vP));
+  regBone('discs','Intervertebral discs','P',merge(dP),CART);
+  // ribs + costal cartilage
+  const RIBS=[[.62,.45,150,.75,[.22,5.12,.84]],[.95,.62,146,.86,[.2,4.92,.92]],[1.15,.8,140,.92,[.19,4.62,.98]],[1.27,.95,137,.97,[.19,4.32,1.04]],[1.36,1.05,134,1,[.18,4.02,1.1]],[1.42,1.12,131,1.02,[.18,3.75,1.16]],[1.46,1.18,128,1.02,[.16,3.58,1.2]],[1.47,1.2,124,1,[.45,3.35,1.12]],[1.45,1.18,120,.95,[.7,3.05,.98]],[1.4,1.1,114,.85,[.95,2.75,.78]],[1.3,.7,100,.6,null],[1.12,.45,82,.4,null]];
+  const rP=[],cP=[];
+  RIBS.forEach(([A,drop,thb,za,st],n)=>{const v=cent[16-n].p,yv=v.y,zv=v.z,zp=zv-.33,zc=(zp+za)/2,B=(za-zp)/2,pts=[[.13,yv,zv-.05],[.3,yv+.02,zv-.22]];
+    for(let j=0;j<=7;j++){const th=(25+(thb-25)*j/7)*D2R;pts.push([A*Math.sin(th),yv-.03-drop*Math.pow(j/7,1.3),zc-B*Math.cos(th)]);}
+    const nf=p=>V(p.x,0,p.z-zc);
+    rP.push(Tb(pts,t=>[.026,.062*(t<.1?.7+3*t:1)],{seg:30,rad:8,nfn:nf}));
+    if(st){const e=pts[pts.length-1],mid=[(e[0]+st[0])/2,(e[1]+st[1])/2+.06,(e[2]+st[2])/2+.08];cP.push(Tb([e,mid,st],[.028,.045],{seg:12,rad:8,nfn:nf}));}});
+  const rib=merge(rP),cc=merge(cP);
+  regBone('ribs','Rib cage','P',merge([{g:rib},{g:mirrorGeo(rib)}]));regBone('costal','Costal cartilages','P',merge([{g:cc},{g:mirrorGeo(cc)}]),CART);
+  regBone('sternum','Sternum','P',merge([E([0,5.03,.9],[.27,.3,.065],new T.Quaternion().setFromAxisAngle(V(1,0,0),-.2)),Tb([[0,4.78,.96],[0,4.2,1.08],[0,3.58,1.19]],t=>[.17+.03*Math.sin(t*Math.PI),.055],{up:[1,0,0]}),E([0,3.4,1.18],[.07,.15,.035])]));
+  // skull
+  const teeth=[],box=new T.BoxGeometry(.055,.075,.05);
+  for(let j=0;j<12;j++){const f=(-75+150*j/11)*D2R;teeth.push({g:box,p:[.31*Math.sin(f),6.87,.55+.42*Math.cos(f)],q:new T.Quaternion().setFromAxisAngle(V(0,1,0),f)},{g:box,p:[.3*Math.sin(f),6.79,.54+.4*Math.cos(f)],q:new T.Quaternion().setFromAxisAngle(V(0,1,0),f)});}
+  regBone('skull','Skull','P',merge([E([0,7.66,-.02],[.72,.8,.93]),E([0,7.05,.6],[.46,.42,.4]),E([0,7.55,.78],[.55,.12,.2]),Tb([[.42,7.18,.72],[.62,7.2,.35],[.64,7.22,.05]],.05),Tb([[-.42,7.18,.72],[-.62,7.2,.35],[-.64,7.22,.05]],.05),
+    Tb([[-.6,7.25,-.05],[-.58,6.92,.02],[-.48,6.62,.38],[0,6.52,.86],[.48,6.62,.38],[.58,6.92,.02],[.6,7.25,-.05]],[.085,.05],{seg:34,up:[0,1,0]}),E([0,6.53,.85],[.17,.1,.08]),...teeth]));
+  const face=new T.Mesh(merge([E([.29,7.36,.66],[.17,.15,.2]),E([-.29,7.36,.66],[.17,.15,.2]),E([0,7.12,.92],[.09,.13,.1])]),darkMat);pelvisF.add(face);
+  // pelvis: sacrum + hip bones
+  regBone('sacrum','Sacrum','P',merge([Tb([[0,1.08,-.52],[0,.7,-.66],[0,.3,-.76],[0,-.05,-.76],[0,-.35,-.66]],t=>[lerp(.53,.06,Math.pow(t,.8)),lerp(.17,.05,t)],{up:[1,0,0],seg:20})]));
+  const crestP=[[1.1,.82,.55],[1.32,1.2,.25],[1.33,1.42,-.15],[1.1,1.45,-.5],[.7,1.3,-.72],[.5,1.05,-.78]];
+  const cr=[],lo=[],nu=24;for(let i=0;i<=nu;i++){cr.push(V());lo.push(V());}
+  resample(crSample(crestP.map(VA),8),nu,cr);resample(crSample([[1.0,.42,.45],[1.08,.38,.2],[1.06,.35,-.1],[.85,.32,-.4],[.62,.55,-.62],[.5,.85,-.75]].map(VA),8),nu,lo);
+  const na=V(.75,-.45,.35).normalize();
+  const hipL=merge([surface((u,v)=>{const i=Math.round(u*nu),p=V().lerpVectors(lo[i],cr[i],v);p.x+=.07*Math.sin(Math.PI*u)*Math.sin(Math.PI*v);return p;},nu,8),
+    Tb(crestP,.055,{seg:28}),Tb([[1.1,.82,.55],[1.04,.62,.52],[1.0,.42,.45]],.045),E([1.1,.82,.56],.07),E([1.0,.42,.47],.06),E([.5,1.05,-.78],.07),
+    cap(JL.hip,.29,1.25,na.clone().negate().toArray()),E([.66,.08,-.02],[.16,.34,.3]),Tb([[.72,-.08,.3],[.45,-.22,.52],[.2,-.38,.6]],.085),E([.12,-.46,.6],[.1,.15,.08]),
+    Tb([[.12,-.58,.55],[.25,-.8,.32],[.42,-.88,.05],[.55,-.82,-.2]],.07),E([.58,-.78,-.28],[.12,.17,.12]),Tb([[.58,-.7,-.3],[.72,-.35,-.3],[.8,-.08,-.22]],.11),Cn([.6,-.22,-.45],.05,.16,[-.6,0,-.6]),Tb([[.85,.3,-.38],[.95,.15,-.25],[1.0,.1,-.1]],.06)]);
+  regBone('hipbone_L','Hip bone (left)','P',hipL,{dbl:true});regBone('hipbone_R','Hip bone (right)','P',mirrorGeo(hipL),{dbl:true});
+  const lab=merge([ring(VA(JL.hip).sub(na.clone().multiplyScalar(.29*Math.cos(1.25))).toArray(),.29*Math.sin(1.25),.03,na.toArray())]);
+  regBone('acetLabrum_L','Acetabular labrum (left)','P',lab,CART);regBone('acetLabrum_R','Acetabular labrum (right)','P',mirrorGeo(lab),CART);
+  regBone('symphysis','Pubic symphysis','P',merge([Cy([-.05,-.46,.6],[.05,-.46,.6],.08,.08,12)]),CART);
+  // shoulder girdle
+  const SA=V(.68,5.45,-1.0),IA=V(.86,3.3,-.95),LA=V(1.5,5.0,-.3),ng=V(.8,.05,.6).normalize();
+  bilat('scapula','Scapula','S',[surface((u,v)=>{const p=V().lerpVectors(SA,LA,u).lerp(IA,v);p.z-=.05*Math.sin(Math.PI*u)*Math.sin(Math.PI*v);return p;},10,12),
+    Tb([SA.toArray(),[.74,4.4,-1.02],IA.toArray()],.03),Tb([IA.toArray(),[1.25,4.2,-.6],LA.toArray()],.05),Tb([SA.toArray(),[1.1,5.32,-.7],[1.42,5.25,-.25]],.026),
+    Tb([[.72,5.12,-1.08],[1.15,5.28,-.94],[1.48,5.44,-.64]],[.035,.09],{up:[0,1,0]}),Tb([[1.5,5.46,-.52],[1.7,5.51,-.36],[1.9,5.52,-.16],[1.95,5.5,0],[1.83,5.48,.13]],[.035,.12],{up:[0,1,0]}),
+    Tb([[1.45,5.28,-.2],[1.42,5.38,.05],[1.5,5.32,.3],[1.56,5.22,.42]],t=>.07-.02*t),E([1.52,5.05,-.28],[.12,.16,.12]),cap(JL.gh,.27,.62,ng.clone().negate().toArray())],{dbl:true});
+  bilat('glenLabrum','Glenoid labrum','S',[ring(VA(JL.gh).sub(ng.clone().multiplyScalar(.27*Math.cos(.62))).toArray(),.27*Math.sin(.62),.03,ng.toArray())],CART);
+  bilat('clavicle','Clavicle','C',[Tb([[.22,5.36,.88],[.65,5.43,.98],[1.15,5.5,.76],[1.5,5.55,.34],[1.7,5.56,.06]],t=>t<.15?[lerp(.1,.075,t/.15),lerp(.1,.075,t/.15)]:t>.7?[lerp(.075,.05,(t-.7)/.3),lerp(.075,.115,(t-.7)/.3)]:[.075,.075],{up:[0,1,0],seg:22}),E([.24,5.36,.88],.095)]);
+  // arm
+  bilat('humerus','Humerus','H',[E([-.02,0,-.02],.24),E([.19,-.08,.04],[.12,.16,.14]),E([.05,-.15,.17],[.07,.09,.07]),
+    Tb([[.06,-.2,.02],[.04,-.7,.02],[.01,-1.6,.02],[0,-2.5,.02],[0,-2.88,0]],t=>{const tp=1-sstep(0,.16,t),bt=sstep(.74,1,t);return [.115+.075*tp+.15*bt,.115+.075*tp-.01*bt];},{up:[1,0,0],seg:22}),
+    E([.11,-1.25,.03],[.05,.17,.06]),E([-.35,-2.94,-.02],.09),E([.3,-2.93,0],.075),
+    {g:new T.LatheGeometry([[.12,-.13],[.1,-.07],[.085,0],[.1,.07],[.12,.13]].map(a=>new T.Vector2(a[0],a[1])),16),p:[-.1,-3.05,.03],q:new T.Quaternion().setFromAxisAngle(V(0,0,1),Math.PI/2)},E([.15,-3.03,.06],.1)]);
+  bilat('ulna','Ulna','U',[E([-.08,.06,-.14],[.09,.16,.1]),E([-.07,-.15,.09],[.07,.06,.08]),Tb([[-.08,-.1,-.06],[-.11,-.9,-.03],[-.17,-1.9,-.02],[-.2,-2.5,-.02]],t=>lerp(.1,.05,Math.pow(t,.7)),{seg:18}),E([-.2,-2.54,-.02],.07),Cn([-.24,-2.58,-.07],.03,.09,[0,-1,0])]);
+  bilat('radius','Radius','R',[Cy([.15,-.155,.05],[.15,-.245,.05],.105,.105,16),Tb([[.15,-.24,.05],[.14,-.45,.05]],.055),E([.1,-.5,.09],[.05,.09,.05]),
+    Tb([[.14,-.42,.05],[.2,-1.1,.04],[.19,-1.9,.03],[.12,-2.45,.02]],t=>{const b=sstep(.7,1,t);return [lerp(.06,.075,t)+.13*b,lerp(.06,.075,t)+.03*b];},{up:[1,0,0],seg:18}),E([.07,-2.56,.02],[.22,.09,.13]),Cn([.27,-2.6,.01],.05,.1,[0,-1,0])]);
+  bilat('carpals','Carpal bones','W',[E([.18,-.12,.03],[.1,.12,.08]),E([.02,-.08,0],.08),E([-.14,-.12,-.01],.07),E([-.17,-.12,.1],.05),E([.25,-.33,.05],[.08,.08,.07]),E([.11,-.34,0],[.06,.07,.06]),E([-.02,-.32,0],[.08,.12,.08]),E([-.17,-.31,0],[.08,.1,.07]),E([-.15,-.33,.12],[.03,.04,.05])]);
+  const mcs=[];FING.forEach(([,,mc])=>{const b=[mc[0]*.85,-.47,mc[2]];mcs.push(Tb([b,[mc[0]*.95,(mc[1]-.47)/2,-.03],[mc[0],mc[1]+.05,mc[2]]],t=>lerp(.055,.042,t),{seg:10,rad:10}),E(mc,.058),E(b,.058));});
+  bilat('metacarpals','Metacarpals','W',mcs);
+  FING.forEach(([k,nm,,dir,len])=>{const d=VA(dir).normalize();for(let s=0;s<3;s++){const e=d.clone().multiplyScalar(len[s]).toArray(),r0=[.045,.038,.032][s],r1=[.038,.032,.024][s];
+    bilat('ph'+k+(s+1),['Proximal','Middle','Distal'][s]+' phalanx, '+nm+' finger',k+(s+1),[Tb([[0,0,0],e],t=>lerp(r0,r1,t),{seg:6,rad:9}),E(e,s<2?r1*1.12:r1*.9)]);}});
+  const td=VA(TH.dir).normalize();
+  [['T1','First metacarpal',0,[.055,.045]],['T2','Proximal phalanx, thumb',1,[.046,.04]],['T3','Distal phalanx, thumb',2,[.04,.028]]].forEach(([k,nm,s,r])=>{const e=td.clone().multiplyScalar(TH.len[s]).toArray();bilat('ph'+k,nm,k,[Tb([[0,0,0],e],t=>lerp(r[0],r[1],t),{seg:6,rad:9}),E(e,r[1]*1.1)]);});
+  // leg
+  bilat('femur','Femur','F',[E([0,0,0],.24),Tb([[.06,-.04,.01],[.22,-.17,-.02],[.4,-.3,-.06]],[.16,.13],{up:[0,1,0],seg:8}),E([.5,-.18,-.08],[.14,.22,.2]),E([.3,-.62,-.12],[.08,.1,.08]),
+    Tb([[.46,-.32,-.04],[.38,-1.0,.03],[.25,-2.2,.08],[.12,-3.4,.03],[.03,-3.95,-.03]],t=>{const b=sstep(.78,1,t),tp=1-sstep(0,.12,t);return [.135+.035*tp+.2*b,.135+.035*tp+.065*b];},{up:[1,0,0],seg:26}),
+    Tb([[.4,-1.0,-.1],[.27,-2.3,-.06],[.14,-3.4,-.11]],.035,{seg:14,rad:6}),E([-.2,-4.33,-.07],[.16,.2,.26]),E([.2,-4.31,-.07],[.15,.19,.25]),E([0,-4.13,.1],[.27,.17,.13]),E([-.35,-4.24,-.06],.07),E([.33,-4.22,-.06],.06),E([-.33,-4.05,-.08],.05)]);
+  bilat('patella','Patella','Pa',[E([0,.02,0],[.2,.21,.09]),E([0,-.12,.01],[.12,.12,.07])]);
+  bilat('tibia','Tibia','K',[E([-.2,-.3,-.04],[.22,.12,.26]),E([.21,-.31,-.05],[.21,.12,.24]),Cn([0,-.21,-.03],.045,.07,[0,1,0]),E([0,-.62,.19],[.09,.13,.06]),E([.22,-.44,.1],.05),
+    Tb([[0,-.38,-.01],[0,-1.2,.03],[-.02,-2.5,0],[-.03,-3.5,-.02],[-.02,-3.72,-.02]],t=>{const tp=1-sstep(0,.2,t),b=sstep(.85,1,t);return [.125+.085*tp+.07*b,.115+.06*tp+.045*b];},{up:[1,0,0],seg:24}),
+    E([-.02,-3.7,-.02],[.2,.11,.17]),E([-.21,-3.9,0],[.07,.13,.09])]);
+  bilat('fibula','Fibula','K',[E([.33,-.46,-.11],[.08,.09,.08]),Tb([[.33,-.52,-.1],[.34,-1.6,-.08],[.31,-3.2,-.07],[.3,-3.76,-.09]],t=>t<.85?lerp(.045,.038,t/.85):lerp(.038,.06,(t-.85)/.15),{seg:20,rad:8}),E([.3,-3.95,-.09],[.065,.15,.09])]);
+  bilat('menMed','Medial meniscus','K',[ring([-.2,-.17,-.04],.165,.036,[0,1,0],300,30,[1,1,.55])],CART);
+  bilat('menLat','Lateral meniscus','K',[ring([.21,-.18,-.05],.14,.034,[0,1,0],330,195,[1,1,.55])],CART);
+  bilat('talus','Talus','Ft',[E([0,-.02,.02],[.17,.16,.22]),Tb([[0,-.06,.15],[-.05,-.13,.38]],.09,{seg:6}),E([-.07,-.15,.44],.11),E([.17,-.1,.02],.05)]);
+  bilat('calcaneus','Calcaneus','Ft',[Tb([[.03,-.42,-.42],[.05,-.38,-.05],[.12,-.38,.33]],t=>[lerp(.15,.12,t),lerp(.2,.12,t)],{up:[1,0,0],seg:12}),E([.03,-.45,-.44],[.15,.24,.12]),E([-.15,-.26,.05],[.08,.05,.1])]);
+  const tars=[E([-.12,-.24,.6],[.15,.13,.07]),E([.17,-.42,.6],[.11,.1,.13]),E([-.19,-.33,.8],[.07,.13,.1]),E([-.06,-.29,.77],[.06,.09,.08]),E([.07,-.32,.77],[.06,.1,.09])];
+  [[[-.19,-.42,.9],[-.24,-.6,1.53],.075,.095],[[-.06,-.37,.88],[-.07,-.6,1.62],.045,.06],[[.05,-.39,.86],[.05,-.62,1.57],.045,.058],[[.16,-.44,.8],[.17,-.63,1.48],.042,.055],[[.26,-.5,.7],[.3,-.63,1.38],.042,.052]].forEach(([b,h,r,hr])=>tars.push(Tb([b,h],r,{seg:8,rad:9}),E(h,hr)));
+  tars.push(E([.33,-.52,.7],.06),E([-.2,-.68,1.52],.03),E([-.28,-.68,1.52],.03));
+  bilat('tarsals','Tarsals and metatarsals','Ft',tars);
+  const toes=[Tb([[-.25,-.62,1.66],[-.26,-.64,1.93]],.055,{seg:5}),Tb([[-.26,-.64,1.96],[-.26,-.66,2.13]],t=>lerp(.05,.032,t),{seg:5})];
+  [[-.07,-.62,1.7,.22],[.05,-.64,1.65,.2],[.17,-.65,1.56,.18],[.3,-.65,1.46,.15]].forEach(([x,y,z,L])=>toes.push(Tb([[x,y,z],[x,y-.02,z+L],[x,y-.06,z+L+.1],[x,y-.08,z+L+.17]],t=>lerp(.035,.022,t),{seg:10,rad:7})));
+  bilat('toes','Phalanges of the toes','Ft',toes);
+}
+
+/* ---------- soft tissue: muscles, tendons, ligaments, nerves ---------- */
+const CORDS=[
+ ['supraspinatus','Supraspinatus','muscle',.115,[0,.62],[['S',.92,5.3,-.93],['S',1.4,5.38,-.42],['H',.05,.28,-.03],['H',.19,.07,.04]]],
+ ['infraspinatus','Infraspinatus','muscle',.15,[0,.7],[['S',.95,4.45,-.98],['S',1.4,4.85,-.6],['H',.1,.05,-.27],['H',.22,-.04,-.1]]],
+ ['teresMinor','Teres minor','muscle',.075,[0,.7],[['S',1.28,4.1,-.66],['H',.05,-.15,-.26],['H',.21,-.14,-.12]]],
+ ['subscapularis','Subscapularis','muscle',.14,[0,.72],[['S',1.0,4.45,-.82],['S',1.45,4.8,-.25],['H',-.02,-.08,.27],['H',.06,-.16,.22]]],
+ ['deltAnt','Deltoid (anterior)','muscle',.13,[.08,.88],[['C',1.35,5.52,.62],['H',.2,.08,.3],['H',.14,-1.25,.06]]],
+ ['deltMid','Deltoid (middle)','muscle',.14,[.08,.88],[['S',1.95,5.5,-.1],['H',.36,.02,0],['H',.14,-1.25,.03]]],
+ ['deltPost','Deltoid (posterior)','muscle',.13,[.08,.88],[['S',1.25,5.25,-.92],['H',.22,.02,-.3],['H',.13,-1.25,0]]],
+ ['pecMajor','Pectoralis major','muscle',.17,[0,.8],[['P',.15,4.4,1.18],['P',.95,4.25,1.18],['H',.2,-.55,.32],['H',.13,-.45,.13]]],
+ ['latissimus','Latissimus dorsi','muscle',.15,[0,.82],[['P',.12,2.6,-.95],['P',1.0,3.4,-.95],['S',1.32,3.95,-.62],['H',0,-.5,.1]]],
+ ['teresMajor','Teres major','muscle',.1,[0,.75],[['S',.95,3.35,-.9],['H',-.05,-.55,.05]]],
+ ['trapUpper','Trapezius (upper fibres)','muscle',.12,[0,.85],[['P',0,6.6,-.5],['P',.6,5.95,-.62],['S',1.6,5.58,-.25]]],
+ ['bicepsLong','Biceps brachii (long head)','muscle',.135,[.36,.84],[['S',1.6,5.3,-.08],['H',.08,.2,.2],['H',.1,-.35,.22],['H',.05,-1.5,.35],['H',.02,-2.7,.3],['R',.1,-.5,.1]]],
+ ['bicepsShort','Biceps brachii (short head)','muscle',.12,[.22,.82],[['S',1.55,5.25,.4],['H',-.02,-1.3,.33],['H',0,-2.7,.3],['R',.1,-.5,.1]]],
+ ['tricepsLong','Triceps brachii (long head)','muscle',.15,[.1,.82],[['S',1.55,4.8,-.3],['H',-.05,-1.5,-.3],['H',0,-2.75,-.25],['U',-.08,.1,-.22]]],
+ ['tricepsLat','Triceps brachii (lateral head)','muscle',.13,[.05,.82],[['H',.15,-.6,-.12],['H',.12,-1.8,-.25],['U',-.05,.08,-.2]]],
+ ['brachialis','Brachialis','muscle',.13,[.04,.86],[['H',.02,-1.6,.12],['H',0,-2.7,.2],['U',-.06,-.18,.12]]],
+ ['brachiorad','Brachioradialis','muscle',.11,[.05,.62],[['H',.25,-2.2,.05],['R',.28,-.8,.08],['R',.27,-2.45,.02]]],
+ ['pronTeres','Pronator teres','muscle',.085,[.08,.85],[['H',-.33,-2.85,.05],['U',-.05,-.6,.18],['R',.22,-1.2,.05]]],
+ ['fcr','Flexor carpi radialis','muscle',.075,[.06,.52],[['H',-.33,-2.88,.06],['R',.05,-1.4,.16],['R',.12,-2.45,.14],['W',.15,-.45,.07]]],
+ ['fcu','Flexor carpi ulnaris','muscle',.085,[.06,.6],[['H',-.36,-2.9,-.02],['U',-.2,-1.2,.08],['U',-.22,-2.4,.08],['W',-.17,-.12,.12]]],
+ ['fds','Flexor digitorum superficialis','muscle',.11,[.05,.45],[['H',-.32,-2.92,.08],['U',-.05,-1.3,.22],['R',0,-2.45,.18],['W',0,-.3,.16],['W',0,-1.1,.1],['M2',0,-.05,.05]]],
+ ['ecrl','Extensor carpi radialis longus','muscle',.08,[.05,.5],[['H',.3,-2.6,.02],['R',.25,-1.2,-.05],['R',.2,-2.45,-.12],['W',.13,-.48,-.08]]],
+ ['ecrb','Extensor carpi radialis brevis','muscle',.085,[.05,.55],[['H',.32,-2.93,0],['R',.2,-1.3,-.1],['R',.12,-2.45,-.14],['W',0,-.48,-.08]]],
+ ['extDig','Extensor digitorum','muscle',.085,[.05,.5],[['H',.31,-2.95,-.03],['U',.05,-1.3,-.18],['R',0,-2.45,-.17],['W',0,-.3,-.12],['W',0,-1.1,-.08],['M3',0,-.03,-.04]]],
+ ['ecu','Extensor carpi ulnaris','muscle',.075,[.05,.55],[['H',.3,-2.97,-.06],['U',-.12,-1.4,-.1],['U',-.2,-2.45,-.08],['W',-.27,-.48,-.03]]],
+ ['apl','Abductor pollicis longus','muscle',.06,[.03,.45],[['U',-.02,-1.1,-.12],['R',.2,-1.8,-.1],['R',.3,-2.5,.02],['T1',.02,-.04,-.03]]],
+ ['epb','Extensor pollicis brevis','muscle',.05,[.03,.4],[['R',.12,-1.6,-.12],['R',.31,-2.48,0],['T1',.06,-.26,-.04],['T2',.01,-.03,-.03]]],
+ ['psoas','Psoas major','muscle',.16,[.05,.62],[['P',.15,2.7,-.2],['P',.35,1.6,-.15],['P',.6,.2,.3],['P',.62,-.05,.42],['F',.28,-.6,-.08]]],
+ ['iliacus','Iliacus','muscle',.15,[0,.62],[['P',1.05,1.0,0],['P',.75,.05,.42],['F',.27,-.58,-.06]]],
+ ['gluteMax','Gluteus maximus','muscle',.24,[.05,.85],[['P',.45,.95,-.88],['P',1.0,.05,-.9],['F',.55,-.35,-.3],['F',.42,-.95,-.15]]],
+ ['gluteMax2','Gluteus maximus (lower fibres)','muscle',.2,[.05,.85],[['P',.25,.15,-.86],['P',.75,-.55,-.62],['F',.4,-1.05,-.18]]],
+ ['gluteMedA','Gluteus medius (anterior fibres)','muscle',.17,[0,.8],[['P',1.3,1.2,.18],['F',.55,-.08,0]]],
+ ['gluteMedP','Gluteus medius (posterior fibres)','muscle',.17,[0,.8],[['P',1.1,1.25,-.42],['F',.52,-.06,-.12]]],
+ ['piriformis','Piriformis','muscle',.08,[0,.8],[['P',.25,.65,-.6],['P',.6,.35,-.62],['F',.45,.02,-.12]]],
+ ['tfl','Tensor fasciae latae and iliotibial band','muscle',.1,[0,.18],[['P',1.15,.8,.5],['F',.62,-.5,.05],['F',.57,-2.2,0],['F',.46,-3.9,0],['K',.22,-.42,.12]]],
+ ['sartorius','Sartorius','muscle',.07,[.04,.86],[['P',1.12,.82,.55],['F',.2,-1.0,.35],['F',-.15,-2.4,.25],['F',-.3,-3.8,-.05],['K',-.22,-.55,0],['K',-.12,-.68,.12]]],
+ ['rectusFem','Rectus femoris','muscle',.16,[.12,.82],[['P',1.0,.45,.48],['F',.1,-.8,.42],['F',.05,-2.5,.4],['F',.02,-3.7,.32],['Pa',0,.22,-.02]]],
+ ['vastLat','Vastus lateralis','muscle',.2,[.04,.86],[['F',.48,-.6,.05],['F',.45,-2.0,.15],['F',.3,-3.6,.25],['Pa',.1,.18,-.02]]],
+ ['vastMed','Vastus medialis','muscle',.19,[.12,.88],[['F',.15,-1.6,.05],['F',-.2,-3.1,.2],['F',-.2,-3.85,.22],['Pa',-.1,.12,-.02]]],
+ ['addLongus','Adductor longus','muscle',.13,[.05,.82],[['P',.18,-.4,.55],['F',.05,-1.0,.05],['F',.15,-2.2,-.1]]],
+ ['addMagnus','Adductor magnus','muscle',.18,[.05,.88],[['P',.45,-.85,-.15],['F',0,-2.0,-.15],['F',-.3,-3.85,-.08]]],
+ ['gracilis','Gracilis','muscle',.08,[.04,.72],[['P',.12,-.6,.45],['F',-.4,-2.0,-.05],['F',-.38,-4.0,-.18],['K',-.2,-.55,-.05],['K',-.1,-.7,.1]]],
+ ['bicepsFem','Biceps femoris','muscle',.15,[.08,.78],[['P',.55,-.78,-.3],['F',.2,-1.5,-.35],['F',.32,-3.6,-.25],['K',.32,-.42,-.12]]],
+ ['semiten','Semitendinosus','muscle',.12,[.05,.56],[['P',.5,-.8,-.3],['F',0,-1.6,-.38],['F',-.2,-3.7,-.3],['K',-.25,-.45,-.12],['K',-.1,-.72,.1]]],
+ ['semimem','Semimembranosus','muscle',.15,[.28,.86],[['P',.52,-.75,-.25],['F',-.05,-2.2,-.35],['F',-.2,-3.9,-.25],['K',-.22,-.32,-.12]]],
+ ['gastMed','Gastrocnemius (medial head)','muscle',.18,[.05,.5],[['F',-.2,-4.15,-.22],['K',-.12,-.8,-.38],['K',-.05,-1.8,-.42],['K',0,-2.7,-.38],['Ft',0,-.3,-.5],['Ft',.03,-.45,-.52]]],
+ ['gastLat','Gastrocnemius (lateral head)','muscle',.15,[.05,.48],[['F',.2,-4.12,-.22],['K',.15,-.8,-.34],['K',.06,-1.7,-.38],['K',0,-2.7,-.38],['Ft',.02,-.3,-.5],['Ft',.04,-.45,-.52]]],
+ ['soleus','Soleus','muscle',.18,[.05,.62],[['K',.15,-.7,-.22],['K',0,-1.8,-.32],['K',0,-2.8,-.32],['Ft',.01,-.3,-.48],['Ft',.03,-.45,-.5]]],
+ ['tibAnt','Tibialis anterior','muscle',.12,[.05,.6],[['K',.12,-.6,.12],['K',.1,-2.2,.18],['K',0,-3.5,.22],['K',-.05,-3.8,.2],['Ft',-.18,-.25,.75]]],
+ ['fibLong','Fibularis longus','muscle',.09,[.05,.45],[['K',.33,-.55,-.05],['K',.35,-2.2,-.05],['K',.33,-3.75,-.18],['Ft',.28,-.25,-.1],['Ft',.25,-.52,.55],['Ft',-.18,-.48,.85]]],
+ ['fibBrev','Fibularis brevis','muscle',.08,[.05,.5],[['K',.32,-2.0,-.02],['K',.33,-3.7,-.16],['Ft',.28,-.22,-.08],['Ft',.33,-.5,.72]]],
+ ['achilles','Achilles (calcaneal) tendon','tendon',.055,null,[['K',0,-2.9,-.37],['Ft',.01,-.3,-.5],['Ft',.03,-.45,-.52]]],
+ ['patTendon','Patellar tendon','tendon',.075,null,[['Pa',0,-.22,0],['K',0,-.62,.22]]],
+ ['ACL','Anterior cruciate ligament','ligament',.045,null,[['F',.07,-4.3,-.12],['K',-.02,-.17,.08]]],
+ ['PCL','Posterior cruciate ligament','ligament',.05,null,[['F',-.07,-4.3,0],['K',0,-.22,-.18]]],
+ ['MCL','Medial collateral ligament','ligament',.05,null,[['F',-.37,-4.25,-.05],['K',-.22,-.7,-.02]]],
+ ['LCL','Lateral collateral ligament','ligament',.035,null,[['F',.35,-4.23,-.06],['K',.33,-.42,-.1]]],
+ ['ATFL','Anterior talofibular ligament','ligament',.032,null,[['K',.33,-3.85,0],['Ft',.17,-.05,.22]]],
+ ['CFL','Calcaneofibular ligament','ligament',.03,null,[['K',.31,-4.05,-.08],['Ft',.2,-.4,-.15]]],
+ ['deltoidLig','Deltoid ligament (anterior band)','ligament',.035,null,[['K',-.2,-3.95,.02],['Ft',-.15,-.15,.35]]],
+ ['deltoidLig2','Deltoid ligament (posterior band)','ligament',.033,null,[['K',-.2,-3.98,0],['Ft',-.15,-.25,.02]]],
+ ['CAlig','Coracoacromial ligament','ligament',.035,null,[['S',1.57,5.3,.32],['S',1.87,5.46,.1]]],
+ ['CClig','Coracoclavicular ligament','ligament',.03,null,[['S',1.48,5.32,.15],['C',1.4,5.52,.35]]],
+ ['flexRet','Flexor retinaculum','ligament',.04,null,[['W',.22,-.28,.13],['W',.02,-.3,.21],['W',-.16,-.3,.16]]],
+ ['median','Median nerve','nerve',.032,null,[['P',.85,5.2,.45],['H',-.2,-.3,.15],['H',-.18,-1.5,.12],['H',-.12,-2.75,.2],['U',-.05,-.4,.18],['U',0,-1.4,.18],['R',.02,-2.35,.17],['W',.03,-.2,.15],['W',.05,-.55,.13]]],
+ ['medianThumb','Median nerve, digital branch to thumb','nerve',.018,null,[['W',.05,-.55,.13],['T2',0,-.1,.06],['T3',0,-.12,.04]]],
+ ['medianIndex','Median nerve, digital branch to index','nerve',.018,null,[['W',.05,-.55,.13],['I1',0,-.1,.06],['I2',0,-.12,.045]]],
+ ['medianMiddle','Median nerve, digital branch to middle finger','nerve',.018,null,[['W',.05,-.55,.13],['M1',0,-.1,.06],['M2',0,-.14,.045]]],
+ ['sciatic','Sciatic and tibial nerve','nerve',.05,null,[['P',.45,.5,-.55],['P',.62,.15,-.65],['P',.7,-.35,-.55],['P',.68,-.8,-.42],['F',.05,-1.0,-.4],['F',.05,-2.8,-.38],['F',0,-4.05,-.35],['K',0,-.6,-.32],['K',-.02,-2.2,-.3],['K',-.15,-3.85,-.15],['Ft',-.15,-.45,.2]]],
+ ['fibularN','Common fibular nerve','nerve',.03,null,[['F',.05,-3.9,-.34],['F',.2,-4.2,-.3],['K',.33,-.55,-.13],['K',.33,-.72,.05],['K',.25,-2.5,.13],['Ft',.1,-.05,.5]]],
+ ['rootL4','L4 nerve root','nerve',.03,null,[['P',.12,1.75,-.38],['P',.3,1.2,-.35],['P',.45,.5,-.55]]],
+ ['rootL5','L5 nerve root','nerve',.032,null,[['P',.12,1.35,-.48],['P',.32,.9,-.48],['P',.45,.5,-.55]]],
+ ['rootS1','S1 nerve root','nerve',.032,null,[['P',.15,.85,-.6],['P',.35,.65,-.58],['P',.45,.5,-.55]]]
+];
+const CORD_COL={muscle:0xa63e3a,tendon:0xebe5d6,ligament:0x9cb9d4,nerve:0xe3b13a};
+const LAYER_OF={muscle:'muscles',tendon:'muscles',ligament:'ligaments',cartilage:'ligaments',nerve:'nerves',bone:'bones'};
+const cordsG=new T.Group();scene.add(cordsG);
+function bump(t,b){const s=(t-b[0])/(b[1]-b[0]);return s<=0||s>=1?0:Math.pow(Math.sin(Math.PI*s),.65);}
+class Cord{
+  constructor(def,S){
+    const [id,name,kind,r,belly,pts]=def;
+    Object.assign(this,{isCord:true,id:id+'_'+S,base:id,side:S,kind,name:name+(S==='L'?' (left)':' (right)'),r,belly:belly||[.15,.85],layer:LAYER_OF[kind]});
+    this.att=pts.map(a=>({fr:frameOf(a[0],S),l:localOf(a[0],S,[a[1],a[2],a[3]]),w:V()}));
+    const N=this.N=kind==='muscle'?26:kind==='nerve'?30:12,M=this.M=kind==='nerve'?6:8,nv=(N+1)*(M+1);
+    this.S=[];for(let i=0;i<=N;i++)this.S.push(V());
+    this.P=new Float32Array(nv*3);this.Nn=new Float32Array(nv*3);const C=new Float32Array(nv*3),idx=[];
+    for(let i=0;i<N;i++)for(let j=0;j<M;j++){const a=i*(M+1)+j,b=a+M+1;idx.push(a,a+1,b,b,a+1,b+1);}
+    const cb=col(CORD_COL[kind]),ct=col(CORD_COL.tendon);this.prof=new Float32Array(N+1);
+    for(let i=0;i<=N;i++){const b=kind==='muscle'?bump(i/N,this.belly):1;this.prof[i]=b;const c=kind==='muscle'?ct.clone().lerp(cb,Math.pow(b,.45)):cb;for(let j=0;j<=M;j++){const k=(i*(M+1)+j)*3;C[k]=c.r;C[k+1]=c.g;C[k+2]=c.b;}}
+    const g=this.geo=new T.BufferGeometry();
+    this.pa=new T.BufferAttribute(this.P,3);this.pa.setUsage(T.DynamicDrawUsage);this.na=new T.BufferAttribute(this.Nn,3);this.na.setUsage(T.DynamicDrawUsage);
+    g.setAttribute('position',this.pa);g.setAttribute('normal',this.na);g.setAttribute('color',new T.BufferAttribute(C,3));g.setIndex(idx);
+    this.mat=new T.MeshStandardMaterial({vertexColors:true,roughness:kind==='nerve'?.38:.55,metalness:0,transparent:true,opacity:1});
+    this.mesh=new T.Mesh(g,this.mat);this.mesh.frustumCulled=false;this.mesh.castShadow=kind==='muscle';this.mesh.userData.struct=this;
+    Object.assign(this,{L0:0,L:0,strain:0,act:0,squeeze:0,ruptured:false,sig:NaN});
+  }
+  world(){for(const a of this.att){a.w.copy(a.l);a.fr.localToWorld(a.w);}}
+  measure(){this.world();const D=crSample(this.att.map(a=>a.w),8);let L=0;for(let i=1;i<D.length;i++)L+=D[i].distanceTo(D[i-1]);return L;}
+  update(force){
+    this.world();let sig=this.act*3.1+this.squeeze*5.3+(this.ruptured?7:0);
+    this.att.forEach((a,k)=>{sig+=a.w.x*(k+1.37)+a.w.y*(k+2.71)+a.w.z*(k+3.13);});
+    if(!force&&Math.abs(sig-this.sig)<1e-7)return false;this.sig=sig;
+    this.L=resample(crSample(this.att.map(a=>a.w),8),this.N,this.S);if(this.L0>0)this.strain=this.L/this.L0-1;
+    this.build();return true;
+  }
+  radius(t){
+    let r;const i=Math.round(t*this.N);
+    if(this.kind==='muscle'){const rt=Math.max(.02,this.r*.2);r=rt+(this.r*(1+.15*this.act)*(1-.22*this.squeeze)-rt)*this.prof[i];}
+    else if(this.kind==='nerve')r=this.r;else r=this.r*(1+.35*(sstep(.12,0,t)+sstep(.88,1,t)));
+    if(this.ruptured){const g=Math.abs(t-.5);r*=g<.06?0:g<.2?sstep(.06,.2,g)*(.65+.35*Math.abs(Math.sin(t*97))):1;}
+    return Math.max(r,.0004);
+  }
+  build(){
+    const N=this.N,M=this.M,S=this.S,P=this.P,NN=this.Nn,Tg=V(),Nv=V(),B=V(),tmp=V();
+    Tg.subVectors(S[1],S[0]).normalize();Nv.set(0,0,1);if(Math.abs(Tg.z)>.9)Nv.set(1,0,0);
+    for(let i=0;i<=N;i++){
+      if(i===0)Tg.subVectors(S[1],S[0]);else if(i===N)Tg.subVectors(S[N],S[N-1]);else Tg.subVectors(S[i+1],S[i-1]);Tg.normalize();
+      Nv.sub(tmp.copy(Tg).multiplyScalar(Nv.dot(Tg)));if(Nv.lengthSq()<1e-10){Nv.set(Math.abs(Tg.x)<.9?1:0,Math.abs(Tg.x)<.9?0:1,0);Nv.sub(tmp.copy(Tg).multiplyScalar(Nv.dot(Tg)));}
+      Nv.normalize();B.crossVectors(Tg,Nv);const r=this.radius(i/N);
+      for(let j=0;j<=M;j++){const a=j/M*Math.PI*2,c=Math.cos(a),s=Math.sin(a),nx=Nv.x*c+B.x*s,ny=Nv.y*c+B.y*s,nz=Nv.z*c+B.z*s,k=(i*(M+1)+j)*3;
+        P[k]=S[i].x+nx*r;P[k+1]=S[i].y+ny*r;P[k+2]=S[i].z+nz*r;NN[k]=nx;NN[k+1]=ny;NN[k+2]=nz;}
+    }
+    this.pa.needsUpdate=true;this.na.needsUpdate=true;this.bsDirty=true;
+  }
+  mid(){return this.S[this.N>>1];}
+}
+function buildCords(){for(const d of CORDS)for(const S of ['L','R']){const c=new Cord(d,S);RIG.cords[c.id]=c;RIG.list.push(c);cordsG.add(c.mesh);PICK.push(c.mesh);}}
+
+/* ---------- pose system ---------- */
+const DOF=['plane','elev','ir','scapk','elb','pro','wfl','wdev','fist','thumb','hipf','hipa','hipr','kf','ktx','krot','kval','adf','ainv','atx','squeeze'];
+function zeroPose(){const p={};for(const S of ['L','R'])for(const d of DOF)p[S+'.'+d]=d==='scapk'?1:0;return p;}
+function basePose(post){
+  const p=zeroPose();
+  for(const S of ['L','R']){const s=(k,v)=>p[S+'.'+k]=v;s('fist',.15);
+    if(post==='stand'){s('elev',5);s('elb',8);s('pro',15);}
+    if(post==='supine'){s('elev',10);s('elb',14);s('pro',80);s('hipf',-3);s('hipr',8);s('kf',4);s('adf',-18);}
+    if(post==='prone'){s('elev',8);s('elb',18);s('pro',150);s('hipf',-2);s('kf',4);s('adf',-28);}
+    if(post==='sit'){s('plane',90);s('elev',12);s('ir',25);s('elb',58);s('pro',135);s('hipf',88);s('hipa',6);s('kf',88);s('adf',-6);s('wfl',-8);}
+  }
+  return p;
+}
+function qa(x,y,z,deg,out){return (out||new T.Quaternion()).setFromAxisAngle(_ax.set(x,y,z).normalize(),deg*D2R);}
+function mirQ(q,S){if(S==='R')q.set(q.x,-q.y,-q.z,q.w);return q;}
+const PRO_AX=V().subVectors(VA(ULNAR_HEAD),VA(JL.radhead)).normalize();
+const THD=VA(TH.dir).normalize(),THUMB_OPP=new T.Quaternion().setFromUnitVectors(THD,V(-.4,-.75,.53).normalize());
+const PADP=VA(TH.pad).sub(THD.clone().multiplyScalar(VA(TH.pad).dot(THD))).normalize(),THUMB_K=V().crossVectors(THD,PADP).normalize();
+const SCAP_AX=V(-.5,0,.866).normalize(),IDQ=new T.Quaternion();
+const CL={};
+function initClav(){for(const S of ['L','R']){const lat=S==='R'?-1:1;CL[S]={ac:localOf('S',S,AC_L),rest:V((AC_L[0]-JL.sc[0])*lat,AC_L[1]-JL.sc[1],AC_L[2]-JL.sc[2]).normalize()};}}
+function applyPose(p){
+  for(const S of ['L','R']){
+    const g=k=>p[S+'.'+k],F=k=>RIG.frames[k+'_'+S];
+    const El=g('elev'),PL=g('plane'),IR=g('ir');
+    const qT=mirQ(qa(0,1,0,-PL).multiply(qa(0,0,1,El)).multiply(qa(0,1,0,PL-IR)),S);
+    const gam=g('scapk')*Math.max(0,El-25)/3,qS=mirQ(new T.Quaternion().setFromAxisAngle(SCAP_AX,gam*D2R),S);
+    const G=F('S');G.quaternion.copy(qS);G.position.copy(G.userData.home);G.position.y+=.0016*gam;G.position.z+=.0018*gam*Math.sin(PL*D2R);
+    F('H').quaternion.copy(qS.clone().invert().multiply(qT));
+    const ac=CL[S].ac.clone().applyQuaternion(qS).add(G.position).sub(F('C').position).normalize();
+    F('C').quaternion.setFromUnitVectors(CL[S].rest,ac);
+    qa(1,0,0,-g('elb'),F('U').quaternion);
+    mirQ(F('R').quaternion.setFromAxisAngle(PRO_AX,g('pro')*D2R),S);
+    mirQ(qa(0,0,1,-g('wdev'),F('W').quaternion).multiply(qa(1,0,0,-g('wfl'))),S);
+    const f=g('fist');for(const [k] of FING){qa(1,0,0,-80*f,F(k+'1').quaternion);qa(1,0,0,-95*f,F(k+'2').quaternion);qa(1,0,0,-65*f,F(k+'3').quaternion);}
+    const th=g('thumb');F('T1').quaternion.copy(IDQ).slerp(THUMB_OPP,th);mirQ(F('T1').quaternion,S);
+    mirQ(F('T2').quaternion.setFromAxisAngle(THUMB_K,(55*th+8)*D2R),S);mirQ(F('T3').quaternion.setFromAxisAngle(THUMB_K,(45*th+5)*D2R),S);
+    mirQ(qa(1,0,0,-g('hipf'),F('F').quaternion).multiply(qa(0,0,1,g('hipa'))).multiply(qa(0,1,0,g('hipr'))),S);
+    const K=F('K');mirQ(qa(1,0,0,g('kf'),K.quaternion).multiply(qa(0,1,0,g('krot'))).multiply(qa(0,0,1,g('kval'))),S);
+    K.position.copy(K.userData.home).add(_v.set(0,0,g('ktx')).applyQuaternion(K.quaternion));
+    const kf=clamp(g('kf'),0,150),a0=Math.atan2(.37,.4),al=a0+.62*kf*D2R,d=.545-.13*Math.min(kf,100)/100,Pa=F('Pa');
+    Pa.position.set(Pa.userData.home.x,K.userData.home.y+d*Math.cos(al),K.userData.home.z+d*Math.sin(al));Pa.quaternion.setFromAxisAngle(_ax.set(1,0,0),al-a0);
+    const A=F('Ft');mirQ(qa(1,0,0,-g('adf'),A.quaternion).multiply(qa(0,0,1,-g('ainv'))),S);A.position.copy(A.userData.home);A.position.z+=g('atx');
+    for(const id of ['gastMed','gastLat','soleus'])RIG.cords[id+'_'+S].squeeze=g('squeeze');
+  }
+}
+
+/* ---------- extra DOF: superior glide of the humeral head ---------- */
+DOF.push('shty');
+function applyPoseFull(p){applyPose(p);for(const S of ['L','R']){const H=RIG.frames['H_'+S];H.position.copy(H.userData.home);H.position.y+=p[S+'.shty']||0;}}
+const GT_M=[.18,-.05,.09];
+
+/* ---------- environment ---------- */
+const TABLE_H=7.4;
+const floorMat=new T.MeshStandardMaterial({color:col(0xcdd6dd),roughness:.96,metalness:0});
+const floor=new T.Mesh(new T.CircleGeometry(42,72),floorMat);floor.quaternion.setFromAxisAngle(V(1,0,0),-Math.PI/2);floor.receiveShadow=true;scene.add(floor);
+const table=new T.Group();scene.add(table);
+const vinyl=new T.MeshStandardMaterial({color:col(0x587685),roughness:.72}),paperM=new T.MeshStandardMaterial({color:col(0xf3f5f5),roughness:.95}),steel=new T.MeshStandardMaterial({color:col(0x9aa4ab),roughness:.35,metalness:.65});
+const BOX=new T.BoxGeometry(1,1,1),tTop=new T.Mesh(BOX,vinyl),tPaper=new T.Mesh(BOX,paperM),tBase=new T.Mesh(BOX,steel);
+tTop.receiveShadow=true;tTop.castShadow=true;tPaper.receiveShadow=true;tBase.castShadow=true;table.add(tTop,tPaper,tBase);
+const legs=[0,1,2,3].map(()=>{const l=new T.Mesh(BOX,steel);l.castShadow=true;table.add(l);return l;});
+function configTable(post){
+  if(post==='stand'){table.visible=false;return;}table.visible=true;
+  const [cx,cz,w,d]={supine:[0,.15,6.4,19],prone:[0,1,6.4,17.4],sit:[0,-.5,18,7]}[post];
+  tTop.scale.set(w,.55,d);tTop.position.set(cx,TABLE_H-.275,cz);
+  tPaper.scale.set(post==='sit'?w*.82:w*.62,.02,post==='sit'?d*.9:d*.985);tPaper.position.set(cx,TABLE_H+.012,cz);
+  tBase.scale.set(w*.8,.3,d*.8);tBase.position.set(cx,TABLE_H-1.1,cz);
+  legs.forEach((l,i)=>{const h=TABLE_H-1.25;l.scale.set(.24,h,.24);l.position.set(cx+(i%2?1:-1)*w*.38,h/2,cz+(i<2?1:-1)*d*.38);});
+}
+function setPosture(post){
+  body.quaternion.set(0,0,0,1);
+  if(post==='stand')body.position.set(0,9,0);
+  else if(post==='supine'){body.position.set(0,TABLE_H+1.3,0);body.quaternion.setFromAxisAngle(V(1,0,0),-Math.PI/2);}
+  else if(post==='prone'){body.position.set(0,TABLE_H+1.38,0);body.quaternion.setFromAxisAngle(V(1,0,0),Math.PI/2);}
+  else body.position.set(0,TABLE_H+1.07,-.6);
+  configTable(post);body.updateMatrixWorld(true);
+  const c=V(0,3,0);pelvisF.localToWorld(c);key.target.position.copy(c);key.position.copy(c).add(V(9,17,14));
+}
+/* skin outline */
+const skinMat=new T.ShaderMaterial({uniforms:{uC:{value:new T.Color(0x9cc0e4)},uO:{value:.6}},transparent:true,depthWrite:false,
+  vertexShader:'varying vec3 vN;varying vec3 vV;void main(){vec4 mv=modelViewMatrix*vec4(position,1.0);vN=normalize(normalMatrix*normal);vV=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}',
+  fragmentShader:'uniform vec3 uC;uniform float uO;varying vec3 vN;varying vec3 vV;void main(){float f=pow(1.0-abs(dot(normalize(vN),normalize(vV))),2.3);gl_FragColor=vec4(uC,f*uO);}'});
+function capsule(r1,r2,L){const pts=[],n=6;for(let i=0;i<=n;i++){const a=-Math.PI/2+i/n*Math.PI/2;pts.push(new T.Vector2(Math.max(1e-3,Math.cos(a)*r2),-L+Math.sin(a)*r2));}for(let i=1;i<=n;i++){const a=i/n*Math.PI/2;pts.push(new T.Vector2(Math.max(1e-3,Math.cos(a)*r1),Math.sin(a)*r1));}return new T.LatheGeometry(pts,18);}
+const SKIN=[];
+function skinPart(fk,geo,p,s){const m=new T.Mesh(geo,skinMat);m.position.set(p[0],p[1],p[2]);if(s)m.scale.set(s[0],s[1],s[2]);m.renderOrder=2;m.visible=false;RIG.frames[fk].add(m);SKIN.push(m);}
+function buildSkin(){
+  const sph=new T.SphereGeometry(1,28,20);
+  skinPart('P',sph,[0,2.75,.12],[1.72,3.3,1.2]);skinPart('P',sph,[0,7.5,.12],[.84,1.04,1.04]);skinPart('P',capsule(.42,.5,.6),[0,6.95,-.1]);
+  for(const S of ['L','R']){const x=S==='R'?-1:1;
+    skinPart('H_'+S,capsule(.5,.38,2.75),[.04*x,-.05,0]);skinPart('U_'+S,capsule(.4,.27,2.35),[0,-.12,.02]);skinPart('W_'+S,sph,[0,-.62,0],[.45,.68,.17]);
+    skinPart('F_'+S,capsule(.76,.5,3.95),[.12*x,-.12,.02]);skinPart('K_'+S,capsule(.52,.3,3.35),[.04*x,-.38,-.1]);skinPart('Ft_'+S,sph,[0,-.42,.62],[.4,.3,1.3]);}
+}
+/* examiner hands */
+const gloveBase=new T.MeshStandardMaterial({color:col(0x4a84ea),roughness:.42,metalness:0,transparent:true,opacity:.5,depthWrite:false});
+const HAND_GEO=merge([E([0,0,0],[.42,.12,.5]),...[-.27,-.09,.09,.27].map((x,i)=>Tb([[x,0,.42],[x,-.07,.74+.04*(i%3)],[x,-.24,.98]],.072,{seg:6,rad:8})),Tb([[.4,0,0],[.6,-.1,.28],[.62,-.26,.52]],.08,{seg:6,rad:8})]);
+const HANDS=[],_m4=new T.Matrix4(),_qw=new T.Quaternion();
+function getHand(i){while(HANDS.length<=i){const m=new T.Mesh(HAND_GEO,gloveBase.clone());m.renderOrder=6;m.visible=false;scene.add(m);HANDS.push(m);}return HANDS[i];}
+function placeHand(h,c,S0){
+  const S=c.side||S0,fr=frameOf(c.frame,S),P=localOf(c.frame,S,c.at),lat=S==='R'?-1:1;fr.localToWorld(P);fr.getWorldQuaternion(_qw);
+  const n=c.nw?VA(c.nw).normalize():V(c.n[0]*lat,c.n[1],c.n[2]).applyQuaternion(_qw).normalize();
+  const f=V(c.f[0]*lat,c.f[1],c.f[2]).applyQuaternion(_qw),Y=n.clone().negate(),Z=f.sub(Y.clone().multiplyScalar(f.dot(Y)));
+  if(Z.lengthSq()<1e-6)Z.set(1,0,0).sub(Y.clone().multiplyScalar(Y.x));Z.normalize();const X3=V().crossVectors(Y,Z);
+  h.quaternion.setFromRotationMatrix(_m4.makeBasis(X3,Y,Z));h.position.copy(P).sub(n.multiplyScalar((c.off||.4)+.12));
+}
+/* force / torque gizmos */
+const GC={force:col(0xeea044),torque:col(0x9670ff),muscle:col(0xff5d52),lig:col(0x64b8f0),lever:col(0xc9d1d9)};
+function noDepth(m){m.depthTest=false;m.depthWrite=false;m.transparent=true;return m;}
+const POOL={a:[],c:[],l:[]},PU={a:0,c:0,l:0};
+function arrowAt(o,dir,len,color){let a=POOL.a[PU.a];if(!a){a=new T.ArrowHelper(V(0,1,0),V(),1,color,.2,.12);noDepth(a.line.material);noDepth(a.cone.material);a.line.renderOrder=a.cone.renderOrder=20;scene.add(a);POOL.a.push(a);}
+  PU.a++;a.visible=true;a.position.copy(o);a.setDirection(dir);const hl=Math.min(.26,len*.38);a.setLength(len,hl,hl*.6);a.setColor(color);return a;}
+function curlAt(o,axis,radius,color){let c=POOL.c[PU.c];if(!c){c=new T.Group();const mat=noDepth(new T.MeshBasicMaterial({color}));const arc=new T.Mesh(new T.TorusGeometry(1,.065,6,40,Math.PI*1.5),mat),head=new T.Mesh(new T.ConeGeometry(.2,.42,12),mat);
+  head.position.set(0,-1,0);head.quaternion.setFromAxisAngle(V(0,0,1),-Math.PI/2);arc.renderOrder=head.renderOrder=21;c.add(arc,head);c.userData.mat=mat;scene.add(c);POOL.c.push(c);}
+  PU.c++;c.visible=true;c.position.copy(o);c.quaternion.setFromUnitVectors(V(0,0,1),axis);c.scale.setScalar(radius);c.userData.mat.color.copy(color);return c;}
+function dashLine(a,b,color){let l=POOL.l[PU.l];if(!l){l=new T.Line(new T.BufferGeometry().setFromPoints([V(),V(0,1,0)]),noDepth(new T.LineDashedMaterial({color,dashSize:.09,gapSize:.06})));l.renderOrder=19;scene.add(l);POOL.l.push(l);}
+  PU.l++;l.visible=true;const p=l.geometry.attributes.position;p.setXYZ(0,a.x,a.y,a.z);p.setXYZ(1,b.x,b.y,b.z);p.needsUpdate=true;l.computeLineDistances();l.material.color.copy(color);return l;}
+function glowTex(){const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d'),g=x.createRadialGradient(64,64,0,64,64,64);g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(.22,'rgba(255,255,255,.8)');g.addColorStop(.55,'rgba(255,255,255,.22)');g.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=g;x.fillRect(0,0,128,128);return new T.CanvasTexture(c);}
+const GLOW=glowTex(),SPR=[];
+function sprite(i){while(SPR.length<=i){const s=new T.Sprite(new T.SpriteMaterial({map:GLOW,color:col(0xff4433),transparent:true,depthTest:false,depthWrite:false,blending:T.AdditiveBlending,opacity:0}));s.renderOrder=25;s.visible=false;scene.add(s);SPR.push(s);}return SPR[i];}
+const HL_COL={bone:col(0xffa63d),cartilage:col(0x44d3ff),muscle:col(0xff4a26),tendon:col(0xff7a3d),ligament:col(0x2fb6ff),nerve:col(0xffd21f)};
+const KIND_CSS={bone:'var(--bone)',cartilage:'var(--ligament)',muscle:'var(--muscle)',tendon:'var(--muscle)',ligament:'var(--ligament)',nerve:'var(--nerve)'};
+const POSTURE={supine:'Supine',prone:'Prone',sit:'Seated',stand:'Standing'};
+
+/* ---------- maneuver library ---------- */
+const PR=(o,S='R')=>{const r={};for(const k in o)r[S+'.'+k]=o[k];return r;},PB=o=>Object.assign(PR(o,'L'),PR(o,'R'));
+const SIT_ARM={plane:90,elev:12,ir:25,elb:48,pro:135,scapk:1,fist:.15,thumb:0,wfl:-8,wdev:0,shty:0};
+const SHOULDER_IMP=[{p:1,terms:['impingement','subacromial','shoulder impingement','rotator cuff impingement','subacromial bursitis','bursitis','rotator cuff tendinopathy','supraspinatus tendinopathy','supraspinatus tendinitis','rotator cuff tendinitis','impingement syndrome']},{terms:['rotator cuff','supraspinatus','shoulder','acromion','tendinitis','tendonitis','tendinopathy','cuff'],msg:'The specific idea is subacromial impingement of the rotator cuff (supraspinatus) tendon.'}];
+const IMP_WRONG=[{terms:['instability','dislocation','apprehension'],msg:'Shoulder instability is checked with the apprehension and relocation tests.'},{terms:['labral','labrum','slap'],msg:'Labral tears are checked with O’Brien’s active compression test.'},{terms:['acromioclavicular','ac joint'],msg:'The AC joint is checked with the cross-body adduction test.'}];
+const MANEUVERS=[
+{id:'lachman',name:'Lachman test',joint:'Knee',side:'R',posture:'supine',freq:1,
+ summary:'Checks the anterior cruciate ligament (ACL) by translating the tibia forward with the knee in 20–30° of flexion.',
+ answer:'ACL integrity (anterior tibial translation)',
+ steps:['Patient lies supine and relaxed; the hamstrings must be quiet.','Flex the knee to 20–30° with the thigh supported.','Stabilize the distal femur with one hand and grip the proximal tibia with the other.','Pull the tibia briskly forward and feel the end point; repeat.','Compare translation and end feel with the other knee.'],
+ positive:'More forward translation than the other side (roughly 3 mm or more), or a soft, mushy end point instead of a firm stop.',
+ posNote:'Torn ACL: excess translation and no firm end point.',
+ pearl:'The most sensitive bedside test for an ACL tear. At 20–30° of flexion the hamstrings and the posterior horn of the medial meniscus block translation less, which isolates the ACL.',
+ mech:'An anterior shear of about 130 N acts on the proximal tibia while the femur is held. The ACL is the primary restraint, so its tension (blue arrow) rises to balance the pull; the strain readout comes from the ligament’s changing length.',
+ names:['lachman','lachmann','lachmans','lachman sign','lachman maneuver'],
+ nameHints:[{terms:['anterior drawer','drawer','pivot shift'],msg:'The knee anterior drawer is done at 90° of flexion and the pivot shift adds a rotatory load; this one, at 20–30°, is the Lachman.'}],
+ concepts:[{p:1,terms:['acl','anterior cruciate']},{terms:['cruciate','anterior tibial translation','anterior translation','knee instability','knee ligament','ligament','knee'],msg:'The specific structure is the anterior cruciate ligament.'}],
+ wrong:[{terms:['pcl','posterior cruciate'],msg:'The PCL is checked with the posterior drawer and sag sign; Lachman pulls the tibia forward, which loads the ACL.'},{terms:['mcl','medial collateral'],msg:'The MCL is checked with valgus stress at 30° of flexion.'},{terms:['menisc'],msg:'Meniscal tears are checked with McMurray or Thessaly.'}],
+ tested:{p:['ACL_R','tibia_R','femur_R'],s:['PCL_R','menMed_R','semiten_R','semimem_R','bicepsFem_R']},
+ cam:{at:'K_R',off:[0,.2,0],az:-62,el:22,dist:7.2},dur:7,
+ keys:[{t:0,step:0},{t:1.4,p:PR({hipf:14,kf:26,hipr:6,adf:-10}),step:1},{t:2.2,step:2},{t:2.9,p:PR({ktx:.07}),q:PR({ktx:.19}),f:{pull:130,stab:130},step:3},{t:3.5,p:PR({ktx:0}),f:{pull:0,stab:0}},{t:4.2,p:PR({ktx:.07}),q:PR({ktx:.19}),f:{pull:130,stab:130}},{t:4.8,p:PR({ktx:0}),f:{pull:0,stab:0},step:4},{t:6,p:PR({hipf:-3,kf:4,hipr:8,adf:-18})},{t:7}],
+ forces:[{id:'pull',frame:'K',at:[-.05,-.58,.16],dir:{f:'K',l:[0,0,1]},joint:'K',push:false},{id:'stab',frame:'F',at:[.1,-3.5,.3],dir:{f:'F',l:[0,0,-1]},joint:'F',push:true,noTorque:true}],
+ ligLoad:[{force:'pull',cord:'ACL'}],
+ contacts:[{frame:'F',at:[.15,-3.5,.2],n:[-.3,0,-.95],f:[-1,0,0],off:.5,t:[2,5]},{frame:'K',at:[-.15,-.62,-.05],n:[.55,0,.83],f:[0,-1,0],off:.45,t:[2,5]}],
+ metrics:[{label:'Anterior tibial translation',unit:'mm',get:X=>X.d('R.ktx')*50,min:0,max:10,dp:1},{label:'ACL strain',unit:'%',get:X=>X.strain('ACL_R'),min:-8,max:20,dp:1},{label:'Knee flexion',unit:'°',get:X=>X.d('R.kf'),min:0,max:40,dp:0}],
+ pos:{rupture:['ACL_R'],pain:[]}},
+{id:'slr',name:'Straight leg raise',aka:'Lasègue’s test',joint:'Hip and lumbosacral nerve roots',side:'R',posture:'supine',freq:.95,
+ summary:'Tensions the sciatic nerve and its L4–S1 roots by flexing the hip with the knee straight, to reproduce radicular leg pain.',
+ answer:'Lumbosacral nerve root irritation (sciatica, usually from a disc herniation)',
+ steps:['Patient lies supine with both legs straight.','Cup the heel and keep the knee extended with your other hand.','Slowly raise the straight leg, noting the angle where symptoms start (usually 30–70°).','Then dorsiflex the ankle to add nerve tension (Bragard’s sign).','Lower the leg and repeat on the other side.'],
+ positive:'Radiating pain below the knee in a dermatomal pattern between about 30° and 70° of hip flexion. Back pain or hamstring tightness alone does not count.',
+ posNote:'Irritated nerve root: pain flares down the nerve at about 45°.',
+ pearl:'Sensitive but not specific for disc herniation. The crossed straight leg raise (pain in the affected leg when the other leg is lifted) is far more specific.',
+ mech:'Hip flexion with the knee locked lengthens the nerve path behind the hip and knee, so the sciatic nerve and L5/S1 roots strain. The examiner’s lift at the heel balances the leg’s weight torque about the hip.',
+ names:['straight leg raise','straight leg raising','straight leg','slr','lasegue','lasegue sign','laseque','lasegues'],
+ nameHints:[{terms:['slump'],msg:'The slump test tensions the same nerves but is done seated with spinal flexion.'}],
+ concepts:[{p:1,terms:['sciatica','sciatic','radiculopathy','radicular','nerve root','lumbar radiculopathy','lumbosacral','disc herniation','herniated disc','disk herniation','herniated disk','slipped disc','prolapsed disc','l5','s1','l4','neural tension','nerve tension']},{terms:['hamstring','low back','back pain','lumbar','disc','disk','nerve','spine'],msg:'The key idea is tension on the lumbosacral nerve roots and sciatic nerve.'}],
+ wrong:[{terms:['hip flexor','iliopsoas','psoas'],msg:'Hip flexor tightness is checked with the Thomas test.'},{terms:['acl','menisc'],msg:'The knee stays straight here; the target is the nerve, not the knee.'}],
+ tested:{p:['sciatic_R','rootL5_R','rootS1_R','rootL4_R','lumbar'],s:['semiten_R','semimem_R','bicepsFem_R','gastMed_R','femur_R']},
+ cam:{at:'F_R',off:[0,1.5,1.5],az:-78,el:14,dist:15},dur:9,
+ keys:[{t:0,step:0},{t:1,step:1},{t:1.6,f:{grav:118,lift:52}},{t:4.4,p:PR({hipf:72,kf:0,adf:-12,hipr:0}),q:PR({hipf:46}),step:2},{t:5.6,p:PR({adf:14}),step:3},{t:6.6},{t:8.2,p:PR({hipf:-3,kf:4,adf:-18,hipr:8}),f:{grav:0,lift:0},step:4},{t:9}],
+ forces:[{id:'grav',frame:'F',at:[0,-3.7,0],dir:{w:[0,-1,0]},joint:'F',push:false,color:'lever'},{id:'lift',frame:'Ft',at:[0,-.62,-.4],dir:{w:[0,1,0]},joint:'F',push:true}],
+ contacts:[{frame:'Ft',at:[0,-.62,-.42],n:[0,.62,.78],f:[1,0,0],off:.18,t:[.9,8.4]},{frame:'F',at:[0,-3.85,.32],n:[0,0,-1],f:[0,-1,0],off:.35,t:[1,8.2]}],
+ metrics:[{label:'Hip flexion',unit:'°',get:X=>X.d('R.hipf'),min:-5,max:80,dp:0},{label:'Sciatic nerve strain',unit:'%',get:X=>X.strain('sciatic_R'),min:0,max:12,dp:1},{label:'Hamstring stretch (semitendinosus)',unit:'%',get:X=>X.strain('semiten_R'),min:0,max:30,dp:1}],
+ pos:{rupture:[],pain:[],nervePain:{cord:'sciatic_R',t:[3.4,7.8]}}},
+{id:'mcmurray',name:'McMurray test',joint:'Knee',side:'R',posture:'supine',freq:.9,
+ summary:'Looks for a meniscal tear by rotating the tibia and extending the knee from full flexion, trapping a torn fragment between femur and tibia.',
+ answer:'Meniscal tear (medial with external rotation, lateral with internal rotation)',
+ steps:['Patient supine. Fully flex the hip and knee; rest your fingers on the joint line.','Externally rotate the tibia (with valgus) and slowly extend the knee: medial meniscus.','Return to full flexion, internally rotate the tibia (with varus) and extend: lateral meniscus.','A painful click or clunk at the joint line suggests a tear.'],
+ positive:'A palpable or audible click, clunk or catch with joint-line pain as the knee extends.',
+ posNote:'Torn posterior horn: a click at the joint line during extension.',
+ pearl:'Deep flexion loads the posterior horns, where most tears sit. Textbooks differ on the varus and valgus additions; the rotation is the essential part.',
+ mech:'The examiner twists the foot, applying an axial torque about the tibia (violet curl) while adding a side force at the knee; extension then rolls the femoral condyles over the loaded meniscus.',
+ names:['mcmurray','mc murray','mcmurrays','mcmurray circumduction'],
+ nameHints:[{terms:['thessaly','apley','apleys'],msg:'Thessaly and Apley also test the menisci, but flexion, rotation and extension on a supine patient is McMurray’s.'}],
+ concepts:[{p:1,terms:['menisc','meniscus','meniscal','menisci','meniscal tear','torn meniscus','cartilage tear']},{terms:['knee','cartilage','joint line','tear','locking'],msg:'The specific structure is the meniscus.'}],
+ wrong:[{terms:['acl','anterior cruciate'],msg:'The ACL is checked with Lachman, the anterior drawer or the pivot shift.'},{terms:['mcl','lcl','collateral'],msg:'The collateral ligaments are checked with valgus and varus stress.'}],
+ tested:{p:['menMed_R','menLat_R','tibia_R','femur_R'],s:['MCL_R','LCL_R','semimem_R','bicepsFem_R']},
+ cam:{at:'K_R',off:[0,.4,0],az:-60,el:26,dist:8.5},dur:11,
+ keys:[{t:0,step:0},{t:1.6,p:PR({hipf:92,kf:138,adf:0,hipr:0})},{t:2.6,p:PR({krot:24,kval:4}),f:{twist:7,valg:45},step:1,hi:['menMed_R']},{t:4.8,p:PR({kf:88,hipf:70})},{t:5.8,p:PR({kf:138,hipf:92,krot:0,kval:0}),f:{twist:0,valg:0},step:2},{t:6.6,p:PR({krot:-24,kval:-4}),f:{twist:-7,varus:45},hi:['menLat_R']},{t:8.8,p:PR({kf:88,hipf:70}),step:3},{t:9.8,p:PR({krot:0,kval:0}),f:{twist:0,varus:0},hi:[]},{t:10.8,p:PR({hipf:-3,kf:4,adf:-18,hipr:8})},{t:11}],
+ forces:[{id:'valg',frame:'K',at:[.42,-.12,0],dir:{f:'K',l:[-1,0,0]},joint:'K',push:true},{id:'varus',frame:'K',at:[-.42,-.12,0],dir:{f:'K',l:[1,0,0]},joint:'K',push:true}],
+ torques:[{id:'twist',frame:'K',axis:[0,1,0],at:[0,-2.2,0]}],
+ contacts:[{frame:'F',at:[0,-4.1,.3],n:[0,0,-1],f:[-1,0,0],off:.4,t:[1.4,10.2]},{frame:'Ft',at:[0,-.6,-.4],n:[0,.6,.8],f:[0,0,1],off:.2,t:[1.4,10.2]}],
+ metrics:[{label:'Knee flexion',unit:'°',get:X=>X.d('R.kf'),min:0,max:140,dp:0},{label:'Tibial rotation (+ external)',unit:'°',get:X=>X.d('R.krot'),min:-30,max:30,dp:0},{label:'Axial torque on tibia',unit:'N·m',get:X=>X.tq('twist'),min:0,max:8,dp:1}],
+ pos:{rupture:[],pain:[{frame:'K',at:[-.4,-.2,-.1],t:[3.7,4.6],click:1},{frame:'K',at:[.4,-.2,-.1],t:[7.7,8.6],click:1}]}},
+{id:'neer',name:'Neer impingement test',joint:'Shoulder',side:'R',posture:'sit',freq:.85,
+ summary:'Passively elevates the internally rotated arm while the scapula is held down, driving the greater tuberosity and supraspinatus tendon toward the anterior acromion.',
+ answer:'Subacromial impingement (rotator cuff tendinopathy or bursitis)',
+ steps:['Patient seated; stand beside or behind them.','Press down on the acromion so the scapula cannot rotate up.','Turn the arm into full internal rotation, thumb pointing down.','Passively raise the arm forward to full elevation and ask about pain.'],
+ positive:'Pain over the front or side of the shoulder during passive elevation, usually toward the top of the range.',
+ posNote:'Inflamed tendon and bursa: pain as the tuberosity meets the arch.',
+ pearl:'Neer also described an injection test: if subacromial local anaesthetic abolishes the pain, impingement is supported. Combine with Hawkins–Kennedy and the painful arc.',
+ mech:'The examiner lifts against the arm’s weight (about 37 N), creating an elevating torque at the shoulder. Holding the scapula makes the humerus do more of the work and lets the head glide up, so the gap between the supraspinatus insertion and the arch (readout) closes as the tuberosity passes under the acromion.',
+ names:['neer','neers','neer impingement','neer sign','neer impingement sign'],
+ nameHints:[{terms:['painful arc'],msg:'The painful arc is active abduction; here the examiner passively elevates the internally rotated arm, which is Neer’s test.'}],
+ concepts:SHOULDER_IMP,wrong:IMP_WRONG,
+ tested:{p:['supraspinatus_R','CAlig_R','scapula_R','humerus_R'],s:['infraspinatus_R','bicepsLong_R','deltMid_R','glenLabrum_R']},
+ marks:[{text:'Acromion',frame:'S',at:[1.92,5.55,-.12],kind:'bone'},{text:'Greater tuberosity',frame:'H',at:[.24,-.03,.06],kind:'bone'}],
+ cam:{at:'H_R',off:[0,.2,0],az:-58,el:16,dist:8.2},dur:8,
+ keys:[{t:0,step:0},{t:1,p:PR({plane:60,elev:12,ir:80,elb:6,pro:100,scapk:.25,fist:.1,wfl:0}),step:1},{t:1.6,step:2,f:{lift:30,grav:37}},{t:4.2,p:PR({elev:155,shty:.05}),step:3},{t:5.3},{t:7.2,p:PR({elev:12,shty:0}),f:{lift:0,grav:0}},{t:8,p:PR(SIT_ARM)}],
+ forces:[{id:'lift',frame:'R',at:[.06,-2.3,.04],dir:{w:[0,1,0]},joint:'H',push:true},{id:'grav',frame:'H',at:[0,-2.6,.03],dir:{w:[0,-1,0]},joint:'H',push:false,color:'lever'}],
+ contacts:[{frame:'S',at:[1.65,5.6,-.42],nw:[0,-1,0],f:[0,0,1],off:.3,t:[.8,7.4]},{frame:'R',at:[.06,-2.3,.04],n:[0,0,-1],f:[0,-1,0],off:.3,t:[.8,7.6]}],
+ metrics:[{label:'Arm elevation',unit:'°',get:X=>X.d('R.elev'),min:0,max:170,dp:0},{label:'Tuberosity–arch clearance',unit:'mm',get:X=>X.clear('R'),min:0,max:30,dp:1},{label:'Scapular upward rotation',unit:'°',get:X=>X.scap('R'),min:0,max:60,dp:0}],
+ pos:{rupture:[],pain:[{frame:'H',at:[.15,.22,.12],t:[2.6,5.6]}]}},
+{id:'hawkins',name:'Hawkins–Kennedy test',joint:'Shoulder',side:'R',posture:'sit',freq:.82,
+ summary:'With shoulder and elbow at 90°, forced internal rotation swings the greater tuberosity under the coracoacromial ligament.',
+ answer:'Subacromial impingement (supraspinatus tendon under the coracoacromial arch)',
+ steps:['Patient seated. Raise the arm forward to 90° and bend the elbow to 90°.','Support the elbow so the shoulder muscles stay relaxed.','Push the forearm down to force internal rotation of the shoulder.','Pain at the front or side of the shoulder is positive; compare sides.'],
+ positive:'Pain at the front or side of the shoulder during forced internal rotation.',
+ posNote:'Impinging tendon: pain as the tuberosity passes under the arch.',
+ pearl:'Neer and Hawkins–Kennedy are sensitive but not very specific. Together with a painful arc and weak external rotation they make a stronger case.',
+ mech:'A downward push at the wrist acts on a lever the length of the forearm, producing an internal-rotation torque about the humeral shaft. The twist swings the tuberosity up and under the coracoacromial arch; the clearance readout is smallest as it passes beneath.',
+ names:['hawkins kennedy','hawkins','kennedy hawkins','hawkin','hawkins kennedy impingement'],
+ concepts:SHOULDER_IMP,wrong:IMP_WRONG,
+ tested:{p:['supraspinatus_R','CAlig_R','humerus_R','scapula_R'],s:['infraspinatus_R','teresMinor_R','subscapularis_R','bicepsLong_R']},
+ marks:[{text:'Greater tuberosity',frame:'H',at:[.24,-.03,.06],kind:'bone'},{text:'Coracoid process',frame:'S',at:[1.56,5.22,.42],kind:'bone'}],
+ cam:{at:'H_R',off:[0,0,.8],az:-40,el:22,dist:8},dur:8,
+ keys:[{t:0,step:0},{t:1.6,p:PR({plane:90,elev:90,ir:55,elb:90,pro:90,scapk:.8,fist:.2,wfl:0})},{t:2.2,step:1},{t:3.2,p:PR({ir:125}),f:{press:40},step:2},{t:4},{t:4.8,p:PR({ir:55}),f:{press:0}},{t:5.8,p:PR({ir:125}),f:{press:40}},{t:6.4,p:PR({ir:55}),f:{press:0},step:3},{t:7.6,p:PR(SIT_ARM)},{t:8}],
+ forces:[{id:'press',frame:'R',at:[.05,-2.35,.05],dir:{w:[0,-1,0]},joint:'H',push:true}],
+ contacts:[{frame:'H',at:[0,-2.9,-.15],n:[0,0,1],f:[1,0,0],off:.38,t:[2,6.9]},{frame:'R',at:[.05,-2.3,-.12],nw:[0,-1,0],f:[0,-1,0],off:.3,t:[2.6,6.6]}],
+ metrics:[{label:'Forced internal rotation',unit:'°',get:X=>Math.max(0,X.d('R.ir')-55),min:0,max:75,dp:0},{label:'Tuberosity–arch clearance',unit:'mm',get:X=>X.clear('R'),min:0,max:30,dp:1},{label:'Internal-rotation torque',unit:'N·m',get:X=>X.tqAbout('press','H',[0,-1,0]),min:0,max:12,dp:1}],
+ pos:{rupture:[],pain:[{frame:'H',at:[.15,.15,.15],t:[2.9,4.3]},{frame:'H',at:[.15,.15,.15],t:[5.5,6.5]}]}},
+{id:'emptycan',name:'Empty can test',aka:'Jobe’s test',joint:'Shoulder',side:'R',posture:'sit',freq:.8,
+ summary:'Isolates the supraspinatus: the arm is raised to 90° in the scapular plane with the thumb pointing down, then held against downward pressure.',
+ answer:'Supraspinatus strength or tear (rotator cuff)',
+ steps:['Patient seated or standing.','Raise the arm to 90° in the scapular plane (about 30° forward of the side) and turn the thumb down.','Press down on the forearm while the patient resists.','Compare strength and pain with the other side.'],
+ positive:'Weakness (the arm gives way) suggests a supraspinatus tear; pain with normal strength suggests tendinopathy.',
+ posNote:'Torn supraspinatus: the arm drops under the load.',
+ pearl:'The full can variant (thumb up) loads the same muscle with less impingement pain and is often preferred.',
+ mech:'A 40 N push at the wrist, about 55 cm from the shoulder, gives an adducting torque near 22 N·m. The abductors must match it; the readout gives the supraspinatus about a third of that load (the middle deltoid takes the rest) on a moment arm of roughly 2 cm.',
+ names:['empty can','jobe','jobes','jobe test','supraspinatus test','thumbs down','empty beer can'],
+ nameHints:[{terms:['full can'],msg:'The full can is the thumb-up version; with the thumb down it’s the empty can.'}],
+ concepts:[{p:1,terms:['supraspinatus','rotator cuff tear','rotator cuff','cuff tear','supraspinatus tear','supraspinatus tendinopathy','rotator cuff strength']},{terms:['shoulder','impingement','weakness','abduction','tendon','cuff'],msg:'The muscle isolated is the supraspinatus.'}],
+ wrong:[{terms:['infraspinatus','teres minor'],msg:'Infraspinatus and teres minor are checked with resisted external rotation and the external-rotation lag sign.'},{terms:['subscapularis'],msg:'Subscapularis is checked with the lift-off and belly-press tests.'}],
+ tested:{p:['supraspinatus_R','humerus_R','scapula_R'],s:['deltMid_R','deltAnt_R','infraspinatus_R','trapUpper_R']},
+ marks:[{text:'Greater tuberosity',frame:'H',at:[.24,-.03,.06],kind:'bone'}],
+ cam:{at:'H_R',off:[-.6,-.3,.8],az:-24,el:16,dist:9},dur:7.4,
+ keys:[{t:0,step:0},{t:1.8,p:PR({plane:30,elev:90,ir:87,pro:121,elb:0,scapk:1,fist:.25,wfl:0}),step:1},{t:2.4,step:2},{t:3,f:{push:40},a:{supraspinatus:.95,deltMid:.8,deltAnt:.5}},{t:5,q:PR({elev:62})},{t:5.6,f:{push:0},a:{supraspinatus:0,deltMid:0,deltAnt:0},step:3},{t:6.6,p:PR(SIT_ARM)},{t:7.4}],
+ forces:[{id:'push',frame:'R',at:[.08,-2.35,.03],dir:{w:[0,-1,0]},joint:'H',push:true}],
+ muscleLoad:[{force:'push',share:[['supraspinatus',.35],['deltMid',.65]]}],
+ contacts:[{frame:'R',at:[.06,-2.3,.03],nw:[0,-1,0],f:[0,-1,0],off:.3,t:[2.6,5.8]}],
+ metrics:[{label:'External torque at shoulder',unit:'N·m',get:X=>X.tq('push'),min:0,max:30,dp:1},{label:'Supraspinatus force (35% share)',unit:'N',get:X=>X.mf('supraspinatus_R'),min:0,max:500,dp:0},{label:'Arm elevation',unit:'°',get:X=>X.d('R.elev'),min:0,max:100,dp:0}],
+ pos:{rupture:['supraspinatus_R'],pain:[{frame:'H',at:[.24,0,.06],t:[3.2,5.6]}]}},
+{id:'phalen',name:'Phalen’s test',joint:'Wrist',side:'B',posture:'sit',freq:.78,
+ summary:'Holding both wrists in full flexion raises pressure inside the carpal tunnel and squeezes the median nerve.',
+ answer:'Carpal tunnel syndrome (median nerve compression at the wrist)',
+ steps:['Patient seated, elbows bent and out to the sides.','Let the wrists drop into full flexion and press the backs of the hands together.','Hold for up to 60 seconds.','Ask about numbness or tingling and where it is felt.'],
+ positive:'Numbness or tingling in the thumb, index, middle and radial half of the ring finger within 60 seconds.',
+ posNote:'Compressed median nerve: tingling in the thumb, index and middle fingers.',
+ pearl:'Pair it with Tinel’s sign over the carpal tunnel and Durkan’s carpal compression test; nerve conduction studies confirm the diagnosis.',
+ mech:'There is no examiner force: each hand pushes the other into flexion (wrist torques shown). Full flexion narrows the tunnel, and pressure rises roughly tenfold in healthy wrists and far higher in carpal tunnel syndrome (values after Gelberman, 1981).',
+ names:['phalen','phalens','phalen maneuver','wrist flexion test','reverse prayer'],
+ nameHints:[{terms:['tinel','tinels'],msg:'Tinel’s sign taps over the nerve; holding both wrists flexed is Phalen’s test.'},{terms:['durkan','carpal compression'],msg:'Durkan’s test presses directly on the tunnel; this one uses wrist flexion.'}],
+ concepts:[{p:1,terms:['carpal tunnel','median nerve','cts','median neuropathy','median nerve compression','carpal tunnel syndrome','median nerve entrapment']},{terms:['wrist','nerve compression','numbness','tingling','paresthesia','paraesthesia','nerve','neuropathy','entrapment'],msg:'The structure is the median nerve in the carpal tunnel.'}],
+ wrong:[{terms:['ulnar','cubital','guyon'],msg:'The ulnar nerve is checked with the elbow flexion test and Froment’s sign.'},{terms:['de quervain','quervain'],msg:'De Quervain’s is checked with the Finkelstein test.'}],
+ tested:{p:['median_R','median_L','flexRet_R','flexRet_L','carpals_R','carpals_L'],s:['fds_R','fds_L','fcr_R','fcr_L','medianThumb_R','medianIndex_R','medianMiddle_R','medianThumb_L','medianIndex_L','medianMiddle_L']},
+ cam:{at:'P',off:[0,3.4,2.4],az:-28,el:12,dist:9.5},dur:9,
+ keys:[{t:0,step:0},{t:2,p:PB({plane:66,elev:55,ir:71,elb:104,pro:127,wfl:90,fist:.1,scapk:1}),step:1,f:{pushR:15,pushL:15}},{t:2.8,step:2},{t:7.2,step:3},{t:8.4,p:PB(SIT_ARM),f:{pushR:0,pushL:0}},{t:9}],
+ forces:[{id:'pushR',side:'R',frame:'W',at:[0,-.7,-.12],dir:{f:'W',l:[0,0,1]},joint:'W',push:true},{id:'pushL',side:'L',frame:'W',at:[0,-.7,-.12],dir:{f:'W',l:[0,0,1]},joint:'W',push:true}],
+ metrics:[{label:'Wrist flexion',unit:'°',get:X=>X.d('R.wfl'),min:-10,max:90,dp:0},{label:'Carpal tunnel pressure (model)',unit:'mmHg',get:X=>X.ctp(),min:0,max:100,dp:0},{label:'Hold time',unit:'s',get:X=>X.hold(2.8,7.2),min:0,max:60,dp:0}],
+ pos:{rupture:[],pain:[],tingle:{t:[4,7.8]}}},
+{id:'faber',name:'FABER test',aka:'Patrick’s test',joint:'Hip and sacroiliac joint',side:'R',posture:'supine',freq:.7,
+ summary:'Places the hip in flexion, abduction and external rotation (a figure 4), then presses the knee down to stress the hip joint and the sacroiliac joint.',
+ answer:'Hip joint pathology (groin pain) or sacroiliac joint dysfunction (posterior pain)',
+ steps:['Patient supine.','Rest the ankle of the tested leg just above the other knee and let the hip fall out into a figure 4.','Stabilize the opposite ASIS with one hand.','Press the bent knee gently toward the table.','Ask where it hurts and compare knee height with the other side.'],
+ positive:'Groin pain points to the hip joint (or iliopsoas); pain at the back of the pelvis points to the sacroiliac joint. A knee that stays higher than on the other side means restricted motion.',
+ posNote:'Painful hip: groin pain as the knee is pressed down.',
+ pearl:'FABER is a screen rather than a precise test. Groin pain leads on to FADIR and hip imaging; posterior pain to the other sacroiliac provocation tests.',
+ mech:'A downward push at the knee acts on the long femoral lever, adding abduction and external-rotation torque at the hip while the opposite ASIS is held, which also twists the sacroiliac joint.',
+ names:['faber','fabere','patrick','patricks','figure 4','figure four','flexion abduction external rotation'],
+ nameHints:[{terms:['fadir'],msg:'FADIR uses flexion, adduction and internal rotation; this figure 4 is the opposite, FABER.'}],
+ concepts:[{p:1,terms:['hip','hip joint','sacroiliac','si joint','sij','sacroiliac joint','intra articular','hip osteoarthritis','hip arthritis']},{terms:['groin','pelvis','pelvic','arthritis','osteoarthritis','labrum','labral','iliopsoas','psoas'],msg:'FABER screens the hip joint (groin pain) and the sacroiliac joint (posterior pain).'}],
+ wrong:[{terms:['sciatica','nerve root','radiculopathy'],msg:'Nerve root tension is checked with the straight leg raise.'},{terms:['acl','menisc'],msg:'The knee is only the lever here; the joints under stress are the hip and the sacroiliac joint.'}],
+ tested:{p:['femur_R','hipbone_R','acetLabrum_R','sacrum'],s:['iliacus_R','psoas_R','addLongus_R','gracilis_R','hipbone_L']},
+ marks:[{text:'Sacroiliac joint',frame:'P',at:[.5,.82,-.66],kind:'bone'}],
+ cam:{at:'F_R',off:[0,1.2,1.2],az:-42,el:40,dist:11.5},dur:8.4,
+ keys:[{t:0,step:0},{t:2.2,p:PR({hipf:50,hipa:24,hipr:50,kf:120,adf:-10}),step:1},{t:2.8,step:2},{t:4.2,p:PR({hipa:34,hipr:56}),f:{press:60,asis:60},step:3},{t:5.4,step:4},{t:6.2,p:PR({hipa:24,hipr:50}),f:{press:0,asis:0}},{t:7.6,p:PR({hipf:-3,hipa:0,hipr:8,kf:4,adf:-18})},{t:8.4}],
+ forces:[{id:'press',frame:'F',at:[-.3,-4.05,.15],dir:{w:[0,-1,0]},joint:'F',push:true},{id:'asis',side:'L',frame:'P',at:[1.1,.82,.6],dir:{w:[0,-1,0]},joint:'F',push:true,noTorque:true}],
+ contacts:[{frame:'F',at:[-.25,-4.0,.15],nw:[0,-1,0],f:[0,-1,0],off:.45,t:[2.6,6.6]},{frame:'P',side:'L',at:[1.1,.82,.6],nw:[0,-1,0],f:[0,1,0],off:.35,t:[2.6,6.6]}],
+ metrics:[{label:'Hip abduction',unit:'°',get:X=>X.d('R.hipa'),min:0,max:45,dp:0},{label:'Hip external rotation',unit:'°',get:X=>X.d('R.hipr'),min:0,max:60,dp:0},{label:'Torque at the hip',unit:'N·m',get:X=>X.tq('press'),min:0,max:40,dp:1}],
+ pos:{rupture:[],pain:[{frame:'F',at:[.05,-.05,.3],t:[4,6.2]}]}},
+{id:'ankledrawer',name:'Anterior drawer test (ankle)',joint:'Ankle',side:'R',posture:'sit',freq:.62,
+ summary:'Pulls the heel and talus forward under a stabilized tibia to test the anterior talofibular ligament (ATFL), the first ligament torn in most lateral ankle sprains.',
+ answer:'ATFL integrity (lateral ankle sprain or instability)',
+ steps:['Patient seated with the leg hanging and the calf relaxed.','Put the ankle in about 10–20° of plantarflexion.','Hold the front of the distal tibia and cup the heel with your other hand.','Draw the heel and talus forward; compare translation and end feel with the other ankle.'],
+ positive:'More forward translation of the talus than on the other side, sometimes with a dimple (suction sign) at the front of the lateral ankle.',
+ posNote:'Torn ATFL: the talus slides forward with no firm stop.',
+ pearl:'The examination is most accurate 4–5 days after the injury, once swelling and guarding settle.',
+ mech:'An anterior pull of about 120 N on the heel shears the talus forward in the ankle mortise. The ATFL, running forward from the fibula to the talar neck, takes the tension; plantarflexion tightens it further.',
+ names:['anterior drawer','anterior drawer ankle','ankle anterior drawer','ankle drawer','drawer','anterior draw'],
+ nameHints:[{terms:['talar tilt'],msg:'The talar tilt inverts the ankle to stress the calcaneofibular ligament; this pulls the talus straight forward.'}],
+ concepts:[{p:1,terms:['atfl','anterior talofibular','talofibular','lateral ankle sprain','ankle sprain','lateral ligament','lateral ankle ligament','ankle instability','lateral ankle instability']},{terms:['ankle','ligament','sprain','instability','cfl','calcaneofibular'],msg:'The ligament stressed is the anterior talofibular ligament (ATFL).'}],
+ wrong:[{terms:['acl','anterior cruciate'],msg:'That’s the knee version. Here the talus slides forward against the ATFL at the ankle.'},{terms:['achilles'],msg:'The Achilles tendon is checked with the Thompson test.'},{terms:['syndesmosis','high ankle'],msg:'The syndesmosis is checked with the squeeze and external-rotation tests.'}],
+ tested:{p:['ATFL_R','talus_R','fibula_R'],s:['CFL_R','tibia_R','calcaneus_R','deltoidLig_R']},
+ marks:[{text:'Lateral malleolus',frame:'K',at:[.32,-3.98,-.08],kind:'bone'}],
+ cam:{at:'Ft_R',off:[0,.2,0],az:-70,el:12,dist:5.6},dur:7,
+ keys:[{t:0,step:0},{t:1.4,p:PR({adf:-15}),step:1},{t:2,step:2},{t:2.5,p:PR({atx:.05}),q:PR({atx:.19}),f:{pull:120,stab:120},step:3},{t:3.1,p:PR({atx:0}),f:{pull:0,stab:0}},{t:3.8,p:PR({atx:.05}),q:PR({atx:.19}),f:{pull:120,stab:120}},{t:4.4,p:PR({atx:0}),f:{pull:0,stab:0}},{t:5.8,p:PR({adf:-6})},{t:7}],
+ forces:[{id:'pull',frame:'Ft',at:[0,-.45,-.58],dir:{f:'K',l:[0,0,1]},joint:'Ft',push:true},{id:'stab',frame:'K',at:[0,-3.3,.22],dir:{f:'K',l:[0,0,-1]},joint:'K',push:true,noTorque:true}],
+ ligLoad:[{force:'pull',cord:'ATFL'}],
+ contacts:[{frame:'Ft',at:[0,-.5,-.55],n:[0,.25,.97],f:[0,-1,0],off:.25,t:[1.8,4.9]},{frame:'K',at:[0,-3.3,.22],n:[0,0,-1],f:[1,0,0],off:.3,t:[1.8,4.9]}],
+ metrics:[{label:'Anterior talar translation',unit:'mm',get:X=>X.d('R.atx')*50,min:0,max:10,dp:1},{label:'ATFL strain',unit:'%',get:X=>X.strain('ATFL_R'),min:0,max:20,dp:1},{label:'Calcaneofibular ligament strain',unit:'%',get:X=>X.strain('CFL_R'),min:-5,max:15,dp:1}],
+ pos:{rupture:['ATFL_R'],pain:[]}},
+{id:'finkelstein',name:'Finkelstein test',joint:'Wrist and thumb',side:'R',posture:'sit',freq:.58,
+ summary:'With the thumb tucked into a fist, ulnar deviation of the wrist stretches the abductor pollicis longus and extensor pollicis brevis around the radial styloid.',
+ answer:'De Quervain tenosynovitis (APL and EPB in the first dorsal compartment)',
+ steps:['Patient makes a fist with the thumb tucked inside the fingers.','Hold the forearm in neutral, thumb side up.','Gently tilt the wrist toward the little finger (ulnar deviation).','Sharp pain over the radial styloid is positive.'],
+ positive:'Sharp pain over the radial styloid and first dorsal compartment, worse than on the other side.',
+ posNote:'Inflamed tendon sheath: pain at the radial styloid.',
+ pearl:'Strictly, the fist-over-thumb version is Eichhoff’s test; Finkelstein grasped the thumb and pulled the hand into ulnar deviation. Eichhoff’s version can be uncomfortable in healthy wrists, so compare sides.',
+ mech:'A push on the fist creates an ulnar-deviation torque at the wrist. Because the APL and EPB run around the radial styloid, their path lengthens and the tendons tighten in their sheath (stretch shown live).',
+ names:['finkelstein','finklestein','finkelsteins','eichhoff','eichoff','eichhoffs'],
+ concepts:[{p:1,terms:['de quervain','dequervain','quervain','first dorsal compartment','apl','epb','abductor pollicis longus','extensor pollicis brevis','tenosynovitis','stenosing tenosynovitis']},{terms:['thumb','wrist','radial styloid','tendon','tendinitis','tendonitis','tendinopathy','sheath'],msg:'The condition is De Quervain tenosynovitis of the APL and EPB tendons.'}],
+ wrong:[{terms:['carpal tunnel','median'],msg:'Carpal tunnel syndrome is checked with Phalen’s test, Tinel’s sign and carpal compression.'},{terms:['scaphoid'],msg:'A scaphoid fracture is suggested by anatomical snuffbox tenderness.'},{terms:['carpometacarpal','basal joint','cmc'],msg:'Thumb-base arthritis is checked with the grind test.'}],
+ tested:{p:['apl_R','epb_R','radius_R'],s:['phT1_R','phT2_R','carpals_R','brachiorad_R']},
+ marks:[{text:'Radial styloid',frame:'R',at:[.29,-2.64,.01],kind:'bone'}],
+ cam:{at:'W_R',off:[0,.1,0],az:-55,el:20,dist:5.4},dur:8,
+ keys:[{t:0,step:0},{t:1.6,p:PR({plane:90,elev:20,ir:5,elb:72,pro:90,fist:.1,thumb:0,wfl:0,scapk:1})},{t:2.8,p:PR({thumb:1,fist:1}),step:1},{t:3.4,step:2},{t:4.8,p:PR({wdev:32}),f:{push:30}},{t:5.8,step:3},{t:6.6,p:PR({wdev:0}),f:{push:0}},{t:7.6,p:PR(SIT_ARM)},{t:8}],
+ forces:[{id:'push',frame:'W',at:[.3,-.8,0],dir:{f:'W',l:[-1,0,0]},joint:'W',push:true}],
+ contacts:[{frame:'U',at:[0,-1.2,-.12],n:[0,0,1],f:[1,0,0],off:.35,t:[3.2,7]},{frame:'W',at:[.32,-.78,0],n:[-1,0,0],f:[0,-1,0],off:.25,t:[3.6,6.8]}],
+ metrics:[{label:'Ulnar deviation',unit:'°',get:X=>X.d('R.wdev'),min:0,max:35,dp:0},{label:'APL stretch',unit:'%',get:X=>X.strain('apl_R'),min:-5,max:15,dp:1},{label:'EPB stretch',unit:'%',get:X=>X.strain('epb_R'),min:-5,max:25,dp:1}],
+ pos:{rupture:[],pain:[{frame:'R',at:[.3,-2.55,.02],t:[4.4,6.6]}]}},
+{id:'thompson',name:'Thompson test',aka:'Simmonds–Thompson calf squeeze',joint:'Ankle',side:'R',posture:'prone',freq:.5,
+ summary:'Squeezing the calf shortens the triceps surae; if the Achilles tendon is intact, the foot plantarflexes passively.',
+ answer:'Achilles tendon rupture',
+ steps:['Patient prone with the feet hanging over the end of the couch (or kneeling on a chair).','Squeeze the middle of the calf firmly.','Watch the foot: it should flick into plantarflexion.','Compare with the other leg.'],
+ positive:'No plantarflexion when the calf is squeezed, which indicates a complete Achilles rupture.',
+ posNote:'Ruptured Achilles: the squeeze no longer moves the foot.',
+ pearl:'A palpable gap and a foot that rests more dorsiflexed than the other side (Matles test) support the diagnosis.',
+ mech:'The squeeze bunches the muscle bellies and tensions the Achilles. Acting about 5 cm behind the ankle axis, that pull makes a plantarflexion torque; cut the tendon and the torque disappears.',
+ names:['thompson','thompsons','thomson','simmonds','simmonds thompson','calf squeeze','calf squeeze test'],
+ concepts:[{p:1,terms:['achilles','achilles rupture','achilles tendon','calcaneal tendon','achilles tear','tendo achilles']},{terms:['calf','gastrocnemius','soleus','tendon','plantarflexion','tendon rupture','triceps surae'],msg:'The structure is the Achilles tendon.'}],
+ wrong:[{terms:['dvt','deep vein','thrombosis','homan','homans'],msg:'Calf squeezing for clots is Homans’ sign, which is unreliable; Thompson checks the Achilles tendon.'},{terms:['atfl','ankle sprain'],msg:'Ankle sprains are checked with the anterior drawer and talar tilt.'}],
+ tested:{p:['achilles_R','gastMed_R','gastLat_R','soleus_R','calcaneus_R'],s:['tibia_R','fibula_R','talus_R']},
+ cam:{at:'Ft_R',off:[0,.8,1.6],az:-62,el:28,dist:7.4},dur:7,
+ keys:[{t:0,step:0},{t:1.2,step:1},{t:2,p:PR({squeeze:1,adf:-48}),q:PR({adf:-28}),f:{sqM:150,sqL:150,ach:110},step:2},{t:2.8,p:PR({squeeze:0,adf:-28}),f:{sqM:0,sqL:0,ach:0}},{t:3.6,p:PR({squeeze:1,adf:-48}),q:PR({adf:-28}),f:{sqM:150,sqL:150,ach:110}},{t:4.4,p:PR({squeeze:0,adf:-28}),f:{sqM:0,sqL:0,ach:0},step:3},{t:5.4},{t:7}],
+ forces:[{id:'sqM',frame:'K',at:[-.42,-1.5,-.38],dir:{f:'K',l:[1,0,0]},joint:'K',push:true,noTorque:true},{id:'sqL',frame:'K',at:[.42,-1.5,-.38],dir:{f:'K',l:[-1,0,0]},joint:'K',push:true,noTorque:true},{id:'ach',cord:'achilles',joint:'Ft',push:false,color:'muscle'}],
+ contacts:[{frame:'K',at:[0,-1.5,-.45],n:[0,0,1],f:[1,0,0],off:.45,t:[1,5]}],
+ metrics:[{label:'Plantarflexion',unit:'°',get:X=>-X.d('R.adf'),min:0,max:55,dp:0},{label:'Achilles tension',unit:'N',get:X=>X.fm('ach'),min:0,max:150,dp:0},{label:'Plantarflexion torque',unit:'N·m',get:X=>X.tq('ach'),min:0,max:8,dp:1}],
+ pos:{rupture:['achilles_R'],pain:[]}},
+{id:'cozen',name:'Cozen’s test',joint:'Elbow',side:'R',posture:'sit',freq:.45,
+ summary:'Resisted wrist extension with the forearm pronated loads the common extensor origin, especially the extensor carpi radialis brevis (ECRB), at the lateral epicondyle.',
+ answer:'Lateral epicondylopathy (tennis elbow, ECRB origin)',
+ steps:['Elbow bent to about 90°, forearm pronated, hand in a fist.','Place your thumb on the lateral epicondyle.','Ask the patient to extend the wrist and tilt it toward the thumb.','Resist the movement with your other hand on the back of the fist.','Pain at the lateral epicondyle is positive.'],
+ positive:'Sudden, sharp pain over the lateral epicondyle during resisted wrist extension.',
+ posNote:'Tendinopathic ECRB origin: pain at the lateral epicondyle.',
+ pearl:'Mill’s test stretches the same tendon passively (elbow straight, forearm pronated, wrist flexed); resisted middle-finger extension (Maudsley’s test) is a third option.',
+ mech:'A 60 N push on the back of the hand gives a flexing torque at the wrist. The wrist extensors must cancel it, and they pull on their small origin at the lateral epicondyle; the red arrow there shows the ECRB’s share.',
+ names:['cozen','cozens','cozen test','resisted wrist extension','tennis elbow test'],
+ nameHints:[{terms:['mill','mills'],msg:'Mill’s test is the passive stretch; resisted wrist extension is Cozen’s.'},{terms:['maudsley'],msg:'Maudsley’s resists middle-finger extension; this resists the whole wrist, which is Cozen’s.'}],
+ concepts:[{p:1,terms:['lateral epicondylitis','tennis elbow','lateral epicondyle','ecrb','extensor carpi radialis brevis','lateral epicondylalgia','lateral epicondylopathy','common extensor origin','common extensor']},{terms:['elbow','extensor','epicondylitis','epicondylalgia','tendinopathy','wrist extensor'],msg:'The specific condition is lateral epicondylopathy (tennis elbow) at the ECRB origin.'}],
+ wrong:[{terms:['medial epicondylitis','golfer','golfers elbow','medial epicondyle'],msg:'Golfer’s elbow is on the medial side and is provoked by resisted wrist flexion.'},{terms:['ulnar collateral','ucl'],msg:'The ulnar collateral ligament is checked with valgus stress and the moving valgus test.'}],
+ tested:{p:['ecrb_R','humerus_R'],s:['ecrl_R','extDig_R','ecu_R','radius_R','ulna_R']},
+ marks:[{text:'Lateral epicondyle',frame:'H',at:[.33,-2.93,0],kind:'bone'}],
+ cam:{at:'U_R',off:[0,.4,0],az:-80,el:24,dist:6.8},dur:7.6,
+ keys:[{t:0,step:0},{t:1.6,p:PR({plane:90,elev:18,ir:8,elb:75,pro:165,fist:1,thumb:.3,wfl:0,scapk:1})},{t:2.4,step:1},{t:3,p:PR({wfl:-32,wdev:-10}),step:2},{t:3.6,f:{press:60},a:{ecrb:.9,ecrl:.75,ecu:.4,extDig:.5},step:3},{t:5.4,step:4},{t:6,f:{press:0},a:{ecrb:0,ecrl:0,ecu:0,extDig:0},p:PR({wfl:0,wdev:0})},{t:7,p:PR(SIT_ARM)},{t:7.6}],
+ forces:[{id:'press',frame:'W',at:[0,-.85,-.2],dir:{f:'W',l:[0,0,1]},joint:'W',push:true}],
+ muscleLoad:[{force:'press',share:[['ecrb',.4],['ecrl',.35],['ecu',.25]],origin:'ecrb'}],
+ contacts:[{frame:'H',at:[.34,-2.9,0],n:[-1,0,0],f:[0,0,1],off:.28,t:[2.2,6.2]},{frame:'W',at:[0,-.8,-.18],n:[0,0,1],f:[0,-1,0],off:.22,t:[3.2,6.2]}],
+ metrics:[{label:'Wrist extension',unit:'°',get:X=>-X.d('R.wfl'),min:-10,max:40,dp:0},{label:'Flexing torque at wrist',unit:'N·m',get:X=>X.tq('press'),min:0,max:8,dp:1},{label:'ECRB pull on epicondyle',unit:'N',get:X=>X.mf('ecrb_R'),min:0,max:400,dp:0}],
+ pos:{rupture:[],pain:[{frame:'H',at:[.33,-2.93,0],t:[3.6,5.9]}]}}
+];
+
+/* ---------- timeline engine ---------- */
+const ST={m:null,idx:0,t:0,play:true,speed:1,pos:false,mode:'learn',layers:{muscles:true,ligaments:true,nerves:true,forces:true,hands:true,focus:true,skin:false,labels:true},hover:null,chipHover:null,step:-1,quizReveal:false,quizHints:0,capKey:''};
+const CUR={pose:null,f:{},a:{},step:0,hi:null,t:0};let PRE=false;
+function prepare(m){
+  if(m.track)return;const base=basePose(m.posture);
+  const fill=pos=>{let prev={...base};return m.keys.map(k=>{prev={...prev,...(k.p||{}),...(pos&&k.q?k.q:{})};return prev;});};
+  m.track=[fill(false),fill(true)];let f={},a={},st=0,hi=null;
+  m.fT=m.keys.map(k=>(f={...f,...(k.f||{})}));m.aT=m.keys.map(k=>(a={...a,...(k.a||{})}));
+  m.sT=m.keys.map(k=>{if(k.step!=null)st=k.step;return st;});m.hT=m.keys.map(k=>{if(k.hi)hi=k.hi;return hi;});
+}
+function seg(m,t){const K=m.keys;let i=0;while(i<K.length-2&&t>=K[i+1].t)i++;const a=K[i],b=K[i+1]||a,u=b===a?0:ease(clamp((t-a.t)/(b.t-a.t),0,1));return [i,Math.min(i+1,K.length-1),u];}
+function lerpObj(A,B,u){const o={};for(const k in A)o[k]=lerp(A[k],B[k]!=null?B[k]:A[k],u);for(const k in B)if(!(k in o))o[k]=B[k]*u;return o;}
+function evalAt(t){
+  const m=ST.m,[i,j,u]=seg(m,t),pi=ST.pos?1:0;CUR.t=t;
+  CUR.pose=lerpObj(m.track[pi][i],m.track[pi][j],u);CUR.f=lerpObj(m.fT[i],m.fT[j],u);CUR.a=lerpObj(m.aT[i],m.aT[j],u);CUR.step=m.sT[i];CUR.hi=m.hT[i];
+  applyPoseFull(CUR.pose);
+  for(const id in RIG.cords)RIG.cords[id].act=0;
+  for(const k in CUR.a){const c=RIG.cords[k+'_R'];if(c)c.act=CUR.a[k];}
+  body.updateMatrixWorld(true);
+}
+/* ---------- forces, torques, muscle and ligament estimates ---------- */
+const FS={},MF={};
+function worldDir(spec,S){if(spec.w)return VA(spec.w).normalize();const q=frameOf(spec.f,S).getWorldQuaternion(new T.Quaternion()),lat=S==='R'?-1:1;return V(spec.l[0]*lat,spec.l[1],spec.l[2]).applyQuaternion(q).normalize();}
+function cordPull(c){c.world();const n=c.att.length,fr=c.att[n-1].fr;let k=n-1;while(k>1&&c.att[k-1].fr===fr)k--;return {P:c.att[k].w.clone(),d:V().subVectors(c.att[k-1].w,c.att[k].w).normalize()};}
+const MINARM={supraspinatus:.022,deltMid:.03,deltAnt:.028,ecrb:.012,ecrl:.014,ecu:.008};
+function computeForces(){
+  const m=ST.m;for(const k in FS)delete FS[k];for(const k in MF)delete MF[k];
+  for(const f of (m.forces||[])){
+    const S=f.side||'R';let mag=CUR.f[f.id]||0,P,d;
+    if(f.cord){const c=RIG.cords[f.cord+'_'+S];if(c.ruptured)mag=0;const cp=cordPull(c);P=cp.P;d=cp.d;}
+    else{P=localOf(f.frame,S,f.at);frameOf(f.frame,S).localToWorld(P);d=worldDir(f.dir,S);}
+    const J=frameOf(f.joint,S).getWorldPosition(V()),r=V().subVectors(P,J).multiplyScalar(.1),F=d.clone().multiplyScalar(mag);
+    FS[f.id]={f,P,d,mag,J,r,F,tau:V().crossVectors(r,F),S};
+  }
+  for(const tq of (m.torques||[])){
+    const S='R',mag=CUR.f[tq.id]||0,fr=frameOf(tq.frame,S),q=fr.getWorldQuaternion(new T.Quaternion());
+    const ax=(S==='R'?V(tq.axis[0],-tq.axis[1],-tq.axis[2]):VA(tq.axis)).applyQuaternion(q).normalize();
+    const J=fr.getWorldPosition(V()),at=localOf(tq.frame,S,tq.at);fr.localToWorld(at);
+    FS[tq.id]={f:tq,P:at,J,mag:Math.abs(mag),tau:ax.multiplyScalar(mag),pure:true,S};
+  }
+  for(const ml of (m.muscleLoad||[])){
+    const st=FS[ml.force];if(!st||st.mag<.5)continue;const u=st.tau.clone().normalize(),need=st.tau.length();st.musc=[];
+    for(const [id,share] of ml.share){const c=RIG.cords[id+'_'+st.S];if(c.ruptured){MF[c.id]=0;continue;}const cp=cordPull(c),r=V().subVectors(cp.P,st.J).multiplyScalar(.1),arm=V().crossVectors(r,cp.d).dot(u);
+      const a=Math.max(-arm,MINARM[id]||0),Tn=a>.002?share*need/a:0;MF[c.id]=Tn;st.musc.push({c,P:cp.P,d:cp.d,T:Tn,origin:ml.origin===id});}
+  }
+  for(const ll of (m.ligLoad||[])){
+    const st=FS[ll.force];if(!st)continue;const c=RIG.cords[ll.cord+'_'+st.S];c.world();
+    const P=c.att[c.att.length-1].w.clone(),d=V().subVectors(c.att[0].w,P).normalize(),comp=-d.dot(st.d);
+    const Tn=c.ruptured||st.mag<.5?0:st.mag/Math.max(.25,comp);st.lig={P,d,T:Tn};MF[c.id]=Tn;
+  }
+}
+const PU_={a:0};
+function drawForces(){
+  PU.a=PU.c=PU.l=0;
+  const show=ST.layers.forces&&!(ST.mode==='quiz'&&!ST.quizReveal&&!Q.forces);
+  if(show)for(const id in FS){const s=FS[id];if(s.mag<.5)continue;
+    if(s.pure){const tu=s.tau.clone().normalize();curlAt(s.P,tu,.42,GC.torque);arrowAt(s.P,tu,clamp(s.mag*.2,.35,1.8),GC.torque);continue;}
+    const L=clamp(s.mag*.011,.3,1.9),o=s.f.push?s.P.clone().addScaledVector(s.d,-L):s.P.clone();arrowAt(o,s.d,L,GC[s.f.color||'force']);
+    if(!s.f.noTorque&&s.tau.length()>.05){dashLine(s.J,s.P,GC.lever);const tu=s.tau.clone().normalize();arrowAt(s.J,tu,clamp(s.tau.length()*.07,.3,2.4),GC.torque);curlAt(s.J,tu,.32,GC.torque);}
+    if(s.musc)for(const mm of s.musc){if(mm.T<1)continue;const L2=clamp(mm.T*.003,.25,1.6);arrowAt(mm.P,mm.d,L2,GC.muscle);if(mm.origin){mm.c.world();const o2=mm.c.att[0].w,d2=V().subVectors(mm.c.att[1].w,o2).normalize();arrowAt(o2,d2,L2,GC.muscle);}}
+    if(s.lig&&s.lig.T>1)arrowAt(s.lig.P,s.lig.d,clamp(s.lig.T*.006,.25,1.4),GC.lig);
+  }
+  for(let i=PU.a;i<POOL.a.length;i++)POOL.a[i].visible=false;for(let i=PU.c;i<POOL.c.length;i++)POOL.c[i].visible=false;for(let i=PU.l;i<POOL.l.length;i++)POOL.l[i].visible=false;
+}
+function clearance(S){const H=frameOf('H',S),G=frameOf('S',S),gt=localOf('H',S,GT_M);H.localToWorld(gt);let dmin=9,prev=null;
+  for(const p of ARCH){const w=localOf('S',S,p);G.localToWorld(w);if(prev){const ab=V().subVectors(w,prev),t=clamp(V().subVectors(gt,prev).dot(ab)/ab.lengthSq(),0,1);dmin=Math.min(dmin,gt.distanceTo(prev.clone().addScaledVector(ab,t)));}prev=w;}
+  return Math.max(0,(dmin-GT_R)*100);}
+const X={
+  d:k=>CUR.pose[k]||0,
+  strain:id=>{const c=RIG.cords[id];if(!c)return 0;if(c.ruptured)return NaN;if(PRE)c.strain=c.measure()/c.L0-1;return c.strain*100;},
+  tq:id=>FS[id]?FS[id].tau.length():0,fm:id=>FS[id]?FS[id].mag:0,mf:id=>MF[id]||0,
+  tqAbout:(id,type,axL)=>{const s=FS[id];if(!s)return 0;const q=frameOf(type,s.S).getWorldQuaternion(new T.Quaternion()),lat=s.S==='R'?-1:1;return Math.abs(s.tau.dot(V(axL[0]*lat,axL[1],axL[2]).applyQuaternion(q).normalize()));},
+  clear:S=>clearance(S),scap:S=>CUR.pose[S+'.scapk']*Math.max(0,CUR.pose[S+'.elev']-25)/3,
+  ctp:()=>{const f=Math.pow(clamp((CUR.pose['R.wfl']||0)/90,0,1),2);return ST.pos?32+62*f:2.5+28.5*f;},
+  hold:(a,b)=>clamp((CUR.t-a)/(b-a),0,1)*60
+};
+/* ---------- effects, highlights, hands ---------- */
+function drawEffects(clock){
+  let si=0;const m=ST.m,show=ST.pos&&(ST.mode==='learn'||ST.quizReveal);
+  if(show){
+    for(const p of m.pos.pain){if(CUR.t<p.t[0]||CUR.t>p.t[1])continue;const w=localOf(p.frame,'R',p.at);frameOf(p.frame,'R').localToWorld(w);
+      const k=(CUR.t-p.t[0])/(p.t[1]-p.t[0]),pulse=.5+.5*Math.sin(clock*(p.click?14:7)),s=sprite(si++);s.visible=true;s.position.copy(w);s.material.color.copy(p.click?col(0xffe066):col(0xff3b2f));
+      s.material.opacity=Math.sin(Math.PI*k)*(.55+.45*pulse);s.scale.setScalar((p.click?.6:.9)+.4*pulse);}
+    const np=m.pos.nervePain;if(np&&CUR.t>=np.t[0]&&CUR.t<=np.t[1]){const c=RIG.cords[np.cord],k=((CUR.t-np.t[0])*.9)%1;for(let j=0;j<3;j++){const kk=(k+j/3)%1,s=sprite(si++);s.visible=true;s.position.copy(c.S[Math.round((.25+kk*.75)*c.N)]);s.material.color.copy(col(0xff3b2f));s.material.opacity=.85*Math.sin(Math.PI*kk);s.scale.setScalar(.55);}}
+    const tg=m.pos.tingle;if(tg&&CUR.t>=tg.t[0]&&CUR.t<=tg.t[1])for(const S of ['L','R'])for(const fk of ['T3','I3','M3','Rg3']){const w=localOf(fk,S,fk==='T3'?[.05,-.1,.04]:[0,-.12,.04]);frameOf(fk,S).localToWorld(w);const s=sprite(si++);s.visible=true;s.position.copy(w);s.material.color.copy(col(0xffd21f));s.material.opacity=.4+.5*Math.abs(Math.sin(clock*9+w.x*7+w.y*3));s.scale.setScalar(fk==='Rg3'?.3:.45);}
+  }
+  for(let i=si;i<SPR.length;i++)SPR[i].visible=false;
+}
+const TESTED=new Map();
+function setTested(m){TESTED.clear();for(const id of m.tested.p)TESTED.set(id,'p');for(const id of m.tested.s)if(!TESTED.has(id))TESTED.set(id,'s');}
+function applyLook(clock){
+  const showHL=ST.mode==='learn'||ST.quizReveal||ST.quizHints>=2,focus=ST.layers.focus&&showHL,pulse=.5+.5*Math.sin(clock*4.2),hi=CUR.hi;
+  for(const s of RIG.list){
+    const vis=s.layer==='bones'||ST.layers[s.layer];s.mesh.visible=vis;if(!vis)continue;
+    const role=showHL?TESTED.get(s.id):null;let em=0,op=1;
+    if(focus&&!role)op=s.kind==='bone'?.28:s.kind==='cartilage'?.25:.12;
+    if(role==='p')em=.28+.22*pulse;else if(role==='s')em=.12;
+    if(hi&&hi.length&&role==='p'&&s.kind==='cartilage'&&!hi.includes(s.id))em=.06;
+    if(hi&&hi.includes(s.id))em=.45+.35*pulse;
+    if(s.isCord){if(role&&s.strain>0)em+=clamp(s.strain/.12,0,1)*.35;if(s.act>0)em=Math.max(em,.25+.5*s.act*pulse);}
+    if(ST.hover===s.id||ST.chipHover===s.id)em=Math.max(em,.7);
+    s.mat.opacity=op;s.mat.depthWrite=op>.99;
+    if(em>0)s.mat.emissive.copy(HL_COL[s.kind]||HL_COL.bone).multiplyScalar(em);else s.mat.emissive.setRGB(0,0,0);
+  }
+}
+function updateHands(){let i=0;const m=ST.m;
+  if(ST.layers.hands)for(const c of (m.contacts||[])){if(CUR.t<c.t[0]||CUR.t>c.t[1])continue;const h=getHand(i++);h.visible=true;placeHand(h,c,'R');h.material.opacity=.5*clamp(Math.min((CUR.t-c.t[0])/.35,(c.t[1]-CUR.t)/.35),0,1);}
+  for(let j=i;j<HANDS.length;j++)HANDS[j].visible=false;}
+
+/* ---------- labels, HUD, caption ---------- */
+const labelsEl=$('#labels');let LABELS=[];
+function buildLabels(m){labelsEl.innerHTML='';LABELS=[];
+  const add=(text,kind,anchor)=>{const d=document.createElement('div');d.className='lbl';d.textContent=text;d.style.setProperty('--c',KIND_CSS[kind]||'var(--ink)');labelsEl.appendChild(d);LABELS.push({el:d,anchor,x:0,y:0});};
+  const seen=new Set();for(const id of m.tested.p){const s=RIG.bones[id]||RIG.cords[id];if(!s)continue;const nm=s.name.replace(/ \((left|right)\)$/,'');if(seen.has(nm))continue;seen.add(nm);
+    if(s.isCord)add(nm,s.kind,()=>s.mid().clone());else{const g=s.mesh.geometry;if(!g.boundingSphere)g.computeBoundingSphere();const c=g.boundingSphere.center.clone();add(nm,s.kind,()=>s.mesh.localToWorld(c.clone()));}}
+  for(const mk of (m.marks||[])){const S=mk.side||'R',l=localOf(mk.frame,S,mk.at);add(mk.text,mk.kind||'bone',()=>frameOf(mk.frame,S).localToWorld(l.clone()));}
+}
+function updateLabels(){
+  const show=ST.layers.labels&&(ST.mode==='learn'||ST.quizReveal);labelsEl.style.display=show?'':'none';if(!show)return;
+  const w=canvas.clientWidth,h=canvas.clientHeight,arr=[];
+  for(const L of LABELS){const p=L.anchor().project(camera);if(p.z>1||p.z<-1||Math.abs(p.x)>1.1||Math.abs(p.y)>1.1){L.el.style.opacity=0;continue;}L.x=(p.x*.5+.5)*w+12;L.y=(-p.y*.5+.5)*h-10;L.el.style.opacity=1;arr.push(L);}
+  arr.sort((a,b)=>a.y-b.y);for(let i=1;i<arr.length;i++)for(let j=0;j<i;j++){const A=arr[j],B=arr[i];if(Math.abs(A.y-B.y)<19&&Math.abs(A.x-B.x)<150)B.y=A.y+19;}
+  for(const L of arr)L.el.style.transform=`translate(${L.x.toFixed(1)}px,${L.y.toFixed(1)}px)`;
+}
+const hud=$('#hud'),HUD={},MCOL=['var(--torque)','var(--force)','var(--ligament)'];
+function precompute(m){
+  const N=90,vals=m.metrics.map(()=>[]);PRE=true;
+  for(let k=0;k<=N;k++){evalAt(m.dur*k/N);computeForces();m.metrics.forEach((mt,i)=>{const v=mt.get(X);vals[i].push(Number.isFinite(v)?v:mt.min);});}
+  PRE=false;m.curves=vals.map((arr,i)=>{const mt=m.metrics[i];return arr.map((v,k)=>`${(14+302*k/N).toFixed(1)},${(160-48*clamp((v-mt.min)/(mt.max-mt.min),0,1)).toFixed(1)}`).join(' ');});
+  for(const id in RIG.cords)RIG.cords[id].sig=NaN;
+}
+function buildHUD(m){
+  let s=`<rect class="bg" x=".5" y=".5" width="329" height="187" rx="12"/><text class="ttl" x="14" y="21">Live biomechanics</text>`;
+  m.metrics.forEach((mt,i)=>{const y=41+i*24;s+=`<text x="14" y="${y}">${esc(mt.label)}</text><text class="val" x="316" y="${y}" text-anchor="end" id="hv${i}"></text><rect x="14" y="${y+5}" width="302" height="3" rx="1.5" fill="var(--line)"/><rect x="14" y="${y+5}" width="0" height="3" rx="1.5" fill="${MCOL[i]}" id="hb${i}"/>`;});
+  s+=`<line class="axis" x1="14" y1="160.5" x2="316" y2="160.5"/>`;
+  m.curves.forEach((c,i)=>{s+=`<polyline fill="none" stroke="${MCOL[i]}" stroke-width="1.6" stroke-linejoin="round" points="${c}" opacity=".9"/>`;});
+  s+=`<line id="hcur" x1="14" y1="108" x2="14" y2="162" stroke="var(--ink)" stroke-width="1" opacity=".5"/>`;
+  s+=`<g transform="translate(14,180)"><path d="M0 -3h13" stroke="var(--force)" stroke-width="2"/><path d="M15 -3l-5 -3.2v6.4z" fill="var(--force)"/><text x="20" y="1">force</text><circle cx="64" cy="-3" r="4.5" fill="none" stroke="var(--torque)" stroke-width="1.8"/><text x="73" y="1">torque</text><path d="M118 -3h14" stroke="var(--muscle)" stroke-width="2"/><text x="137" y="1">muscle</text><path d="M184 -3h14" stroke="var(--ligament)" stroke-width="2"/><text x="203" y="1">ligament</text><path d="M256 -3h13" stroke="var(--ink-3)" stroke-width="1.5" stroke-dasharray="3 2"/><text x="274" y="1">lever</text></g>`;
+  hud.innerHTML=s;HUD.v=m.metrics.map((_,i)=>$('#hv'+i));HUD.b=m.metrics.map((_,i)=>$('#hb'+i));HUD.cur=$('#hcur');
+}
+function updateHUD(){
+  const m=ST.m,hide=ST.mode==='quiz'&&!ST.quizReveal;hud.style.opacity=hide?0:1;if(hide)return;
+  m.metrics.forEach((mt,i)=>{const v=mt.get(X),txt=Number.isNaN(v)?'torn':v.toFixed(mt.dp)+(mt.unit==='°'||mt.unit==='%'?'':' ')+mt.unit;if(HUD.v[i].textContent!==txt)HUD.v[i].textContent=txt;HUD.b[i].setAttribute('width',(Number.isNaN(v)?0:clamp((v-mt.min)/(mt.max-mt.min),0,1)*302).toFixed(1));});
+  const cx=(14+302*CUR.t/m.dur).toFixed(1);HUD.cur.setAttribute('x1',cx);HUD.cur.setAttribute('x2',cx);
+}
+function updateCaption(){
+  const m=ST.m;let title,text;
+  if(ST.mode==='quiz'&&!ST.quizReveal){title='Mystery maneuver';text='Watch the motion, then name it in the panel on the right.';}
+  else{title=m.name;text=`<b>Step ${CUR.step+1} of ${m.steps.length}.</b> ${esc(m.steps[CUR.step])}`;}
+  const k=title+'|'+text;if(k!==ST.capKey){ST.capKey=k;$('#cap-title').textContent=title;$('#cap-text').innerHTML=text;}
+  if(CUR.step!==ST.step){ST.step=CUR.step;document.querySelectorAll('#learn-panel ol.steps li').forEach((li,i)=>li.classList.toggle('on',i===CUR.step));}
+}
+
+/* ---------- camera and pointer controls ---------- */
+const CAM={az:-40,el:18,dist:14,tgt:V(0,8,0),goal:null,off:V()};
+const trackPoint=()=>RIG.frames[ST.m.cam.at].getWorldPosition(V()).add(VA(ST.m.cam.off||[0,0,0]));
+function camGoal(m,instant){CAM.goal={az:m.cam.az,el:m.cam.el,dist:m.cam.dist};CAM.off.set(0,0,0);if(instant){Object.assign(CAM,{az:m.cam.az,el:m.cam.el,dist:m.cam.dist});CAM.tgt.copy(trackPoint());}}
+function updateCamera(dt){
+  if(CAM.goal){const k=1-Math.pow(.03,dt),da=((CAM.goal.az-CAM.az+540)%360)-180;CAM.az+=da*k;CAM.el+=(CAM.goal.el-CAM.el)*k;CAM.dist+=(CAM.goal.dist-CAM.dist)*k;if(Math.abs(da)<.05&&Math.abs(CAM.goal.dist-CAM.dist)<.01)CAM.goal=null;}
+  CAM.tgt.lerp(trackPoint().add(CAM.off),1-Math.pow(.08,dt));
+  const a=CAM.az*D2R,e=CAM.el*D2R;camera.position.set(CAM.tgt.x+CAM.dist*Math.sin(a)*Math.cos(e),CAM.tgt.y+CAM.dist*Math.sin(e),CAM.tgt.z+CAM.dist*Math.cos(a)*Math.cos(e));camera.lookAt(CAM.tgt);
+}
+const ptrs=new Map();let drag=null;
+canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});drag={pan:e.button===2||e.shiftKey};canvas.classList.add('dragging');CAM.goal=null;});
+canvas.addEventListener('pointermove',e=>{
+  if(ptrs.has(e.pointerId)){const prev=ptrs.get(e.pointerId);
+    if(ptrs.size===2){const other=[...ptrs.entries()].find(([k])=>k!==e.pointerId)[1],d0=Math.hypot(prev.x-other.x,prev.y-other.y),d1=Math.hypot(e.clientX-other.x,e.clientY-other.y);if(d0>0&&d1>0)CAM.dist=clamp(CAM.dist*d0/d1,2.5,40);}
+    else if(drag){const dx=e.clientX-prev.x,dy=e.clientY-prev.y;
+      if(drag.pan){const r=V().setFromMatrixColumn(camera.matrixWorld,0),u=V().setFromMatrixColumn(camera.matrixWorld,1),s=CAM.dist*.0016;CAM.off.addScaledVector(r,-dx*s).addScaledVector(u,dy*s);}
+      else{CAM.az-=dx*.35;CAM.el=clamp(CAM.el+dy*.3,-12,86);}}
+    ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});return;}
+  hoverAt(e);
+});
+const endPtr=e=>{ptrs.delete(e.pointerId);if(!ptrs.size){drag=null;canvas.classList.remove('dragging');}};
+canvas.addEventListener('pointerup',endPtr);canvas.addEventListener('pointercancel',endPtr);
+canvas.addEventListener('pointerleave',()=>{$('#tip').hidden=true;ST.hover=null;});
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+canvas.addEventListener('wheel',e=>{e.preventDefault();CAM.goal=null;CAM.dist=clamp(CAM.dist*Math.exp(e.deltaY*.0012),2.5,40);},{passive:false});
+const ray=new T.Raycaster(),mouse=new T.Vector2();let lastHover=0;
+function hoverAt(e){
+  const now=performance.now();if(now-lastHover<70)return;lastHover=now;const tip=$('#tip');
+  if(ST.mode==='quiz'&&!ST.quizReveal){tip.hidden=true;return;}
+  const r=canvas.getBoundingClientRect();mouse.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(mouse,camera);
+  for(const s of RIG.list)if(s.isCord&&s.bsDirty){s.geo.computeBoundingSphere();s.bsDirty=false;}
+  const hits=ray.intersectObjects(PICK.filter(o=>o.visible&&o.userData.struct.mat.opacity>.5),false);
+  if(hits.length){const s=hits[0].object.userData.struct;ST.hover=s.id;tip.textContent=s.name;tip.style.left=(e.clientX-r.left)+'px';tip.style.top=(e.clientY-r.top)+'px';tip.hidden=false;}else{ST.hover=null;tip.hidden=true;}
+}
+
+/* ---------- panels ---------- */
+function buildList(){const ol=$('#mlist');ol.innerHTML=MANEUVERS.map((m,i)=>`<li><button data-i="${i}" aria-current="false"><span class="rk">${i+1}</span><span class="nm">${esc(m.name)}</span><span class="jt">${esc(m.joint)}</span><span class="freq" aria-hidden="true"><b style="width:${Math.round(m.freq*100)}%"></b></span></button></li>`).join('');
+  ol.addEventListener('click',e=>{const b=e.target.closest('button[data-i]');if(b&&ST.mode==='learn')select(+b.dataset.i);});}
+function chipsHTML(m){
+  const groups=[['Bones, joints and cartilage',['bone','cartilage']],['Muscles and tendons',['muscle','tendon']],['Ligaments',['ligament']],['Nerves',['nerve']]];let h='';
+  for(const [gname,kinds] of groups){const items=[];for(const [id,role] of TESTED){const s=RIG.bones[id]||RIG.cords[id];if(s&&kinds.includes(s.kind))items.push([s,role]);}
+    if(!items.length)continue;items.sort((a,b)=>(a[1]==='p'?0:1)-(b[1]==='p'?0:1));
+    h+=`<div class="grp">${gname}</div><div class="chips">${items.map(([s,role])=>`<span class="chip${role==='s'?' sec':''}" data-id="${s.id}" style="--c:${KIND_CSS[s.kind]}"><i></i>${esc(m.side==='B'?s.name:s.name.replace(/ \((left|right)\)$/,''))}</span>`).join('')}</div>`;}
+  return h+'<p class="note">Solid chips are the main structures under test; dashed ones are secondary or must stay relaxed. Hover a chip to find it on the skeleton.</p>';
+}
+function renderLearn(){
+  const m=ST.m,L=$('#learn-panel');
+  L.innerHTML=`<h2>${esc(m.name)}</h2>${m.aka?`<p class="note">Also called ${esc(m.aka)}</p>`:''}
+  <div class="meta"><span class="tag joint">${esc(m.joint)}</span><span class="tag">${m.side==='B'?'Both hands':'Right side shown'}</span><span class="tag">${POSTURE[m.posture]}</span><span class="tag">Rank ${MANEUVERS.indexOf(m)+1} of 12</span></div>
+  <p class="lead">${esc(m.summary)}</p><h3>How to perform it</h3><ol class="steps">${m.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol>
+  <h3>Positive finding</h3><p>${esc(m.positive)}</p>
+  <button class="toggle" id="posToggle" aria-pressed="${ST.pos}"><span class="sw"></span><span><b>Show a positive test</b><small>${esc(m.posNote)}</small></span></button>
+  <h3>Structures tested</h3>${chipsHTML(m)}<h3>Biomechanics</h3><p>${esc(m.mech)}</p><p class="pearl">${esc(m.pearl)}</p>
+  <p class="note" style="margin-top:14px">Model notes: translations are exaggerated about 2× so they can be seen; the millimetre readouts are real-scale. Muscle and ligament forces are simple equilibrium estimates for teaching, not measurements.</p>`;
+  ST.step=-1;$('#posToggle').onclick=()=>setPos(!ST.pos);
+  L.querySelectorAll('.chip').forEach(c=>{c.onmouseenter=()=>ST.chipHover=c.dataset.id;c.onmouseleave=()=>ST.chipHover=null;});
+}
+function buildTicks(){const m=ST.m;let h='',last=-1;m.keys.forEach((k,i)=>{if(m.sT[i]!==last){last=m.sT[i];h+=`<span style="left:${(k.t/m.dur*100).toFixed(2)}%"></span>`;}});$('#ticks').innerHTML=h;}
+function applyRupture(){const m=ST.m;for(const id in RIG.cords){const c=RIG.cords[id];c.ruptured=ST.pos&&m.pos.rupture.includes(c.id);c.sig=NaN;}}
+function select(i,opts={}){
+  ST.idx=i;ST.m=MANEUVERS[i];const m=ST.m;prepare(m);
+  setPosture(m.posture);setTested(m);applyRupture();precompute(m);buildHUD(m);buildLabels(m);
+  ST.t=0;evalAt(0);ST.capKey='';
+  document.querySelectorAll('#mlist button').forEach((b,k)=>b.setAttribute('aria-current',k===i&&ST.mode==='learn'?'true':'false'));
+  if(ST.mode==='learn')renderLearn();buildTicks();camGoal(m,opts.instant);
+  canvas.setAttribute('aria-label',(ST.mode==='quiz'?'Mystery maneuver':m.name)+' demonstrated on a 3D skeleton');
+}
+function setPos(on){ST.pos=on;applyRupture();precompute(ST.m);buildHUD(ST.m);evalAt(ST.t);const b=$('#posToggle');if(b)b.setAttribute('aria-pressed',String(on));}
+function setPlay(p){ST.play=p;const b=$('#play');b.setAttribute('aria-label',p?'Pause':'Play');b.innerHTML=p?'<svg viewBox="0 0 14 14"><rect x="2" y="1.5" width="3.6" height="11" rx="1"/><rect x="8.4" y="1.5" width="3.6" height="11" rx="1"/></svg>':'<svg viewBox="0 0 14 14"><path d="M3 1.6v10.8l9.4-5.4z"/></svg>';}
+$('#play').onclick=()=>setPlay(!ST.play);
+const scrub=$('#scrub');scrub.addEventListener('input',()=>{ST.t=scrub.value/1000*ST.m.dur;setPlay(false);});
+const SPEEDS=[1,.5,.25,2];let spI=0;$('#speed').onclick=()=>{spI=(spI+1)%SPEEDS.length;ST.speed=SPEEDS[spI];$('#speed').textContent=SPEEDS[spI]+'× speed';};
+$('#resetView').onclick=()=>camGoal(ST.m);
+document.querySelectorAll('.layer').forEach(b=>b.onclick=()=>{const k=b.dataset.layer;ST.layers[k]=!ST.layers[k];b.setAttribute('aria-pressed',String(ST.layers[k]));for(const s of SKIN)s.visible=ST.layers.skin;});
+document.addEventListener('keydown',e=>{if(e.target.closest&&e.target.closest('input,textarea,select'))return;const free=e.target===document.body||e.target===canvas;
+  if(e.code==='Space'&&free){e.preventDefault();setPlay(!ST.play);}else if(free&&ST.mode==='learn'&&e.key==='ArrowRight')select((ST.idx+1)%12);else if(free&&ST.mode==='learn'&&e.key==='ArrowLeft')select((ST.idx+11)%12);});
+
+/* ---------- quiz: fuzzy matching ---------- */
+const STOP=new Set('test tests testing sign signs the a an of for maneuver manoeuvre maneuvre exam examination and or to is it this that checks check checking assesses assess assessing evaluates evaluate evaluating looks look at in on with its used use detect detects detecting rule out possible integrity function pathology problem problems injury injuries'.split(' '));
+const ANT=[['anterior','posterior'],['medial','lateral'],['internal','external'],['flexion','extension'],['upper','lower'],['abduction','adduction'],['radial','ulnar']];
+const norm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/['’`]s\b/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+const toks=s=>norm(s).split(' ').filter(w=>w&&!STOP.has(w));
+function osa(a,b){const m=a.length,n=b.length;if(!m)return n;if(!n)return m;const d=[];for(let i=0;i<=m;i++){d.push(new Array(n+1).fill(0));d[i][0]=i;}for(let j=0;j<=n;j++)d[0][j]=j;
+  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++){const c=a[i-1]===b[j-1]?0:1;d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+c);if(i>1&&j>1&&a[i-1]===b[j-2]&&a[i-2]===b[j-1])d[i][j]=Math.min(d[i][j],d[i-2][j-2]+1);}return d[m][n];}
+const sim=(a,b)=>a===b?1:!a||!b?0:1-osa(a,b)/Math.max(a.length,b.length);
+const isAnt=(t,u)=>ANT.some(([x,y])=>(t===x&&u===y)||(t===y&&u===x));
+function tokSim(t,u){if(t===u)return 1;if(isAnt(t,u))return 0;if(t.length<=3||u.length<=3)return 0;let s=sim(t,u);if(u.length>=5&&t.startsWith(u))s=Math.max(s,.86);if(t.length>=5&&u.startsWith(t))s=Math.max(s,.9);return s;}
+function phraseScore(phrase,ans){
+  const pt=toks(phrase),at=toks(ans);if(!pt.length||!at.length)return 0;
+  if((' '+at.join(' ')+' ').includes(' '+pt.join(' ')+' '))return 1;
+  let tot=0,w=0;for(const t of pt){let b=0;for(const u of at)b=Math.max(b,tokSim(t,u));tot+=b*t.length;w+=t.length;}let best=tot/w;
+  const conflict=pt.some(t=>at.some(u=>isAnt(t,u)));const pj=pt.join('');
+  if(!conflict&&pj.length>=4)for(let i=0;i<at.length;i++){let s='';for(let k=i;k<Math.min(at.length,i+pt.length+1);k++){s+=at[k];if(s.length>=3)best=Math.max(best,sim(s,pj));}}
+  return best;
+}
+function nameScore(m,ans){let best=0;for(const a of m.names)best=Math.max(best,phraseScore(a,ans));return best;}
+function judgeName(m,ans){
+  if(!norm(ans))return {ok:false,score:0};const mine=nameScore(m,ans);let other=null;
+  for(const o of MANEUVERS){if(o===m)continue;const s=nameScore(o,ans);if(!other||s>other.s)other={m:o,s};}
+  const ok=mine>=.78&&!(other&&other.s>mine+.08);
+  if(!ok)for(const h of (m.nameHints||[]))for(const t of h.terms)if(phraseScore(t,ans)>=.85)return {ok:false,score:mine,msg:h.msg};
+  return {ok,score:mine,other:!ok&&other&&other.s>=.78?other.m:null};
+}
+function judgeWhat(m,ans){
+  if(!norm(ans))return {level:0};
+  const primHit=m.concepts.filter(c=>c.p).some(c=>c.terms.some(t=>phraseScore(t,ans)>=.84));
+  if(!primHit)for(const w of (m.wrong||[]))for(const t of w.terms)if(phraseScore(t,ans)>=.88)return {level:0,msg:w.msg};
+  let prim=null,sec=null;
+  for(const c of m.concepts)for(const t of c.terms){if(phraseScore(t,ans)>=.84){if(c.p){if(!prim)prim={c,t};}else if(!sec)sec={c,t};}}
+  if(prim)return {level:2,hit:prim.t};if(sec)return {level:1,hit:sec.t,msg:sec.c.msg};return {level:0};
+}
+
+/* ---------- quiz flow ---------- */
+const Q={order:[],i:0,score:0,res:[],rounds:12,forces:true,answered:false,hints:0};
+const fmtPts=p=>String(Math.round(p*100)/100);
+function setMode(mode){
+  ST.mode=mode;$('#tab-learn').setAttribute('aria-selected',String(mode==='learn'));$('#tab-quiz').setAttribute('aria-selected',String(mode==='quiz'));
+  $('#learn-panel').hidden=mode!=='learn';$('#quiz-panel').hidden=mode!=='quiz';$('#list').classList.toggle('quiz-locked',mode==='quiz');
+  ST.quizReveal=false;ST.quizHints=0;ST.capKey='';if(mode==='learn')select(ST.idx);else quizIntro();
+}
+$('#tab-learn').onclick=()=>setMode('learn');$('#tab-quiz').onclick=()=>setMode('quiz');
+function quizIntro(){
+  ST.quizReveal=false;ST.quizHints=0;if(ST.pos)setPos(false);
+  const P=$('#quiz-panel');P.innerHTML=`<h2>Name that maneuver</h2><p class="lead">A maneuver plays on the skeleton with its name, labels and highlights hidden. Type what it is and what it tests. Spelling doesn’t need to be perfect.</p>
+  <div class="grp">Number of rounds</div><div class="opts" id="qRounds"><button class="btn" data-n="6" aria-pressed="${Q.rounds===6}">6 rounds</button><button class="btn" data-n="12" aria-pressed="${Q.rounds===12}">All 12</button></div>
+  <button class="toggle acc" id="qForces" aria-pressed="${Q.forces}"><span class="sw"></span><span><b>Show forces and torques</b><small>The arrows can be a clue. Turn them off for a harder quiz.</small></span></button>
+  <div class="row"><button class="btn primary" id="qStart">Start quiz</button></div>
+  <p class="kbd">Scoring: 1 point for the name and 1 for what it tests (half for a partly right answer). Each hint costs a quarter point.</p>`;
+  P.querySelectorAll('#qRounds button').forEach(b=>b.onclick=()=>{Q.rounds=+b.dataset.n;P.querySelectorAll('#qRounds button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));});
+  $('#qForces').onclick=()=>{Q.forces=!Q.forces;$('#qForces').setAttribute('aria-pressed',String(Q.forces));};$('#qStart').onclick=()=>quizStart();
+}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function quizStart(list){Q.order=list||shuffle(MANEUVERS.map((_,i)=>i)).slice(0,Q.rounds);Q.i=0;Q.score=0;Q.res=[];quizRound();}
+function quizRound(){Q.answered=false;Q.hints=0;ST.quizReveal=false;ST.quizHints=0;if(ST.pos)ST.pos=false;select(Q.order[Q.i]);setPlay(true);renderQuiz();}
+const dotsHTML=()=>Q.order.map((_,k)=>{const r=Q.res[k];return `<span class="${r?'r'+(r.pts>=1.75?2:r.pts>=.75?1:0):k===Q.i?'cur':''}"></span>`;}).join('');
+function renderQuiz(){
+  const P=$('#quiz-panel');
+  P.innerHTML=`<div class="qhead"><span class="qprog">Round ${Q.i+1} of ${Q.order.length}</span><span class="qscore"><span id="qPts">${fmtPts(Q.score)}</span> <small style="font:13px var(--sans);color:var(--ink-3)">points</small></span></div><div class="dots" id="qDots">${dotsHTML()}</div>
+  <h2>What maneuver is this?</h2>
+  <label class="f" for="qName">Maneuver name</label><input class="t" id="qName" autocomplete="off" spellcheck="false" placeholder="For example, Lachman test">
+  <label class="f" for="qWhat">What does it test?</label><input class="t" id="qWhat" autocomplete="off" spellcheck="false" placeholder="For example, ACL integrity">
+  <div class="row" id="qBtns"><button class="btn primary" id="qCheck">Check answer</button><button class="btn" id="qHintB">Show a hint</button><button class="btn" id="qReveal">Reveal answer</button></div>
+  <div id="qHint"></div><div id="qFb"></div><p class="kbd">Press Enter to check. Drag the 3D view to look from another angle.</p>`;
+  $('#qCheck').onclick=()=>quizCheck(false);$('#qReveal').onclick=()=>quizCheck(true);$('#qHintB').onclick=quizHint;
+  ['qName','qWhat'].forEach(id=>$('#'+id).addEventListener('keydown',e=>{if(e.key!=='Enter')return;e.preventDefault();if(id==='qName'&&!$('#qWhat').value.trim())$('#qWhat').focus();else quizCheck(false);}));
+  setTimeout(()=>{const n=$('#qName');if(n)n.focus({preventScroll:true});},60);
+}
+function quizHint(){if(Q.answered)return;Q.hints=Math.min(2,Q.hints+1);ST.quizHints=Q.hints;const m=ST.m;
+  const h=[`Region: ${m.joint.toLowerCase()}; the patient is ${POSTURE[m.posture].toLowerCase()}.`,'The structures under test now glow on the skeleton.'];
+  $('#qHint').innerHTML=`<div class="hint">${h.slice(0,Q.hints).map(esc).join('<br>')}</div>`;if(Q.hints>=2)$('#qHintB').disabled=true;}
+function quizCheck(giveUp){
+  if(Q.answered)return;const m=ST.m,nameA=$('#qName').value,whatA=$('#qWhat').value;
+  if(!giveUp&&!nameA.trim()&&!whatA.trim()){$('#qName').focus();return;}
+  const nr=giveUp?{ok:false}:judgeName(m,nameA),wr=giveUp?{level:0}:judgeWhat(m,whatA);
+  const pts=Math.max(0,(nr.ok?1:0)+(wr.level===2?1:wr.level===1?.5:0)-.25*Q.hints);
+  Q.score+=pts;Q.res[Q.i]={m,pts};Q.answered=true;ST.quizReveal=true;$('#qName').disabled=$('#qWhat').disabled=true;
+  const said=esc(nameA.trim());
+  const nameWhy=giveUp?'':nr.ok?(nr.score>.99?'Exactly right.':`You wrote “${said}”, which is close enough.`):!said?'No name given.':nr.msg?esc(nr.msg):nr.other?`“${said}” is the ${esc(nr.other.name)}, a different maneuver.`:`You wrote “${said}”.`;
+  const whatWhy=giveUp?'':wr.level===2?`Matched “${esc(wr.hit)}”.`:wr.level===1?`Partly right (“${esc(wr.hit)}”). ${esc(wr.msg||'')}`:whatA.trim()?esc(wr.msg||'That isn’t what this maneuver loads.'):'No answer given.';
+  const ic=lv=>lv===2?'<span class="ic ok" aria-label="Correct">✓</span>':lv===1?'<span class="ic part" aria-label="Partly correct">½</span>':'<span class="ic bad" aria-label="Incorrect">✗</span>';
+  $('#qFb').innerHTML=`<div class="fb"><div class="line">${ic(nr.ok?2:0)}<div><span class="ans">${esc(m.name)}</span><div class="why">${nameWhy}</div></div></div><div class="line">${ic(wr.level)}<div><span class="ans">${esc(m.answer)}</span><div class="why">${whatWhy}</div></div></div><p class="why" style="margin:8px 0 0">${fmtPts(pts)} of 2 points this round${Q.hints?` (hints −${fmtPts(Q.hints*.25)})`:''}. Labels, highlights and the live readout are now showing.</p></div>`;
+  const last=Q.i>=Q.order.length-1;
+  $('#qBtns').innerHTML=`<button class="btn primary" id="qNext">${last?'See results':'Next maneuver'}</button><button class="btn" id="qLearn">Study it in Learn mode</button>`;
+  $('#qNext').onclick=()=>{if(last)quizEnd();else{Q.i++;quizRound();}};$('#qLearn').onclick=()=>{ST.idx=Q.order[Q.i];setMode('learn');};
+  $('#qNext').focus({preventScroll:true});$('#qPts').textContent=fmtPts(Q.score);$('#qDots').innerHTML=dotsHTML();ST.capKey='';
+}
+function quizEnd(){
+  const P=$('#quiz-panel'),max=Q.order.length*2,missed=Q.order.filter((_,k)=>Q.res[k]&&Q.res[k].pts<1.75);
+  P.innerHTML=`<h2>${fmtPts(Q.score)} of ${max} points</h2><p class="lead">${Q.score>=max*.85?'Excellent. You know these maneuvers well.':Q.score>=max*.6?'Solid. Review the ones marked below.':'Worth another pass; Learn mode walks through every step.'}</p>
+  <ul class="sumlist">${Q.order.map((_,k)=>{const r=Q.res[k],c=r.pts>=1.75?'ok':r.pts>=.75?'part':'bad';return `<li><span class="ic ${c}">${c==='ok'?'✓':c==='part'?'½':'✗'}</span><span>${esc(r.m.name)}</span><span class="pt">${fmtPts(r.pts)} / 2</span></li>`;}).join('')}</ul>
+  <div class="row">${missed.length?`<button class="btn primary" id="qRetry">Retry the ${missed.length} I missed</button>`:''}<button class="btn" id="qNew">New quiz</button></div>`;
+  if(missed.length)$('#qRetry').onclick=()=>quizStart(shuffle(missed.slice()));$('#qNew').onclick=quizIntro;
+}
+
+/* ---------- main loop ---------- */
+function resize(){const r=$('#stage').getBoundingClientRect(),w=Math.max(10,r.width),h=Math.max(10,r.height);renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
+function applyTheme(){const h=(cssVar('--floor')||'#cdd6dd').replace('#','');floorMat.color.copy(col(parseInt(h,16)));}
+let lastT=performance.now();
+function loop(now){
+  const dt=Math.min(.05,Math.max(0,(now-lastT)/1000));lastT=now;const clock=now/1000;
+  try{
+    if(ST.play){ST.t+=dt*ST.speed;if(ST.t>=ST.m.dur)ST.t-=ST.m.dur;}
+    evalAt(ST.t);for(const id in RIG.cords)RIG.cords[id].update(false);
+    computeForces();drawForces();updateHands();drawEffects(clock);applyLook(clock);updateCamera(dt);
+    renderer.render(scene,camera);updateLabels();updateHUD();updateCaption();
+    if(ST.play)scrub.value=Math.round(ST.t/ST.m.dur*1000);$('#tclock').textContent=ST.t.toFixed(1)+' s';
+  }catch(err){console.error(err);fail('The animation stopped: '+err.message);return;}
+  requestAnimationFrame(loop);
+}
+try{
+  buildSkeleton();buildCords();initClav();buildSkin();
+  applyPoseFull(zeroPose());body.position.set(0,0,0);body.quaternion.set(0,0,0,1);body.updateMatrixWorld(true);
+  for(const id in RIG.cords){const c=RIG.cords[id];c.L0=c.measure();}
+  applyTheme();buildList();
+  if(window.matchMedia){const mq=matchMedia('(prefers-color-scheme: dark)');if(mq.addEventListener)mq.addEventListener('change',applyTheme);}
+  if(window.ResizeObserver)new ResizeObserver(resize).observe($('#stage'));else addEventListener('resize',resize);resize();
+  if(matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)ST.speed=.5,$('#speed').textContent='0.5× speed',spI=1;
+  select(0,{instant:true});LOAD.hidden=true;requestAnimationFrame(loop);
+}catch(err){console.error(err);fail('Something went wrong while building the scene: '+err.message);}
+window.__atlas={ST,RIG,MANEUVERS,select,setPos,evalAt,judgeName,judgeWhat,X,FS,MF,CUR,setMode,quizStart,clearance,computeForces,precompute};
+})();
+</script>
+</body></html>
