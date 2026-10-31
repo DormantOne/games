@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tetralogy of Fallot: interactive cutaway heart</title>
+<style>
+:root{color-scheme:dark;--drape:#0c2624;--drape2:#10302d;--line:#28504b;--line2:#3a6862;--linen:#ece6d8;--steel:#a2bab4;--dim:#7d9892;--lamp:#f2dcae;--ven:#5f97ff;--art:#ff6a73;--mix:#b68cff;--abn:#ffc456;
+--serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;--sans:"Avenir Next","Segoe UI",system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:radial-gradient(ellipse 80% 60% at 25% -10%,#18504b 0,rgba(12,38,36,0) 60%),var(--drape);color:var(--linen);font:14px/1.5 var(--sans);min-height:100vh}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--line2);background:#143d39;color:var(--linen);border-radius:8px;padding:7px 11px;font-weight:600;font-size:12.5px;line-height:1.2;transition:background .15s,border-color .15s}
+button:hover{background:#1b4b46;border-color:#5f918a}:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}
+button[aria-pressed="true"]{background:#285650;border-color:var(--lamp);color:#fff7e3}button:disabled{opacity:.45;cursor:not-allowed}a{color:#9fdcd2}
+.page{max-width:1720px;margin:0 auto;padding:22px clamp(12px,2.6vw,36px) 26px}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+.kicker{margin:0;color:var(--steel);font-size:13px}
+h1{font-family:var(--serif);font-weight:600;font-size:clamp(32px,3.8vw,50px);letter-spacing:-.015em;line-height:1.02;margin:4px 0 8px}
+.sub{margin:0;color:var(--steel);max-width:74ch;line-height:1.55}
+.chip{border:1px solid var(--line2);border-radius:999px;padding:6px 13px;color:var(--lamp);font-size:12.5px;font-weight:600;background:#0f2f2c}
+.workspace{display:grid;grid-template-columns:minmax(0,1.52fr) minmax(340px,.8fr);gap:18px;align-items:start}.left,.panel{min-width:0}
+.viewer{position:relative;height:clamp(540px,74vh,900px);border-radius:16px;overflow:hidden;border:1px solid var(--line);background:radial-gradient(ellipse 70% 65% at 48% 44%,#215752 0,#123733 52%,#0a1f1d 100%)}
+.viewer canvas{position:absolute;inset:0;width:100%;height:100%;display:block}#heartCanvas{touch-action:none;cursor:grab}#heartCanvas:active{cursor:grabbing}#overlay{pointer-events:none}
+.viewer.flat #heartCanvas{visibility:hidden}
+.vtop{position:absolute;left:14px;right:14px;top:12px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start;pointer-events:none}.vtop>*{pointer-events:auto}
+.vmeta{background:rgba(8,30,28,.84);border:1px solid var(--line);border-radius:12px;padding:9px 13px;max-width:330px;backdrop-filter:blur(6px)}
+.vmeta strong{display:block;font-family:var(--serif);font-size:18px;font-weight:600;line-height:1.2}.vmeta span{display:block;font-size:12px;color:var(--steel);margin-top:2px}
+.vmeta .status{color:var(--lamp)}.vmeta .status:empty{display:none}
+.vtools{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.vtools button{background:rgba(8,30,28,.84)}
+.vfoot{position:absolute;left:14px;right:14px;bottom:12px;display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap;pointer-events:none}
+.help.gone{opacity:0;transition:opacity .6s}.help{margin:0;font-size:11.5px;color:var(--steel);max-width:310px;background:rgba(8,30,28,.62);padding:5px 9px;border-radius:8px}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:#d5dfdb;background:rgba(8,30,28,.78);border-radius:10px;padding:6px 10px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.loading{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;color:var(--steel);font-size:13px;pointer-events:none;transition:opacity .5s}
+.loading .bar{width:220px;height:3px;border-radius:3px;background:#1e4743;margin:0 auto 10px;overflow:hidden}.loading i{display:block;height:100%;width:0;background:var(--lamp)}.loading.done{opacity:0}
+.strip{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-top:11px}.lbl{color:var(--steel);font-size:12px}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:9px;overflow:hidden;flex-wrap:wrap}.seg button{border:0;border-radius:0;background:transparent;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}.seg button.active{background:#285650;color:#fff7e3;box-shadow:inset 0 -2px 0 var(--lamp)}
+.depth{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--steel);flex:1;min-width:170px}.depth input{flex:1;accent-color:var(--lamp);min-width:90px}
+.toggles{display:flex;gap:6px;flex-wrap:wrap}
+#phaseText{min-width:150px;font-size:12.5px;font-weight:600;color:var(--lamp)}
+.beat-track{flex:1;min-width:90px;height:6px;border-radius:6px;background:linear-gradient(90deg,#3c7871 0 45%,#1b3e3a 45% 100%);position:relative}
+.beat-dot{position:absolute;top:-5px;left:0;width:16px;height:16px;border-radius:50%;background:var(--lamp);border:3px solid var(--drape);transform:translateX(-50%)}
+.pathway{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}.pathway h2{font-family:var(--serif);font-weight:600;font-size:17px;margin:0 0 9px}
+.steps{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.step{text-align:left;padding:9px 10px;background:#112f2c;border-color:var(--line);border-radius:10px;min-height:66px;line-height:1.25}
+.step .n{display:block;color:var(--dim);font-size:11px;margin-bottom:2px}.step small{display:block;font-weight:500;color:var(--steel);font-size:11px;margin-top:3px}
+.step.active{background:#1f4a44;border-color:var(--lamp)}.step.active .n{color:var(--lamp)}
+.panel{border:1px solid var(--line);border-radius:16px;background:var(--drape2);overflow:hidden}
+.tabs{display:flex;border-bottom:1px solid var(--line);overflow-x:auto;background:#0d2927}
+.tabs button{flex:1;min-width:max-content;border:0;border-radius:0;background:transparent;padding:13px 10px 11px;color:var(--steel);border-bottom:2px solid transparent}
+.tabs button.active{color:var(--linen);border-bottom-color:var(--lamp);background:#133532}
+.tab{display:none;padding:18px 20px 22px}.tab.active{display:block}
+.tab h2{font-family:var(--serif);font-weight:600;font-size:24px;line-height:1.15;margin:0 0 6px}.tab h3{font-size:14px;margin:18px 0 6px}
+.lead{color:#d6ddd9;margin:6px 0 12px;line-height:1.62;max-width:66ch}.small{font-size:12px;color:var(--steel)}
+.features{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.feature{padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:#133532;text-align:left;font-weight:500;color:var(--linen);display:block;width:100%}
+.feature:hover{border-color:#5f918a;background:#18403b}.feature.sel{border-color:var(--lamp);background:#1d4842}.feature b{display:block;font-size:13.5px}
+.feature .d{display:block;margin-top:4px;font-size:12px;color:var(--steel);line-height:1.45}.feature .go{display:block;margin-top:7px;font-size:11.5px;color:var(--lamp);font-weight:600}
+.field{margin:14px 0}.row{display:flex;justify-content:space-between;align-items:center;gap:10px}.field input[type=range]{width:100%;accent-color:var(--lamp)}
+.tag{color:var(--lamp);background:#1f433f;border-radius:6px;padding:2px 8px;font-weight:600;font-size:12px}
+.mini{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}.mini div{background:#0f2b28;border:1px solid var(--line);border-radius:10px;padding:9px 10px}
+.mini strong{display:block;font-size:14px}.mini span{font-size:11.5px;color:var(--steel)}
+.callout{border-radius:10px;background:#123a36;border-left:3px solid #6fc7b8;padding:11px 13px;margin:12px 0;color:#dce7e3}.caution{border-left-color:var(--abn);background:#2c2a1d}
+ul.list{margin:8px 0;padding-left:19px;color:#d8e0dc}ul.list li{margin:6px 0}
+.list-row{padding:11px 0;border-bottom:1px solid var(--line)}.list-row b{display:block;margin-bottom:2px}.list-row span{font-size:12.5px;color:var(--steel)}
+.btnrow{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin:12px 0}button.primary{background:#2b6b61;border-color:#6fc7b8}
+.quiz-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}.meta{color:var(--steel);font-size:12px}
+.qmode{display:flex;gap:6px;margin:12px 0 10px}.qmode button{flex:1}.qmode button.active{background:#285650;border-color:var(--lamp)}
+select{background:#143d39;border:1px solid var(--line2);border-radius:8px;padding:7px 9px}
+.question{font-size:16px;font-weight:600;line-height:1.5;margin:14px 0}.answers{display:grid;gap:8px;margin:10px 0}
+.answer{padding:11px 12px;border:1px solid var(--line2);border-radius:10px;background:#123532;cursor:pointer;display:flex;gap:9px;align-items:flex-start}
+.answer:hover{border-color:#7fb0a8}.answer:has(input:checked){background:#1d4a44;border-color:var(--lamp)}.answer input{margin-top:3px;accent-color:var(--lamp)}
+.answer.correct{border-color:#6fd1a8;background:#183f35}.answer.wrong{border-color:#f08a86;background:#43292a}.answer.locked{cursor:default}
+textarea{width:100%;min-height:120px;resize:vertical;background:#0c2422;border:1px solid var(--line2);border-radius:10px;padding:11px;color:var(--linen)}
+.feedback{margin:12px 0 6px;border:1px solid var(--line2);background:#112f2c;padding:12px;border-radius:10px}.feedback.good{border-color:#4fa385}.feedback.bad{border-color:#a8796a}.feedback p{margin:5px 0 0;font-size:13px}
+.verify{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}.verify p{margin:6px 0 8px}.notice{font-size:12px;min-height:18px;color:#9fe0d4}
+.refs{padding-left:18px}.refs li{margin:11px 0}.hidden{display:none!important}.footer{margin:18px 0 0;text-align:center;color:var(--dim);font-size:12px}
+@media(max-width:1120px){.workspace{grid-template-columns:1fr}.viewer{height:min(78vh,640px)}}
+@media(max-width:700px){.page{padding:14px 10px 20px}.viewer{height:540px}.steps{grid-template-columns:repeat(3,minmax(0,1fr))}.features,.mini{grid-template-columns:1fr}.vmeta{max-width:56%}.vtools button{padding:6px 8px;font-size:11.5px}.help{display:none}.tab{padding:15px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="page">
+<header class="head">
+ <div><p class="kicker">Congenital heart teaching atlas</p><h1>Tetralogy of Fallot</h1>
+ <p class="sub">A beating, sectioned heart. Slide the knife through it to find the malalignment VSD, the aortic root riding the septum, the narrowed infundibulum and the thickened right ventricle, then follow each repair.</p></div>
+ <span class="chip" id="stagePill">Unrepaired</span>
+</header>
+<main class="workspace">
+<section class="left" aria-label="Interactive heart model">
+ <div class="viewer" id="viewer">
+  <canvas id="heartCanvas" tabindex="0" role="img" aria-label="Rotatable cutaway of a heart with tetralogy of Fallot. Arrow keys rotate, plus and minus zoom. Particles show blood flow; the side panel describes each structure."></canvas>
+  <canvas id="overlay" aria-hidden="true"></canvas>
+  <div class="vtop">
+   <div class="vmeta"><strong id="viewTitle">Unrepaired tetralogy</strong><span id="viewSubtitle"></span><span id="buildStatus" class="status" aria-live="polite"></span></div>
+   <div class="vtools"><button id="resetCamera" title="Return to the current section view">Reset view</button><button id="toggleView" title="Switch to a two-dimensional flow diagram">2D flow map</button><button id="togglePlay">Pause</button></div>
+  </div>
+  <div class="vfoot">
+   <p class="help" id="viewHelp">Drag to rotate, scroll or pinch to zoom, shift-drag to pan. Tap a gold label to study that feature.</p>
+   <div class="legend"><span><i class="dot" style="background:var(--ven)"></i>Venous</span><span><i class="dot" style="background:var(--art)"></i>Oxygenated</span><span><i class="dot" style="background:var(--mix)"></i>Mixed</span><span><i class="dot" style="background:var(--abn)"></i>Abnormal or reversed</span></div>
+  </div>
+  <div class="loading" id="loading"><div class="bar"><i id="loadBar"></i></div><span id="loadText">Sculpting the heart…</span></div>
+ </div>
+ <div class="strip">
+  <div class="seg" id="sectionPresets" role="group" aria-label="Section presets"><button data-preset="outside">Outside</button><button data-preset="rvot">RV outflow</button><button data-preset="override" class="active">VSD and aortic root</button><button data-preset="deep">AV valves</button></div>
+  <label class="depth" for="cutDepth"><span>Section depth</span><input type="range" id="cutDepth" min="-1.4" max="1.7" step="0.01" value="-0.12"></label>
+  <div class="toggles"><button id="tGhost" aria-pressed="true" title="Outline the tissue the section removed">Ghost</button><button id="tLabels" aria-pressed="true">Labels</button><button id="tFlow" aria-pressed="true">Flow</button><button id="tNormal" aria-pressed="false" title="Show where a normally committed aortic root would sit">Normal root</button></div>
+ </div>
+ <div class="strip"><span id="phaseText">Systole</span><div class="beat-track" aria-hidden="true"><div class="beat-dot" id="phaseDot"></div></div><span class="lbl">72 beats/min, schematic timing</span>
+  <button id="freezeSys">Freeze systole</button><button id="freezeDia">Freeze diastole</button><button id="slowMotion" aria-pressed="false">Half speed</button></div>
+ <div class="pathway"><h2>Care pathway</h2><div class="steps" id="scenarioButtons">
+  <button class="step active" data-stage="unrepaired"><span class="n">1</span>Unrepaired<small>RVOTO, VSD, mixing</small></button>
+  <button class="step" data-stage="shunt"><span class="n">2</span>mBTT shunt<small>Palliative pulmonary flow</small></button>
+  <button class="step" data-stage="sparing"><span class="n">3</span>Valve-sparing repair<small>VSD closed, valve kept</small></button>
+  <button class="step" data-stage="patch"><span class="n">4</span>Transannular patch<small>Late PR, dilated RV</small></button>
+  <button class="step" data-stage="conduit"><span class="n">5</span>RV–PA conduit<small>Pulmonary atresia variant</small></button>
+  <button class="step" data-stage="pvr"><span class="n">6</span>Pulmonary valve<small>Replacement after patch</small></button>
+ </div></div>
+</section>
+<aside class="panel">
+ <nav class="tabs" id="tabs" aria-label="Learning sections"><button class="active" data-tab="anatomy">Anatomy</button><button data-tab="repairs">Repairs</button><button data-tab="watch">What to look for</button><button data-tab="quiz">Quiz</button><button data-tab="sources">Sources</button></nav>
+ <div class="tab active" id="tab-anatomy"><h2 id="anatomyTitle">One malalignment, four features</h2><p class="lead" id="anatomyLead"></p><div class="features" id="lesionTiles"></div>
+  <div id="severityWrap" class="field"><div class="row"><label for="severity">RV outflow obstruction</label><span class="tag" id="severityText">Severe</span></div><input id="severity" type="range" min="10" max="95" value="73" step="1"><p class="small" id="severityNote"></p></div>
+  <div class="mini" id="hemoTiles"></div><div class="callout" id="anatomyCallout"></div><p class="small">Flow particles show direction and timing, not measured output, saturation, pressure or a patient-specific simulation.</p></div>
+ <div class="tab" id="tab-repairs"><h2 id="repairTitle"></h2><p class="lead" id="repairIntro"></p><h3>What the surgeon changes</h3><ul class="list" id="repairChanges"></ul><h3>What changes in flow</h3><ul class="list" id="repairFlow"></ul>
+  <div class="callout caution" id="repairCaution"></div><div class="btnrow"><button class="primary" id="compareStage">Compare with unrepaired</button><button id="gotoWatch">See monitoring</button></div></div>
+ <div class="tab" id="tab-watch"><h2 id="watchTitle"></h2><p class="lead" id="watchLead"></p><div id="watchItems"></div><div class="callout caution">A teaching aid, not a patient-specific echo, surgical plan or decision system. Real anatomy and repair history vary.</div></div>
+ <div class="tab" id="tab-quiz"><div class="quiz-head"><h2>Case laboratory</h2><span class="meta" id="scoreText"></span></div>
+  <div class="qmode"><button id="modeMC" class="active">Multiple choice</button><button id="modeFree">Free text</button></div>
+  <div class="row"><label class="small" for="quizScope">Questions from</label><select id="quizScope"><option value="all">All scenarios</option><option value="current">Current scenario</option></select></div>
+  <p class="meta" id="quizCounter"></p><p class="question" id="questionText"></p><div id="answerArea"></div>
+  <div class="btnrow"><button class="primary" id="checkAnswer">Check answer</button><button id="nextQuestion">Next question</button><button id="resetQuiz">Restart</button></div>
+  <div id="quizFeedback" class="feedback hidden" aria-live="polite"></div>
+  <div class="verify"><b>Verify this question independently</b><p class="small">Copies the question, your answer and a request for primary-source checking. Opening ChatGPT or OpenEvidence sends nothing by itself; paste the copied text there.</p>
+   <div class="btnrow"><button id="copyProbe">Copy verification prompt</button><button id="openChatGPT">Copy and open ChatGPT</button><button id="openEvidence">Copy and open OpenEvidence</button></div><div class="notice" id="copyStatus" aria-live="polite"></div></div></div>
+ <div class="tab" id="tab-sources"><h2>Verify the physiology</h2><p class="lead">Descriptions are grounded in congenital-heart references and the 2025 ACC/AHA adult congenital heart disease guideline.</p>
+  <ol class="refs"><li><a href="https://www.heart.org/en/health-topics/congenital-heart-defects/about-congenital-heart-defects/tetralogy-of-fallot" target="_blank" rel="noopener">American Heart Association: Tetralogy of Fallot</a>. Core anatomy, physiology, lifelong follow-up.</li>
+  <li><a href="https://www.merckmanuals.com/professional/pediatrics/congenital-cardiovascular-anomalies/tetralogy-of-fallot" target="_blank" rel="noopener">Merck Manual Professional: Tetralogy of Fallot</a>. Manifestations, anatomy, management.</li>
+  <li><a href="https://www.jacc.org/doi/10.1016/j.jacc.2025.09.006" target="_blank" rel="noopener">2025 ACC/AHA ACHD guideline</a>. Repaired TOF follow-up, CMR, valve intervention, rhythm risk.</li>
+  <li><a href="https://professional.heart.org/en/science-news/long-term-management-of-right-ventricular-outflow-tract-dysfunction-in-repaired-tetralogy-of-fallot/top-things-to-know" target="_blank" rel="noopener">AHA 2024 scientific statement: RVOT dysfunction</a>. Late pulmonary regurgitation and stenosis.</li>
+  <li><a href="https://www.chop.edu/conditions-diseases/tetralogy-fallot" target="_blank" rel="noopener">Children's Hospital of Philadelphia: TOF</a>. Pediatric anatomy and repairs.</li>
+  <li><a href="https://www.acc.org/latest-in-cardiology/articles/2024/10/30/13/20/clinical-practice-algorithm-for-the-follow-up-of-unrepaired-and-repaired-tof" target="_blank" rel="noopener">ACC: TOF follow-up algorithm</a>. Longitudinal testing.</li>
+  <li><a href="https://www.ncbi.nlm.nih.gov/books/NBK597363/" target="_blank" rel="noopener">NCBI Bookshelf: Modified BTT shunt</a>. Systemic-to-pulmonary palliation.</li></ol>
+  <h3>What this model does not claim</h3><ul class="list">
+  <li>It is sculpted procedurally from geometric primitives, not derived from a patient's CT or MRI. Chamber shapes, wall thickness, valves and vessel courses are simplified.</li>
+  <li>The heart is posed didactically, with the ventricular septum roughly edge-on to the section plane so both ventricles sit side by side, as in textbook drawings. In the chest the RV lies more anteriorly and the apex points leftward.</li>
+  <li>Particles show flow direction and timing only. They are not CFD, Doppler velocities or measured shunt fractions.</li>
+  <li>The transannular-patch scenario shows a late, significant PR example with RV dilation, not what every patch produces.</li>
+  <li>The conduit scenario shows a different complex pathway (TOF with pulmonary atresia), not routine repair of classic TOF.</li>
+  <li>The wall-thickness readout compares the model's own walls. It is not a measurement, dose, risk estimate or treatment recommendation.</li></ul></div>
+</aside>
+</main>
+<p class="footer">Interactive study model. Rendered with WebGL from procedurally sculpted anatomy; works offline with no external libraries and no tracking.</p>
+</div>
+<script>
+// ===== Anatomy: signed-distance-field model of the TOF heart =====
+// Teaching frame: +x = patient's left (viewer's right, anterior view), +y = superior, +z = anterior.
+// Field: f < 0 inside tissue, f > 0 in blood/outside.
+const Anat=(()=>{
+'use strict';
+const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],add=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],mul=(a,s)=>[a[0]*s,a[1]*s,a[2]*s];
+const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+const len=a=>Math.hypot(a[0],a[1],a[2]),nrm=a=>{const l=len(a)||1;return [a[0]/l,a[1]/l,a[2]/l]};
+const lerp=(a,b,t)=>a+(b-a)*t,lerp3=(a,b,t)=>[lerp(a[0],b[0],t),lerp(a[1],b[1],t),lerp(a[2],b[2],t)],clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const hex=h=>[parseInt(h.slice(1,3),16)/255,parseInt(h.slice(3,5),16)/255,parseInt(h.slice(5,7),16)/255];
+const mat=(c,s,g,fab=0,fat=0)=>{const a=hex(c),b=hex(s);return [a[0],a[1],a[2],b[0],b[1],b[2],g,fab,fat]};
+const MAT={myo:mat('#6a1f22','#8c1c1e',.62),atrium:mat('#7a2a2c','#952e2a',.6),rvEndo:mat('#b0615e','#8c1c1e',.85),lvEndo:mat('#bc6962','#8c1c1e',.85),
+ raEndo:mat('#a86469','#952e2a',.8),laEndo:mat('#b56c67','#952e2a',.8),trab:mat('#9a4542','#8c1c1e',.8),aorta:mat('#ab3a3a','#e6cab4',.7),aoInt:mat('#dfb1a0','#e6cab4',.75),
+ pa:mat('#4f5d9a','#d8cdd6',.7),paInt:mat('#c2b5cb','#d8cdd6',.75),vein:mat('#3b4483','#cfc6d8',.65),veinInt:mat('#a8a2c1','#cfc6d8',.7),pv:mat('#8d3549','#e0c4c8',.65),
+ pvInt:mat('#d1a2ac','#e0c4c8',.7),fat:mat('#d7ae60','#e4c47c',.55,0,1),dacron:mat('#eeebe2','#f6f3ec',.25,1),pericard:mat('#d9c39b','#e9d8b8',.45,.3),
+ goretex:mat('#efefeb','#f7f7f4',.35,1),conduit:mat('#d6b39c','#e8d2c0',.55,.35),cord:mat('#8c6b66','#b08a80',.4),fibrous:mat('#dcb8a6','#e7cbbc',.75)};
+let PID=0;
+function base(){return {t:0,id:0,cx:0,cy:0,cz:0,irx:1,iry:1,irz:1,m0:1,m1:0,m2:0,m3:0,m4:1,m5:0,m6:0,m7:0,m8:1,ax:0,ay:0,az:0,bx:0,by:0,bz:0,bax:0,bay:0,baz:0,
+ l2:1,rr:0,a2:1,il2:1,ra:0,rb:0,cap:0,nx:0,ny:0,nz:0,k:0,m:null,minx:0,maxx:0,miny:0,maxy:0,minz:0,maxz:0,sig:'',fall:0,str:0}}
+function basis(yDir,zHint){const Y=nrm(yDir);let Z0=zHint||[0,0,1];if(Math.abs(dot(Y,nrm(Z0)))>.95)Z0=[1,0,0];const X=nrm(cross(Y,Z0));return [X,Y,cross(X,Y)]}
+const f3=v=>(+v).toFixed(3);
+function ell(c,r,yDir,zHint,m,k){const p=base();p.id=++PID;const [X,Y,Z]=basis(yDir||[0,1,0],zHint);
+ p.cx=c[0];p.cy=c[1];p.cz=c[2];p.irx=1/r[0];p.iry=1/r[1];p.irz=1/r[2];p.m0=X[0];p.m1=X[1];p.m2=X[2];p.m3=Y[0];p.m4=Y[1];p.m5=Y[2];p.m6=Z[0];p.m7=Z[1];p.m8=Z[2];p.k=k||0;p.m=m;
+ const ex=i=>Math.sqrt((X[i]*r[0])**2+(Y[i]*r[1])**2+(Z[i]*r[2])**2);
+ p.minx=c[0]-ex(0);p.maxx=c[0]+ex(0);p.miny=c[1]-ex(1);p.maxy=c[1]+ex(1);p.minz=c[2]-ex(2);p.maxz=c[2]+ex(2);
+ p.sig='E'+[c,r,yDir||0,zHint||0,k||0].flat().map(f3).join(',')+m.join(',');return p}
+function cone(a,b,ra,rb,m,k,cap){const p=base();p.t=1;p.id=++PID;let ba=sub(b,a);const rr=ra-rb;
+ if(dot(ba,ba)-rr*rr<1e-4){b=add(a,mul(nrm(ba),Math.sqrt(rr*rr+1e-3)));ba=sub(b,a)}const l2=dot(ba,ba);
+ p.ax=a[0];p.ay=a[1];p.az=a[2];p.bx=b[0];p.by=b[1];p.bz=b[2];p.bax=ba[0];p.bay=ba[1];p.baz=ba[2];p.l2=l2;p.rr=rr;p.a2=l2-rr*rr;p.il2=1/l2;p.ra=ra;p.rb=rb;p.k=k||0;p.m=m;
+ if(cap){p.cap=1;const n=nrm(ba);p.nx=n[0];p.ny=n[1];p.nz=n[2]}const R=Math.max(ra,rb);
+ p.minx=Math.min(a[0],b[0])-R;p.maxx=Math.max(a[0],b[0])+R;p.miny=Math.min(a[1],b[1])-R;p.maxy=Math.max(a[1],b[1])+R;p.minz=Math.min(a[2],b[2])-R;p.maxz=Math.max(a[2],b[2])+R;
+ p.sig='C'+[a,b,ra,rb,k||0,cap?1:0].flat().map(f3).join(',')+m.join(',');return p}
+function crPoint(P,i,t){const a=P[Math.max(0,i-1)],b=P[i],c=P[Math.min(P.length-1,i+1)],d=P[Math.min(P.length-1,i+2)],t2=t*t,t3=t2*t;
+ return [0,1,2].map(k=>.5*((2*b[k])+(-a[k]+c[k])*t+(2*a[k]-5*b[k]+4*c[k]-d[k])*t2+(-a[k]+3*b[k]-3*c[k]+d[k])*t3))}
+function resample(P,R,per){const pts=[],rad=[];for(let i=0;i<P.length-1;i++)for(let j=0;j<per;j++){const t=j/per;pts.push(crPoint(P,i,t));rad.push(lerp(R[i],R[i+1],t*t*(3-2*t)))}
+ pts.push(P[P.length-1]);rad.push(R[R.length-1]);return {pts,rad}}
+function tube(P,R,m,k,o={}){if(typeof R==='number')R=P.map(()=>R);const {pts,rad}=resample(P,R,o.per||3);
+ if(o.extend){const n=pts.length,d=nrm(sub(pts[n-1],pts[n-2]));pts.push(add(pts[n-1],mul(d,o.extend)));rad.push(rad[n-1])}
+ const out=[];for(let i=0;i<pts.length-1;i++)out.push(cone(pts[i],pts[i+1],rad[i],rad[i+1],m,i===0?(k||0):(o.jk!=null?o.jk:.015),i===pts.length-2&&o.cap));return out}
+function paint(p,fall,str){p.fall=fall;p.str=str==null?1:str;return p}
+function dist(p,x,y,z){
+ if(p.t===0){const dx=x-p.cx,dy=y-p.cy,dz=z-p.cz,qx=(p.m0*dx+p.m1*dy+p.m2*dz)*p.irx,qy=(p.m3*dx+p.m4*dy+p.m5*dz)*p.iry,qz=(p.m6*dx+p.m7*dy+p.m8*dz)*p.irz;
+  const k0=Math.sqrt(qx*qx+qy*qy+qz*qz),sx=qx*p.irx,sy=qy*p.iry,sz=qz*p.irz,k1=Math.sqrt(sx*sx+sy*sy+sz*sz);if(k1<1e-9)return -1/Math.max(p.irx,p.iry,p.irz);return k0*(k0-1)/k1}
+ const pax=x-p.ax,pay=y-p.ay,paz=z-p.az,l2=p.l2,yy=pax*p.bax+pay*p.bay+paz*p.baz,zz=yy-l2,cx=pax*l2-p.bax*yy,cy=pay*l2-p.bay*yy,cz=paz*l2-p.baz*yy;
+ const x2=cx*cx+cy*cy+cz*cz,y2=yy*yy*l2,z2=zz*zz*l2,rr=p.rr,kk=(rr>0?1:rr<0?-1:0)*rr*rr*x2;let d;
+ if((zz>0?1:zz<0?-1:0)*p.a2*z2>kk)d=Math.sqrt(x2+z2)*p.il2-p.rb;else if((yy>0?1:yy<0?-1:0)*p.a2*y2<kk)d=Math.sqrt(x2+y2)*p.il2-p.ra;else d=(Math.sqrt(x2*p.a2*p.il2)+yy*rr)*p.il2-p.ra;
+ if(p.cap){const e=(x-p.bx)*p.nx+(y-p.by)*p.ny+(z-p.bz)*p.nz;if(e>d)d=e}return d}
+function smin(a,b,k){if(k<=0)return a<b?a:b;const h=k-Math.abs(a-b);if(h<=0)return a<b?a:b;const q=h/k;return (a<b?a:b)-q*q*k*.25}
+function field(x,y,z,steps){let f=1e9;for(let s=0;s<steps.length;s++){const st=steps[s],pr=st.prims,n=pr.length;if(!n)continue;
+ if(st.op===0){for(let i=0;i<n;i++){const p=pr[i];f=smin(f,dist(p,x,y,z),p.k)}}else{let g=1e9;for(let i=0;i<n;i++){const p=pr[i];g=smin(g,dist(p,x,y,z),p.k)}if(g<1e8)f=-smin(-f,g,st.k)}}return f}
+const MW=9,CM=new Float64Array(9),GM=new Float64Array(9);
+function fieldMat(x,y,z,steps,paints,out){let f=1e9,has=false;const cm=CM,gm=GM;
+ for(let s=0;s<steps.length;s++){const st=steps[s],pr=st.prims,n=pr.length;if(!n)continue;
+  if(st.op===0){for(let i=0;i<n;i++){const p=pr[i],d=dist(p,x,y,z);if(!has){f=d;for(let j=0;j<MW;j++)cm[j]=p.m[j];has=true;continue}
+    const t=clamp(.5+.5*(f-d)/Math.max(p.k,1e-4),0,1);f=smin(f,d,p.k);for(let j=0;j<MW;j++)cm[j]=lerp(cm[j],p.m[j],t)}}
+  else{let g=1e9,gh=false;for(let i=0;i<n;i++){const p=pr[i],d=dist(p,x,y,z);if(!gh){g=d;for(let j=0;j<MW;j++)gm[j]=p.m[j];gh=true;continue}
+    const t=clamp(.5+.5*(g-d)/Math.max(p.k,1e-4),0,1);g=smin(g,d,p.k);for(let j=0;j<MW;j++)gm[j]=lerp(gm[j],p.m[j],t)}
+   if(gh&&has){const t=clamp(.5+.5*(-g-f)/Math.max(st.k,1e-4),0,1);f=-smin(-f,g,st.k);for(let j=0;j<MW;j++)cm[j]=lerp(cm[j],gm[j],t)}}}
+ if(paints)for(const p of paints){const d=dist(p,x,y,z);if(d<p.fall){const w=clamp((p.fall-d)/p.fall,0,1)*p.str,ww=w*w*(3-2*w);for(let j=0;j<MW;j++)cm[j]=lerp(cm[j],p.m[j],ww)}}
+ for(let j=0;j<MW;j++)out[j]=cm[j];return f}
+
+function build(stage,sev){
+ PID=0;const PI=Math.PI,sN=clamp((sev-10)/85,0,1),native=stage==='unrepaired'||stage==='shunt';
+ const dil=stage==='patch'?1:stage==='pvr'?.5:0,rvh=native?1:stage==='sparing'?.85:.6;
+ const U1=[],CAV=[],U2=[],CAV2=[],U3=[],paints=[],K={native,stage,sN,dil};
+ const A0=[-.15,.45,-.15],STJ=[-.27,1.32,-.15],RAc=[-1.78,.98,-.78],T0=[-1.74,.2,-.34],LAc=[.55,1.16,-1.56],M0=[.9,.5,-1.2];
+ const RVy=[-.3,1,0],RVc=[-1.12-.18*dil,-.95-.1*dil,.26+.05*dil],RVr=[.82*(1+.27*dil),1.28*(1+.12*dil),.74*(1+.2*dil)];
+ const LVc=[.95,-1.15,-.45],LVr=[.8,1.7,.82],LVy=[-.199,.98,0];
+ Object.assign(K,{A0,STJ,aoAxis:nrm(sub(STJ,A0)),RAc,T0,tvAxis:nrm(sub([-1.3,-.5,.12],RAc)),LAc,M0,mvAxis:nrm(sub([.95,-.25,-.72],[.88,.82,-1.48])),RVc,RVr,RVy,LVc,LVr,LVy});
+ // ventricular mass: LV lobe + RV lobe + filling hull -> a single cone with an acute inferior margin
+ const wRV=.34+.14*rvh-dil*.07;K.wRV=wRV;
+ U1.push(ell([.87,-1.06,-.45],[1.32,2.18,1.28],LVy,[0,0,1],MAT.myo,0));
+ U1.push(ell(RVc,[RVr[0]+wRV,RVr[1]+wRV+.05,RVr[2]+wRV],RVy,[0,0,1],MAT.myo,.75));
+ U1.push(ell([.02-.1*dil,-1.25,-.02],[1.72+.12*dil,1.78,1.28],[-.36,1,0],[0,0,1],MAT.myo,.55));
+ // atria; appendages are flattened ear-like flaps
+ U1.push(ell(RAc,[.8,.84,.8],[0,1,0],[0,0,1],MAT.atrium,.32));
+ U1.push(ell([-1.32,1.28,.2],[.3,.56,.17],[.72,.6,.34],[.2,-.25,1],MAT.atrium,.2),ell([-.93,1.55,.36],[.15,.24,.1],[.8,.5,.3],[.2,-.25,1],MAT.atrium,.12));
+ U1.push(ell(LAc,[1.15,.7,.75],[0,1,0],[0,0,1],MAT.atrium,.38));
+ U1.push(ell([1.62,1.3,-.48],[.3,.52,.16],[.3,.12,1],[.15,1,0],MAT.atrium,.16));
+ // RV outflow (infundibulum) and pulmonary trunk
+ let rOs,rInf,rPV,rPA;
+ if(native){rOs=lerp(.44,.11,sN);rInf=lerp(.42,.33,sN);rPV=lerp(.36,.24,sN);rPA=lerp(.34,.26,sN)}
+ else if(stage==='sparing'){rOs=.42;rInf=.4;rPV=.35;rPA=.33}else if(stage==='patch'){rOs=.55;rInf=.58;rPV=.55;rPA=.47}
+ else if(stage==='pvr'){rOs=.52;rInf=.55;rPV=.47;rPA=.45}else{rOs=.12;rInf=.14;rPV=0;rPA=.16}
+ const os=[-.7,.2,.72],inf1=[-.28,.92,.95],inf2=[.22,1.45,1.0],P0=[.58,1.78,.95],pa1=[.85,2.15,.6],pa2=[.95,2.36,.02],BIF=[.9,2.36,-.5];
+ Object.assign(K,{rOs,rInf,rPV,rPA,os,inf1,inf2,P0,pa1,pa2,BIF,paAxis:nrm(sub(pa1,inf2))});
+ const infWall=.16+.16*rvh;
+ U1.push(...tube([[-1.05,-.55,.55],os,inf1,inf2,P0],[.8,rOs+infWall+.1,rInf+infWall,rInf+infWall*.8,Math.max(rPV,.2)+.14],MAT.myo,.5,{per:3,jk:.06}));
+ if(stage!=='conduit'){U1.push(...tube([P0,pa1,pa2,BIF],[Math.max(rPV,.2)+.11,rPA+.1,rPA+.09,.37],MAT.pa,.12,{per:3}));
+  if(stage==='patch'||stage==='pvr')paints.push(paint(ell([.28,1.53,1.42],[.5,1.05,.62],nrm(sub(pa1,inf1)),[0,0,1],MAT.pericard,0),.05,1))}
+ else U1.push(...tube([P0,pa1,pa2,BIF],[.22,.2,.22,.37],MAT.pa,.1,{per:3}));
+ const LPA=[BIF,[1.5,2.3,-.85],[2.15,2.2,-1.1],[2.55,2.15,-1.2]],RPA=[BIF,[.35,2.15,-1.05],[-.55,2.05,-1.2],[-1.5,2.0,-1.38],[-2.3,1.95,-1.45]];
+ U1.push(...tube(LPA,[.36,.3,.27,.27],MAT.pa,.08,{per:3,cap:true}),...tube(RPA,[.36,.3,.28,.27,.27],MAT.pa,.08,{per:3,cap:true}));
+ // aorta with three sinuses of Valsalva
+ const aoAx=K.aoAxis;U1.push(cone(add(A0,mul(aoAx,-.2)),STJ,.68,.64,MAT.aorta,.28));
+ const sinusDir=[[-.3,0,.95],[.85,0,-.5],[-.75,0,-.66]].map(nrm);K.sinusDir=sinusDir;
+ for(const e of sinusDir)U1.push(ell(add(add(A0,mul(aoAx,.42)),mul(e,.22)),[.44,.38,.44],aoAx,e,MAT.aorta,.14));
+ const AO=[STJ,[-.42,2.1,-.15],[-.36,2.72,-.32],[-.05,3.1,-.72],[.42,3.02,-1.2],[.62,2.85,-1.55],[.76,2.5,-1.85]];
+ U1.push(...tube(AO,[.64,.62,.61,.6,.58,.56,.55],MAT.aorta,.06,{per:3,cap:true}));
+ const BCA=[[-.28,3.15,-.52],[-.55,3.72,-.48],[-.72,4.12,-.45]],LCCA=[[.1,3.3,-.85],[.14,3.75,-.86],[.17,4.12,-.86]],LSA=[[.46,3.25,-1.22],[.58,3.7,-1.28],[.66,4.08,-1.3]];
+ U1.push(...tube(BCA,.25,MAT.aorta,.12,{per:2,cap:true}),...tube(LCCA,.18,MAT.aorta,.1,{per:2,cap:true}),...tube(LSA,.2,MAT.aorta,.1,{per:2,cap:true}));
+ Object.assign(K,{AO,BCA,LCCA,LSA,LPA,RPA});
+ // veins
+ const IVC=[[-1.8,.25,-1.05],[-1.84,-.7,-1.22],[-1.85,-1.45,-1.26]];
+ U1.push(...tube([[-1.8,3.95,-.62],[-1.8,2.6,-.64],[-1.8,1.7,-.66]],[.37,.37,.4],MAT.vein,.2,{per:2}),...tube([[-1.8,1.75,-.66],[-1.8,3.95,-.62]],.37,MAT.vein,0,{per:1,cap:true}));
+ U1.push(...tube(IVC,[.44,.43,.43],MAT.vein,.22,{per:2,cap:true}));
+ const PVs=[[[0,1.45,-1.95],[-.62,1.6,-2.28],[-.95,1.66,-2.4]],[[0,.86,-1.95],[-.58,.72,-2.3],[-.9,.68,-2.42]],[[1.45,1.45,-1.9],[2.1,1.6,-2.2],[2.42,1.66,-2.3]],[[1.45,.86,-1.92],[2.05,.72,-2.24],[2.36,.68,-2.34]]];
+ for(const pv of PVs)U1.push(...tube(pv,[.24,.22,.22],MAT.pv,.14,{per:2,cap:true}));
+ Object.assign(K,{IVC,PVs});
+ if(stage==='shunt'){const G=[[-.62,3.68,-.48],[-.95,3.25,-.75],[-1.05,2.65,-1.05],[-1.0,2.15,-1.28]];K.BTT=G;U1.push(...tube(G,.13,MAT.goretex,.05,{per:3}))}
+ if(stage==='conduit'){const C=[[-.7,-.15,1.3],[-.38,.7,1.58],[.12,1.55,1.5],[.62,2.2,1.02],[.92,2.45,.3],BIF];K.COND=C;U1.push(...tube(C,[.42,.42,.42,.4,.38,.36],MAT.conduit,.14,{per:4}))}
+ // ===== cavities =====
+ CAV.push(ell(RVc,RVr,RVy,[0,0,1],MAT.rvEndo,0),cone(add(T0,mul(K.tvAxis,.02)),[-1.38,-.45,.08],.56,.72,MAT.rvEndo,.25),
+  ell([-.82,-.04,.16],[.44,.44,.56],[0,1,0],[0,0,1],MAT.rvEndo,.25),cone([-1.05,-.6,.48],os,.62,Math.max(rOs,.12),MAT.rvEndo,.2));
+ if(stage!=='conduit')CAV.push(...tube([os,inf1,inf2,P0],[rOs,rInf,rInf*1.08,rPV],MAT.rvEndo,.06,{per:3}),...tube([P0,pa1,pa2,BIF],[rPV,rPA,rPA,.29],MAT.paInt,.04,{per:3}));
+ else CAV.push(...tube([os,lerp3(os,inf1,.6)],[rOs,.05],MAT.rvEndo,.05,{per:1}),...tube([pa2,BIF],[.08,.29],MAT.paInt,.04,{per:2}));
+ CAV.push(...tube(LPA,[.29,.24,.21,.21],MAT.paInt,.04,{per:3,extend:.3}),...tube(RPA,[.29,.23,.21,.21,.21],MAT.paInt,.04,{per:3,extend:.3}));
+ CAV.push(ell(LVc,LVr,LVy,[0,0,1],MAT.lvEndo,0),cone([.72,-.5,-.35],[.1,.28,-.15],.56,.5,MAT.lvEndo,.22),cone([.95,-.25,-.72],M0,.6,.5,MAT.lvEndo,.2),cone(M0,[.75,1.05,-1.5],.5,.45,MAT.laEndo,.15));
+ CAV.push(ell(LAc,[1.02,.57,.62],[0,1,0],[0,0,1],MAT.laEndo,.1),ell([1.62,1.3,-.48],[.2,.4,.05],[.3,.12,1],[.15,1,0],MAT.laEndo,.08));
+ CAV.push(ell(RAc,[.66,.7,.66],[0,1,0],[0,0,1],MAT.raEndo,.1),ell([-1.32,1.28,.2],[.19,.44,.05],[.72,.6,.34],[.2,-.25,1],MAT.raEndo,.08),cone(RAc,add(T0,mul(K.tvAxis,-.02)),.6,.56,MAT.raEndo,.15));
+ CAV.push(cone(add(A0,mul(aoAx,-.3)),STJ,.53,.5,MAT.aoInt,.05));
+ for(const e of sinusDir)CAV.push(ell(add(add(A0,mul(aoAx,.4)),mul(e,.18)),[.34,.3,.34],aoAx,e,MAT.aoInt,.06));
+ CAV.push(...tube(AO,[.5,.49,.48,.47,.46,.44,.43],MAT.aoInt,.04,{per:3,extend:.3}),...tube([AO[3],...BCA.slice(1)],.18,MAT.aoInt,.04,{per:2,extend:.3}),
+  ...tube([[.1,3.0,-.85],...LCCA.slice(1)],.12,MAT.aoInt,.04,{per:2,extend:.3}),...tube([[.46,2.95,-1.22],...LSA.slice(1)],.14,MAT.aoInt,.04,{per:2,extend:.3}));
+ CAV.push(...tube([[-1.8,3.95,-.62],[-1.8,2.6,-.64],[-1.8,1.7,-.66],RAc],[.3,.3,.32,.45],MAT.veinInt,.04,{per:2}),cone([-1.8,3.5,-.62],[-1.8,4.3,-.62],.3,.3,MAT.veinInt,.02));
+ CAV.push(...tube([RAc,...IVC],[.45,.36,.35,.35],MAT.veinInt,.06,{per:2,extend:.3}));
+ for(const pv of PVs)CAV.push(...tube([lerp3(pv[0],LAc,.35),...pv],[.2,.16,.16,.16],MAT.pvInt,.04,{per:2,extend:.3}));
+ if(stage==='shunt')CAV.push(...tube([[-.55,3.72,-.48],...K.BTT.slice(1),[-1.0,2.0,-1.38]],.075,MAT.goretex,.02,{per:3}));
+ if(stage==='conduit')CAV.push(...tube([[-1.0,-.65,.7],...K.COND.slice(0,5),BIF],[.38,.33,.33,.33,.31,.3,.29],MAT.goretex,.05,{per:4}));
+ // ===== internal muscle =====
+ K.lvPM=[[1.25,-.7,-.3],[.95,-.78,-.98]];
+ U2.push(cone([1.72,-1.55,-.05],K.lvPM[0],.24,.11,MAT.trab,.12),cone([1.08,-1.7,-1.32],K.lvPM[1],.24,.11,MAT.trab,.12));
+ let seed=7;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647};
+ const on=(C,Rr,B,th,ph,s)=>{const X=Math.sin(ph)*Math.cos(th),Y=Math.cos(ph),Z=Math.sin(ph)*Math.sin(th),l=[X*Rr[0]*s,Y*Rr[1]*s,Z*Rr[2]*s];
+  return [0,1,2].map(i=>C[i]+B[0][i]*l[0]+B[1][i]*l[1]+B[2][i]*l[2])};
+ const BR=basis(RVy,[0,0,1]),BL=basis(LVy,[0,0,1]),onRV=(t,p,s)=>on(RVc,RVr,BR,t,p,s),onLV=(t,p,s)=>on(LVc,LVr,BL,t,p,s);
+ K.rvPM=[onRV(.7*PI,.45*PI,.5),onRV(1.3*PI,.5*PI,.5),onRV(.08*PI,.42*PI,.8)];
+ U2.push(cone(onRV(.62*PI,.62*PI,1.06),K.rvPM[0],.2,.1,MAT.trab,.1),cone(onRV(1.35*PI,.7*PI,1.06),K.rvPM[1],.18,.09,MAT.trab,.1));
+ const sb=[.88,.75,.62,.5,.42].map(f=>onRV(.22,PI*f,.965));K.septalBand=sb;
+ U2.push(...tube(sb,[.1,.13,.15,.14,.12],MAT.trab,.08,{per:2}));
+ const mb=onRV(.62*PI,.62*PI,1.0);U2.push(...tube([sb[2],lerp3(sb[2],mb,.5),mb],[.11,.09,.12],MAT.trab,.08,{per:2}));
+ U2.push(...tube([sb[4],[-.62,0,.62],[-.6,.33,.66],[-.53,.56,.56]],[.12,.12,.11,.09],MAT.trab,.06,{per:2}),...tube([sb[4],[-.52,-.32,.02],[-.6,-.14,-.4]],[.11,.1,.08],MAT.trab,.06,{per:2}));
+ // coarse RV trabecular meshwork (free wall, apex, posterior wall)
+ const NT=10,NP=6,net=[];
+ for(let a=0;a<NT;a++){net.push([]);for(let b=0;b<NP;b++)net[a].push(onRV(PI*(.5+1.3*a/(NT-1))+(rnd()-.5)*.18,PI*(.46+.46*b/(NP-1))+(rnd()-.5)*.1,.985))}
+ for(let a=0;a<NT;a++)for(let b=0;b<NP;b++){if(a<NT-1&&rnd()<.78)U2.push(cone(net[a][b],net[a+1][b],.045+rnd()*.035,.045+rnd()*.035,MAT.trab,.05));
+  if(b<NP-1&&rnd()<.85)U2.push(cone(net[a][b],net[a][b+1],.05+rnd()*.035,.05+rnd()*.035,MAT.trab,.05));
+  if(a<NT-1&&b<NP-1&&rnd()<.3)U2.push(cone(net[a][b],net[a+1][b+1],.04,.04,MAT.trab,.04))}
+ for(let a=0;a<9;a++)for(let b=0;b<3;b++){const th=-.75*PI+1.5*PI*a/8+(rnd()-.5)*.15,ph=PI*(.74+.09*b),p=onLV(th,ph,.985);
+  if(rnd()<.8)U2.push(cone(p,onLV(th+.32,ph+.06,.985),.032+rnd()*.02,.032+rnd()*.02,MAT.trab,.04));if(rnd()<.6)U2.push(cone(p,onLV(th+.08,ph+.1,.985),.03,.035,MAT.trab,.04))}
+ // RVOT obstruction: anterocephalad outlet septum + hypertrophied septoparietal trabeculations
+ if(native){const rb=lerp(.07,.21,sN);U2.push(...tube([[-.95,.02,.48],[-.62,.38,.55],[-.28,.72,.7]],[rb*.8,rb,rb*.6],MAT.trab,.08,{per:3}),...tube([[-1.02,.35,1.06],[-.7,.55,1.12],[-.35,.8,1.18]],[rb*.6,rb*.85,rb*.5],MAT.trab,.08,{per:3}))}
+ else if(stage==='sparing')U2.push(...tube([[-.95,.02,.48],[-.62,.38,.55],[-.28,.72,.7]],[.05,.06,.04],MAT.trab,.06,{per:2}));
+ if(stage==='conduit')U2.push(ell(lerp3(os,inf1,.62),[.2,.08,.2],nrm(sub(inf1,os)),[0,0,1],MAT.cord,.05));
+ // ===== VSD and (after repair) its patch =====
+ CAV2.push(ell([-.16,.13,-.08],[.6,.38,.5],[0,1,0],[0,0,1],MAT.lvEndo,0));K.VSD=[-.3,.12,-.05];
+ if(native)paints.push(paint(ell([-.16,.13,-.08],[.68,.46,.58],[0,1,0],[0,0,1],MAT.fibrous,0),.06,.9)); // fibrous rim of the defect
+ if(!native)U3.push(ell([-.57,.13,-.05],[.07,.56,.62],[-.37,.93,0],[0,0,1],MAT.dacron,.03));
+ return {steps:[{op:0,k:0,prims:U1},{op:1,k:.035,prims:CAV},{op:0,k:0,prims:U2},{op:1,k:.03,prims:CAV2},{op:0,k:0,prims:U3}],paints,K,stage,sev}}
+
+function gradient(x,y,z,steps,e){e=e||.02;return nrm([field(x+e,y,z,steps)-field(x-e,y,z,steps),field(x,y+e,z,steps)-field(x,y-e,z,steps),field(x,y,z+e,steps)-field(x,y,z-e,steps)])}
+function projectToSurface(p,steps,it){let q=p.slice();for(let i=0;i<(it||6);i++){const f=field(q[0],q[1],q[2],steps),g=gradient(q[0],q[1],q[2],steps,.02);q=sub(q,mul(g,f))}return q}
+// Coronary arteries: paths projected onto the epicardium; epicardial fat cushions added to the outer surface.
+function coronaries(sc,cached){let out=cached;
+ if(!out){const K=sc.K,S=[sc.steps[0]],ost=e=>add(add(K.A0,mul(K.aoAxis,.42)),mul(e,.62)),OL=ost(K.sinusDir[1]),OR=ost(K.sinusDir[0]);
+  const D=[{p:[OL,[.72,.98,-.08],[1.0,.86,.32]],r0:.085,r1:.08,fat:.12},{p:[[1.0,.86,.32],[.78,.45,1.0],[.48,-.4,1.25],[.42,-1.3,1.15],[.62,-2.2,.8],[1.02,-2.95,.35],[1.3,-3.2,-.2]],r0:.075,r1:.028,fat:.13},
+   {p:[[.48,-.4,1.25],[1.1,-.85,1.0],[1.72,-1.5,.6]],r0:.045,r1:.022,fat:.05},{p:[[1.0,.86,.32],[1.6,.7,-.3],[1.95,.35,-.95],[1.75,.1,-1.5]],r0:.07,r1:.04,fat:.15},
+   {p:[[1.95,.35,-.95],[2.1,-.6,-.7],[1.9,-1.6,-.55]],r0:.045,r1:.022,fat:.05},{p:[OR,[-.85,.75,.9],[-1.45,.5,.85],[-2.05,.2,.5],[-2.45,-.2,-.2],[-2.25,-.45,-.95],[-1.6,-.7,-1.3],[-.9,-.95,-1.35]],r0:.08,r1:.06,fat:.16},
+   {p:[[-.9,-.95,-1.35],[-.35,-1.5,-1.3],[.2,-2.3,-1.05],[.65,-2.85,-.75]],r0:.055,r1:.025,fat:.1},{p:[[-2.05,.2,.5],[-2.35,-.7,.5],[-2.05,-1.6,.55],[-1.5,-2.25,.5]],r0:.045,r1:.022,fat:.05},
+   {p:[[-.85,.75,.9],[-.55,.65,1.35],[-.15,.85,1.5]],r0:.035,r1:.02,fat:0}];
+  out=[];for(const d of D){let P=resample(d.p,d.p.map(()=>0),6).pts.map(p=>projectToSurface(p,S,6));
+   for(let it=0;it<2;it++){P=P.map((p,i)=>i===0||i===P.length-1?p:mul(add(add(P[i-1],P[i+1]),mul(p,2)),.25));P=P.map(p=>projectToSurface(p,S,3))}
+   out.push({pts:P,nrms:P.map(p=>gradient(p[0],p[1],p[2],S,.03)),r0:d.r0,r1:d.r1,fat:d.fat})}}
+ for(const c of out){if(!c.fat)continue;const n=c.pts.length;for(let i=0;i<n-1;i+=2){const j=Math.min(i+2,n-1),t0=i/(n-1),t1=j/(n-1);
+  sc.steps[0].prims.push(cone(add(c.pts[i],mul(c.nrms[i],-.04)),add(c.pts[j],mul(c.nrms[j],-.04)),c.fat*(1-.5*t0),c.fat*(1-.5*t1),MAT.fat,.09))}}
+ sc.cor=out;return out}
+function allPrims(sc){const a=[];for(const s of sc.steps)a.push(...s.prims);a.push(...sc.paints);return a}
+return {build,field,fieldMat,dist,MAT,MW,allPrims,gradient,projectToSurface,coronaries,util:{sub,add,mul,dot,cross,len,nrm,lerp,lerp3,clamp,hex,resample,crPoint}};
+})();
+if(typeof module!=='undefined')module.exports=Anat;
+
+</script>
+<script>
+// ===== Mesher: SDF sampling with block skipping + chunked naive surface nets =====
+const Mesher=(()=>{
+'use strict';
+const {field,fieldMat,MW}=Anat;
+function cull(steps,x0,x1,y0,y1,z0,z1,m){return steps.map(st=>{const mm=m+(st.k||0);return {op:st.op,k:st.k,prims:st.prims.filter(p=>{const e=mm+p.k;
+ return p.maxx+e>=x0&&p.minx-e<=x1&&p.maxy+e>=y0&&p.miny-e<=y1&&p.maxz+e>=z0&&p.minz-e<=z1})}})}
+function cullPaints(P,x0,x1,y0,y1,z0,z1){return P.filter(p=>{const e=p.fall+.05;return p.maxx+e>=x0&&p.minx-e<=x1&&p.maxy+e>=y0&&p.miny-e<=y1&&p.maxz+e>=z0&&p.minz-e<=z1})}
+function anyU(cs){for(const s of cs)if(s.op===0&&s.prims.length)return true;return false}
+function createGrid(b,h){const nx=Math.ceil((b[1]-b[0])/h)+1,ny=Math.ceil((b[3]-b[2])/h)+1,nz=Math.ceil((b[5]-b[4])/h)+1;return {x0:b[0],y0:b[2],z0:b[4],h,nx,ny,nz,f:new Float32Array(nx*ny*nz).fill(4*h),C:4*h}}
+function* fill(G,steps,i0,i1,j0,j1,k0,k1){const B=8,{x0,y0,z0,h,nx,ny,f,C}=G;
+ for(let bk=k0;bk<k1;bk+=B)for(let bj=j0;bj<j1;bj+=B){for(let bi=i0;bi<i1;bi+=B){const ie=Math.min(bi+B,i1),je=Math.min(bj+B,j1),ke=Math.min(bk+B,k1);
+   const cs=cull(steps,x0+bi*h,x0+(ie-1)*h,y0+bj*h,y0+(je-1)*h,z0+bk*h,z0+(ke-1)*h,.3);
+   if(!anyU(cs)){for(let k=bk;k<ke;k++)for(let j=bj;j<je;j++){const o=nx*(j+ny*k);for(let i=bi;i<ie;i++)f[i+o]=C}continue}
+   sub(bi,ie,bj,je,bk,ke,cs,true)}yield}
+ function sub(a0,a1,b0,b1,c0,c1,cs,top){const fc=field(x0+(a0+a1-1)*.5*h,y0+(b0+b1-1)*.5*h,z0+(c0+c1-1)*.5*h,cs),hd=Math.max(a1-a0-1,b1-b0-1,c1-c0-1)*h*.8661;
+  if(Math.abs(fc)>hd*1.7+C){const v=fc>0?C:-C;for(let k=c0;k<c1;k++)for(let j=b0;j<b1;j++){const o=nx*(j+ny*k);for(let i=a0;i<a1;i++)f[i+o]=v}return}
+  if(top&&a1-a0>4){const am=a0+4,bm=b0+4,cm=c0+4;for(const [p0,p1] of [[a0,Math.min(am,a1)],[am,a1]])for(const [q0,q1] of [[b0,Math.min(bm,b1)],[bm,b1]])for(const [r0,r1] of [[c0,Math.min(cm,c1)],[cm,c1]])if(p1>p0&&q1>q0&&r1>r0)sub(p0,p1,q0,q1,r0,r1,cs,false);return}
+  for(let k=c0;k<c1;k++){const z=z0+k*h;for(let j=b0;j<b1;j++){const y=y0+j*h,o=nx*(j+ny*k);for(let i=a0;i<a1;i++){const v=field(x0+i*h,y,z,cs);f[i+o]=v>C?C:v<-C?-C:v}}}}}
+const EDGES=[[0,1],[2,3],[4,5],[6,7],[0,2],[1,3],[4,6],[5,7],[0,4],[1,5],[2,6],[3,7]],COR=[[0,0,0],[1,0,0],[0,1,0],[1,1,0],[0,0,1],[1,0,1],[0,1,1],[1,1,1]];
+const STRIDE=16,AO_D=[.06,.15,.27,.42],MB=new Float64Array(MW);
+function meshChunk(G,steps,paints,i0,i1,j0,j1,k0,k1){const {x0,y0,z0,h,nx,ny,nz,f}=G;i1=Math.min(i1,nx-1);j1=Math.min(j1,ny-1);k1=Math.min(k1,nz-1);
+ const vi0=Math.max(i0-1,0),vj0=Math.max(j0-1,0),vk0=Math.max(k0-1,0),W=i1-vi0,H=j1-vj0,D=k1-vk0;if(W<=0||H<=0||D<=0)return null;
+ const vid=new Int32Array(W*H*D).fill(-1),pos=[],cv=new Float32Array(8);
+ for(let k=vk0;k<k1;k++)for(let j=vj0;j<j1;j++)for(let i=vi0;i<i1;i++){let mask=0;for(let c=0;c<8;c++){const q=COR[c],v=f[(i+q[0])+nx*((j+q[1])+ny*(k+q[2]))];cv[c]=v;if(v<0)mask|=1<<c}
+  if(mask===0||mask===255)continue;let sx=0,sy=0,sz=0,n=0;
+  for(const [a,b] of EDGES){const va=cv[a],vb=cv[b];if((va<0)===(vb<0))continue;const t=va/(va-vb),A=COR[a],B=COR[b];sx+=A[0]+(B[0]-A[0])*t;sy+=A[1]+(B[1]-A[1])*t;sz+=A[2]+(B[2]-A[2])*t;n++}
+  vid[(i-vi0)+W*((j-vj0)+H*(k-vk0))]=pos.length/3;pos.push(x0+(i+sx/n)*h,y0+(j+sy/n)*h,z0+(k+sz/n)*h)}
+ const nv=pos.length/3;if(!nv)return null;const tri=[],V=(i,j,k)=>vid[(i-vi0)+W*((j-vj0)+H*(k-vk0))];
+ const quad=(a,b,c,d)=>{if(a<0||b<0||c<0||d<0)return;const d1=(pos[a*3]-pos[c*3])**2+(pos[a*3+1]-pos[c*3+1])**2+(pos[a*3+2]-pos[c*3+2])**2,d2=(pos[b*3]-pos[d*3])**2+(pos[b*3+1]-pos[d*3+1])**2+(pos[b*3+2]-pos[d*3+2])**2;
+  if(d1<d2)tri.push(a,b,c,a,c,d);else tri.push(a,b,d,b,c,d)};
+ for(let k=k0;k<k1;k++)for(let j=j0;j<j1;j++)for(let i=i0;i<i1;i++){const in0=f[i+nx*(j+ny*k)]<0;
+  if(j>0&&k>0&&in0!==(f[(i+1)+nx*(j+ny*k)]<0)){const a=V(i,j-1,k-1),b=V(i,j,k-1),c=V(i,j,k),d=V(i,j-1,k);if(in0)quad(a,b,c,d);else quad(d,c,b,a)}
+  if(i>0&&k>0&&j+1<ny&&in0!==(f[i+nx*((j+1)+ny*k)]<0)){const a=V(i-1,j,k-1),b=V(i-1,j,k),c=V(i,j,k),d=V(i,j,k-1);if(in0)quad(a,b,c,d);else quad(d,c,b,a)}
+  if(i>0&&j>0&&k+1<nz&&in0!==(f[i+nx*(j+ny*(k+1))]<0)){const a=V(i-1,j-1,k),b=V(i,j-1,k),c=V(i,j,k),d=V(i-1,j,k);if(in0)quad(a,b,c,d);else quad(d,c,b,a)}}
+ if(!tri.length)return null;
+ const out=new Float32Array(nv*STRIDE),m=MB,e=h*.3,SB=4,sw=Math.ceil(W/SB),sh=Math.ceil(H/SB),sd=Math.ceil(D/SB),bk=new Array(sw*sh*sd);
+ for(let v=0;v<nv;v++){const ci=Math.floor((pos[v*3]-x0)/h)-vi0,cj=Math.floor((pos[v*3+1]-y0)/h)-vj0,ck=Math.floor((pos[v*3+2]-z0)/h)-vk0;
+  const b=Math.min(sw-1,Math.max(0,ci/SB|0))+sw*(Math.min(sh-1,Math.max(0,cj/SB|0))+sh*Math.min(sd-1,Math.max(0,ck/SB|0)));(bk[b]||(bk[b]=[])).push(v)}
+ for(let b=0;b<bk.length;b++){const list=bk[b];if(!list)continue;const bi=b%sw,bj=((b/sw)|0)%sh,bq=(b/(sw*sh))|0;
+  const ax=x0+(vi0+bi*SB)*h,ay=y0+(vj0+bj*SB)*h,az=z0+(vk0+bq*SB)*h,L=(SB+1)*h;
+  const cs=cull(steps,ax-.5,ax+L+.5,ay-.5,ay+L+.5,az-.5,az+L+.5,.1),cp=cullPaints(paints,ax-.1,ax+L+.1,ay-.1,ay+L+.1,az-.1,az+L+.1);
+  for(const v of list){let x=pos[v*3],y=pos[v*3+1],z=pos[v*3+2];
+   const f1=field(x+e,y-e,z-e,cs),f2=field(x-e,y-e,z+e,cs),f3=field(x-e,y+e,z-e,cs),f4=field(x+e,y+e,z+e,cs);
+   let gx=f1-f2-f3+f4,gy=-f1-f2+f3+f4,gz=-f1+f2-f3+f4;const gl=Math.hypot(gx,gy,gz)||1;gx/=gl;gy/=gl;gz/=gl;
+   const st=Math.max(-h*.5,Math.min(h*.5,(f1+f2+f3+f4)*.25));x-=gx*st;y-=gy*st;z-=gz*st;fieldMat(x,y,z,cs,cp,m);
+   let occ=0,w=1;for(const d of AO_D){occ+=Math.max(0,d-field(x+gx*d,y+gy*d,z+gz*d,cs))*w;w*=.6}const ao=Math.max(.12,Math.min(1,1-occ*2.4));
+   const o=v*STRIDE;out[o]=x;out[o+1]=y;out[o+2]=z;out[o+3]=gx;out[o+4]=gy;out[o+5]=gz;out[o+6]=m[0];out[o+7]=m[1];out[o+8]=m[2];out[o+9]=m[6];
+   out[o+10]=m[3];out[o+11]=m[4];out[o+12]=m[5];out[o+13]=ao;out[o+14]=m[7];out[o+15]=m[8]}}
+ return {verts:out,idx:nv<65536?new Uint16Array(tri):new Uint32Array(tri),nv,nt:tri.length/3}}
+return {createGrid,fill,meshChunk,cull,STRIDE};
+})();
+if(typeof module!=='undefined')module.exports=Mesher;
+
+</script>
+<script>
+// ===== WebGL renderer =====
+const Viewer=(()=>{
+'use strict';
+const {sub,add,mul,dot,cross,nrm,clamp}=Anat.util;
+const M4={persp(f,a,n,fa){const t=1/Math.tan(f/2),nf=1/(n-fa);return new Float32Array([t/a,0,0,0,0,t,0,0,0,0,(fa+n)*nf,-1,0,0,2*fa*n*nf,0])},
+ look(e,c,up){const z=nrm(sub(e,c)),x=nrm(cross(up,z)),y=cross(z,x);return new Float32Array([x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-dot(x,e),-dot(y,e),-dot(z,e),1])},
+ mul(a,b){const o=new Float32Array(16);for(let i=0;i<4;i++)for(let j=0;j<4;j++){let s=0;for(let k=0;k<4;k++)s+=a[k*4+j]*b[i*4+k];o[i*4+j]=s}return o}};
+const DA=[1.05,-3.15,-.25],DX=nrm([-1.3,3.7,0]),DL=3.92;
+const sm=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
+function deform(p,s){const ap=sub(p,DA),sp=dot(ap,DX),t=sp/DL,rad=sub(ap,mul(DX,sp)),q=sub(p,mul(rad,.07*s*(1-sm(.82,1.18,t))));return sub(q,mul(DX,.15*s*clamp(t,0,1)*(1-sm(1,2.1,t))))}
+const DEF=`uniform float uSys;uniform float uDeformOn;
+vec3 deform(vec3 p){if(uDeformOn<.5)return p;vec3 A=vec3(1.05,-3.15,-.25);vec3 ax=normalize(vec3(-1.3,3.7,0.));vec3 ap=p-A;float s=dot(ap,ax);float t=s/3.92;vec3 rad=ap-ax*s;
+ vec3 q=p-rad*(.07*uSys*(1.-smoothstep(.82,1.18,t)));return q-ax*(.15*uSys*clamp(t,0.,1.)*(1.-smoothstep(1.,2.1,t)));}`;
+const VS_T=`precision highp float;attribute vec3 aPos;attribute vec3 aNrm;attribute vec4 aCol;attribute vec4 aSec;attribute vec2 aMat;uniform mat4 uVP;
+varying vec3 vPos;varying vec3 vW;varying vec3 vN;varying vec4 vCol;varying vec4 vSec;varying vec2 vMat;${DEF}
+void main(){vec3 w=deform(aPos);vPos=aPos;vW=w;vN=aNrm;vCol=aCol;vSec=aSec;vMat=aMat;gl_Position=uVP*vec4(w,1.);}`;
+const NOISE=`float hash(vec3 p){p=fract(p*.3183099+.1);p*=17.;return fract(p.x*p.y*p.z*(p.x+p.y+p.z));}
+float noise(vec3 x){vec3 i=floor(x);vec3 f=fract(x);f=f*f*(3.-2.*f);return mix(mix(mix(hash(i),hash(i+vec3(1,0,0)),f.x),mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),f.y),
+ mix(mix(hash(i+vec3(0,0,1)),hash(i+vec3(1,0,1)),f.x),mix(hash(i+vec3(0,1,1)),hash(i+vec3(1,1,1)),f.x),f.y),f.z);}
+float fbm(vec3 p){float a=.5,s=0.;for(int i=0;i<3;i++){s+=a*noise(p);p*=2.07;a*=.5;}return s;}`;
+const FS_T=`precision highp float;uniform vec3 uEye;uniform vec4 uClip;uniform float uClipOn;uniform float uCapMode;uniform vec3 uKey;uniform float uDist;
+uniform vec4 uHL;uniform vec3 uHLCol;uniform float uTime;varying vec3 vPos;varying vec3 vW;varying vec3 vN;varying vec4 vCol;varying vec4 vSec;varying vec2 vMat;${NOISE}
+void main(){if(uClipOn>.5&&dot(uClip.xyz,vPos)-uClip.w>0.)discard;
+ vec3 V=normalize(uEye-vW);vec3 N=normalize(vN);bool cap=!gl_FrontFacing&&uCapMode>.5;vec3 alb;float gloss;float ao=vSec.a;float fab=vMat.x,fat=vMat.y;
+ if(cap){N=normalize(uClip.xyz);float w=fbm(vPos*3.1);float f1=noise(vec3(vPos.x*9.,vPos.y*46.+w*12.,vPos.z*9.));float f2=noise(vec3(vPos.x*44.+w*7.,vPos.y*10.,vPos.z*44.));
+  alb=vSec.rgb*(.78+.18*f1+.1*f2);gloss=.4;ao=.95;}
+ else{if(!gl_FrontFacing)N=-N;alb=vCol.rgb*(.84+.3*fbm(vPos*5.3));gloss=vCol.a*(.65+.7*noise(vPos*7.3));
+  if(fat>.01){float lob=smoothstep(.34,.72,fbm(vPos*10.+3.1));alb=mix(alb,vec3(.88,.7,.38)*(.82+.32*lob),clamp(fat*(.62+.5*lob),0.,1.));gloss=mix(gloss,.75,fat);}
+  if(fab>.01){float wv=sin(vPos.x*150.)*sin(vPos.y*150.)*sin(vPos.z*150.);alb*=1.-fab*.1*(wv*.5+.5);}
+  float b0=fbm(vPos*11.);vec3 e=vec3(.02,0.,0.);vec3 g=vec3(fbm((vPos+e.xyy)*11.)-b0,fbm((vPos+e.yxy)*11.)-b0,fbm((vPos+e.yyx)*11.)-b0)/.02;N=normalize(N-g*.016*(1.-fab*.7));}
+ vec3 L1=normalize(uKey);vec3 L2=normalize(vec3(.55,.8,-.65));vec3 L3=normalize(vec3(-.7,-.4,.45));vec3 b=alb*alb;
+ float d1=max(0.,(dot(N,L1)+.38)/1.38),d2=max(0.,dot(N,L2)),d3=max(0.,(dot(N,L3)+.2)/1.2);vec3 H=normalize(L1+V);float nh=max(dot(N,H),0.);
+ float spec=pow(nh,110.)*1.7+pow(nh,22.)*.16;float nv=max(dot(N,V),0.);float fres=pow(1.-nv,4.);
+ vec3 col=b*(vec3(.17,.2,.21)*ao+d1*vec3(1.08,1.,.93)*mix(.45,1.,ao)+d2*vec3(.36,.42,.46)*ao+d3*vec3(.16,.19,.2)*ao);
+ col+=b*vec3(1.,.32,.26)*(pow(1.-nv,2.)*.32+(1.-d1)*.07)*ao;col+=vec3(1.,.98,.95)*spec*gloss*mix(.25,1.,ao)*.55;col+=vec3(.55,.75,.78)*fres*gloss*.1*ao;
+ if(uHL.w>0.){float dh=length(vPos-uHL.xyz);col+=uHLCol*(1.-smoothstep(uHL.w*.55,uHL.w,dh))*(.17+.08*sin(uTime*3.5));}
+ col*=1.-.32*clamp((length(uEye-vW)-uDist+1.5)/5.,0.,1.);col=col/(1.+col*.55)*1.22;gl_FragColor=vec4(sqrt(max(col,0.)),1.);}`;
+const FS_G=`precision highp float;uniform vec3 uEye;uniform vec4 uClip;uniform float uGhost;varying vec3 vPos;varying vec3 vW;varying vec3 vN;varying vec4 vCol;varying vec4 vSec;varying vec2 vMat;
+void main(){float side=dot(uClip.xyz,vPos)-uClip.w;if(side<0.)discard;float nv=abs(dot(normalize(vN),normalize(uEye-vW)));float rim=pow(1.-nv,2.6);
+ vec3 c=mix(vec3(.8,.93,.92),vCol.rgb,.3);float a=(rim*.28+.016)*uGhost*smoothstep(0.,.5,side);gl_FragColor=vec4(c*a,a*.8);}`;
+const VS_P=`precision highp float;attribute vec3 aP;attribute vec4 aC;attribute float aS;uniform mat4 uVP;uniform float uPx;varying vec4 vC;${DEF}
+void main(){vec4 c=uVP*vec4(deform(aP),1.);gl_Position=c;gl_PointSize=max(1.5,aS*uPx/c.w);vC=aC;}`;
+const FS_P=`precision highp float;varying vec4 vC;uniform float uMul;void main(){vec2 d=gl_PointCoord-.5;float r=length(d)*2.;if(r>1.)discard;
+ float a=smoothstep(1.,.45,r);float core=smoothstep(.55,0.,r);vec3 c=mix(vC.rgb,vec3(1.),core*.45);float al=a*vC.a*uMul;gl_FragColor=vec4(c*al,al);}`;
+const VS_L=`precision highp float;attribute vec3 aP;attribute vec4 aC;uniform mat4 uVP;varying vec4 vC;varying vec3 vPos;${DEF}
+void main(){vPos=aP;vC=aC;gl_Position=uVP*vec4(deform(aP),1.);}`;
+const FS_L=`precision highp float;varying vec4 vC;varying vec3 vPos;uniform vec4 uClip;uniform float uClipOn;
+void main(){if(uClipOn>.5&&dot(uClip.xyz,vPos)-uClip.w>0.)discard;gl_FragColor=vec4(vC.rgb*vC.a,vC.a);}`;
+function sh(gl,t,s){const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(o));return o}
+function prog(gl,v,f){const p=gl.createProgram();gl.attachShader(p,sh(gl,gl.VERTEX_SHADER,v));gl.attachShader(p,sh(gl,gl.FRAGMENT_SHADER,f));gl.linkProgram(p);
+ if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(p));const u={},a={};
+ for(let i=0;i<gl.getProgramParameter(p,gl.ACTIVE_UNIFORMS);i++){const n=gl.getActiveUniform(p,i).name;u[n]=gl.getUniformLocation(p,n)}
+ for(let i=0;i<gl.getProgramParameter(p,gl.ACTIVE_ATTRIBUTES);i++){const n=gl.getActiveAttrib(p,i).name;a[n]=gl.getAttribLocation(p,n)}return {p,u,a}}
+class View{constructor(cv){this.canvas=cv;const o={antialias:true,alpha:true,premultipliedAlpha:true};
+  const gl=cv.getContext('webgl2',o)||cv.getContext('webgl',o);if(!gl)throw new Error('WebGL unavailable');this.gl=gl;
+  this.uint=(typeof WebGL2RenderingContext!=='undefined'&&gl instanceof WebGL2RenderingContext)||!!gl.getExtension('OES_element_index_uint');
+  this.pT=prog(gl,VS_T,FS_T);this.pG=prog(gl,VS_T,FS_G);this.pP=prog(gl,VS_P,FS_P);this.pL=prog(gl,VS_L,FS_L);
+  this.chunks=new Map();this.dyn={};this.cam={target:[0,.35,0],dist:14,yaw:-.22,pitch:.1,fov:28*Math.PI/180};this.clip={on:true,n:[0,0,1],d:-.12};
+  this.ghost=1;this.sys=0;this.time=0;this.hl=null;this.deformOn=1;this.xray=.18;this.partBuf=gl.createBuffer();this.lineBuf=gl.createBuffer();this.nPart=0;this.nLine=0;this.guideBuf=gl.createBuffer();this.nGuide=0;this.w=1;this.h=1}
+ resize(w,h,dpr){this.w=w;this.h=h;this.canvas.width=Math.max(1,Math.round(w*dpr));this.canvas.height=Math.max(1,Math.round(h*dpr))}
+ eye(){const c=this.cam;return add(c.target,[c.dist*Math.sin(c.yaw)*Math.cos(c.pitch),c.dist*Math.sin(c.pitch),c.dist*Math.cos(c.yaw)*Math.cos(c.pitch)])}
+ matrices(){this.E=this.eye();this.VP=M4.mul(M4.persp(this.cam.fov,this.w/Math.max(1,this.h),.5,60),M4.look(this.E,this.cam.target,[0,1,0]));return this.VP}
+ project(p){const q=this.deformOn?deform(p,this.sys):p,m=this.VP||this.matrices();const x=m[0]*q[0]+m[4]*q[1]+m[8]*q[2]+m[12],y=m[1]*q[0]+m[5]*q[1]+m[9]*q[2]+m[13],w=m[3]*q[0]+m[7]*q[1]+m[11]*q[2]+m[15];
+  return {x:(x/w*.5+.5)*this.w,y:(.5-y/w*.5)*this.h,w}}
+ clipped(p){return this.clip.on&&dot(this.clip.n,p)>this.clip.d}
+ setChunk(key,m){const gl=this.gl,old=this.chunks.get(key);if(old){gl.deleteBuffer(old.vb);gl.deleteBuffer(old.ib)}if(!m||(m.idx instanceof Uint32Array&&!this.uint)){this.chunks.delete(key);return}
+  const vb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,vb);gl.bufferData(gl.ARRAY_BUFFER,m.verts,gl.STATIC_DRAW);const ib=gl.createBuffer();gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,ib);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,m.idx,gl.STATIC_DRAW);
+  this.chunks.set(key,{vb,ib,n:m.idx.length,type:m.idx instanceof Uint32Array?gl.UNSIGNED_INT:gl.UNSIGNED_SHORT})}
+ setDynamic(name,V,I){const gl=this.gl;let d=this.dyn[name];if(!d)d=this.dyn[name]={vb:gl.createBuffer(),ib:gl.createBuffer(),n:0};if(!V||!I||!I.length){d.n=0;return}
+  gl.bindBuffer(gl.ARRAY_BUFFER,d.vb);gl.bufferData(gl.ARRAY_BUFFER,V,gl.DYNAMIC_DRAW);const big=V.length/16>=65536&&this.uint,X=big?new Uint32Array(I):new Uint16Array(I);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,d.ib);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,X,gl.DYNAMIC_DRAW);d.n=X.length;d.type=big?gl.UNSIGNED_INT:gl.UNSIGNED_SHORT}
+ setParticles(a,n){const gl=this.gl;gl.bindBuffer(gl.ARRAY_BUFFER,this.partBuf);gl.bufferData(gl.ARRAY_BUFFER,a,gl.DYNAMIC_DRAW);this.nPart=n}
+ setGuides(a,n){const gl=this.gl;gl.bindBuffer(gl.ARRAY_BUFFER,this.guideBuf);gl.bufferData(gl.ARRAY_BUFFER,a,gl.DYNAMIC_DRAW);this.nGuide=n}
+ setLines(a,n){const gl=this.gl;gl.bindBuffer(gl.ARRAY_BUFFER,this.lineBuf);gl.bufferData(gl.ARRAY_BUFFER,a,gl.DYNAMIC_DRAW);this.nLine=n}
+ reset(){for(let i=0;i<8;i++)this.gl.disableVertexAttribArray(i)}
+ attr(P,n,sz,st,off){const gl=this.gl,l=P.a[n];if(l==null||l<0)return;gl.enableVertexAttribArray(l);gl.vertexAttribPointer(l,sz,gl.FLOAT,false,st,off)}
+ bindMesh(P,vb){this.gl.bindBuffer(this.gl.ARRAY_BUFFER,vb);this.reset();this.attr(P,'aPos',3,64,0);this.attr(P,'aNrm',3,64,12);this.attr(P,'aCol',4,64,24);this.attr(P,'aSec',4,64,40);this.attr(P,'aMat',2,64,56)}
+ common(P){const gl=this.gl,u=P.u;gl.useProgram(P.p);gl.uniformMatrix4fv(u.uVP,false,this.VP);if(u.uSys)gl.uniform1f(u.uSys,this.sys);if(u.uDeformOn)gl.uniform1f(u.uDeformOn,this.deformOn);
+  if(u.uClip)gl.uniform4f(u.uClip,this.clip.n[0],this.clip.n[1],this.clip.n[2],this.clip.d);if(u.uClipOn)gl.uniform1f(u.uClipOn,this.clip.on?1:0);if(u.uEye)gl.uniform3fv(u.uEye,this.E)}
+ render(){const gl=this.gl;gl.viewport(0,0,this.canvas.width,this.canvas.height);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);this.matrices();
+  const E=this.E,f=nrm(sub(this.cam.target,E)),r=nrm(cross(f,[0,1,0])),up=cross(r,f),key=nrm(add(add(mul(r,-.55),mul(up,.62)),mul(f,-.75))),hl=this.hl||{p:[0,0,0],r:0,c:[1,.8,.4]};
+  gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.disable(gl.BLEND);gl.disable(gl.CULL_FACE);gl.depthMask(true);
+  const T=this.pT;this.common(T);gl.uniform3fv(T.u.uKey,key);gl.uniform1f(T.u.uDist,this.cam.dist);gl.uniform4f(T.u.uHL,hl.p[0],hl.p[1],hl.p[2],hl.r);gl.uniform3fv(T.u.uHLCol,hl.c);gl.uniform1f(T.u.uTime,this.time);gl.uniform1f(T.u.uCapMode,1);
+  for(const c of this.chunks.values()){this.bindMesh(T,c.vb);gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,c.ib);gl.drawElements(gl.TRIANGLES,c.n,c.type,0)}
+  for(const name in this.dyn){const d=this.dyn[name];if(!d.n)continue;gl.uniform1f(T.u.uCapMode,name==='coronary'?1:0);this.bindMesh(T,d.vb);gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,d.ib);gl.drawElements(gl.TRIANGLES,d.n,d.type,0)}
+  gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);
+  if(this.nLine){const L=this.pL;this.common(L);gl.bindBuffer(gl.ARRAY_BUFFER,this.lineBuf);this.reset();this.attr(L,'aP',3,28,0);this.attr(L,'aC',4,28,12);gl.drawArrays(gl.LINES,0,this.nLine)}
+  if(this.nPart){const P=this.pP;this.common(P);gl.uniform1f(P.u.uPx,this.canvas.height/(2*Math.tan(this.cam.fov/2)));gl.depthMask(false);gl.bindBuffer(gl.ARRAY_BUFFER,this.partBuf);this.reset();
+   this.attr(P,'aP',3,32,0);this.attr(P,'aC',4,32,12);this.attr(P,'aS',1,32,28);
+   if(this.xray>0){gl.disable(gl.DEPTH_TEST);gl.uniform1f(P.u.uMul,this.xray);gl.drawArrays(gl.POINTS,0,this.nPart);gl.enable(gl.DEPTH_TEST)}
+   gl.uniform1f(P.u.uMul,1);gl.drawArrays(gl.POINTS,0,this.nPart);gl.depthMask(true)}
+  if(this.clip.on&&this.ghost>0){const G=this.pG;this.common(G);gl.uniform1f(G.u.uGhost,this.ghost);gl.depthMask(false);gl.enable(gl.CULL_FACE);gl.cullFace(gl.BACK);
+   for(const c of this.chunks.values()){this.bindMesh(G,c.vb);gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,c.ib);gl.drawElements(gl.TRIANGLES,c.n,c.type,0)}gl.disable(gl.CULL_FACE);gl.depthMask(true)}
+  if(this.nGuide){const L=this.pL;this.common(L);gl.uniform1f(L.u.uClipOn,0);gl.enable(gl.BLEND);gl.blendFunc(gl.ONE,gl.ONE_MINUS_SRC_ALPHA);gl.disable(gl.DEPTH_TEST);gl.bindBuffer(gl.ARRAY_BUFFER,this.guideBuf);this.reset();this.attr(L,'aP',3,28,0);this.attr(L,'aC',4,28,12);gl.drawArrays(gl.LINES,0,this.nGuide);gl.enable(gl.DEPTH_TEST)}
+  gl.disable(gl.BLEND)}}
+return {View,deform};
+})();
+
+</script>
+<script>
+// ===== Coronary tubes, animated valves, blood-flow particles =====
+const Extras=(()=>{
+'use strict';
+const {sub,add,mul,dot,cross,nrm,len,lerp,lerp3,clamp,hex,resample}=Anat.util;
+const pushV=(V,p,n,c)=>V.push(p[0],p[1],p[2],n[0],n[1],n[2],c[0],c[1],c[2],c[3],c[4],c[5],c[6],c[7],c[8],c[9]);
+const col10=(h,g,ao,s)=>{const a=hex(h),b=hex(s||h);return [a[0],a[1],a[2],g,b[0],b[1],b[2],ao==null?1:ao,0,0]};
+const VC={native:col10('#eee1c4',.8,.9),thick:col10('#e0c690',.6,.9),pros:col10('#ece2cc',.85,.9),cor:col10('#a32b2b',.9,1,'#dcb0a4')};
+function coronaryMesh(paths){const V=[],I=[],S=8;
+ for(const c of paths||[]){const n=c.pts.length;if(n<2)continue;const cen=[],rad=[];
+  for(let i=0;i<n;i++){const t=i/(n-1),r=lerp(c.r0,c.r1,t),f=c.fat?c.fat*(1-.5*t):0;cen.push(add(c.pts[i],mul(c.nrms[i],f*.5+r*.35)));rad.push(r)}
+  const b0=V.length/16;
+  for(let i=0;i<n;i++){const T=nrm(sub(cen[Math.min(n-1,i+1)],cen[Math.max(0,i-1)])),B=nrm(cross(T,c.nrms[i])),N=cross(B,T);
+   for(let s=0;s<S;s++){const a=s/S*Math.PI*2,d=add(mul(N,Math.cos(a)),mul(B,Math.sin(a)));pushV(V,add(cen[i],mul(d,rad[i])),d,VC.cor)}}
+  for(let i=0;i<n-1;i++)for(let s=0;s<S;s++){const a=b0+i*S+s,b=b0+i*S+(s+1)%S;I.push(a,b,a+S,b,b+S,a+S)}}
+ return {V:new Float32Array(V),I}}
+function frame(a,ref){const e1=nrm(sub(ref,mul(a,dot(ref,a))));return [e1,cross(a,e1)]}
+function grid(V,I,P,NU,NV,C){const b0=V.length/16;
+ for(let u=0;u<=NU;u++)for(let v=0;v<=NV;v++){const pu=sub(P[Math.min(NU,u+1)][v],P[Math.max(0,u-1)][v]),pv=sub(P[u][Math.min(NV,v+1)],P[u][Math.max(0,v-1)]);let n=cross(pu,pv);const l=len(n);pushV(V,P[u][v],l>1e-9?mul(n,1/l):[0,1,0],C)}
+ for(let u=0;u<NU;u++)for(let v=0;v<NV;v++){const a=b0+u*(NV+1)+v,b=a+NV+1;I.push(a,b,b+1,a,b+1,a+1)}}
+// Semilunar valve: o={c,a,ref,r,n,hC,open,sten,gap,rot,C}
+function semilunar(V,I,o){const [e1,e2]=frame(o.a,o.ref),dir=t=>add(mul(e1,Math.cos(t)),mul(e2,Math.sin(t))),NU=14,NV=7,TAU=Math.PI*2;
+ for(let j=0;j<o.n;j++){const a0=o.rot+j*TAU/o.n,a1=a0+TAU/o.n,P=[];
+  for(let iu=0;iu<=NU;iu++){const u=iu/NU,th=a0+(a1-a0)*u,s=Math.abs(2*u-1),rd=dir(th);
+   const hinge=add(add(o.c,mul(o.a,o.hC*Math.pow(s,1.6))),mul(rd,o.r));
+   const closed=add(add(o.c,mul(o.a,o.hC*(.58+.42*s*s))),mul(o.gap>0?rd:dir(u<.5?a0:a1),o.r*(o.gap+(1-o.gap)*s)));
+   const openR=lerp(.84,.34,o.sten),smu=Math.pow(Math.sin(Math.PI*u),.6);
+   const opened=add(add(o.c,mul(o.a,o.hC*lerp(.97,.78,o.sten))),mul(rd,o.r-o.r*(1-openR)*smu));
+   const edge=lerp3(closed,opened,o.open),row=[];
+   for(let iv=0;iv<=NV;iv++){const v=iv/NV,b=Math.sin(Math.PI*v)*Math.sin(Math.PI*u);let p=lerp3(hinge,edge,v);
+    p=add(p,mul(o.a,-b*o.r*.24*(1-o.open)*(1-o.gap*.6)));p=add(p,mul(rd,b*o.r*.12*o.open*(1-o.sten)));row.push(p)}P.push(row)}
+  grid(V,I,P,NU,NV,o.C)}}
+// Atrioventricular valve with chordae: o={c,a,ref,r,leaflets:[{c,w,L}],open,pms,C,chord}
+function avValve(V,I,L,o){const [e1,e2]=frame(o.a,o.ref),dir=t=>add(mul(e1,Math.cos(t)),mul(e2,Math.sin(t))),NU=12,NV=6;
+ for(const lf of o.leaflets){const P=[],E=[];
+  for(let iu=0;iu<=NU;iu++){const u=iu/NU,th=lf.c-lf.w+2*lf.w*u,rd=dir(th),s=Math.sin(Math.PI*u),Lu=o.r*lf.L*(.3+.7*Math.pow(s,.7));
+   const hinge=add(o.c,mul(rd,o.r)),opened=add(add(o.c,mul(o.a,Lu*.95)),mul(rd,o.r*.74)),closed=add(add(o.c,mul(o.a,o.r*.12)),mul(rd,o.r-Lu*.96));
+   const edge=lerp3(closed,opened,o.open),row=[];
+   for(let iv=0;iv<=NV;iv++){const v=iv/NV,b=Math.sin(Math.PI*v)*(.4+.6*s);let p=lerp3(hinge,edge,v);p=add(p,mul(o.a,-b*o.r*.13*(1-o.open)));p=add(p,mul(rd,b*o.r*.06*o.open));row.push(p)}
+   P.push(row);E.push(edge)}
+  grid(V,I,P,NU,NV,o.C);
+  for(let iu=2;iu<=NU-2;iu+=2){const e=E[iu];let best=null,bd=1e9;for(const pm of o.pms){const d=len(sub(pm,e));if(d<bd){bd=d;best=pm}}if(best&&bd<2.4)L.push(...e,...o.chord,...best,...o.chord)}}}
+function stent(L,o){const [e1,e2]=frame(o.a,o.ref),dir=t=>add(mul(e1,Math.cos(t)),mul(e2,Math.sin(t))),N=12;
+ for(let r=0;r<3;r++){const h0=o.h*(r/3-.25),h1=o.h*((r+1)/3-.25);for(let i=0;i<N;i++){const t0=i/N*Math.PI*2,t1=(i+.5)/N*Math.PI*2,t2=(i+1)/N*Math.PI*2;
+  const p0=add(add(o.c,mul(o.a,h0)),mul(dir(t0),o.r)),p1=add(add(o.c,mul(o.a,h1)),mul(dir(t1),o.r)),p2=add(add(o.c,mul(o.a,h0)),mul(dir(t2),o.r));L.push(...p0,...o.C,...p1,...o.C,...p1,...o.C,...p2,...o.C)}}}
+function ring(L,o){const [e1,e2]=frame(o.a,o.ref),N=48;for(let i=0;i<N;i+=o.dash?2:1){const t0=i/N*Math.PI*2,t1=(i+1)/N*Math.PI*2;
+ L.push(...add(o.c,add(mul(e1,Math.cos(t0)*o.r),mul(e2,Math.sin(t0)*o.r))),...o.C,...add(o.c,add(mul(e1,Math.cos(t1)*o.r),mul(e2,Math.sin(t1)*o.r))),...o.C)}}
+// ---- blood flow ----
+const COL={ven:[.36,.6,1],oxy:[1,.4,.47],mix:[.74,.56,1],ab:[1,.78,.32]};
+function gate(ph,t){if(t==='all')return .85;if(t==='sys')return ph<.45?Math.min(1,(ph+.04)*11,(.45-ph)*15+.1):.04;return ph>=.42?Math.min(1,(ph-.42)*10,(1-ph)*8+.14):.035}
+function prep(r){const S=resample(r.pts,r.pts.map(()=>0),6).pts,n=S.length;r.S=S;r.cum=new Float32Array(n);let L=0;for(let i=1;i<n;i++){L+=len(sub(S[i],S[i-1]));r.cum[i]=L}r.L=Math.max(L,1e-3);
+ r.N=[];r.B=[];const t0=nrm(sub(S[1],S[0]));let nn=nrm(cross(t0,Math.abs(t0[1])<.9?[0,1,0]:[1,0,0]));
+ for(let i=0;i<n;i++){const t=nrm(sub(S[Math.min(n-1,i+1)],S[Math.max(0,i-1)]));nn=nrm(sub(nn,mul(t,dot(nn,t))));r.N.push(nn);r.B.push(cross(t,nn))}}
+function at(r,u){const d=u*r.L;let lo=0,hi=r.cum.length-1;while(hi-lo>1){const m=(lo+hi)>>1;if(r.cum[m]<d)lo=m;else hi=m}const t=(d-r.cum[lo])/((r.cum[hi]-r.cum[lo])||1);return [lerp3(r.S[lo],r.S[hi],t),r.N[lo],r.B[lo]]}
+function routes(stage,sev,K){const nat=K.native,ob=sev/100,shW=nat?clamp((ob-.27)/.68,0,1):0,lr=nat?clamp((.35-ob)/.25,0,.7):0,btt=stage==='shunt'?.6:0;
+ const brW=nat?clamp(.96-shW*.62+btt*.6,.3,1.1):1,rvpaW=nat?clamp(1.14-shW*.82,.14,1):1,aoC=(!nat||shW<.08)?'oxy':'mix',R=[];
+ const A=(pts,col,n,phase,w,rad,spd)=>{if(w>.04)R.push({pts,col,n:Math.max(3,Math.round(n*Math.min(1,w+.2))),phase,w,rad,spd})};
+ const RVb=[-1.22,-1.12,.3],RVap=[-1.0,-1.72,.3];
+ A([[-1.8,3.85,-.62],[-1.8,2.6,-.64],[-1.8,1.7,-.66],K.RAc],'ven',18,'all',1,.22,1.1);
+ A([[-1.85,-1.4,-1.26],[-1.84,-.7,-1.22],[-1.8,.25,-1.05],K.RAc],'ven',14,'all',1,.24,1.1);
+ A([K.RAc,[-1.76,.55,-.55],K.T0,[-1.4,-.45,.06],RVb,RVap],'ven',30,'dia',1,.3,2.0);
+ if(stage!=='conduit')A([RVap,RVb,[-1.05,-.6,.48],K.os,K.inf1,K.inf2,K.P0,K.pa1,K.pa2,K.BIF],'ven',36,'sys',rvpaW,Math.max(.05,K.rOs*.7),2.6);
+ else A([RVap,RVb,[-1.0,-.65,.7],...K.COND.slice(0,5),K.BIF],'ven',36,'sys',1,.24,2.6);
+ A([...K.LPA,[2.75,2.12,-1.25]],'ven',14,'sys',brW,.15,2.2);A([...K.RPA,[-2.5,1.94,-1.47]],'ven',16,'sys',brW,.15,2.2);
+ K.PVs.forEach(pv=>A([[pv[2][0]+(pv[2][0]<.5?-.25:.25),pv[2][1],pv[2][2]-.1],pv[2],pv[1],pv[0],K.LAc],'oxy',9,'all',brW,.09,1.0));
+ A([K.LAc,[.75,1.05,-1.5],K.M0,[.95,-.25,-.72],[1.0,-1.2,-.45],[1.12,-2.2,-.36]],'oxy',30,'dia',1,.28,2.0);
+ A([[1.12,-2.1,-.38],[.98,-1.05,-.45],[.72,-.5,-.35],[.1,.28,-.15],K.A0,K.STJ,...K.AO.slice(1),[.8,2.1,-1.95]],aoC,46,'sys',1,.3,3.0);
+ A([K.AO[3],...K.BCA.slice(1),[-.8,4.4,-.43]],aoC,8,'sys',1,.1,2.2);A([[.1,3.05,-.85],...K.LCCA.slice(1),[.18,4.4,-.86]],aoC,6,'sys',1,.07,2.2);A([[.46,3.0,-1.22],...K.LSA.slice(1),[.7,4.35,-1.31]],aoC,6,'sys',1,.08,2.2);
+ if(nat){A([RVb,[-.95,-.35,.25],[-.62,.02,.1],[-.3,.12,-.05],[-.2,.6,-.12],K.STJ,K.AO[1]],'mix',30,'sys',shW,.16,2.6);
+  A([[.98,-1.05,-.45],[.5,-.1,-.25],[-.16,.13,-.08],[-.6,.05,.15],[-.85,0,.45],K.os,K.inf1],'oxy',18,'sys',lr,.12,2.4)}
+ if(stage==='shunt')A([K.BCA[1],...K.BTT,[-1.0,2.0,-1.38],[-1.5,2.0,-1.38]],'oxy',16,'all',btt,.05,1.4);
+ if(stage==='patch')A([K.BIF,K.pa2,K.pa1,K.P0,K.inf2,K.inf1,K.os,[-1.05,-.6,.48],RVb],'ab',30,'dia',.85,.22,1.9);
+ for(const r of R)prep(r);return R}
+class Particles{constructor(){this.R=[];this.buf=new Float32Array(8);this.count=0}
+ setRoutes(R){let seed=11;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647};
+  for(const r of R){r.tau=0;r.P=[];for(let i=0;i<r.n;i++){const a=rnd()*Math.PI*2,m=Math.sqrt(rnd())*.9;r.P.push({u0:(i+rnd()*.6)/r.n,ox:Math.cos(a)*m,oy:Math.sin(a)*m,s:.8+rnd()*.45})}}
+  this.R=R;this.buf=new Float32Array(Math.max(8,R.reduce((s,r)=>s+r.n,0)*3*8))}
+ update(dt,ph){let o=0;const B=this.buf;
+  for(const r of this.R){const g=gate(ph,r.phase),vel=r.phase==='all'?1:(g>.2?1:.05);r.tau+=dt*r.spd*vel/r.L;const al=Math.min(1,g*(.55+.45*r.w));if(al<.03)continue;const c=COL[r.col];
+   for(const p of r.P){let u=(r.tau+p.u0)%1;if(u<0)u+=1;
+    for(let k=0;k<3;k++){const uu=u-k*.05/r.L*r.spd/2.4;if(uu<0)break;const [q,n,b]=at(r,uu),rad=r.rad*Math.min(1,uu*8,(1-uu)*8),fade=Math.min(1,uu*14,(1-uu)*14);
+     B[o++]=q[0]+(n[0]*p.ox+b[0]*p.oy)*rad;B[o++]=q[1]+(n[1]*p.ox+b[1]*p.oy)*rad;B[o++]=q[2]+(n[2]*p.ox+b[2]*p.oy)*rad;
+     B[o++]=c[0];B[o++]=c[1];B[o++]=c[2];B[o++]=al*fade*(k===0?1:k===1?.5:.25);B[o++]=(k===0?.095:.07)*p.s}}}
+  this.count=o/8}}
+return {coronaryMesh,semilunar,avValve,stent,ring,routes,Particles,VC,gate,COL};
+})();
+
+</script>
+<script>
+// ===== Teaching content =====
+const CONTENT={
+STAGES:{
+ unrepaired:{name:'Unrepaired tetralogy',short:'Unrepaired',subtitle:'RV outflow obstruction with right-to-left shunting',lead:'A malalignment outlet VSD lies beneath an aorta overriding the septum. Obstruction of right ventricular outflow diverts desaturated blood through the VSD toward systemic flow. Severity varies with RVOTO, vascular resistance and dynamic physiology.',changes:['No operation: VSD, aortic override and RVOT obstruction persist.','RV thickening develops in response to pressure loading; it is a secondary feature.'],flow:['RA → RV blood competes between the narrowed RVOT → PA and the large subaortic VSD → aortic root.','With clinically significant RVOTO, right-to-left shunting sends deoxygenated blood into the aorta.','With mild RVOTO ("pink" TOF), shunting can be less right-to-left or even predominantly left-to-right.'],caution:'Clinical clues: cyanosis, harsh systolic ejection murmur at the left upper sternal border, single S2, possible hypercyanotic spells. The VSD itself is usually large and nonrestrictive.',hemo:['High RV pressure','Reduced pulmonary flow','Variable systemic desaturation','No pulmonary regurgitation'],watch:[['Bedside','Color, feeding tolerance, exertional symptoms or cyanosis, spells, growth. The murmur reflects RVOT flow, not reliably the severity of cyanosis.'],['Echocardiogram','Define the malalignment VSD, degree and site of RVOTO, pulmonary annulus and branch PAs, the overriding aorta and RV morphology.'],['Preoperative planning','Assess coronary origins and course, pulmonary arteries, aortic arch sidedness and associated defects.'],['Urgent concerns','Hypercyanotic spells, syncope, severe desaturation or poor perfusion need prompt specialist or emergency evaluation.']]},
+ shunt:{name:'Palliative mBTT shunt',short:'mBTT shunt',subtitle:'Systemic arterial blood reaches a pulmonary artery through a graft',lead:'A modified Blalock–Taussig–Thomas shunt routes systemic arterial blood from an innominate or subclavian artery into a pulmonary artery to augment pulmonary blood flow. It does not close the VSD or relieve the native RVOT lesion.',changes:['Add a small synthetic graft between an aortic branch and a pulmonary artery.','Leave the intracardiac TOF anatomy intact until planned definitive repair.'],flow:['Additional oxygenated systemic arterial blood reaches the pulmonary circulation through the graft.','RVOTO and VSD-related mixing can persist; increased pulmonary flow generally improves oxygenation.','Shunt flow continues in systole and diastole because it is driven by the systemic-to-pulmonary pressure difference.'],caution:'Palliation, not correction. Watch for shunt thrombosis or obstruction and undercirculation, or excessive shunt flow with pulmonary overcirculation. The graft route shown is schematic; exact placement varies.',hemo:['Added PA flow','Native RVOTO persists','VSD remains open','Systemic → pulmonary shunt'],watch:[['Shunt patency','New or progressive cyanosis, loss or change of the continuous shunt murmur, or compromised perfusion.'],['Overcirculation','Tachypnea, feeding difficulty, hepatomegaly or heart-failure physiology if flow is excessive.'],['Echo and imaging','Assess graft flow and branch PA growth alongside the native TOF anatomy.'],['Future plan','Definitive repair is still needed in most pathways; timing is individualized.']]},
+ sparing:{name:'Complete valve-sparing repair',short:'Valve-sparing',subtitle:'VSD patched, RV outflow relieved, native pulmonary valve kept',lead:'A complete repair closes the VSD and removes obstructing infundibular muscle or other RVOT narrowing while preserving a functional native pulmonary valve when anatomy permits.',changes:['Patch-close the subaortic VSD, baffling LV output into the aorta.','Resect or relieve the RVOT obstruction; keep the native pulmonary valve and annulus if feasible.','Any earlier palliative shunt is generally taken down at complete repair.'],flow:['Systemic and pulmonary flows are separated: LV → aorta; RV → pulmonary artery.','RV systolic pressure falls if obstruction is adequately relieved.','A competent native pulmonary valve may limit regurgitation, although residual RVOTO or PR remains possible.'],caution:'Valve preservation can trade less pulmonary regurgitation for some residual RVOT gradient. A good repair still needs long-term assessment for stenosis, PR, residual VSD and arrhythmias.',hemo:['VSD closed','Forward RV → PA flow','Valve retained','Watch residual gradient'],watch:[['Doppler echo','Residual RVOT gradient, pulmonary valve function, residual VSD jet, RV pressure and tricuspid regurgitation.'],['RV remodeling','RV hypertrophy may regress over time, not instantly at repair.'],['Exercise and rhythm','Symptoms, exercise capacity, ECG, ambulatory monitoring as indicated.'],['Long-term','Lifelong congenital cardiology follow-up despite an apparently excellent repair.']]},
+ patch:{name:'Transannular patch with late PR',short:'Transannular patch',subtitle:'VSD closed, outflow widened, diastolic leak back into the RV',lead:'A transannular patch enlarges the RVOT across a small pulmonary annulus. It relieves obstruction but can destroy valve competence. This scenario deliberately shows a later stage with important pulmonary regurgitation and a dilated RV.',changes:['Close the VSD with a patch.','Widen the narrowed RVOT and pulmonary annulus with a transannular patch.','The native pulmonary valve may become significantly incompetent.'],flow:['Systolic RV → PA flow is less obstructed.','In diastole, pulmonary arterial blood returns to the RV (amber retrograde particles).','With chronic important PR, RV volume load can produce RV enlargement and eventual dysfunction.'],caution:'Not every transannular patch causes the same degree of PR. Pulmonary valve replacement decisions depend on serial RV volumes and function, symptoms, exercise capacity, arrhythmias and overall anatomy, not on this animation.',hemo:['VSD closed','RVOTO relieved','Late PR shown','RV volume loading'],watch:[['Physical exam and echo','Diastolic pulmonary regurgitant flow, residual RVOT or branch PA stenosis, TR, signs of RV enlargement.'],['Cardiac MRI','Quantify PR fraction, RV end-diastolic and end-systolic volumes, RVEF and branch PA flow.'],['Rhythm and exercise','ECG and QRS trends, atrial or ventricular arrhythmias, exercise tolerance and symptoms.'],['Valve intervention','Consider pulmonary valve replacement using guideline criteria and multidisciplinary congenital expertise.']]},
+ conduit:{name:'RV–PA valved conduit',short:'RV–PA conduit',subtitle:'A conduit rebuilds the route from RV to the pulmonary arteries',lead:'In complex TOF, especially TOF with pulmonary atresia or anatomy without a usable native RVOT, an RV-to-pulmonary-artery conduit establishes continuity. This is not the standard operation for classic TOF.',changes:['Close the VSD when complete-repair anatomy permits.','Reconstruct RV-to-PA continuity with a conduit, commonly valved.','Route forward RV output through the prosthetic or homograft pathway.'],flow:['RV blood reaches the pulmonary arteries through the conduit.','A functioning valved conduit limits diastolic regurgitation.','Over years a conduit may become stenotic, regurgitant or too small for a growing patient.'],caution:'A conduit is a different anatomical pathway. Catheter or surgical reintervention may be needed. Coronary compression risk must be assessed before certain transcatheter interventions.',hemo:['VSD closed','Conduit RV → PA','Valve initially competent','Monitor stenosis and PR'],watch:[['Echocardiogram','Conduit Doppler gradients, conduit insufficiency, RV pressure and function, branch PA stenosis.'],['CMR or CT','Measure RV volumes and valve function and define conduit and branch PA anatomy; CT can map coronary proximity.'],['Reintervention','Look for progressive obstruction, regurgitation, symptoms, dysfunction or arrhythmia.'],['Catheter planning','Evaluate coronary compression risk before balloon-expandable stenting or transcatheter pulmonary valve procedures.']]},
+ pvr:{name:'Pulmonary valve replacement',short:'Pulmonary valve',subtitle:'VSD patch in place, pulmonary valve competence restored',lead:'After a previous complete repair with important pulmonary valve dysfunction, surgical or transcatheter pulmonary valve replacement can restore a more competent pulmonary outflow in selected anatomy.',changes:['The existing VSD patch stays in place; no new shunt is created.','Place a competent valve in the RVOT or prior conduit as anatomy allows.','Keep the repaired separation of systemic and pulmonary circulations.'],flow:['Forward systolic RV → PA ejection continues.','Diastolic PA → RV regurgitation is markedly reduced in this idealized scenario.','RV volume load may lessen and chamber size can fall over time; rhythm risk does not necessarily disappear.'],caution:'PVR commonly reduces RV volumes, but effects on objective exercise capacity, RV ejection fraction and arrhythmia risk vary. The model shows idealized valve function, not guaranteed outcomes.',hemo:['VSD remains closed','Competent pulmonary valve','Much less diastolic PR','Continue surveillance'],watch:[['Valve function','Watch for new prosthetic or conduit stenosis or regurgitation, valve integrity and RV pressure.'],['RV response','Serial CMR and echo for RV volumes and function; reverse remodeling is gradual and may be incomplete.'],['Rhythm surveillance','Atrial or ventricular arrhythmias and scar-related VT risk can persist despite PVR.'],['Lifelong care','Adult congenital follow-up remains necessary after valve replacement.']]}},
+FEATURES:[
+ {id:'rvoto',name:'RV outflow obstruction',desc:'Antero-cephalad deviation of the outlet septum, with hypertrophied septoparietal muscle, narrows the subpulmonary infundibulum. The pulmonary valve and annulus are often small too.',view:{d:.8,target:[-.12,.95,.6],dist:10.4,yaw:-.22,pitch:.22},hl:[-.3,.8,.85,.75]},
+ {id:'vsd',name:'Malalignment VSD',desc:'A large, nonrestrictive defect between the limbs of the septal band, directly beneath the aortic valve. From the RV you can see the aortic leaflets through it.',view:{d:-.04,target:[-.3,.3,-.1],dist:9.8,yaw:-.42,pitch:.1},hl:[-.2,.13,-.08,.72]},
+ {id:'aorta',name:'Overriding aorta',desc:'The aortic root sits astride the septal crest, so it receives blood from both ventricles until a VSD patch commits it to the LV.',view:{d:-.15,target:[-.1,.8,-.15],dist:10.4,yaw:-.08,pitch:.05},hl:[-.18,.85,-.15,.78]},
+ {id:'rvh',name:'RV hypertrophy',desc:'The RV free wall thickens under systemic-level pressure, approaching LV thickness. It is the secondary feature and can regress after an effective repair.',view:{d:.12,target:[-.3,-.9,.1],dist:13.6,yaw:-.05,pitch:.06},hl:[-2.05,-1.05,.15,.75],calipers:true}],
+questions:[
+ {stage:'unrepaired',stem:'In classic cyanotic unrepaired tetralogy of Fallot, which change most directly increases right-to-left shunting through the VSD?',options:['Increase in RV outflow tract obstruction','Reduction in pulmonary venous return alone','Increased pulmonary valve orifice area','Closure of the VSD'],correct:0,why:'More RVOT obstruction makes pulmonary ejection harder, favoring RV-to-aorta flow through the large malalignment VSD.'},
+ {stage:'unrepaired',stem:'A child with tetralogy of Fallot has a harsh systolic ejection murmur. Which lesion ordinarily produces it?',options:['The malalignment VSD itself','Right ventricular outflow obstruction','Pulmonary regurgitation in diastole','Mitral stenosis'],correct:1,why:'The murmur comes from turbulence across the narrowed RVOT and pulmonary outflow, not from flow across the large nonrestrictive VSD.'},
+ {stage:'unrepaired',stem:'What does the aortic root sit astride in tetralogy of Fallot?',options:['The interatrial septum','The pulmonary vein confluence','The crest of the ventricular septum, above the VSD','The tricuspid annulus'],correct:2,why:'The aortic root straddles the septal crest, with the malalignment VSD beneath it, so it receives blood from both ventricles.'},
+ {stage:'shunt',stem:'What is the principal flow direction through a functioning modified Blalock–Taussig–Thomas shunt?',options:['Right atrium → left atrium','Pulmonary artery → systemic vein','Left ventricle → right ventricle','Systemic artery → pulmonary artery'],correct:3,why:'The graft connects an innominate or subclavian artery to a pulmonary artery and supplements pulmonary flow.'},
+ {stage:'shunt',stem:'After a palliative mBTT shunt, which original TOF feature remains unrepaired?',options:['The malalignment VSD','All pulmonary blood flow','The branch PA anatomy in every case','The entire aortic arch'],correct:0,why:'The shunt adds pulmonary flow but does not close the VSD or relieve the intracardiac RVOT obstruction.'},
+ {stage:'sparing',stem:'What is the main rationale for preserving the pulmonary valve during complete TOF repair when feasible?',options:['Eliminating the need for lifelong surveillance','Reducing long-term pulmonary regurgitation','Leaving the VSD open','Creating systemic-to-pulmonary flow'],correct:1,why:'A competent native pulmonary valve may reduce chronic PR, balanced against the need for adequate RVOT relief.'},
+ {stage:'sparing',stem:'After successful VSD patch closure and RVOT relief, which is the intended systolic ejection pathway?',options:['RV → aorta and LV → PA','RV → LA and LV → RA','RV → PA and LV → aorta','Aorta → RV and PA → LV'],correct:2,why:'Complete repair separates the outputs: RV blood to the PA and LV blood to the aorta.'},
+ {stage:'patch',stem:'Years after repair with a transannular patch, the RV is markedly enlarged. Which lesion commonly causes the progressive volume load?',options:['Atrial septal aneurysm','Isolated aortic stenosis','Mitral valve prolapse','Pulmonary regurgitation'],correct:3,why:'Chronic significant PR sends PA blood back to the RV in diastole, loading and dilating it.'},
+ {stage:'patch',stem:'Which imaging modality is particularly useful to quantify RV volumes and pulmonary regurgitant fraction after repaired TOF?',options:['Cardiac magnetic resonance','Standard chest radiograph alone','Noncontrast abdominal CT','Carotid ultrasound'],correct:0,why:'CMR quantifies RV size and function and pulmonary regurgitant fraction and is central to long-term follow-up.'},
+ {stage:'conduit',stem:'Which postoperative problem is especially relevant in a growing child with an RV-to-PA conduit?',options:['Obligatory recurrent VSD','Conduit stenosis or regurgitation with time','Unlimited normal RVOT enlargement','Pulmonary venous atresia in all cases'],correct:1,why:'Conduits can degenerate, obstruct, leak or become relatively small as the child grows, prompting reintervention.'},
+ {stage:'conduit',stem:'Before certain balloon-expandable transcatheter pulmonary valve procedures in repaired TOF, what must be evaluated?',options:['Gallbladder emptying','Brachial plexus latency','Coronary artery compression risk','LV papillary muscle density'],correct:2,why:'The 2025 ACHD guideline calls for assessing coronary compression risk before RV–PA conduit stenting or balloon-expandable transcatheter valve placement.'},
+ {stage:'pvr',stem:'What is the best-supported common effect of pulmonary valve replacement for important PR in repaired TOF?',options:['Eliminates all ventricular tachycardia risk','Automatically normalizes RVEF','Ends the need for follow-up','Often reduces RV volumes'],correct:3,why:'PVR usually reduces RV end-diastolic and end-systolic volumes; exercise, EF and arrhythmia outcomes improve less consistently.'}],
+freeQuestions:[
+ {stage:'unrepaired',stem:'Explain why a hypercyanotic (tet) spell may worsen when right ventricular outflow obstruction increases or systemic vascular resistance falls.',answer:'More dynamic RVOT obstruction and/or lower systemic vascular resistance raise the relative tendency for right-to-left shunting across the large VSD, cutting pulmonary blood flow and systemic oxygenation. Describe the physiology; acute management depends on the clinical setting.'},
+ {stage:'unrepaired',stem:'List all four cardinal features of tetralogy of Fallot and explain which is secondary to chronic pressure load.',answer:'Malalignment VSD, overriding aorta, RV outflow obstruction (infundibular and/or valvar, sometimes branch PA), and RV hypertrophy. RVH is secondary to RV pressure loading and develops after birth.'},
+ {stage:'shunt',stem:'Why does a modified BTT shunt improve cyanosis without repairing tetralogy of Fallot? Name two complications to monitor.',answer:'The graft supplies systemic arterial blood to a pulmonary artery, raising pulmonary perfusion and oxygenation while the VSD and RVOT obstruction persist. Monitor graft occlusion or thrombosis and pulmonary overcirculation with heart failure.'},
+ {stage:'sparing',stem:'What is the principal trade-off between pulmonary valve-sparing repair and a transannular patch?',answer:'Keeping the valve favors competence and less chronic PR but may leave residual obstruction if the annulus is too small. A transannular patch relieves more severe obstruction at the cost of variable and sometimes important PR.'},
+ {stage:'sparing',stem:'After an apparently successful valve-sparing repair, identify four domains that still need lifelong assessment.',answer:'Residual RVOT or branch PA stenosis, pulmonary regurgitation, residual VSD, RV size, function and pressure, tricuspid regurgitation, exercise capacity, and atrial or ventricular arrhythmias (any four).'},
+ {stage:'patch',stem:'Why does significant pulmonary regurgitation after a transannular patch volume-load the RV in diastole?',answer:'In diastole PA pressure exceeds the relaxing RV pressure. With an incompetent valve, blood returns from the pulmonary arteries into the RV, increasing its diastolic volume load beat after beat.'},
+ {stage:'patch',stem:'A repaired TOF adult has important PR. Name the major clinical and imaging data used to consider pulmonary valve replacement, without asserting that every enlarged RV needs intervention.',answer:'Symptoms, exercise capacity and its trend, CMR RV end-systolic and end-diastolic volumes and RV/LV ejection fraction, PR severity or residual RVOTO, RV pressure, TR, arrhythmias and guideline criteria, weighed by a multidisciplinary ACHD team.'},
+ {stage:'conduit',stem:'How does an RV-to-PA conduit differ structurally from a valve-sparing repair, and what long-term problems may develop?',answer:'A conduit reconstructs RV–PA continuity in complex anatomy such as TOF with pulmonary atresia instead of using the native RVOT and annulus. Stenosis, degeneration, regurgitation, growth mismatch and repeat intervention may follow.'},
+ {stage:'pvr',stem:'Explain why pulmonary valve replacement can shrink an enlarged RV yet not abolish ventricular arrhythmia risk after repair.',answer:'A competent valve removes the diastolic volume load and allows reverse remodeling, but surgical scars, anatomical isthmuses and prior fibrosis remain arrhythmogenic and need rhythm surveillance.'},
+ {stage:'pvr',stem:'Name imaging surveillance tools and one important procedural hazard before balloon-expandable transcatheter pulmonary valve replacement.',answer:'Echo for gradients, valve function, RV pressure and function; CMR for PR fraction, RV volumes and PA flow; CT for anatomy and coronary proximity. Coronary compression during stent or valve expansion is a key hazard.'}]
+};
+
+</script>
+<script>
+// ===== App: build pipeline, interaction, overlay, panels, quiz =====
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id),{sub,add,mul,dot,nrm,cross,lerp,clamp}=Anat.util,{STAGES,FEATURES,questions,freeQuestions}=CONTENT;
+const SERIF='"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif',SANS='"Avenir Next","Segoe UI",system-ui,sans-serif',VEN='#5f97ff',OXY='#ff6a73',MIX='#b68cff',ABN='#ffc456';
+const PRESETS={outside:{clip:false,target:[.05,.4,0],dist:17.4,yaw:-.32,pitch:.14},rvot:{d:.78,target:[-.15,.7,.35],dist:14.8,yaw:-.16,pitch:.16},
+ override:{d:-.12,target:[.05,.5,0],dist:15.8,yaw:-.22,pitch:.1},deep:{d:-.55,target:[-.1,.5,-.5],dist:16.6,yaw:-.2,pitch:.16}};
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let stage='unrepaired',severity=73,is2D=false,playing=!reduce,speed=1,beatTime=.22,selected=null,preset='override',showLabels=true,showFlow=true,showNormal=false,ghostOn=true;
+const viewerEl=$('viewer'),glc=$('heartCanvas'),ov=$('overlay'),oc=ov.getContext('2d');let view=null;try{view=new Viewer.View(glc)}catch(e){console.warn(e)}
+let cw=800,ch=600,dpr=1,dirty=true;const poke=()=>{dirty=true};function resize(){const r=viewerEl.getBoundingClientRect();cw=r.width;ch=r.height;dpr=Math.min(devicePixelRatio||1,2);ov.width=Math.round(cw*dpr);ov.height=Math.round(ch*dpr);if(view)view.resize(cw,ch,dpr);poke()}
+new ResizeObserver(resize).observe(viewerEl);resize();
+// ---------- progressive anatomy builds ----------
+const BOUNDS=[-3.1,3.0,-3.45,4.5,-2.85,2.45],CH=16,G=Mesher.createGrid(BOUNDS,.05),jobs=[],corCache={},parts=new Extras.Particles();
+let gridScene=null,shown=null,pending=null,task=null,busy=false,labels=[],hits=[],calip=null,calD=null,fast=false;
+const boxU=(a,b)=>!a?(b?b.slice():null):!b?a.slice():[Math.min(a[0],b[0]),Math.max(a[1],b[1]),Math.min(a[2],b[2]),Math.max(a[3],b[3]),Math.min(a[4],b[4]),Math.max(a[5],b[5])];
+const pbox=p=>{const e=p.k+.3+(p.fall||0);return [p.minx-e,p.maxx+e,p.miny-e,p.maxy+e,p.minz-e,p.maxz+e]};
+function diff(a,b){const A=new Map(),B=new Map();for(const p of Anat.allPrims(a))A.set(p.sig,p);for(const p of Anat.allPrims(b))B.set(p.sig,p);let x=null;
+ for(const [s,p] of A)if(!B.has(s))x=boxU(x,pbox(p));for(const [s,p] of B)if(!A.has(s))x=boxU(x,pbox(p));return x}
+function makeScene(){const sc=Anat.build(stage,severity),key=stage==='shunt'?'unrepaired':stage;corCache[key]=Anat.coronaries(sc,corCache[key]);return sc}
+function requestScene(){if(!view)return;const sc=makeScene();if(task){pending=boxU(pending,task.region||BOUNDS);task.cancel=true;jobs.length=0;task=null}
+ const region=gridScene?boxU(diff(gridScene,sc),pending):null;task={sc,region,full:!gridScene,cancel:false};jobs.push(rebuild(task));busy=true}
+const ib=(b,p)=>[Math.max(0,Math.floor((b[0]-p-G.x0)/G.h)),Math.min(G.nx,Math.ceil((b[1]+p-G.x0)/G.h)+1),Math.max(0,Math.floor((b[2]-p-G.y0)/G.h)),Math.min(G.ny,Math.ceil((b[3]+p-G.y0)/G.h)+1),Math.max(0,Math.floor((b[4]-p-G.z0)/G.h)),Math.min(G.nz,Math.ceil((b[5]+p-G.z0)/G.h)+1)];
+function* rebuild(t){const sc=t.sc;if(!t.full&&!t.region){gridScene=sc;show(sc);busy=false;task=null;return}
+ const B=t.full?[0,G.nx,0,G.ny,0,G.nz]:ib(t.region,.15),tot=Math.max(1,Math.ceil((B[3]-B[2])/8)*Math.ceil((B[5]-B[4])/8));let n=0;
+ status(t.full?'':'Updating anatomy…');
+ for(const _ of Mesher.fill(G,sc.steps,...B)){if(t.cancel)return;progress(t,.5*++n/tot);yield}
+ gridScene=sc;const cb=t.full?null:ib(t.region,.85),keys=[];
+ for(let k=0;k<G.nz-1;k+=CH)for(let j=0;j<G.ny-1;j+=CH)for(let i=0;i<G.nx-1;i+=CH){if(cb&&(i+CH<cb[0]||i>cb[1]||j+CH<cb[2]||j>cb[3]||k+CH<cb[4]||k>cb[5]))continue;keys.push([i,j,k])}
+ const built=[];for(let q=0;q<keys.length;q++){if(t.cancel)return;const [i,j,k]=keys[q];built.push([i+','+j+','+k,Mesher.meshChunk(G,sc.steps,sc.paints,i,i+CH,j,j+CH,k,k+CH)]);progress(t,.5+.5*(q+1)/keys.length);yield}
+ for(const [k,m] of built)view.setChunk(k,m);pending=null;task=null;busy=false;show(sc);status('')}
+function progress(t,f){if(t.full){$('loadBar').style.width=Math.round(f*100)+'%';$('loadText').textContent='Sculpting the heart… '+Math.round(f*100)+'%'}}
+function status(s){$('buildStatus').textContent=s}
+function show(sc){shown=sc;const cm=Extras.coronaryMesh(sc.cor);view.setDynamic('coronary',cm.V,cm.I);parts.setRoutes(Extras.routes(sc.stage,sc.sev,sc.K));labels=buildLabels(sc);calD=null;$('loading').classList.add('done');poke()}
+function runJobs(ms){const t0=performance.now();while(jobs.length&&performance.now()-t0<ms){if(jobs[0].next().done)jobs.shift()}}
+// ---------- valves ----------
+const ss=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
+const contract=ph=>ph<.45?Math.pow(Math.sin(Math.PI*ph/.45),1.3):0,semiOpen=ph=>ss(.04,.1,ph)*(1-ss(.36,.44,ph)),avOpen=ph=>ss(.47,.56,ph)*(1-ss(.93,.995,ph));
+function valves(ph){const K=shown.K,st=shown.stage,V=[],I=[],L=[],so=semiOpen(ph),av=avOpen(ph),C=Extras.VC,chord=[.93,.88,.8,.85];
+ Extras.semilunar(V,I,{c:add(K.A0,mul(K.aoAxis,-.02)),a:K.aoAxis,ref:K.sinusDir[0],r:.54,n:3,hC:.6,open:so,sten:0,gap:0,rot:-Math.PI/3,C:C.native});
+ if(st!=='conduit'){const b={c:add(K.P0,mul(K.paAxis,-.06)),a:K.paAxis,ref:[0,0,1],r:K.rPV+.01,open:so,rot:.4};
+  if(K.native)Extras.semilunar(V,I,{...b,n:2,hC:K.rPV*1.5,sten:lerp(.45,.88,K.sN),gap:0,C:C.thick});
+  else if(st==='sparing')Extras.semilunar(V,I,{...b,n:2,hC:K.rPV*1.4,sten:.3,gap:0,C:C.thick});
+  else if(st==='patch')Extras.semilunar(V,I,{...b,n:2,hC:K.rPV*.55,sten:.1,gap:.6,C:C.thick});
+  else{Extras.semilunar(V,I,{...b,n:3,hC:K.rPV*1.15,sten:0,gap:0,C:C.pros});Extras.stent(L,{c:b.c,a:K.paAxis,ref:[0,0,1],r:K.rPV+.02,h:K.rPV*1.5,C:[.8,.85,.88,.95]})}}
+ else{const Q=K.COND;Extras.semilunar(V,I,{c:Q[2],a:nrm(sub(Q[3],Q[1])),ref:[0,0,1],r:.34,n:3,hC:.46,open:so,sten:0,gap:0,rot:0,C:C.pros})}
+ Extras.avValve(V,I,L,{c:K.T0,a:K.tvAxis,ref:[1,0,0],r:.57,leaflets:[{c:0,w:1.0,L:.95},{c:2.1,w:1.0,L:1.0},{c:-2.1,w:1.0,L:.9}],open:av,pms:K.rvPM,C:C.native,chord});
+ Extras.avValve(V,I,L,{c:K.M0,a:K.mvAxis,ref:sub(K.A0,K.M0),r:.51,leaflets:[{c:0,w:1.12,L:1.32},{c:Math.PI,w:1.95,L:.72}],open:av,pms:K.lvPM,C:C.native,chord});
+ view.setDynamic('valves',new Float32Array(V),I);view.setLines(new Float32Array(L),L.length/7);
+ view.setGuides(new Float32Array(8),0)}
+function guidePolys(){const K=shown.K,id=selected&&selected.id,P=[];
+ const circ=(c,a,r)=>{const e1=nrm(sub([1,0,0],mul(a,dot([1,0,0],a)))),e2=cross(a,e1),pts=[];for(let i=0;i<=48;i++){const t=i/48*Math.PI*2;pts.push(add(c,add(mul(e1,Math.cos(t)*r),mul(e2,Math.sin(t)*r))))}return pts};
+ if(id==='aorta'){P.push({pts:circ(K.A0,K.aoAxis,.55)},{pts:[[-.12,-.7,-.15],[-.12,1.7,-.15]],dash:1})}
+ if(id==='vsd'){const pts=[];for(let i=0;i<=48;i++){const a=i/48*Math.PI*2;pts.push([-.45,.12+.36*Math.cos(a),-.08+.48*Math.sin(a)])}P.push({pts,dash:1})}
+ if(id==='rvoto'&&shown.stage!=='conduit')P.push({pts:circ(K.os,nrm(sub(K.inf1,K.os)),K.rOs+.03)},{pts:circ(K.P0,K.paAxis,K.rPV+.03)});
+ if(showNormal)P.push({pts:circ([.42,.42,-.42],K.aoAxis,.54),dash:1,col:'#a8f0dc'});return P}
+function unusedGuides(){const K=shown.K,st=shown.stage,Gd=[],gc=[.99,.86,.55,1],id=selected&&selected.id;
+ if(id==='aorta'){Extras.ring(Gd,{c:K.A0,a:K.aoAxis,ref:[1,0,0],r:.55,C:gc});for(let y=-.6;y<1.6;y+=.13)Gd.push(-.12,y,-.15,...gc,-.12,y+.075,-.15,...gc)}
+ if(id==='vsd'){const N=40;for(let i=0;i<N;i+=2){const a=i/N*Math.PI*2,b=(i+1)/N*Math.PI*2;Gd.push(-.45,.12+.36*Math.cos(a),-.08+.48*Math.sin(a),...gc,-.45,.12+.36*Math.cos(b),-.08+.48*Math.sin(b),...gc)}}
+ if(id==='rvoto'&&st!=='conduit'){Extras.ring(Gd,{c:K.os,a:nrm(sub(K.inf1,K.os)),ref:[0,0,1],r:K.rOs+.03,C:gc});Extras.ring(Gd,{c:K.P0,a:K.paAxis,ref:[0,0,1],r:K.rPV+.03,C:gc})}
+ if(showNormal)Extras.ring(Gd,{c:[.42,.42,-.42],a:K.aoAxis,ref:[1,0,0],r:.54,C:[.6,.95,.84,1],dash:true});
+ view.setGuides(new Float32Array(Gd),Gd.length/7)}
+// ---------- labels and calipers ----------
+function buildLabels(sc){const K=sc.K,st=sc.stage,nat=K.native,L=[],big=(t,p,pe)=>L.push({t,p,pe,big:1}),lab=(t,p,pe,off,key)=>L.push({t,p,pe,off,key});
+ big('RV',[-1.35,-1.3,-.32],[-1.55,-1.35,1.38]);big('LV',[1.1,-1.45,-.85],[1.78,-1.6,.5]);big('RA',[-2.0,1.02,-1.15],[-2.52,.95,-.35]);big('LA',[.7,1.22,-1.98],null);
+ lab('Aorta',[-.45,2.35,-.55],[-.5,2.45,.45],[-66,-18]);lab(st==='conduit'?'Diminutive main PA':'Pulmonary trunk',[1.05,2.3,-.15],[.92,2.22,.62],[60,-26]);
+ lab(nat?'Overriding aortic root':'Aortic root, now LV-committed',[-.2,.95,-.58],null,[-132,-44],'aorta');
+ lab(nat?'Malalignment VSD':'VSD patch',[-.3,.06,-.46],null,[-120,48],'vsd');
+ lab(st==='conduit'?'Atretic native outflow':nat?'Narrowed infundibulum':st==='sparing'?'Relieved infundibulum':'Patched RV outflow',[-.3,.86,.62],[-.25,1.0,1.6],[-128,-56],'rvoto');
+ lab('Thick RV free wall',null,null,[-74,62],'rvh');
+ if(st!=='conduit')lab(st==='pvr'?'Prosthetic pulmonary valve':'Pulmonary valve',add(K.P0,mul(K.paAxis,.05)),null,[80,-14]);
+ lab('Tricuspid valve',K.T0,null,[-98,24]);lab('Mitral valve',K.M0,null,[86,30]);
+ if(st==='shunt')lab('mBTT shunt',K.BTT[1],K.BTT[1],[-86,-12]);if(st==='conduit')lab('RV–PA conduit',K.COND[2],K.COND[2],[88,8]);
+ if(st==='patch'||st==='pvr')lab('Transannular patch',null,[.32,1.55,1.66],[88,-4]);return L}
+function gridF(x,y,z){const fx=(x-G.x0)/G.h,fy=(y-G.y0)/G.h,fz=(z-G.z0)/G.h,i=Math.floor(fx),j=Math.floor(fy),k=Math.floor(fz);if(i<0||j<0||k<0||i>=G.nx-1||j>=G.ny-1||k>=G.nz-1)return 1;
+ const tx=fx-i,ty=fy-j,tz=fz-k,F=G.f,nx=G.nx,ny=G.ny,a=(p,q,r)=>F[p+nx*(q+ny*r)];
+ return lerp(lerp(lerp(a(i,j,k),a(i+1,j,k),tx),lerp(a(i,j+1,k),a(i+1,j+1,k),tx),ty),lerp(lerp(a(i,j,k+1),a(i+1,j,k+1),tx),lerp(a(i,j+1,k+1),a(i+1,j+1,k+1),tx),ty),tz)}
+function wall(y,z,x0,x1){const N=500,st=(x1-x0)/N;let prev=gridF(x0,y,z),a=null;for(let n=1;n<=N;n++){const x=x0+st*n,f=gridF(x,y,z);if(a===null&&prev>=0&&f<0)a=x;else if(a!==null&&prev<0&&f>=0)return [a,x];prev=f}return null}
+function updCalip(){const d=view.clip.on?view.clip.d:null;if(d===calD)return;calD=d;calip=null;if(d===null)return;const z=Math.min(d-.03,1.2),y=-1.05,rv=wall(y,z,-3.05,-.5),lv=wall(y,z,2.95,.7);
+ if(rv&&lv)calip={y,z,rv,lv,ratio:Math.abs(rv[1]-rv[0])/Math.abs(lv[1]-lv[0])}}
+function visible(p,s0){const e=view.E;if(!e)return true;const d=sub(e,p),L=Math.hypot(d[0],d[1],d[2]),u=mul(d,1/L);for(let s=s0;s<L;s+=.06){const q=add(p,mul(u,s));if(view.clip.on&&dot(view.clip.n,q)>view.clip.d)break;if(gridF(q[0],q[1],q[2])<-.012)return false}return true}
+function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath()}
+function drawOverlay(){const c=oc;c.setTransform(1,0,0,1,0,0);c.clearRect(0,0,ov.width,ov.height);c.setTransform(dpr,0,0,dpr,0,0);c.setLineDash([]);c.shadowBlur=0;hits=[];if(is2D){draw2D(c,cw,ch);return}if(!view||!shown)return;
+ if(selected&&selected.calipers){updCalip();if(calip){const {y,z}=calip,seg=(a,b,t)=>{const p=view.project([a,y,z]),q=view.project([b,y,z]);c.strokeStyle='#ffd38a';c.lineWidth=2;
+   c.beginPath();c.moveTo(p.x,p.y);c.lineTo(q.x,q.y);c.stroke();for(const r of [p,q]){c.beginPath();c.moveTo(r.x,r.y-7);c.lineTo(r.x,r.y+7);c.stroke()}
+   c.font='600 12px '+SANS;c.fillStyle='#ffe2ad';c.textAlign='center';c.fillText(t,(p.x+q.x)/2,(p.y+q.y)/2+24)};
+  seg(calip.rv[0],calip.rv[1],'RV free wall');seg(calip.lv[0],calip.lv[1],'LV free wall');
+  const msg='RV ÷ LV wall thickness here ≈ '+calip.ratio.toFixed(2)+'   (normal heart ≈ 0.3–0.5)';c.font='600 13px '+SANS;const w=c.measureText(msg).width+22;
+  c.fillStyle='rgba(8,30,28,.88)';rr(c,cw/2-w/2,ch-104,w,28,8);c.fill();c.fillStyle='#fbefd2';c.textAlign='center';c.fillText(msg,cw/2,ch-85)}}
+ for(const g of guidePolys()){c.save();c.lineWidth=2.6;c.strokeStyle=g.col||'#ffd98f';c.shadowColor='rgba(0,0,0,.85)';c.shadowBlur=5;c.setLineDash(g.dash?[8,6]:[]);c.beginPath();
+  g.pts.forEach((p,i)=>{const q=view.project(p);i?c.lineTo(q.x,q.y):c.moveTo(q.x,q.y)});c.stroke();c.restore()}
+ if(selected&&selected.id==='aorta'){const q=view.project([-.12,1.62,-.15]);c.font='600 12px '+SANS;c.fillStyle='#ffe2ad';c.textAlign='center';c.fillText('Plane of the ventricular septum',q.x,q.y-8)}
+ if(selected&&selected.id==='vsd'){const q=view.project([-.45,.12,.48]);c.font='600 12px '+SANS;c.fillStyle='#ffe2ad';c.textAlign='left';c.fillText('Defect outline',q.x+10,q.y)}
+ if(showNormal){const q=view.project([.42,.42,-.42]);c.font='600 12px '+SANS;c.fillStyle='#bff3e2';c.textAlign='left';c.fillText('Normal, LV-committed root',q.x+30,q.y+4)}
+ if(!showLabels)return;const on=view.clip.on;
+ for(const l of labels){let p=on?l.p:l.pe;if(l.key==='rvh'){if(!on)continue;updCalip();p=calip?[(calip.rv[0]+calip.rv[1])/2,calip.y,calip.z]:null}
+  if(!p||(on&&view.clipped(p))||((!l.big||l.t==='LA')&&!visible(p,on?.16:.6)))continue;const q=view.project(p);if(q.w<=0)continue;
+  if(l.big){c.font='italic 600 24px '+SERIF;c.textAlign='center';c.fillStyle='rgba(240,234,220,.86)';c.shadowColor='rgba(0,0,0,.7)';c.shadowBlur=8;c.fillText(l.t,q.x,q.y);c.shadowBlur=0;continue}
+  const sel=selected&&selected.id===l.key,ox=l.off[0],oy=l.off[1],x=q.x+ox,y=q.y+oy;
+  c.strokeStyle=l.key?(sel?'#ffe2ad':'rgba(242,220,174,.85)'):'rgba(205,222,217,.7)';c.lineWidth=1.3;c.beginPath();c.arc(q.x,q.y,3.4,0,7);c.stroke();c.beginPath();c.moveTo(q.x,q.y);c.lineTo(x,y);c.stroke();
+  c.font='600 12px '+SANS;const tw=c.measureText(l.t).width,bx=ox<0?x-tw-14:x,by=y-11;c.fillStyle=sel?'rgba(84,66,28,.94)':'rgba(8,30,28,.86)';rr(c,bx,by,tw+14,22,7);c.fill();
+  if(l.key){c.strokeStyle=sel?'#ffe2ad':'rgba(242,220,174,.5)';c.stroke();hits.push({x:bx,y:by,w:tw+14,h:22,key:l.key,ax:q.x,ay:q.y})}
+  c.fillStyle=l.key?'#fbefd2':'#e2ebe7';c.textAlign='left';c.textBaseline='middle';c.fillText(l.t,bx+7,y+.5);c.textBaseline='alphabetic'}}
+function draw2D(c,W,H){const ph=((beatTime%1)+1)%1,nar=severity/100,nat=stage==='unrepaired'||stage==='shunt';c.fillStyle='#0b2422';c.fillRect(0,0,W,H);
+ const N=[['body','Body',.12,.47,'#8fb7d8'],['RA','RA',.26,.47,VEN],['RV','RV',.4,.47,VEN],['PA','PA',.54,.22,VEN],['lungs','Lungs',.76,.21,'#93cfd6'],['LA','LA',.76,.56,OXY],['LV','LV',.57,.76,OXY],['AO','Aorta',.28,.78,OXY]];
+ const pos=id=>{const n=N.find(x=>x[0]===id);return [n[2]*W,n[3]*H]};
+ const edge=(a,b,col,lab,w=1)=>{if(w<=0)return;const [x1,y1]=pos(a),[x2,y2]=pos(b);c.strokeStyle=col;c.lineWidth=clamp(W*.008,3,7);c.globalAlpha=.3+.5*w;c.lineCap='round';c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();c.globalAlpha=1;
+  for(let i=0;i<3;i++){const t=(beatTime*.36+i/3)%1;c.fillStyle=col;c.beginPath();c.arc(x1+(x2-x1)*t,y1+(y2-y1)*t,3.8,0,7);c.fill()}if(lab){c.textAlign='center';c.fillStyle=col;c.font='600 12px '+SANS;c.fillText(lab,(x1+x2)/2,(y1+y2)/2-9)}};
+ edge('body','RA',VEN);edge('RA','RV',VEN);edge('RV','PA',VEN,stage==='conduit'?'RV–PA conduit':nat?'narrowed RVOT':'RV ejection',nat?1-nar*.85:1);edge('PA','lungs',VEN);edge('lungs','LA',OXY);edge('LA','LV',OXY);edge('LV','AO',OXY);edge('AO','body',OXY);
+ if(nat){if(nar<.35)edge('AO','RV',OXY,W<520?'VSD L→R':'VSD: left-to-right (pink TOF)',clamp((.35-nar)/.25,0,.75));else edge('RV','AO',MIX,W<520?'VSD R→L':'VSD: RV to aorta',clamp((nar-.27)/.68,.12,1))}
+ if(stage==='shunt')edge('AO','PA',ABN,'mBTT shunt',.9);
+ if(stage==='patch'&&ph>=.45){const [ax,ay]=pos('PA'),[bx,by]=pos('RV'),cx=(ax+bx)/2+W*.17,cy=(ay+by)/2;c.strokeStyle=ABN;c.lineWidth=3.6;c.globalAlpha=.75;c.beginPath();c.moveTo(ax+11,ay+8);c.quadraticCurveTo(cx,cy,bx+12,by-11);c.stroke();c.globalAlpha=1;
+  const t=(beatTime*.45)%1,ux=(1-t)*(1-t)*(ax+11)+2*(1-t)*t*cx+t*t*(bx+12),uy=(1-t)*(1-t)*(ay+8)+2*(1-t)*t*cy+t*t*(by-11);c.fillStyle=ABN;c.beginPath();c.arc(ux,uy,4.6,0,7);c.fill();c.textAlign='left';c.font='600 12px '+SANS;c.fillText('diastolic PR into the RV',cx-W*.02,cy-6)}
+ for(const n of N){const x=n[2]*W,y=n[3]*H,r=clamp(W*.035,23,36);c.fillStyle='#123532';c.strokeStyle=n[4];c.lineWidth=2.6;c.beginPath();c.arc(x,y,r,0,7);c.fill();c.stroke();c.fillStyle='#ecf3ef';c.textAlign='center';c.textBaseline='middle';c.font='600 '+(n[1].length>4?12:14)+'px '+SANS;c.fillText(n[1],x,y);c.textBaseline='alphabetic'}
+ c.textAlign='left';c.fillStyle='#a2bab4';c.font='12px '+SANS;c.fillText('Flow-topology map: connections, not spatial anatomy',16,96)}
+// ---------- camera ----------
+let tween=null;const wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
+function flyTo(v,ms){if(!view)return;const c=view.cam,d0=view.clip.on?view.clip.d:1.9,ty=v.yaw!=null?v.yaw:c.yaw;
+ tween={t0:performance.now(),ms:ms==null?900:ms,f:{t:c.target.slice(),dist:c.dist,yaw:ty+wrap(c.yaw-ty),pitch:c.pitch,d:d0},to:{t:v.target||c.target,dist:v.dist||c.dist,yaw:ty,pitch:v.pitch!=null?v.pitch:c.pitch,d:v.clip===false?1.9:v.d},off:v.clip===false};
+ view.clip.on=true;if(tween.ms<=1)stepTween(1e12)}
+function stepTween(now){if(!tween)return;const t=clamp((now-tween.t0)/tween.ms,0,1),e=t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2,f=tween.f,o=tween.to,c=view.cam;
+ c.target=f.t.map((v,i)=>lerp(v,o.t[i],e));c.dist=lerp(f.dist,o.dist,e);c.yaw=lerp(f.yaw,o.yaw,e);c.pitch=lerp(f.pitch,o.pitch,e);view.clip.d=lerp(f.d,o.d,e);$('cutDepth').value=view.clip.d;
+ if(t>=1){if(tween.off)view.clip.on=false;tween=null}}
+function setPreset(name,ms){preset=name;selected=null;flyTo(PRESETS[name],ms);markPreset(name);updatePanels()}
+function markPreset(n){document.querySelectorAll('#sectionPresets button').forEach(b=>b.classList.toggle('active',b.dataset.preset===n))}
+function selectFeature(f,ms){selected=f;calD=null;flyTo(f.view,ms);markPreset(null);setTab('anatomy');updatePanels()}
+const ptrs=new Map();let moved=false,down=null,pinch=0;
+function pan(dx,dy){const c=view.cam,f=nrm(sub(c.target,view.eye())),r=nrm(cross(f,[0,1,0])),u=cross(r,f),k=c.dist*.0013;c.target=add(c.target,add(mul(r,-dx*k),mul(u,dy*k)))}
+glc.addEventListener('pointerdown',e=>{glc.setPointerCapture(e.pointerId);$('viewHelp').classList.add('gone');ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});moved=false;down={x:e.clientX,y:e.clientY};tween=null;
+ if(ptrs.size===2){const [a,b]=[...ptrs.values()];pinch=Math.hypot(a.x-b.x,a.y-b.y)}});
+glc.addEventListener('pointermove',e=>{const p=ptrs.get(e.pointerId);if(!p||!view)return;poke();const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;
+ if(Math.abs(e.clientX-down.x)+Math.abs(e.clientY-down.y)>4)moved=true;const c=view.cam;
+ if(ptrs.size===2){const [a,b]=[...ptrs.values()],d=Math.hypot(a.x-b.x,a.y-b.y);if(pinch>0)c.dist=clamp(c.dist*pinch/d,4.5,28);pinch=d;pan(dx*.5,dy*.5);return}
+ if(e.shiftKey||e.buttons===2||e.buttons===4)pan(dx,dy);else{c.yaw-=dx*.0085;c.pitch=clamp(c.pitch+dy*.0065,-1.25,1.25)}});
+const endP=e=>{const had=ptrs.delete(e.pointerId);if(ptrs.size<2)pinch=0;if(had&&!moved&&e.type==='pointerup')pick(e.offsetX,e.offsetY)};
+glc.addEventListener('pointerup',endP);glc.addEventListener('pointercancel',endP);glc.addEventListener('contextmenu',e=>e.preventDefault());
+glc.addEventListener('wheel',e=>{e.preventDefault();if(!view)return;tween=null;poke();view.cam.dist=clamp(view.cam.dist*Math.exp(e.deltaY*.0011),4.5,28)},{passive:false});
+glc.addEventListener('keydown',e=>{if(!view)return;const c=view.cam,k=e.key;if(k==='ArrowLeft')c.yaw+=.08;else if(k==='ArrowRight')c.yaw-=.08;else if(k==='ArrowUp')c.pitch=clamp(c.pitch+.06,-1.25,1.25);else if(k==='ArrowDown')c.pitch=clamp(c.pitch-.06,-1.25,1.25);else if(k==='+'||k==='=')c.dist=clamp(c.dist*.92,4.5,28);else if(k==='-')c.dist=clamp(c.dist*1.08,4.5,28);else return;e.preventDefault();tween=null;poke()});
+function pick(x,y){for(const h of hits)if(x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h)return selectFeature(FEATURES.find(f=>f.id===h.key));
+ let best=null,bd=30;for(const h of hits){const d=Math.hypot(h.ax-x,h.ay-y);if(d<bd){bd=d;best=h}}if(best)selectFeature(FEATURES.find(f=>f.id===best.key))}
+// ---------- main loop ----------
+let last=performance.now();
+let lastFrameT=-1;function frame(now){if(now===lastFrameT){return}lastFrameT=now;const dt=Math.min(.05,(now-last)/1000);last=now;runJobs(fast?400:shown?(busy?18:4):40);if(playing)beatTime+=dt*1.2*speed;const ph=((beatTime%1)+1)%1;stepTween(now);
+ const anim=playing||!!tween||dirty;dirty=false;
+ if(view&&shown&&!is2D&&anim){view.sys=contract(ph);view.time=now/1000;view.ghost=ghostOn?1:0;valves(ph);
+  if(showFlow){parts.update(playing?dt*speed:0,ph);view.setParticles(parts.buf,parts.count)}else view.setParticles(parts.buf,0);
+  view.hl=selected?{p:selected.hl.slice(0,3),r:selected.hl[3],c:[1,.82,.45]}:null;view.render()}
+ if(anim||is2D)drawOverlay();$('phaseDot').style.left=(ph*100)+'%';$('phaseText').textContent=ph<.45?'Systole: ejection':'Diastole: filling'+(stage==='patch'?' and PR':'');requestAnimationFrame(frame)}
+// ---------- panels ----------
+function el(t,txt,cls){const e=document.createElement(t);if(txt!=null)e.textContent=txt;if(cls)e.className=cls;return e}
+function setTab(n){document.querySelectorAll('.tabs button').forEach(b=>{const on=b.dataset.tab===n;b.classList.toggle('active',on);b.setAttribute('aria-selected',on)});document.querySelectorAll('.tab').forEach(d=>d.classList.toggle('active',d.id==='tab-'+n))}
+function updatePanels(){const s=STAGES[stage],nat=stage==='unrepaired'||stage==='shunt';
+ $('anatomyTitle').textContent=selected?selected.name:stage==='unrepaired'?'One malalignment, four features':s.name;$('anatomyLead').textContent=selected?selected.desc:s.lead;
+ const T=$('lesionTiles');T.replaceChildren();FEATURES.forEach((f,i)=>{const b=el('button',null,'feature'+(selected&&selected.id===f.id?' sel':''));b.type='button';
+  b.append(el('b',(i+1)+'. '+f.name),el('span',f.desc,'d'),el('span',selected&&selected.id===f.id?'Shown in the model':'Show in the model','go'));b.onclick=()=>selectFeature(f);T.appendChild(b)});
+ $('severityWrap').classList.toggle('hidden',!nat);$('severityText').textContent=severity<34?'Mild (pink spectrum)':severity<66?'Moderate':'Severe';
+ $('severityNote').textContent='Demonstration setting, not a measured stenosis. It reshapes the infundibulum and pulmonary valve in the model. More RVOTO pushes more blood right-to-left, which also depends on systemic and pulmonary resistance.';
+ const Hm=$('hemoTiles');Hm.replaceChildren();s.hemo.forEach((v,i)=>{const d=el('div');d.append(el('strong',v),el('span',['Structure','Flow','Valve or shunt','Clinical implication'][i]));Hm.appendChild(d)});
+ $('anatomyCallout').textContent=stage==='unrepaired'?'Choose a feature, or tap a gold label in the model, to cut to it and frame it. The section slider moves the knife from front to back.':s.flow[0];
+ $('repairTitle').textContent=s.name;$('repairIntro').textContent=s.lead;const ap=(id,a)=>{const p=$(id);p.replaceChildren();a.forEach(x=>p.appendChild(el('li',x)))};ap('repairChanges',s.changes);ap('repairFlow',s.flow);$('repairCaution').textContent=s.caution;
+ $('watchTitle').textContent='Monitoring after: '+s.short;if(nat)$('watchTitle').textContent='Monitoring: '+s.short;$('watchLead').textContent=nat?'Monitor current pulmonary perfusion and risks; plan an individualized definitive repair.':'Anatomical correction does not end lifelong congenital-heart follow-up.';
+ const W=$('watchItems');W.replaceChildren();s.watch.forEach(([a,b])=>{const d=el('div',null,'list-row');d.append(el('b',a),el('span',b));W.appendChild(d)})}
+function setStage(n){if(!STAGES[n])return;stage=n;poke();selected=null;$('stagePill').textContent=STAGES[n].short;$('viewTitle').textContent=STAGES[n].name;$('viewSubtitle').textContent=STAGES[n].subtitle;
+ document.querySelectorAll('.step').forEach(b=>b.classList.toggle('active',b.dataset.stage===n));updatePanels();requestScene();if($('quizScope').value==='current')restartQuiz()}
+// ---------- controls ----------
+$('tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b)setTab(b.dataset.tab)});
+$('scenarioButtons').addEventListener('click',e=>{const b=e.target.closest('[data-stage]');if(b)setStage(b.dataset.stage)});
+$('sectionPresets').addEventListener('click',e=>{const b=e.target.closest('[data-preset]');if(b)setPreset(b.dataset.preset)});
+$('cutDepth').addEventListener('input',e=>{if(!view)return;tween=null;poke();view.clip.on=true;view.clip.d=+e.target.value;markPreset(null)});
+let sevT=null;$('severity').addEventListener('input',e=>{severity=+e.target.value;updatePanels();clearTimeout(sevT);sevT=setTimeout(requestScene,150)});
+const tog=(id,get,set)=>$(id).addEventListener('click',()=>{set(!get());poke();$(id).setAttribute('aria-pressed',String(get()))});
+tog('tGhost',()=>ghostOn,v=>ghostOn=v);tog('tLabels',()=>showLabels,v=>showLabels=v);tog('tFlow',()=>showFlow,v=>showFlow=v);tog('tNormal',()=>showNormal,v=>showNormal=v);
+$('resetCamera').onclick=()=>setPreset(preset||'override');
+$('toggleView').onclick=()=>{is2D=!is2D;poke();viewerEl.classList.toggle('flat',is2D);$('toggleView').textContent=is2D?'3D model':'2D flow map'};
+const setPlay=p=>{playing=p;poke();$('togglePlay').textContent=p?'Pause':'Play'};$('togglePlay').onclick=()=>setPlay(!playing);
+$('freezeSys').onclick=()=>{beatTime=Math.floor(beatTime)+.25;setPlay(false)};$('freezeDia').onclick=()=>{beatTime=Math.floor(beatTime)+.7;setPlay(false)};
+$('slowMotion').onclick=()=>{speed=speed===1?.5:1;$('slowMotion').textContent=speed===1?'Half speed':'Normal speed';$('slowMotion').setAttribute('aria-pressed',String(speed!==1));setPlay(true)};
+$('compareStage').onclick=()=>setStage(stage==='unrepaired'?'sparing':'unrepaired');$('gotoWatch').onclick=()=>setTab('watch');
+// ---------- quiz ----------
+let qMode='mc',qi=0,graded=0,right=0,locked=false,freeMarked=false,order=[];
+const pool=()=>(qMode==='mc'?questions:freeQuestions).filter(q=>$('quizScope').value==='all'||q.stage===stage);
+function restartQuiz(){qi=0;graded=0;right=0;order=pool();showQ()}
+function score(){$('scoreText').textContent=graded+' reviewed'+(qMode==='mc'?', '+right+' correct':', '+right+' self-rated solid')}
+function showQ(){const q=order[qi];const fb=$('quizFeedback');fb.className='feedback hidden';fb.replaceChildren();$('copyStatus').textContent='';locked=false;freeMarked=false;score();
+ $('checkAnswer').disabled=!q;$('nextQuestion').disabled=!q;$('checkAnswer').textContent=qMode==='mc'?'Check answer':'Show reference answer';
+ $('quizCounter').textContent=q?'Question '+(qi+1)+' of '+order.length+', '+STAGES[q.stage].short:'No questions match this scope';$('questionText').textContent=q?q.stem:'';
+ $('nextQuestion').textContent=qi===order.length-1?'Start over':'Next question';const A=$('answerArea');A.replaceChildren();if(!q)return;
+ if(qMode==='mc'){const d=el('div',null,'answers');q.options.forEach((t,i)=>{const l=el('label',null,'answer'),inp=document.createElement('input');inp.type='radio';inp.name='answer';inp.value=i;l.append(inp,el('span',String.fromCharCode(65+i)+'. '+t));d.appendChild(l)});A.appendChild(d)}
+ else{const t=document.createElement('textarea');t.id='freeAnswer';t.placeholder='Write your reasoning. It stays on this page unless you copy it elsewhere.';t.setAttribute('aria-label','Your answer');A.appendChild(t)}}
+function reveal(){if(locked)return;const q=order[qi];if(!q)return;const fb=$('quizFeedback');
+ if(qMode==='mc'){const s=document.querySelector('input[name=answer]:checked');if(!s){$('copyStatus').textContent='Choose an answer first.';return}const got=+s.value,ok=got===q.correct;graded++;if(ok)right++;
+  document.querySelectorAll('.answer').forEach((l,i)=>{l.classList.add('locked');if(i===q.correct)l.classList.add('correct');else if(i===got)l.classList.add('wrong');l.querySelector('input').disabled=true});
+  fb.className='feedback '+(ok?'good':'bad');fb.append(el('b',ok?'Correct':'Not quite. Answer: '+String.fromCharCode(65+q.correct)+'. '+q.options[q.correct]),el('p',q.why))}
+ else{const t=$('freeAnswer').value.trim();if(!t){$('copyStatus').textContent='Write an answer before showing the reference.';return}fb.className='feedback';fb.append(el('b','Reference answer: compare with yours'),el('p',q.answer));
+  const r=el('div',null,'btnrow'),y=el('button','I got it'),n=el('button','Needs review');y.onclick=()=>mark(true);n.onclick=()=>mark(false);r.append(y,n);fb.appendChild(r);$('freeAnswer').readOnly=true}
+ locked=true;$('checkAnswer').disabled=true;score();$('copyStatus').textContent=''}
+function mark(ok){if(freeMarked)return;freeMarked=true;graded++;if(ok)right++;$('quizFeedback').querySelector('.btnrow')?.remove();$('quizFeedback').appendChild(el('p',ok?'Self-rated: solid answer.':'Self-rated: needs review.'));score()}
+$('modeMC').onclick=()=>{qMode='mc';$('modeMC').classList.add('active');$('modeFree').classList.remove('active');restartQuiz()};$('modeFree').onclick=()=>{qMode='free';$('modeFree').classList.add('active');$('modeMC').classList.remove('active');restartQuiz()};
+$('quizScope').onchange=restartQuiz;$('resetQuiz').onclick=restartQuiz;$('checkAnswer').onclick=reveal;$('nextQuestion').onclick=()=>{if(!order.length)return;if(qi===order.length-1)return restartQuiz();qi++;showQ()};
+function vText(){const q=order[qi];if(!q)return '';const ans=qMode==='mc'?((s=>s?q.options[+s.value]:'(no answer selected)')(document.querySelector('input[name=answer]:checked'))):(($('freeAnswer')||{}).value||'').trim()||'(not answered)';
+ return 'Please independently verify this tetralogy of Fallot teaching question using authoritative, preferably primary cardiology references. Explain the mechanism, check for nuance or errors in the question, and cite current guideline evidence. Do not trust the proposed answer blindly.\n\nScenario: '+STAGES[q.stage].name+'\nQuestion: '+q.stem+'\n'+(qMode==='mc'?'Choices:\n'+q.options.map((v,i)=>String.fromCharCode(65+i)+'. '+v).join('\n')+'\n':'')+'My response: '+ans+(locked?'\nLab reference explanation (also verify): '+(qMode==='mc'?q.why:q.answer):'')+'\n\nIf uncertain, say what clinical context would change the answer.'}
+async function copyP(){const t=vText();if(!t)return;try{if(navigator.clipboard&&isSecureContext){await navigator.clipboard.writeText(t);$('copyStatus').textContent='Verification prompt copied. Paste it into the site you opened.';return}}catch(_){}
+ const ta=el('textarea');ta.value=t;ta.style.cssText='position:fixed;left:-9999px';document.body.append(ta);ta.select();let ok=false;try{ok=document.execCommand('copy')}catch(_){}ta.remove();$('copyStatus').textContent=ok?'Verification prompt copied. Paste it into the site you opened.':'Copying was blocked. Select and copy the question manually.'}
+const openSite=u=>{copyP();const w=window.open(u,'_blank','noopener');if(!w)$('copyStatus').textContent+=' The pop-up was blocked; open '+u.replace('https://','')+' yourself.'};
+$('copyProbe').onclick=copyP;$('openChatGPT').onclick=()=>openSite('https://chatgpt.com/');$('openEvidence').onclick=()=>openSite('https://www.openevidence.com/');
+// ---------- boot ----------
+$('viewSubtitle').textContent=STAGES[stage].subtitle;updatePanels();restartQuiz();
+if(view){const p=PRESETS.override;Object.assign(view.cam,{target:p.target.slice(),dist:p.dist,yaw:p.yaw,pitch:p.pitch});view.clip.on=true;view.clip.d=p.d;requestScene()}
+else{is2D=true;viewerEl.classList.add('flat');$('loading').classList.add('done');$('viewHelp').textContent='This browser has WebGL turned off, so the 3D model is unavailable. The 2D flow map below still works.';
+ ['toggleView','resetCamera'].forEach(i=>$(i).disabled=true);document.querySelectorAll('#sectionPresets button,.toggles button,#cutDepth').forEach(b=>b.disabled=true)}
+if(!playing)setPlay(false);requestAnimationFrame(frame);
+window.__idle=()=>!busy&&!jobs.length&&!!shown&&!tween;
+window.__test=o=>{fast=true;poke();if(o.stage)setStage(o.stage);if(o.sev!=null){severity=o.sev;$('severity').value=o.sev;requestScene()}if(o.preset)setPreset(o.preset,1);
+ if(o.feature)selectFeature(FEATURES.find(f=>f.id===o.feature),1);if(o.phase!=null){beatTime=Math.floor(beatTime)+o.phase;setPlay(false)}if(o.cam)Object.assign(view.cam,o.cam);if(o.d!=null){view.clip.on=true;view.clip.d=o.d}
+ if(o.normal!=null)showNormal=o.normal;if(o.tab)setTab(o.tab)};
+})();
+
+</script>
+
+</body>
+</html>
