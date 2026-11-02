@@ -1,0 +1,2135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Austin, solo: ten places rated for safety</title>
+<style>
+:root{
+  color-scheme: light;
+  --page:#EEF1EC; --surface:#FAFBF8; --surface-2:#F2F5F1;
+  --ink:#1E2B28; --ink-2:#4A5753; --ink-3:#77837F;
+  --rule:#D8DED7; --rule-2:#C3CCC4;
+  --bonnet:#3B41A3; --bonnet-ink:#FFFFFF; --bonnet-soft:#E3E4F5;
+  --teal:#1A7974; --pear:#B8336A; --gold:#C98A00;
+  --s5:#1B7F4E; --s45:#3E9A56; --s4:#86A02C; --s35:#D79A1E; --s3:#D2612A; --s2:#B83A2E; --sclosed:#8E9893;
+  --badge-ink:#FFFFFF;
+  --float:0 1px 2px rgba(20,40,35,.10),0 6px 18px rgba(20,40,35,.14);
+  --display:"Avenir Next Condensed","Roboto Condensed","Bahnschrift SemiCondensed","Arial Narrow",sans-serif-condensed,"Helvetica Neue",sans-serif;
+  --body:"Avenir Next",Avenir,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    color-scheme: dark;
+    --page:#0F1715; --surface:#16201D; --surface-2:#1C2824;
+    --ink:#E4ECE8; --ink-2:#B3BFBA; --ink-3:#82908A;
+    --rule:#26332F; --rule-2:#37453F;
+    --bonnet:#A9ADFF; --bonnet-ink:#15173B; --bonnet-soft:#252A55;
+    --teal:#5CC4BD; --pear:#F07FAA; --gold:#F2C14E;
+    --s5:#45C78A; --s45:#6CCB7B; --s4:#B3CB55; --s35:#EDB94B; --s3:#F08C52; --s2:#EA6A58; --sclosed:#6E7A75;
+    --badge-ink:#0E1513;
+    --float:0 1px 2px rgba(0,0,0,.45),0 8px 22px rgba(0,0,0,.5);
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--page);color:var(--ink);font:15px/1.5 var(--body)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--teal)}
+:focus-visible{outline:3px solid var(--bonnet);outline-offset:2px}
+[hidden]{display:none!important}
+
+/* header */
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:max(14px,env(safe-area-inset-top)) 16px 12px}
+.title{font-family:var(--display);font-weight:800;font-size:31px;line-height:1;letter-spacing:-.01em;margin:0}
+.sub{margin:5px 0 0;color:var(--ink-2);font-size:14px;line-height:1.35}
+.top-r{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.save{font-size:12px;font-weight:600;color:var(--ink-2);white-space:nowrap;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--rule-2);background:var(--surface);border-radius:999px;padding:4px 10px}
+.save::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--rule-2)}
+.save[data-s="saved"]::before{background:var(--s5)}
+.save[data-s="local"]::before,.save[data-s="error"]::before{background:var(--s35)}
+.save[data-s="locked"]{border-color:var(--bonnet);color:var(--ink)}
+.save[data-s="locked"]::before{background:var(--bonnet)}
+.uberbtn{border:1px solid var(--ink);background:var(--ink);color:var(--page);border-radius:999px;padding:7px 14px;font-weight:700;font-size:14px;white-space:nowrap}
+
+/* layout */
+.layout{display:flex;flex-direction:column}
+.map-wrap{position:relative;height:58vh;min-height:370px;max-height:660px;margin:0 10px;border-radius:18px;overflow:hidden;background:var(--surface-2);border:1px solid var(--rule)}
+#map{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#map:active{cursor:grabbing}
+.panel{padding:4px 14px 56px;max-width:760px;width:100%;margin:0 auto}
+@media (min-width:980px){
+  .layout{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(400px,1fr);gap:16px;padding:0 16px 16px;height:calc(100vh - 82px)}
+  .map-wrap{height:auto;max-height:none;min-height:0;margin:0}
+  .panel{overflow-y:auto;padding:0 6px 40px;max-width:none}
+}
+
+/* map controls */
+.mc{position:absolute;z-index:3;display:flex;gap:6px}
+.mc.tl{top:10px;left:10px;flex-direction:row;flex-wrap:wrap;align-items:flex-start;max-width:calc(100% - 72px)}
+.mc.tr{top:10px;right:10px;flex-direction:column}
+.mc.bot{left:10px;right:10px;bottom:10px;flex-direction:column;align-items:stretch;gap:8px}
+.botrow{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.fab{width:40px;height:40px;border-radius:12px;border:1px solid var(--rule-2);background:var(--surface);box-shadow:var(--float);font-size:20px;line-height:1;display:grid;place-items:center;color:var(--ink);padding:0}
+.legend{background:var(--surface);border:1px solid var(--rule-2);border-radius:12px;padding:6px 9px;box-shadow:var(--float);font-size:12px;color:var(--ink-2);display:flex;flex-direction:column;gap:3px}
+.legend .lg-d{display:flex;gap:8px;align-items:center;flex-wrap:wrap;color:var(--ink)}
+.legend .lg-d span{display:inline-flex;align-items:center;gap:3px;font-weight:600}
+.legend i{width:10px;height:10px;border-radius:50%;background:var(--c);display:inline-block}
+.legend .lg-s{display:flex;align-items:center;gap:6px;color:var(--ink);font-weight:700;margin-top:1px}
+.scbar{display:block;height:6px;width:60px;border:2px solid var(--ink);border-top:0}
+.legend .north{margin-left:auto;padding-left:8px;font-family:var(--display);font-weight:800}
+.night{border:1px solid var(--rule-2);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:700;box-shadow:var(--float)}
+.night[aria-pressed="true"]{background:var(--bonnet);color:var(--bonnet-ink);border-color:var(--bonnet)}
+.seg{display:inline-flex;border:1px solid var(--rule-2);background:var(--surface);border-radius:999px;padding:3px;box-shadow:var(--float)}
+.seg button{border:0;background:none;border-radius:999px;padding:8px 11px;font-size:13px;font-weight:700;color:var(--ink-2);white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--page)}
+.seg.flat{box-shadow:none}
+.go{border:0;background:var(--bonnet);color:var(--bonnet-ink);border-radius:999px;padding:11px 16px;font-weight:800;font-size:14px;box-shadow:var(--float);white-space:nowrap}
+.go.wide{width:100%;padding:14px;font-size:16px;box-shadow:none;margin-top:6px}
+.nextchip{align-self:flex-end;max-width:100%;background:var(--surface);color:var(--ink);border:1px solid var(--bonnet);border-radius:999px;padding:7px 13px;font-size:13px;font-weight:700;text-decoration:none;box-shadow:var(--float);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.maphint{position:absolute;top:96px;left:50%;transform:translateX(-50%);z-index:4;background:var(--ink);color:var(--page);border-radius:14px;padding:8px 8px 8px 14px;font-size:14px;font-weight:600;display:flex;gap:10px;align-items:center;box-shadow:var(--float);white-space:nowrap}
+.maphint button{border:0;background:var(--surface);color:var(--ink);border-radius:999px;padding:5px 11px;font-weight:700;font-size:13px}
+@media (max-width:389px){
+  .seg button{padding:7px 8px;font-size:12px}
+  .go{padding:10px 12px;font-size:13px}
+  .legend{font-size:11px}
+}
+
+/* tabs */
+.tabs{position:sticky;top:0;z-index:6;background:var(--page);display:flex;gap:2px;padding:12px 0 8px;margin-bottom:14px;border-bottom:1px solid var(--rule)}
+.tab{flex:1;border:0;background:none;padding:9px 2px;border-radius:10px 10px 0 0;font-weight:700;font-size:14px;color:var(--ink-3);white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--ink);box-shadow:inset 0 -3px 0 var(--bonnet)}
+
+/* shared */
+.h{font-family:var(--display);font-weight:800;font-size:25px;line-height:1.05;margin:0 0 6px}
+.h3{font-family:var(--display);font-weight:700;font-size:19px;line-height:1.15;margin:18px 0 6px}
+.muted{color:var(--ink-2);font-size:14px;margin:4px 0 10px}
+.block{margin:0 0 26px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--rule-2);background:var(--surface);color:var(--ink);text-decoration:none;border-radius:999px;padding:9px 14px;font-weight:700;font-size:14px;line-height:1.2;text-align:center}
+.btn.primary{background:var(--bonnet);border-color:var(--bonnet);color:var(--bonnet-ink)}
+.btn.on{background:var(--bonnet-soft);border-color:var(--bonnet)}
+.btn.sm{padding:6px 11px;font-size:13px}
+.btn.wide{width:100%;margin:6px 0}
+.row-btns{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.linkish{border:0;background:none;padding:0;font-weight:700;color:var(--ink);text-align:left;text-decoration:underline;text-decoration-color:var(--rule-2);text-underline-offset:3px}
+.field{display:block;margin:12px 0}
+.field>span{display:block;font-size:13px;font-weight:700;color:var(--ink-2);margin-bottom:5px}
+.check{display:flex;gap:10px;align-items:flex-start;margin:12px 0;font-size:15px}
+.check input{width:20px;height:20px;margin:1px 0 0;accent-color:var(--bonnet);flex:none}
+input[type=text],input[type=email],input[type=number],input[type=date],input[type=password],select,textarea{width:100%;font-size:16px;border:1px solid var(--rule-2);background:var(--surface);color:var(--ink);border-radius:12px;padding:10px 12px}
+textarea{min-height:84px;resize:vertical;line-height:1.45}
+.warn{display:block;font-style:normal;color:var(--s3);font-weight:700;font-size:13px}
+.note{background:var(--bonnet-soft);border-radius:12px;padding:9px 12px;font-size:14px;margin:8px 0}
+.foot{color:var(--ink-3);font-size:12px;margin-top:30px}
+.lockbar{display:flex;gap:12px;align-items:center;justify-content:space-between;background:var(--bonnet-soft);border:1px solid var(--bonnet);border-radius:14px;padding:10px 12px;margin:0 0 14px;font-size:14px;line-height:1.35}
+.lockbar b{display:block}
+.field>span.pw{display:flex;gap:6px;align-items:center;margin:0;font-size:inherit;font-weight:400;color:inherit}
+.pw input{flex:1;min-width:0}
+.pw .btn{flex:none}
+.save[data-enc="1"]::before{display:none}
+.meterbar{height:6px;border-radius:3px;background:var(--rule);overflow:hidden;margin:2px 0 4px}
+.meterbar i{display:block;height:100%;width:0;border-radius:3px;background:var(--s3);transition:width .2s}
+.err{color:var(--s2);font-weight:700;font-size:14px;margin:8px 0 0}
+.err:empty{display:none}
+.sec-list{margin:6px 0 12px;padding-left:20px;font-size:14px;color:var(--ink-2)}
+.sec-list li{margin:4px 0}
+
+/* place index */
+.intro{color:var(--ink-2);font-size:14px;margin:0 0 10px}
+.progress{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--ink-2);margin:0 0 14px}
+.progress .bar{flex:1;height:6px;border-radius:3px;background:var(--rule);overflow:hidden}
+.progress .bar i{display:block;height:100%;background:var(--s5);border-radius:3px;transition:width .4s}
+.filters{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin:0 0 10px}
+.fchips{display:flex;gap:6px;flex-wrap:wrap}
+.fchip{border:1px solid var(--rule-2);background:var(--surface);border-radius:999px;padding:5px 11px;font-size:13px;font-weight:700;color:var(--ink-2)}
+.fchip[aria-pressed="true"]{background:var(--ink);color:var(--page);border-color:var(--ink)}
+.filters select{width:auto;font-size:14px;padding:6px 10px;border-radius:999px}
+.index{list-style:none;margin:0;padding:0;border-top:1px solid var(--rule)}
+.row{display:flex;align-items:stretch;border-bottom:1px solid var(--rule);background:var(--surface);box-shadow:inset 5px 0 0 var(--c)}
+.row-main{flex:1;min-width:0;display:flex;gap:12px;align-items:flex-start;padding:13px 10px 13px 17px;border:0;background:none;text-align:left}
+.row-n{font-family:var(--display);font-weight:800;font-size:24px;line-height:1;min-width:24px;color:var(--c);padding-top:1px}
+.row-body{min-width:0;display:flex;flex-direction:column;gap:2px}
+.row-name{font-family:var(--display);font-weight:700;font-size:19px;line-height:1.15}
+.row-meta{color:var(--ink-2);font-size:13px}
+.row-rate{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--ink-2);margin-top:3px}
+.row-rate b{color:var(--ink);font-weight:800}
+.row-seen{font-size:13px;font-weight:700;color:var(--s5)}
+.gold{color:var(--gold);letter-spacing:1px}
+.row-add{flex:none;width:66px;border:0;border-left:1px solid var(--rule);background:none;font-size:12px;font-weight:700;color:var(--bonnet);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+.row-add span{font-size:22px;line-height:1}
+.row-add[aria-pressed="true"]{background:var(--bonnet-soft);color:var(--ink)}
+.meter{display:inline-flex;gap:2px;margin-left:6px;vertical-align:1px}
+.meter i{width:9px;height:5px;border-radius:2px;background:var(--rule-2)}
+.meter i.f{background:var(--mc)}
+.meter i.h{background:linear-gradient(90deg,var(--mc) 50%,var(--rule-2) 50%)}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(10,20,18,.42);opacity:0;pointer-events:none;transition:opacity .2s;z-index:40}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;max-height:88vh;overflow-y:auto;background:var(--surface);border-radius:20px 20px 0 0;box-shadow:0 -12px 40px rgba(0,0,0,.25);transform:translateY(102%);visibility:hidden;transition:transform .28s cubic-bezier(.2,.8,.2,1),visibility 0s linear .28s;padding:0 18px calc(28px + env(safe-area-inset-bottom));overscroll-behavior:contain}
+.sheet.on{transform:none;visibility:visible;transition:transform .28s cubic-bezier(.2,.8,.2,1),visibility 0s}
+@media (min-width:980px){
+  .sheet{left:auto;right:20px;top:20px;bottom:20px;width:460px;max-height:none;border-radius:20px;transform:translateX(112%)}
+  .sheet.on{transform:none}
+}
+.grab{width:44px;height:5px;border-radius:3px;background:var(--rule-2);margin:9px auto 0}
+.sh-head{position:sticky;top:0;background:var(--surface);padding:12px 0 12px;display:flex;gap:12px;align-items:flex-start;z-index:2;border-bottom:1px solid var(--rule)}
+.sh-num{width:44px;height:44px;border-radius:50%;background:var(--c);color:var(--badge-ink);font-family:var(--display);font-weight:800;font-size:23px;display:grid;place-items:center;flex:none}
+.sh-title{min-width:0}
+.sh-title h2{font-family:var(--display);font-weight:800;font-size:27px;line-height:1.02;margin:0}
+.sh-kind{color:var(--ink-2);font-size:13px;margin-top:4px}
+.x{margin-left:auto;border:1px solid var(--rule-2);background:var(--surface-2);width:38px;height:38px;border-radius:50%;font-size:17px;flex:none;color:var(--ink)}
+.blurb{font-size:16px;line-height:1.55;margin:14px 0 16px}
+.ratings{display:grid;gap:14px;margin:0 0 18px}
+.rating{display:grid;grid-template-columns:52px 1fr;gap:12px;align-items:start}
+.rating .score{font-family:var(--display);font-weight:800;font-size:31px;line-height:1;color:var(--mc)}
+.rating .lbl{font-weight:700;font-size:14px}
+.rating .why{color:var(--ink-2);font-size:14px;line-height:1.45;margin:4px 0 0}
+.rating .meter{margin-left:0}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:12px;overflow:hidden;margin:0 0 6px}
+.facts div{background:var(--surface-2);padding:9px 11px}
+.facts span{display:block;font-size:12px;color:var(--ink-3)}
+.facts b{display:block;font-size:14px;font-weight:600;line-height:1.35}
+.tips{margin:6px 0 16px;padding-left:20px}
+.tips li{margin:6px 0;line-height:1.45}
+.mine{border-top:1px solid var(--rule);margin-top:6px;padding-top:4px}
+.seenrow{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.seenrow input[type=date]{width:auto;padding:7px 10px;font-size:15px}
+.stars{display:flex;gap:0;align-items:center;margin:8px 0 10px}
+.stars button{border:0;background:none;font-size:32px;line-height:1;padding:2px 3px;color:var(--rule-2)}
+.stars button.on{color:var(--gold)}
+.stars .sl{margin-left:8px;font-size:14px;color:var(--ink-2)}
+.share{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 4px}
+.hint{font-size:13px;color:var(--ink-3);margin:6px 0 0}
+
+/* plan */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--rule-2);background:var(--surface);border-radius:999px;padding:4px 4px 4px 5px;font-size:14px;font-weight:600}
+.chip i{font-style:normal;width:22px;height:22px;border-radius:50%;background:var(--c);color:var(--badge-ink);display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:13px}
+.chip button{border:0;background:var(--surface-2);width:24px;height:24px;border-radius:50%;font-size:15px;line-height:1;color:var(--ink-2);padding:0}
+.routecard{border:1px solid var(--rule-2);border-radius:16px;background:var(--surface);padding:14px;margin:0 0 18px}
+.rc-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.rc-head .h3{margin:0}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin:12px 0}
+.stats div{border-left:3px solid var(--bonnet);padding-left:9px}
+.stats dt{font-size:12px;color:var(--ink-3)}
+.stats dd{margin:0;font-weight:700;font-size:15px}
+.legs{list-style:none;margin:14px 0 6px;padding:0}
+.legs li{display:flex;gap:10px;align-items:flex-start;padding:7px 0}
+.legs .stop{padding:9px 0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+.legs .mv{color:var(--ink-2);font-size:14px;padding-left:4px}
+.lg-ico{width:26px;flex:none;text-align:center}
+.lg-t{flex:1;min-width:0}
+.lg-a{display:flex;gap:10px;font-size:13px;font-weight:700;flex:none}
+.st-n{width:26px;height:26px;flex:none;border-radius:8px;background:var(--bonnet);color:var(--bonnet-ink);display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:15px}
+.st-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.st-main .muted{margin:2px 0 0;font-size:13px}
+.pin-mini{width:22px;height:22px;flex:none;border-radius:50%;background:var(--c);color:var(--badge-ink);display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:12px}
+.timing{margin:8px 0 0;padding-left:18px;font-size:13px;color:var(--ink-2)}
+.ctable,.ptable{width:100%;border-collapse:collapse;font-size:14px}
+.ctable td,.ptable th,.ptable td{padding:8px 0;border-bottom:1px solid var(--rule);vertical-align:top;text-align:left}
+.ctable td:last-child,.ptable td{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;padding-left:12px;font-weight:700}
+.ptable th{font-weight:600}
+.ptable th small{display:block;font-weight:400;color:var(--ink-3);font-size:12px}
+.ctable tr.tot td,.ptable tr.tot th,.ptable tr.tot td{font-weight:800;border-bottom:0;font-size:16px}
+.saved{list-style:none;margin:0;padding:0}
+.saved li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--rule)}
+.saved b{display:block}
+.saved .muted{margin:0;font-size:13px}
+
+/* log */
+.timeline{list-style:none;margin:0;padding:0}
+.day{margin:0 0 16px}
+.day h3{font-family:var(--display);font-size:18px;font-weight:700;margin:0 0 6px;padding-bottom:4px;border-bottom:2px solid var(--ink)}
+.ents{list-style:none;margin:0;padding:0}
+.ent{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--rule)}
+.ent p{margin:3px 0 0;white-space:pre-wrap;font-size:14px;color:var(--ink-2)}
+.ent .ico{width:22px;flex:none;text-align:center;color:var(--ink-3)}
+.mini{border:0;background:none;color:var(--ink-3);font-size:12px;text-decoration:underline;padding:0;margin-top:4px}
+.addnote{display:flex;flex-direction:column;gap:8px;margin:8px 0 18px}
+details.backup{border-top:1px solid var(--rule);padding-top:10px;margin-top:20px}
+details.backup summary{font-weight:700;cursor:pointer}
+
+/* safety */
+.sos{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+
+/* modal + toast */
+.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(10,20,18,.5);z-index:70;padding:16px}
+.modal.on{display:flex}
+.modal .box{background:var(--surface);border-radius:18px;max-width:520px;width:100%;padding:18px;box-shadow:var(--float);max-height:90vh;overflow:auto}
+.modal .box h3{font-family:var(--display);font-size:22px;margin:0 0 6px}
+.col{flex-direction:column;align-items:stretch}
+.copybox{min-height:220px;font-size:14px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translate(-50%,16px);background:var(--ink);color:var(--page);padding:10px 16px;border-radius:14px;font-size:14px;font-weight:600;opacity:0;transition:opacity .2s,transform .2s;z-index:80;pointer-events:none;max-width:min(92vw,480px);text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div>
+    <h1 class="title">Austin, solo</h1>
+    <p class="sub">Ten places for two weeks, rated for safety first.</p>
+  </div>
+  <div class="top-r">
+    <button class="save" id="save" type="button" data-act="privacy" data-s="loading" aria-label="Storage and privacy">Loading…</button>
+    <button class="uberbtn" type="button" data-act="uber-modal">Get Uber</button>
+  </div>
+</header>
+
+<main class="layout">
+  <section class="map-wrap" aria-label="Shaded relief map of central Austin">
+    <canvas id="map" role="img" aria-label="Relief map of Austin with ten numbered places. The list below has the same places."></canvas>
+    <div class="mc tl">
+      <div class="legend">
+        <span id="lgT">Pin color: safety rating</span>
+        <span class="lg-d">
+          <span><i style="--c:var(--s5)"></i>5</span><span><i style="--c:var(--s45)"></i>4.5</span><span><i style="--c:var(--s4)"></i>4</span><span><i style="--c:var(--s35)"></i>3.5</span><span><i style="--c:var(--s3)"></i>3</span><span id="lgClosed" hidden><i style="--c:var(--sclosed)"></i>closed</span>
+        </span>
+        <span class="lg-s"><b class="scbar" id="scBar"></b><span id="scTxt">1 mi</span><span class="north" title="North is up">N ↑</span></span>
+      </div>
+      <button class="night" id="nightBtn" type="button" data-act="night" aria-pressed="false">☾ After dark</button>
+    </div>
+    <div class="mc tr">
+      <button class="fab" type="button" data-act="zoom-in" aria-label="Zoom in">+</button>
+      <button class="fab" type="button" data-act="zoom-out" aria-label="Zoom out">−</button>
+      <button class="fab" type="button" data-act="fit" aria-label="Show all ten places">⤢</button>
+      <button class="fab" type="button" data-act="locate" aria-label="Show my location">◎</button>
+    </div>
+    <div class="maphint" id="mapHint" hidden><span id="mapHintT"></span><button type="button" data-act="cancel-hint">Cancel</button></div>
+    <div class="mc bot">
+      <a class="nextchip" id="nextChip" hidden target="_blank" rel="noopener"></a>
+      <div class="botrow">
+        <div class="seg" role="group" aria-label="Getting around">
+          <button type="button" data-act="mode" data-mode="walk" aria-pressed="false">🚶 Walk</button>
+          <button type="button" data-act="mode" data-mode="uber" aria-pressed="true">🚗 Uber + walk</button>
+        </div>
+        <button class="go" type="button" data-act="route">Best route</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel">
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button class="tab" role="tab" type="button" data-act="tab" data-tab="places" aria-selected="true">Places</button>
+      <button class="tab" role="tab" type="button" data-act="tab" data-tab="plan" aria-selected="false">Plan</button>
+      <button class="tab" role="tab" type="button" data-act="tab" data-tab="log" aria-selected="false">Log</button>
+      <button class="tab" role="tab" type="button" data-act="tab" data-tab="costs" aria-selected="false">Costs</button>
+      <button class="tab" role="tab" type="button" data-act="tab" data-tab="safety" aria-selected="false">Safety</button>
+    </nav>
+    <div id="tab-places" class="tabpane" role="tabpanel"></div>
+    <div id="tab-plan" class="tabpane" role="tabpanel" hidden></div>
+    <div id="tab-log" class="tabpane" role="tabpanel" hidden></div>
+    <div id="tab-costs" class="tabpane" role="tabpanel" hidden></div>
+    <div id="tab-safety" class="tabpane" role="tabpanel" hidden></div>
+    <p class="foot">Ratings are a judgment call based on public information as of November 2026. Prices and hours change, so confirm before you go. The map is an illustrated sketch; use the Google Maps links for turn-by-turn directions.</p>
+  </section>
+</main>
+
+<div class="scrim" id="scrim" data-act="close-sheet"></div>
+<aside class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Place details"></aside>
+<div class="modal" id="modal"><div class="box" id="modalBox" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+'use strict';
+
+/* ============================== PLACES ============================== */
+const PLACES = [
+  { id:'capitol', n:1, name:'Texas State Capitol', short:'Capitol', cat:'History', area:'Downtown', kind:'Downtown landmark', when:'day',
+    lat:30.27472, lng:-97.74034, addr:'1100 Congress Ave, Austin, TX 78701',
+    safety:{day:5, night:4}, friendly:4.5,
+    why:{ day:'Every entrance has security screening, and state troopers patrol the building and grounds. Busy with staff and visitors all day.',
+          night:'The grounds stay lit and patrolled, but nearby office blocks empty out after work. Fine for an evening stroll; ride once you leave the grounds.',
+          friend:'Free guided tours with guides who enjoy questions. An easy, low-pressure first stop for getting your bearings.' },
+    blurb:'A pink-granite statehouse that rises taller than the U.S. Capitol. Stand in the rotunda and look straight up at the star in the dome, then wander 22 acres of shady grounds.',
+    tips:['Free guided tours leave from the South Foyer through the day. The last one departs around 4:15pm; on Sundays they start at noon.',
+          'Pack light: there is a bag check at the entrance.',
+          'The Blanton and the Bullock history museum are a 10–15 minute walk north, good for a hot or rainy afternoon.'],
+    best:'Weekday morning', hours:'Open daily. Guided tours Mon–Sat 9am–4:15pm, Sun noon–4:15pm', timing:'Guided tours end around 4:15pm',
+    dur:1.25, entry:0, spend:0, costNote:'Free' },
+
+  { id:'blanton', n:2, name:'Blanton Museum of Art', short:'Blanton', cat:'Art', area:'UT campus', kind:'Art museum on the UT campus', when:'day',
+    lat:30.28076, lng:-97.73741, addr:'200 E Martin Luther King Jr Blvd, Austin, TX 78712',
+    safety:{day:4.5, night:3.5}, friendly:4,
+    why:{ day:'Staffed galleries with guards on duty, on a busy campus with plenty of people around in daylight.',
+          night:'The museum closes at 5pm (8pm on Saturdays). Campus paths get dark and quiet, so stick to lit main streets or call a car.',
+          friend:'Calm and courteous rather than chatty. Docent talks and the café make conversation easy if you want it.' },
+    blurb:'Home to the largest public art collection in Central Texas, from Renaissance paintings to Latin American art. Save time for Ellsworth Kelly’s Austin, a small chapel-like building lit by colored glass.',
+    tips:['Admission is free on Tuesdays.',
+          'Closed Mondays; open until 8pm on Saturdays.',
+          'Pair it with the Capitol, about a 12-minute walk south along Congress Ave.'],
+    best:'Tuesday (free) or a hot afternoon', hours:'Tue–Sun 10am–5pm, Sat until 8pm. Closed Mon', timing:'Closed Mondays; free on Tuesdays',
+    dur:2, entry:15, spend:0, costNote:'$15 adult (free on Tuesdays)' },
+
+  { id:'franklin', n:3, name:'Franklin Barbecue', short:'Franklin BBQ', cat:'Food', area:'East Austin', kind:'Barbecue in East Austin', when:'morning',
+    lat:30.27013, lng:-97.73127, addr:'900 E 11th St, Austin, TX 78702',
+    safety:{day:4, night:null}, friendly:5,
+    why:{ day:'A busy daytime line on a mixed block by I-35. Expect some panhandling nearby; keep your bag zipped and your phone in hand.',
+          night:'Closed in the evening. It serves lunch only.',
+          friend:'The line is the social event. People share chairs, coffee and travel stories for hours, so it is very easy to fall into conversation alone.' },
+    blurb:'The brisket people fly in for, served at lunch until it sells out. The morning line is part of the experience, and you will likely leave with a few new acquaintances.',
+    tips:['Get in line by about 8:30am on a weekday and bring a folding chair, water and sunscreen.',
+          'Closed Mondays. Open Tuesday to Sunday from 11am until the meat runs out.',
+          'Not up for the wait? Preorders and reservations are on their website.',
+          'Half a pound of brisket and one side is plenty for one person.'],
+    best:'Weekday, line by 8:30am', hours:'Tue–Sun 11am until sold out. Closed Mon', timing:'Lunch only; line forms early in the morning',
+    dur:3, entry:0, spend:35, costNote:'Brisket $39/lb; a solo meal runs $30–40' },
+
+  { id:'lake', n:4, name:'Lady Bird Lake paddle', short:'Lake paddle', cat:'Outdoors', area:'Zilker', kind:'Kayak and paddleboard dock by Zilker Park', when:'day',
+    lat:30.27280, lng:-97.77800, addr:'Rowing Dock, 2418 Stratford Dr, Austin, TX 78746',
+    safety:{day:4.5, night:3}, friendly:5,
+    why:{ day:'Calm water with no motorboats, life jackets provided, and a trail packed with runners and walkers from dawn to dusk.',
+          night:'Rentals stop before dark, and unlit stretches of the trail are best avoided alone at night.',
+          friend:'Dock staff are helpful and the trail is full of locals who will happily point you to the best views.' },
+    blurb:'Paddle past the skyline on the calm downtown stretch of the Colorado River, then walk part of the 10-mile Butler Trail loop. Runners, rowers, dogs and turtles all share it.',
+    tips:['Rowing Dock has offered half-price paddling on weekdays after 4pm; ask what deals are running.',
+          'Swimming in the lake is not allowed. Save your swim for Barton Springs, about 15 minutes away on foot.',
+          'From March to October, paddle toward the Congress Ave Bridge at dusk to watch the bat colony fly out.',
+          'Downtown option: the Waller Creek Boathouse near Rainey Street also rents kayaks.'],
+    best:'Morning or late afternoon', hours:'Open daily, weather permitting. Last rental about an hour before closing', timing:'Rentals end before dusk',
+    dur:2, entry:0, spend:25, costNote:'Single kayak about $20 an hour' },
+
+  { id:'soco', n:5, name:'South Congress Avenue', short:'South Congress', cat:'Shopping and food', area:'SoCo', kind:'Shopping and food street', when:'late',
+    lat:30.25070, lng:-97.74935, addr:'1300 S Congress Ave, Austin, TX 78704',
+    safety:{day:4.5, night:4}, friendly:4.5,
+    why:{ day:'Wide, busy sidewalks lined with shops and cafés, with lots of visitors and staff around.',
+          night:'Stays lively and well lit into the night, especially near the music venues. Ride once you leave the main strip.',
+          friend:'Shopkeepers chat, patios are full, and solo diners blend right in at bar seats and food trucks.' },
+    blurb:'Austin’s most walkable strip: boot shops, vintage stores, food trucks and the “i love you so much” mural, with the Capitol framed at the end of the avenue.',
+    tips:['The Continental Club has hosted live music here since 1955. Early sets are relaxed and easy to enjoy alone.',
+          'Weekday afternoons are calmer than weekends.',
+          'Walk north over the Congress Ave Bridge at golden hour for skyline photos.'],
+    best:'Late afternoon into evening', hours:'Shops about 10am–7pm; restaurants and bars later', timing:'Shops close around 7pm',
+    dur:2.5, entry:0, spend:35, costNote:'Coffee, snacks and browsing, $20–60' },
+
+  { id:'barton', n:6, name:'Barton Springs Pool', short:'Barton Springs', cat:'Swimming', area:'Zilker', kind:'Spring-fed pool in Zilker Park', when:'day',
+    lat:30.26405, lng:-97.77118, addr:'2131 William Barton Dr, Austin, TX 78746',
+    safety:{day:4.5, night:4}, friendly:5,
+    why:{ day:'Lifeguards on duty in the daytime and a relaxed, mixed crowd. Car break-ins happen in park lots, so arriving by Uber is a plus.',
+          night:'Open for evening swims until 10pm, but Zilker Park is dark around it. Have your ride come to the gate.',
+          friend:'One of the friendliest scenes in town. Regulars of every age gather on the grassy hill and give first-timers tips.' },
+    blurb:'A three-acre pool fed by underground springs and around 68–70°F all year. Spread a towel on the grassy slope with the locals, then brave the plunge.',
+    tips:['Closed Thursdays from 9am to 7pm for cleaning. Other days it is open 5am–10pm.',
+          'It closes after heavy rain. Check austintexas.gov/parkclosures before you go.',
+          'Bring water shoes; the limestone bottom is slippery.',
+          'Zilker Botanical Garden and Umlauf Sculpture Garden are a short walk away.'],
+    best:'Weekday morning', hours:'Daily 5am–10pm; Thursdays closed 9am–7pm', timing:'Closed Thursdays 9am–7pm',
+    dur:2, entry:9, spend:0, costNote:'$9 non-resident adult' },
+
+  { id:'bonnell', n:7, name:'Mount Bonnell', short:'Mount Bonnell', cat:'Views', area:'West Austin', kind:'Lookout in West Austin', when:'sunset',
+    lat:30.32108, lng:-97.77349, addr:'3800 Mount Bonnell Rd, Austin, TX 78731',
+    safety:{day:4.5, night:3}, friendly:4.5,
+    why:{ day:'A short, popular climb with lots of people around. Police have warned about car break-ins at the parking area, which is another reason to arrive by Uber.',
+          night:'There are no lights at the top, and the crowd thins quickly after sunset. Leave with everyone else; the park closes at 10pm.',
+          friend:'A happy sunset crowd of couples, families and photographers. Easy to ask someone to take your picture.' },
+    blurb:'About 100 limestone steps lead to one of the best views in Austin: Lake Austin, the 360 Bridge and rolling Hill Country, about 775 feet up. Sunset is the classic time.',
+    tips:['Request your ride back before the sun goes down. Pickups are on a quiet residential road.',
+          'Bring a small flashlight if you stay past dusk.',
+          'Wear shoes with grip; the rock can be loose.'],
+    best:'Sunset', hours:'Daily 5am–10pm', timing:'Best at sunset; leave with the crowd',
+    dur:1, entry:0, spend:0, costNote:'Free' },
+
+  { id:'wildflower', n:8, name:'Lady Bird Johnson Wildflower Center', short:'Wildflower Center', cat:'Gardens', area:'Southwest', kind:'Botanic garden in Southwest Austin', when:'day',
+    lat:30.18545, lng:-97.87321, addr:'4801 La Crosse Ave, Austin, TX 78739',
+    safety:{day:5, night:null}, friendly:4.5,
+    why:{ day:'Ticketed, staffed grounds with a calm, mostly local crowd. One of the most relaxing places in town to wander alone.',
+          night:'Closed after 5pm.',
+          friend:'Volunteers and staff love to talk plants, and garden tours make it easy to join a group for an hour.' },
+    blurb:'The University of Texas’ native-plant botanic garden: 284 acres of meadows, shady trails and an observation tower, with nearly 900 Texas species. Peaceful in every season.',
+    tips:['Buy tickets online ahead of time. Last entry is an hour before closing.',
+          'It is about 25 minutes from downtown by car, so plan a half day.',
+          'The café is good for lunch, and there are shaded picnic spots.'],
+    best:'Weekday morning', hours:'Daily 9am–5pm', timing:'Open 9am–5pm',
+    dur:2.5, entry:15, spend:12, costNote:'About $15 adult Mon–Thu; weekends can cost more' },
+
+  { id:'spoke', n:9, name:'The Broken Spoke', short:'Broken Spoke', cat:'Music and dancing', area:'South Lamar', kind:'Honky-tonk on South Lamar', when:'night',
+    lat:30.24140, lng:-97.78360, addr:'3201 S Lamar Blvd, Austin, TX 78704',
+    safety:{day:4.5, night:4}, friendly:4.5,
+    why:{ day:'An old-school restaurant side with a family feel.',
+          night:'Well run and full of regulars, but it sits on a busy road with a dark parking lot. Have your Uber pick you up right at the door.',
+          friend:'Two-step lessons make it easy to join in solo, and regulars often ask newcomers to dance. A polite “no thanks” is always fine. It is a traditional place with traditional manners.' },
+    blurb:'A true Texas honky-tonk since 1964, with a low ceiling, chicken-fried steak and live country bands. The early two-step lesson is the friendliest way in.',
+    tips:['Lessons run Wednesday to Saturday, 8–9pm. Arrive by 7:30 to sign up; it is $10 plus the cover.',
+          'There is free live music in the restaurant early in the evening, Tuesday to Saturday. Bring cash to tip the band.',
+          'Jeans and boots fit right in.'],
+    best:'Wed–Sat, arrive 7:30pm', hours:'Tue–Sat evenings; check the band calendar', timing:'Lesson sign-up by 7:30pm',
+    dur:2.5, entry:25, spend:25, costNote:'Cover $10–20, plus $10 for the lesson' },
+
+  { id:'rainey', n:10, name:'Rainey Street', short:'Rainey St', cat:'Nightlife', area:'Downtown', kind:'Bar street downtown', when:'night',
+    lat:30.25880, lng:-97.73890, addr:'Rainey St & Davis St, Austin, TX 78701',
+    safety:{day:4.5, night:3.5}, friendly:4.5,
+    why:{ day:'Quiet and pleasant by day, close to the lake trail and downtown hotels.',
+          night:'A crowded, high-energy bar district. Watch your drink and stay away from the dark lakeshore at the end of the street, where a string of late-night drownings prompted city safety reviews.',
+          friend:'Porches, yards and food trucks keep it social. Striking up a conversation at the bar is normal here.' },
+    blurb:'Old bungalows turned into bars with porches and string lights, now ringed by glassy towers. Lively and social, and at its best early in the evening.',
+    tips:['Go between 5 and 9pm for happy hours and a mellower crowd.',
+          'Keep your drink with you and accept drinks only from the bartender.',
+          'Rideshare pickups get chaotic late. Walk to a quieter corner and check the plate before you get in.'],
+    best:'Early evening', hours:'Bars from afternoon until 2am', timing:'Best 5–9pm',
+    dur:2, entry:0, spend:35, costNote:'Two or three drinks plus a food truck, $30–45' }
+];
+
+const STARTS = [
+  { id:'dt', label:'Downtown hotels (Congress Ave & 2nd St)', lat:30.2646, lng:-97.7441 },
+  { id:'soco', label:'South Congress hotels', lat:30.2489, lng:-97.7502 },
+  { id:'east', label:'East Austin (E 6th & Chicon)', lat:30.2627, lng:-97.7230 },
+  { id:'ut', label:'Near the Capitol and UT', lat:30.2785, lng:-97.7420 },
+  { id:'zilker', label:'Zilker (Barton Springs Rd)', lat:30.2605, lng:-97.7600 }
+];
+const START_OPTS = [...STARTS.map(s => [s.id, s.label]), ['custom','My spot (set it on the map)'], ['gps','Where I am now (GPS)'], ['any','No fixed start: best first stop']];
+const WALK_OPTS = [[0.4,'¼ mile'],[0.8,'½ mile'],[1.6,'1 mile'],[2.4,'1½ miles']];
+const FOOD = { lean:['Lean, $50 a day',50], comfort:['Comfortable, $85 a day',85], treat:['Treat yourself, $140 a day',140] };
+const MOVE = { walk:['Mostly walking and bus, $8 a day',8], mix:['Walking plus some Uber, $25 a day',25], uber:['Uber most places, $50 a day',50] };
+
+const PRICE_GROUPS = [
+  { title:'Food and drink', items:[
+    ['Breakfast taco','$3–5','An Austin staple; two make a breakfast'],
+    ['Coffee or latte','$5–7',''],
+    ['Food-truck lunch','$12–18',''],
+    ['Barbecue brisket','$30–40 per lb','Franklin charges $39; half a pound feeds one'],
+    ['Casual dinner for one','$25–45','Before tip'],
+    ['Nice dinner with a glass of wine','$70–110','Before tip'],
+    ['Cocktail or margarita','$12–16',''],
+    ['Local beer','$6–9','']]},
+  { title:'Getting around', items:[
+    ['Uber, short hop of 1–3 miles','$10–16','Can double at peak times'],
+    ['Uber between the airport and downtown','$20–40','About 20–30 minutes'],
+    ['City bus (CapMetro)','$1.25','Capped at $2.50 a day with the Umo app; rises to $1.50 in January 2027'],
+    ['Airport bus, Route 20','$1.25','Every 15 minutes to downtown'],
+    ['MetroBike bike share','$2.50 + $0.25/min','Or $10 for a day of 30-minute rides']]},
+  { title:'A night’s stay', items:[
+    ['Downtown hotel, mid-range','$200–350','Plus 17% hotel tax'],
+    ['South Congress boutique hotel','$250–450','Plus 17% hotel tax'],
+    ['Private studio rental, central','$120–200','Plus cleaning fee and tax']]},
+  { title:'Taxes and tips', items:[
+    ['Sales tax','8.25%','Added at the register'],
+    ['Restaurant and bar tips','18–22%','Or $1–2 a drink at the bar'],
+    ['Rideshare tip','10–20%, optional','No tip prompt in a driverless Waymo']]}
+];
+
+/* ============================== MAP GEOGRAPHY (approximate) ============================== */
+const GEO = {
+  water: [
+    { w:190, pts:[[30.352,-97.8000],[30.343,-97.7925],[30.334,-97.7845],[30.3265,-97.7790],[30.3205,-97.7772],[30.3135,-97.7766],[30.3060,-97.7800],[30.2995,-97.7845],[30.2950,-97.7866]] },
+    { w:170, pts:[[30.2950,-97.7866],[30.2895,-97.7856],[30.2830,-97.7842],[30.2772,-97.7822],[30.2738,-97.7796],[30.2715,-97.7745],[30.2694,-97.7688],[30.2676,-97.7632],[30.2662,-97.7582],[30.2646,-97.7535],[30.2630,-97.7490],[30.2614,-97.7451],[30.2593,-97.7419],[30.2563,-97.7392],[30.2528,-97.7366]] },
+    { w:290, pts:[[30.2528,-97.7366],[30.2505,-97.7322],[30.2496,-97.7262],[30.2494,-97.7205],[30.2492,-97.7160]] },
+    { w:110, pts:[[30.2492,-97.7160],[30.2478,-97.7100],[30.2452,-97.7035],[30.2440,-97.6960],[30.2425,-97.6880]] }
+  ],
+  creeks: [
+    [[30.2380,-97.8400],[30.2425,-97.8240],[30.2470,-97.8110],[30.2505,-97.8010],[30.2560,-97.7905],[30.2610,-97.7800],[30.2641,-97.7718],[30.2652,-97.7680],[30.2664,-97.7625],[30.2663,-97.7592]],
+    [[30.3330,-97.7505],[30.3180,-97.7480],[30.3040,-97.7495],[30.2930,-97.7520],[30.2830,-97.7532],[30.2740,-97.7528],[30.2670,-97.7522],[30.2648,-97.7520]],
+    [[30.3080,-97.7320],[30.2960,-97.7330],[30.2860,-97.7345],[30.2780,-97.7362],[30.2700,-97.7372],[30.2640,-97.7380],[30.2585,-97.7384]],
+    [[30.2300,-97.7720],[30.2390,-97.7660],[30.2470,-97.7600],[30.2550,-97.7545],[30.2617,-97.7505]],
+    [[30.2300,-97.7470],[30.2390,-97.7440],[30.2480,-97.7420],[30.2560,-97.7408]],
+    [[30.2240,-97.8500],[30.2215,-97.8250],[30.2200,-97.8000],[30.2185,-97.7750],[30.2140,-97.7500],[30.2080,-97.7250],[30.2040,-97.7000]],
+    [[30.3010,-97.7690],[30.2900,-97.7720],[30.2800,-97.7770],[30.2752,-97.7810]]
+  ],
+  hwy: [
+    [[30.350,-97.7020],[30.320,-97.7110],[30.300,-97.7190],[30.288,-97.7265],[30.278,-97.7305],[30.2700,-97.7340],[30.2600,-97.7355],[30.2525,-97.7366],[30.2460,-97.7395],[30.2330,-97.7470],[30.2190,-97.7570],[30.1990,-97.7690],[30.1800,-97.7800],[30.1550,-97.7930]],
+    [[30.350,-97.7490],[30.322,-97.7560],[30.305,-97.7618],[30.290,-97.7685],[30.280,-97.7760],[30.2738,-97.7810],[30.2640,-97.7870],[30.2540,-97.7925],[30.2430,-97.7985],[30.2300,-97.8120],[30.2140,-97.8320],[30.1980,-97.8530],[30.1850,-97.8690],[30.1700,-97.8820],[30.1550,-97.8920]]
+  ],
+  art: [
+    [[30.2810,-97.7382],[30.2747,-97.7404],[30.2617,-97.7451],[30.2500,-97.7497],[30.2350,-97.7553],[30.2190,-97.7636],[30.2000,-97.7740]],
+    [[30.3300,-97.7280],[30.3060,-97.7425],[30.2876,-97.7478],[30.2700,-97.7527],[30.2640,-97.7537],[30.2600,-97.7570],[30.2540,-97.7640],[30.2470,-97.7735],[30.2412,-97.7832],[30.2340,-97.7935],[30.2290,-97.8010]],
+    [[30.3550,-97.7990],[30.3300,-97.8030],[30.3050,-97.8150],[30.2800,-97.8230],[30.2550,-97.8200],[30.2360,-97.8050]],
+    [[30.2380,-97.8600],[30.2330,-97.8250],[30.2330,-97.8100],[30.2290,-97.7930],[30.2250,-97.7800],[30.2200,-97.7650],[30.2185,-97.7560],[30.2160,-97.7300],[30.2120,-97.7000]],
+    [[30.2745,-97.7700],[30.2700,-97.7600],[30.2660,-97.7530],[30.2632,-97.7450],[30.2600,-97.7395],[30.2560,-97.7330],[30.2540,-97.7250],[30.2520,-97.7150]],
+    [[30.2600,-97.7480],[30.2585,-97.7440],[30.2540,-97.7400],[30.2480,-97.7360],[30.2420,-97.7300],[30.2370,-97.7200],[30.2330,-97.7100]],
+    [[30.2840,-97.7530],[30.2825,-97.7460],[30.2808,-97.7380],[30.2795,-97.7300],[30.2790,-97.7150]],
+    [[30.2640,-97.7720],[30.2615,-97.7640],[30.2605,-97.7570],[30.2603,-97.7500],[30.2600,-97.7480]],
+    [[30.2950,-97.7880],[30.2880,-97.7860],[30.2800,-97.7820],[30.2760,-97.7780],[30.2745,-97.7700]],
+    [[30.2700,-97.7810],[30.2720,-97.7950],[30.2760,-97.8100],[30.2790,-97.8230],[30.2800,-97.8400]]
+  ],
+  parks: [
+    [[30.2703,-97.7748],[30.2700,-97.7690],[30.2682,-97.7640],[30.2650,-97.7622],[30.2622,-97.7660],[30.2615,-97.7725],[30.2640,-97.7765],[30.2680,-97.7770]],
+    [[30.1890,-97.8775],[30.1893,-97.8700],[30.1850,-97.8675],[30.1815,-97.8700],[30.1812,-97.8770],[30.1850,-97.8795]],
+    [[30.2930,-97.7535],[30.2930,-97.7500],[30.2830,-97.7515],[30.2780,-97.7525],[30.2780,-97.7545],[30.2860,-97.7545]],
+    [[30.2768,-97.7418],[30.2765,-97.7385],[30.2726,-97.7390],[30.2729,-97.7423]],
+    [[30.3228,-97.7748],[30.3228,-97.7722],[30.3196,-97.7720],[30.3194,-97.7747]]
+  ],
+  ut: [[30.2905,-97.7420],[30.2905,-97.7280],[30.2808,-97.7290],[30.2805,-97.7420]],
+  greenbelt: [[30.2380,-97.8400],[30.2425,-97.8240],[30.2470,-97.8110],[30.2505,-97.8010],[30.2560,-97.7905],[30.2610,-97.7800]],
+  pool: [[30.26375,-97.77235],[30.26428,-97.77040]],
+  sixth: [[30.26835,-97.74255],[30.26610,-97.73470]]
+};
+const LABELS = [
+  { t:'Lady Bird Lake', lat:30.2522, lng:-97.7262, k:'water', rot:-3 },
+  { t:'Lake Austin', lat:30.3335, lng:-97.7905, k:'water', rot:-50 },
+  { t:'Colorado River', lat:30.2418, lng:-97.7015, k:'water', rot:12, min:0.025 },
+  { t:'Barton Creek', lat:30.2478, lng:-97.8095, k:'creek', rot:-28, min:0.035 },
+  { t:'Shoal Creek', lat:30.3070, lng:-97.7465, k:'creek', rot:-82, min:0.05 },
+  { t:'DOWNTOWN', lat:30.2690, lng:-97.7466, k:'hood', min:0.03 },
+  { t:'UT AUSTIN', lat:30.2888, lng:-97.7352, k:'hood', min:0.03 },
+  { t:'EAST AUSTIN', lat:30.2610, lng:-97.7195, k:'hood', min:0.03 },
+  { t:'TRAVIS HEIGHTS', lat:30.2410, lng:-97.7395, k:'hood', min:0.04 },
+  { t:'BOULDIN', lat:30.2520, lng:-97.7600, k:'hood', min:0.05 },
+  { t:'ZILKER', lat:30.2575, lng:-97.7712, k:'hood', min:0.045 },
+  { t:'BARTON HILLS', lat:30.2505, lng:-97.7850, k:'hood', min:0.045 },
+  { t:'CLARKSVILLE', lat:30.2832, lng:-97.7605, k:'hood', min:0.045 },
+  { t:'TARRYTOWN', lat:30.3015, lng:-97.7735, k:'hood', min:0.035 },
+  { t:'HYDE PARK', lat:30.3105, lng:-97.7300, k:'hood', min:0.035 },
+  { t:'WESTLAKE', lat:30.2905, lng:-97.8115, k:'hood', min:0.025 },
+  { t:'SUNSET VALLEY', lat:30.2262, lng:-97.8165, k:'hood', min:0.03 },
+  { t:'SOUTH LAMAR', lat:30.2352, lng:-97.7805, k:'hood', min:0.045 },
+  { t:'Hill Country', lat:30.2560, lng:-97.8640, k:'terrain' },
+  { t:'Blackland Prairie', lat:30.2265, lng:-97.7175, k:'terrain', max:0.09 },
+  { t:'Balcones Escarpment', lat:30.2045, lng:-97.8105, k:'terrain', rot:-62, max:0.08 }
+];
+const SHIELDS = [
+  { t:'I-35', lat:30.2915, lng:-97.7243, c:'#2c4f9e' },
+  { t:'MoPac', lat:30.2990, lng:-97.7645, c:'#2f7a4d' },
+  { t:'360', lat:30.2700, lng:-97.8218, c:'#6b5b3e' },
+  { t:'290', lat:30.2312, lng:-97.8024, c:'#6b5b3e' }
+];
+
+/* ============================== HELPERS ============================== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const byId = id => PLACES.find(p => p.id === id);
+const q = s => encodeURIComponent(s);
+const REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const isDark = () => !!(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+const fmtR = v => v == null ? '–' : (Number.isInteger(v) ? v.toFixed(1) : String(v));
+const fmtMi = km => { const m = km / 1.609344; return m < 0.1 ? 'under 0.1 mi' : (m < 10 ? m.toFixed(1) : String(Math.round(m))) + ' mi'; };
+const fmtMin = min => { min = Math.max(1, Math.round(min)); if (min < 60) return min + ' min'; const h = Math.floor(min / 60), r = min % 60; return r ? `${h} h ${r} min` : `${h} h`; };
+const fmtUSD = v => '$' + Math.round(v).toLocaleString('en-US');
+const durTxt = h => { const w = Math.floor(h), f = Math.round((h - w) * 4) / 4; const fr = { 0:'', 0.25:'¼', 0.5:'½', 0.75:'¾' }[f] || ''; return (w ? w : '') + fr + '\u00a0h'; };
+const LET = i => String.fromCharCode(65 + i);
+const SLOT = { morning:0, day:1, late:1.5, sunset:2, night:3 };
+const costOf = p => p.entry + p.spend;
+const costShort = p => costOf(p) ? 'about ' + fmtUSD(costOf(p)) : 'free';
+const starStr = n => '★'.repeat(n) + '☆'.repeat(5 - n);
+
+/* projection: local meters, y grows south */
+const LAT0 = 30.265, LNG0 = -97.765, MX = 96244, MY = 110857;
+const proj = (lat, lng) => ({ x: (lng - LNG0) * MX, y: (LAT0 - lat) * MY });
+const unproj = (x, y) => ({ lat: +(LAT0 - y / MY).toFixed(6), lng: +(LNG0 + x / MX).toFixed(6) });
+PLACES.forEach(p => Object.assign(p, proj(p.lat, p.lng)));
+const BOUNDS = (() => { const a = proj(30.345, -97.905), b = proj(30.160, -97.695); return { x0:a.x, y0:a.y, x1:b.x, y1:b.y }; })();
+
+/* ============================== STATE + STORAGE ============================== */
+const KEY = 'austin-solo-guide:v1';
+function blank(){
+  const places = {};
+  PLACES.forEach(p => { places[p.id] = { seen:false, seenAt:null, rating:0, note:'' }; });
+  return { v:1, places, plan:[], journal:[], plans:[], friend:'',
+    settings:{ mode:'uber', night:false, start:'dt', custom:null, round:false, walkMax:1.6, timeOrder:true, autoLock:15 },
+    budget:{ nights:14, lodge:220, food:'comfort', move:'mix' } };
+}
+function merge(data){
+  const out = blank();
+  if (!data || typeof data !== 'object') return out;
+  if (data.places && typeof data.places === 'object') {
+    for (const id in out.places) {
+      const d = data.places[id]; if (!d) continue;
+      out.places[id].seen = !!d.seen;
+      out.places[id].seenAt = typeof d.seenAt === 'string' ? d.seenAt : null;
+      out.places[id].rating = clamp(Math.round(+d.rating || 0), 0, 5);
+      out.places[id].note = typeof d.note === 'string' ? d.note : '';
+    }
+  }
+  if (Array.isArray(data.plan)) out.plan = data.plan.filter(id => byId(id));
+  if (Array.isArray(data.journal)) out.journal = data.journal.filter(j => j && typeof j.text === 'string' && j.at);
+  if (Array.isArray(data.plans)) out.plans = data.plans.filter(p => p && Array.isArray(p.stops) && p.name);
+  if (typeof data.friend === 'string') out.friend = data.friend;
+  if (data.settings && typeof data.settings === 'object') Object.assign(out.settings, data.settings);
+  if (data.budget && typeof data.budget === 'object') Object.assign(out.budget, data.budget);
+  if (!FOOD[out.budget.food]) out.budget.food = 'comfort';
+  if (!MOVE[out.budget.move]) out.budget.move = 'mix';
+  if (!START_OPTS.some(o => o[0] === out.settings.start)) out.settings.start = 'dt';
+  return out;
+}
+let state = blank();
+const store = (window.storage && typeof window.storage.get === 'function' && typeof window.storage.set === 'function') ? window.storage : null;
+/* ---------- Optional passphrase encryption ----------
+   When it is on, the whole personal state (notes, log, ratings, plans, saved spot, friend's email)
+   is sealed with AES-256-GCM before it is stored. The key is derived from the passphrase with
+   PBKDF2-SHA256 (600,000 iterations, random 16-byte salt) and exists only in memory. The passphrase
+   itself is never stored; a wrong one simply fails the GCM integrity check. */
+const CRYPTO_OK = !!(window.crypto && window.crypto.subtle && window.crypto.getRandomValues);
+const ITER = 600000;
+const TE = new TextEncoder(), TD = new TextDecoder(), AAD = TE.encode(KEY);
+const sec = { on:false, locked:false, key:null, salt:null, iter:ITER, env:null, fails:0, nextTry:0, locking:false };
+const b64 = u8 => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); };
+const unb64 = str => { const bin = atob(str), out = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out; };
+const isEnvelope = d => !!(d && typeof d === 'object' && d.enc && d.ct && d.iv && d.salt);
+async function deriveKey(pass, salt, iter){
+  const base = await crypto.subtle.importKey('raw', TE.encode(String(pass).normalize('NFC')), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({ name:'PBKDF2', salt, iterations:iter, hash:'SHA-256' }, base, { name:'AES-GCM', length:256 }, false, ['encrypt', 'decrypt']);
+}
+async function seal(obj, key, salt, iter){
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name:'AES-GCM', iv, additionalData:AAD }, key, TE.encode(JSON.stringify(obj))));
+  return { v:2, enc:'AES-256-GCM', kdf:'PBKDF2-SHA256', iter, salt:b64(salt), iv:b64(iv), ct:b64(ct) };
+}
+async function unseal(env, key){
+  const pt = await crypto.subtle.decrypt({ name:'AES-GCM', iv:unb64(env.iv), additionalData:AAD }, key, unb64(env.ct));
+  return JSON.parse(TD.decode(pt));
+}
+
+let saveTimer = 0, saveSeq = 0;
+function setSave(s){
+  const el = $('#save'); el.dataset.s = s;
+  const enc = sec.on && !sec.locked;
+  el.dataset.enc = (sec.on && (s === 'saved' || s === 'local' || s === 'locked')) ? '1' : '0';
+  el.textContent = { loading:'Loading…', saving:'Saving…', saved:enc ? '🔒 Saved, encrypted' : 'Saved', local:enc ? '🔒 This session only' : 'This session only', error:'Not saved', locked:'🔒 Locked' }[s] || '';
+  el.title = s === 'local' ? 'Nothing is kept between visits in this view. Open it in the Claude app, or use Log, then Back up.' : 'Storage and privacy';
+}
+async function load(){
+  if (!store) { setSave('local'); return; }
+  let raw = null;
+  try { const r = await store.get(KEY, false); raw = r && r.value; } catch (e) { /* first visit: nothing stored yet */ }
+  if (raw) {
+    let data = null;
+    try { data = JSON.parse(raw); } catch (e) { data = null; }
+    if (isEnvelope(data)) {
+      try { Object.assign(sec, { on:true, locked:true, key:null, env:data, salt:unb64(data.salt), iter:+data.iter || ITER }); setSave('locked'); }
+      catch (e) { setSave('error'); }
+      return;
+    }
+    if (data) state = merge(data);
+  }
+  setSave('saved');
+}
+function save(){
+  clearTimeout(saveTimer);
+  if (sec.locked) return;               /* never overwrite locked data with an empty session */
+  setSave(store ? 'saving' : 'local');
+  saveTimer = setTimeout(flushSave, 450);
+}
+async function flushSave(){
+  clearTimeout(saveTimer);
+  if (sec.locked || (sec.on && !sec.key)) return false;
+  const my = ++saveSeq;
+  try {
+    let payload;
+    if (sec.on) { sec.env = await seal(state, sec.key, sec.salt, sec.iter); payload = JSON.stringify(sec.env); }
+    else payload = JSON.stringify(state);
+    if (!store) { setSave('local'); return true; }
+    if (my !== saveSeq || sec.locked) return true;   /* a newer save is already on its way */
+    const r = await store.set(KEY, payload, false);
+    if (my === saveSeq) setSave(r ? 'saved' : 'error');
+    return !!r;
+  } catch (e) { setSave('error'); return false; }
+}
+
+/* ============================== SAFETY + LINKS ============================== */
+const nightish = p => state.settings.night || p.when === 'night';
+const safetyNow = p => nightish(p) ? p.safety.night : p.safety.day;
+function sVar(v){ if (v == null) return 'var(--sclosed)'; if (v >= 5) return 'var(--s5)'; if (v >= 4.5) return 'var(--s45)'; if (v >= 4) return 'var(--s4)'; if (v >= 3.5) return 'var(--s35)'; if (v >= 3) return 'var(--s3)'; return 'var(--s2)'; }
+function sKey(v){ if (v == null) return 'sclosed'; if (v >= 5) return 's5'; if (v >= 4.5) return 's45'; if (v >= 4) return 's4'; if (v >= 3.5) return 's35'; if (v >= 3) return 's3'; return 's2'; }
+function safeWord(v){ if (v == null) return 'closed after dark'; if (v >= 4.5) return 'very safe'; if (v >= 4) return 'safe with normal care'; if (v >= 3.5) return 'fine, stay alert'; if (v >= 3) return 'use caution'; return 'avoid alone'; }
+function friendWord(v){ if (v >= 5) return 'very social'; if (v >= 4.5) return 'very welcoming'; if (v >= 4) return 'friendly'; return 'reserved'; }
+function meter(v, color){ let h = `<span class="meter" style="--mc:${color}" aria-hidden="true">`; for (let i = 1; i <= 5; i++) h += `<i class="${v >= i ? 'f' : (v >= i - 0.5 ? 'h' : '')}"></i>`; return h + '</span>'; }
+
+const ptLabel = p => p.addr ? `${p.name}, ${p.addr}` : `${p.lat},${p.lng}`;
+const gPlace = p => `https://www.google.com/maps/search/?api=1&query=${q(p.name + ', ' + p.addr)}`;
+const gDir = (to, mode, from) => `https://www.google.com/maps/dir/?api=1${from ? '&origin=' + q(ptLabel(from)) : ''}&destination=${q(ptLabel(to))}&travelmode=${mode}`;
+const yelpLink = p => `https://www.yelp.com/search?find_desc=${q(p.name)}&find_loc=${q('Austin, TX')}`;
+const uberTo = p => `https://m.uber.com/ul/?action=setPickup&pickup=my_location&dropoff[latitude]=${p.lat}&dropoff[longitude]=${p.lng}&dropoff[nickname]=${q(p.short || p.name || 'Destination')}${p.addr ? '&dropoff[formatted_address]=' + q(p.addr) : ''}`;
+const UBER_OPEN = 'https://m.uber.com/ul/?action=setPickup&pickup=my_location';
+const UBER_IOS = 'https://apps.apple.com/app/id368677368';
+const UBER_ANDROID = 'https://play.google.com/store/apps/details?id=com.ubercab';
+function mailto(to, subject, body){ const addr = String(to || '').replace(/[^\w.@+\-]/g, ''); return `mailto:${addr}?subject=${q(subject)}&body=${q(body)}`; }
+
+/* ============================== UI FEEDBACK ============================== */
+let toastT = 0;
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2800); }
+function showModal(html){ $('#modalBox').innerHTML = html; $('#modal').classList.add('on'); const f = $('#modalBox [data-focus]') || $('#modalBox button, #modalBox a'); if (f) setTimeout(() => f.focus({ preventScroll:true }), 30); }
+function hideModal(){ $('#modal').classList.remove('on'); }
+async function copyText(text){
+  try { if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(text); return true; } } catch (e) {}
+  try {
+    const ta = document.createElement('textarea'); ta.value = text; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, text.length);
+    const ok = document.execCommand('copy'); ta.remove(); return ok;
+  } catch (e) { return false; }
+}
+function manualCopy(text, title){
+  showModal(`<h3>${esc(title)}</h3><p class="muted">Automatic copy is blocked here. Select the text and copy it.</p><textarea class="copybox" readonly data-focus>${esc(text)}</textarea><div class="row-btns"><button class="btn primary" type="button" data-act="modal-close">Done</button></div>`);
+  setTimeout(() => { const ta = $('#modalBox textarea'); if (ta) { ta.focus(); ta.select(); } }, 60);
+}
+async function copyOrShow(text, label){ const ok = await copyText(text); if (ok) toast(`${label} copied`); else manualCopy(text, label); }
+function downloadText(name, text){
+  try {
+    const url = URL.createObjectURL(new Blob([text], { type:'text/plain;charset=utf-8' }));
+    const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    toast('Downloading. If nothing appears, use Copy instead.');
+  } catch (e) { toast('Downloads are blocked here. Use Copy instead.'); }
+}
+
+/* ============================== ROUTING ============================== */
+let route = null, gps = null;
+function inBounds(g){ const p = proj(g.lat, g.lng); return p.x > BOUNDS.x0 && p.x < BOUNDS.x1 && p.y > BOUNDS.y0 && p.y < BOUNDS.y1; }
+function startPoint(){
+  const k = state.settings.start;
+  if (k === 'any') return null;
+  if (k === 'gps') return (gps && inBounds(gps)) ? { ...proj(gps.lat, gps.lng), lat:gps.lat, lng:gps.lng, label:'Where you are now', short:'You', name:'My location' } : null;
+  if (k === 'custom') { const c = state.settings.custom; return c ? { ...proj(c.lat, c.lng), lat:c.lat, lng:c.lng, label:'My spot', short:'My spot', name:'My spot' } : null; }
+  const s = STARTS.find(x => x.id === k) || STARTS[0];
+  return { ...proj(s.lat, s.lng), lat:s.lat, lng:s.lng, label:s.label, short:'Start', name:s.label };
+}
+function homePoint(){ return startPoint() || { ...proj(STARTS[0].lat, STARTS[0].lng), lat:STARTS[0].lat, lng:STARTS[0].lng, label:STARTS[0].label, short:'Home base', name:'Home base' }; }
+
+/* A leg is walked if it is short enough (or in walk mode); otherwise it is an Uber ride. */
+function legBetween(a, b){
+  const d = Math.hypot(a.x - b.x, a.y - b.y) / 1000;
+  const walkKm = d * 1.3, driveKm = d * 1.38;
+  const walkMin = walkKm / 4.7 * 60;
+  const night = state.settings.night, mode = state.settings.mode;
+  const maxWalk = night ? 0.4 : state.settings.walkMax;
+  if (mode === 'walk' || walkKm <= maxWalk) {
+    const warn = mode === 'walk' ? (walkKm > 3.2 ? 'long' : (night && walkKm > 0.4 ? 'dark' : '')) : '';
+    return { kind:'walk', km:walkKm, min:walkMin, cost:0, warn };
+  }
+  const ride = driveKm <= 5 ? driveKm / 26 * 60 : (5 / 26 + (driveKm - 5) / 50) * 60;
+  const fare = Math.max(10, 6 + 1.45 * (driveKm / 1.609344) + 0.34 * ride);
+  return { kind:'uber', km:driveKm, min:ride + 5, ride, cost:fare, warn:'' };
+}
+/* Held-Karp exact traveling-salesman solver. Node 0 is the start (or a zero-cost dummy). */
+function heldKarp(C, round, slot){
+  const N = C.length, m = N - 1;
+  if (m <= 0) return [];
+  const FULL = (1 << m) - 1;
+  /* need[k] = stops that must already be visited before stop k (earlier time of day) */
+  const need = new Int32Array(m);
+  if (slot) for (let k = 0; k < m; k++) { let msk = 0; for (let j = 0; j < m; j++) if (slot[j] < slot[k]) msk |= 1 << j; need[k] = msk; }
+  const dp = new Float64Array((FULL + 1) * m).fill(Infinity);
+  const par = new Int8Array((FULL + 1) * m).fill(-1);
+  for (let j = 0; j < m; j++) if (!need[j]) dp[(1 << j) * m + j] = C[0][j + 1];
+  for (let mask = 1; mask <= FULL; mask++) {
+    for (let j = 0; j < m; j++) {
+      if (!(mask & (1 << j))) continue;
+      const cur = dp[mask * m + j]; if (cur === Infinity) continue;
+      for (let k = 0; k < m; k++) {
+        if (mask & (1 << k)) continue;
+        if ((mask & need[k]) !== need[k]) continue;
+        const nm = mask | (1 << k), v = cur + C[j + 1][k + 1];
+        if (v < dp[nm * m + k]) { dp[nm * m + k] = v; par[nm * m + k] = j; }
+      }
+    }
+  }
+  let best = Infinity, last = 0;
+  for (let j = 0; j < m; j++) { const v = dp[FULL * m + j] + (round ? C[j + 1][0] : 0); if (v < best) { best = v; last = j; } }
+  const order = []; let mask = FULL, j = last;
+  while (j !== -1) { order.push(j + 1); const pj = par[mask * m + j]; mask &= ~(1 << j); j = pj; }
+  return order.reverse();
+}
+function computeRoute(opts = {}){
+  let ids = state.plan.slice(), note = '';
+  if (!ids.length) {
+    ids = PLACES.filter(p => !state.places[p.id].seen).map(p => p.id);
+    note = 'Your plan is empty, so this routes every place you have not seen yet. Add places with + Plan to make a day of it.';
+  }
+  if (!ids.length) { route = null; if (opts.announce) toast('You have seen all ten. Nothing left to route.'); return null; }
+  const start = startPoint();
+  if (!start && state.settings.start === 'gps') note = (note ? note + ' ' : '') + 'Your location is not available yet, so the route begins at the best first stop.';
+  const nodes = ids.map(byId);
+  const round = !!(state.settings.round && start);
+  const pts = [start, ...nodes];
+  const N = pts.length;
+  const C = [];
+  for (let i = 0; i < N; i++) {
+    C.push(new Float64Array(N));
+    for (let j = 0; j < N; j++) {
+      if (i === j) continue;
+      if (!pts[i] || !pts[j]) { C[i][j] = 0; continue; }
+      const L = legBetween(pts[i], pts[j]);
+      C[i][j] = L.min + 0.2 * L.cost;
+    }
+  }
+  const timeOrder = !!state.settings.timeOrder;
+  const order = heldKarp(C, round, timeOrder ? nodes.map(p => SLOT[p.when] == null ? 1 : SLOT[p.when]) : null).map(i => nodes[i - 1]);
+  const legs = []; let prev = start;
+  for (const p of order) { if (prev) legs.push({ from:prev, to:p, ...legBetween(prev, p) }); prev = p; }
+  if (round) legs.push({ from:prev, to:start, ...legBetween(prev, start), home:true });
+  const rides = legs.filter(l => l.kind === 'uber');
+  route = {
+    start, order, legs, round, note, timeOrder, mode:state.settings.mode, night:state.settings.night,
+    travel: legs.reduce((a, l) => a + l.min, 0),
+    walkKm: legs.filter(l => l.kind === 'walk').reduce((a, l) => a + l.km, 0),
+    rides: rides.length, uberCost: rides.reduce((a, l) => a + l.cost, 0),
+    atStops: order.reduce((a, p) => a + p.dur * 60, 0),
+    entries: order.reduce((a, p) => a + costOf(p), 0)
+  };
+  route.total = route.entries + route.uberCost;
+  if (opts.animate) animateRoute();
+  return route;
+}
+function nextStop(){
+  if (!route) return null;
+  for (let i = 0; i < route.order.length; i++) {
+    const p = route.order[i];
+    if (state.places[p.id].seen) continue;
+    const leg = route.legs.find(l => l.to === p);
+    return { p, mode: leg && leg.kind === 'uber' ? 'driving' : 'walking', leg };
+  }
+  return null;
+}
+function fullRouteLink(){
+  if (!route || !route.order.length) return '';
+  const stops = route.order, mode = route.mode === 'walk' ? 'walking' : 'driving';
+  let origin, dest, way;
+  if (route.start) { origin = route.start; dest = route.round ? route.start : stops[stops.length - 1]; way = route.round ? stops : stops.slice(0, -1); }
+  else { if (stops.length === 1) return gPlace(stops[0]); origin = stops[0]; dest = stops[stops.length - 1]; way = stops.slice(1, -1); }
+  way = way.slice(0, 9);
+  return `https://www.google.com/maps/dir/?api=1&origin=${q(ptLabel(origin))}&destination=${q(ptLabel(dest))}${way.length ? '&waypoints=' + q(way.map(ptLabel).join('|')) : ''}&travelmode=${mode}`;
+}
+function planName(){ const el = $('#planName'); return ((el && el.value) || '').trim() || `Day ${state.plans.length + 1}`; }
+function planText(){
+  if (!route) computeRoute();
+  if (!route) return 'No plan yet.';
+  const r = route, L = [];
+  L.push(`${planName()}: my Austin plan`);
+  L.push(`${r.mode === 'walk' ? 'Walking' : 'Uber + walking'}${r.night ? ', after dark' : ''}. Start: ${r.start ? r.start.label : 'first stop'}.`);
+  L.push('');
+  let li = 0;
+  r.order.forEach((p, k) => {
+    if (r.start || k > 0) { const g = r.legs[li++]; if (g) L.push(`   ${g.kind === 'uber' ? 'Uber' : 'Walk'} ${fmtMi(g.km)}, about ${fmtMin(g.min)}${g.kind === 'uber' ? `, ~${fmtUSD(g.cost)}` : ''}`); }
+    L.push(`${LET(k)}. ${p.name} (map #${p.n}, ${durTxt(p.dur)}, safety ${fmtR((r.night || p.when === 'night') ? p.safety.night : p.safety.day)}/5) ${p.addr}`);
+  });
+  if (r.round) { const g = r.legs[li]; if (g) L.push(`   ${g.kind === 'uber' ? 'Uber' : 'Walk'} back to start, about ${fmtMin(g.min)}`); }
+  L.push('');
+  L.push(`Travel about ${fmtMin(r.travel)}; time at places about ${fmtMin(r.atStops)}.`);
+  L.push(`Estimated cost about ${fmtUSD(r.total)} (places ${fmtUSD(r.entries)}, Uber ${fmtUSD(r.uberCost)}), before tips.`);
+  L.push(`Route map: ${fullRouteLink()}`);
+  return L.join('\n');
+}
+
+/* ============================== MAP: CANVAS SETUP ============================== */
+const cv = $('#map'), ctx = cv.getContext('2d');
+let W = 0, H = 0, DPR = 1, S_MIN = 0.012;
+const S_MAX = 0.24;
+const view = { cx:0, cy:0, s:0.05 };
+let selectedId = null, hits = [], settingStart = false, lastEmptyTap = null, routeProg = 1, routeRaf = 0, flyRaf = 0;
+const CF = '"Avenir Next Condensed","Roboto Condensed","Arial Narrow",sans-serif';
+const BF = '"Avenir Next","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif';
+const SF = 'Georgia,"Iowan Old Style","Times New Roman",serif';
+
+const toXY = pts => pts.map(([la, ln]) => { const p = proj(la, ln); return [p.x, p.y]; });
+function chaikin(pts, it){ let a = pts; for (let k = 0; k < it; k++) { const o = [a[0]]; for (let i = 0; i < a.length - 1; i++) { const [x0, y0] = a[i], [x1, y1] = a[i + 1]; o.push([x0 * .75 + x1 * .25, y0 * .75 + y1 * .25], [x0 * .25 + x1 * .75, y0 * .25 + y1 * .75]); } o.push(a[a.length - 1]); a = o; } return a; }
+function chaikinClosed(pts, it){ let a = pts; for (let k = 0; k < it; k++) { const o = []; for (let i = 0; i < a.length; i++) { const [x0, y0] = a[i], [x1, y1] = a[(i + 1) % a.length]; o.push([x0 * .75 + x1 * .25, y0 * .75 + y1 * .25], [x0 * .25 + x1 * .75, y0 * .25 + y1 * .75]); } a = o; } return a; }
+const F = {
+  water: GEO.water.map(w => ({ w:w.w, pts:chaikin(toXY(w.pts), 3) })),
+  creeks: GEO.creeks.map(c => chaikin(toXY(c), 3)),
+  hwy: GEO.hwy.map(r => chaikin(toXY(r), 2)),
+  art: GEO.art.map(r => chaikin(toXY(r), 2)),
+  parks: GEO.parks.map(p => chaikinClosed(toXY(p), 2)),
+  ut: toXY(GEO.ut),
+  greenbelt: chaikin(toXY(GEO.greenbelt), 3),
+  pool: toXY(GEO.pool),
+  sixth: toXY(GEO.sixth)
+};
+LABELS.forEach(l => Object.assign(l, proj(l.lat, l.lng)));
+SHIELDS.forEach(l => Object.assign(l, proj(l.lat, l.lng)));
+
+let MC = {};
+function readColors(){
+  const dark = isDark();
+  MC = dark ? {
+    bg:'#121b19', water:'#24575a', waterEdge:'#3b7a78', waterHi:'rgba(150,230,222,.10)', creek:'#3c7774',
+    park:'rgba(96,152,104,.24)', ut:'rgba(226,128,48,.10)', grid:'rgba(210,230,220,.07)',
+    hwy:'#8c805f', hwyCase:'#141c1a', art:'#4b5955', artCase:'#141c1a',
+    label:'rgba(214,226,220,.62)', water_l:'#86d3cc', terrain:'rgba(214,226,220,.40)', halo:'rgba(14,22,20,.88)',
+    ring:'#0f1715', ink:'#e4ece8', route:'#a9adff', walk:'#e4ece8', caution:'rgba(240,110,90,.34)', dusk:'rgba(10,16,48,.28)',
+    lblBg:'rgba(22,32,29,.94)', lblLine:'#37453f'
+  } : {
+    bg:'#e6ebe3', water:'#9dd2cb', waterEdge:'#5ea79f', waterHi:'rgba(255,255,255,.38)', creek:'#68aca4',
+    park:'rgba(122,168,100,.30)', ut:'rgba(191,87,0,.08)', grid:'rgba(40,60,55,.10)',
+    hwy:'#f5d998', hwyCase:'#b39657', art:'#ffffff', artCase:'#b6c0b8',
+    label:'rgba(30,43,40,.62)', water_l:'#1a6d67', terrain:'rgba(30,43,40,.42)', halo:'rgba(250,251,248,.86)',
+    ring:'#ffffff', ink:'#1e2b28', route:'#3b41a3', walk:'#1e2b28', caution:'rgba(210,60,40,.30)', dusk:'rgba(20,30,90,.13)',
+    lblBg:'rgba(250,251,248,.95)', lblLine:'#c3ccc4'
+  };
+  const cs = getComputedStyle(document.documentElement);
+  ['s5','s45','s4','s35','s3','s2','sclosed','badge-ink'].forEach(k => { MC[k] = cs.getPropertyValue('--' + k).trim() || '#888'; });
+}
+
+/* ============================== MAP: TERRAIN ============================== */
+/* Synthetic but geographically shaped relief: flat Blackland Prairie to the east, the
+   Balcones Escarpment rising into Hill Country to the west, with carved river and creek valleys. */
+const CS = 36;
+const GW = Math.ceil((BOUNDS.x1 - BOUNDS.x0) / CS), GH = Math.ceil((BOUNDS.y1 - BOUNDS.y0) / CS);
+const HGT = new Float32Array(GW * GH), SHD = new Float32Array(GW * GH);
+const tcv = document.createElement('canvas'); tcv.width = GW; tcv.height = GH;
+const tctx = tcv.getContext('2d');
+let terrainReady = false;
+const PERM = (() => { const p = []; for (let i = 0; i < 256; i++) p.push(i); let s = 20261102 >>> 0; const rnd = () => (s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296; for (let i = 255; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); const t = p[i]; p[i] = p[j]; p[j] = t; } const o = new Uint8Array(512); for (let i = 0; i < 512; i++) o[i] = p[i & 255]; return o; })();
+function grad(h, x, y){ switch (h & 7) { case 0: return x + y; case 1: return -x + y; case 2: return x - y; case 3: return -x - y; case 4: return x; case 5: return -x; case 6: return y; default: return -y; } }
+function perlin(x, y){
+  const xi = Math.floor(x), yi = Math.floor(y), X = xi & 255, Y = yi & 255, xf = x - xi, yf = y - yi;
+  const u = xf * xf * xf * (xf * (xf * 6 - 15) + 10), v = yf * yf * yf * (yf * (yf * 6 - 15) + 10);
+  const aa = PERM[PERM[X] + Y], ab = PERM[PERM[X] + Y + 1], ba = PERM[PERM[X + 1] + Y], bb = PERM[PERM[X + 1] + Y + 1];
+  const x1 = grad(aa, xf, yf) + u * (grad(ba, xf - 1, yf) - grad(aa, xf, yf));
+  const x2 = grad(ab, xf, yf - 1) + u * (grad(bb, xf - 1, yf - 1) - grad(ab, xf, yf - 1));
+  return x1 + v * (x2 - x1);
+}
+function fbm(x, y, oct){ let s = 0, a = 1, f = 1, n = 0; for (let i = 0; i < oct; i++) { s += a * perlin(x * f + i * 19.1, y * f - i * 7.3); n += a; a *= 0.5; f *= 2.02; } return s / n; }
+function segList(polys, R){ const out = []; for (const pts of polys) for (let i = 0; i < pts.length - 1; i++) { const [ax, ay] = pts[i], [bx, by] = pts[i + 1]; out.push({ ax, ay, bx, by, x0:Math.min(ax, bx) - R, x1:Math.max(ax, bx) + R, y0:Math.min(ay, by) - R, y1:Math.max(ay, by) + R }); } return out; }
+const RIV_R = 2800, CRK_R = 1000;
+const RIV = segList(GEO.water.map(w => chaikin(toXY(w.pts), 1)), RIV_R);
+const CRK = segList(GEO.creeks.map(c => chaikin(toXY(c), 1)), CRK_R);
+function nearest(px, py, S, R){ let best = R * R; for (let i = 0; i < S.length; i++) { const s = S[i]; if (px < s.x0 || px > s.x1 || py < s.y0 || py > s.y1) continue; const dx = s.bx - s.ax, dy = s.by - s.ay, l2 = dx * dx + dy * dy; let t = l2 ? ((px - s.ax) * dx + (py - s.ay) * dy) / l2 : 0; t = t < 0 ? 0 : t > 1 ? 1 : t; const qx = s.ax + t * dx - px, qy = s.ay + t * dy - py, d2 = qx * qx + qy * qy; if (d2 < best) best = d2; } return Math.sqrt(best); }
+const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+const escX = lat => (-97.770 - Math.max(0, 30.272 - lat) * 0.62 + Math.max(0, lat - 30.30) * 0.10 - LNG0) * MX;
+const BON = proj(30.32108, -97.77349);
+function heightAt(x, y){
+  const lat = LAT0 - y / MY;
+  const dxE = escX(lat) - x;
+  const up = smooth(-1200, 2800, dxE);
+  let h = 152 + 92 * up;
+  h += (7 + 52 * up) * fbm(x / 2700 + 3.1, y / 2700 - 7.7, 5);
+  h += (2.5 + 9 * up) * fbm(x / 650 - 11.3, y / 650 + 5.2, 3);
+  h += 16 * Math.exp(-Math.pow((dxE - 500) / 800, 2)) * (0.6 + 0.4 * fbm(x / 1500, y / 1500, 2));
+  const bx = x - BON.x, by = y - BON.y; h += 30 * Math.exp(-(bx * bx + by * by) / (2 * 420 * 420));
+  const dr = nearest(x, y, RIV, RIV_R), sig = 320 + 720 * (1 - up), w = Math.exp(-Math.pow(dr / sig, 2));
+  h = h * (1 - w) + 131 * w;
+  const dc = nearest(x, y, CRK, CRK_R);
+  h -= (8 + 22 * up) * Math.exp(-Math.pow(dc / (170 + 170 * up), 2));
+  return h;
+}
+function buildTerrain(){
+  return new Promise(res => {
+    let r = 0;
+    const step = () => {
+      const t0 = performance.now();
+      while (r < GH && performance.now() - t0 < 22) {
+        const y = BOUNDS.y0 + (r + 0.5) * CS;
+        for (let c = 0; c < GW; c++) HGT[r * GW + c] = heightAt(BOUNDS.x0 + (c + 0.5) * CS, y);
+        r++;
+      }
+      if (r < GH) setTimeout(step, 0);
+      else { hillshade(); res(); }
+    };
+    step();
+  });
+}
+function hillshade(){
+  const ex = 4, alt = 45 * Math.PI / 180, az = 315 * Math.PI / 180;
+  const lx = Math.sin(az) * Math.cos(alt), ly = -Math.cos(az) * Math.cos(alt), lz = Math.sin(alt);
+  for (let r = 0; r < GH; r++) for (let c = 0; c < GW; c++) {
+    const hl = HGT[r * GW + Math.max(0, c - 1)], hr = HGT[r * GW + Math.min(GW - 1, c + 1)];
+    const hu = HGT[Math.max(0, r - 1) * GW + c], hd = HGT[Math.min(GH - 1, r + 1) * GW + c];
+    const nx = -(hr - hl) / (2 * CS) * ex, ny = -(hd - hu) / (2 * CS) * ex;
+    const dot = (nx * lx + ny * ly + lz) / Math.hypot(nx, ny, 1);
+    SHD[r * GW + c] = clamp(dot - lz, -0.55, 0.3);
+  }
+}
+const RAMP = {
+  light:[[125,[204,224,206]],[150,[223,232,215]],[180,[232,232,213]],[215,[230,223,200]],[255,[221,209,181]],[300,[207,192,161]]],
+  dark:[[125,[22,38,35]],[150,[26,38,34]],[180,[31,40,35]],[215,[36,41,35]],[255,[42,42,36]],[300,[48,45,38]]]
+};
+function rampAt(st, h){ if (h <= st[0][0]) return st[0][1]; for (let i = 1; i < st.length; i++) if (h <= st[i][0]) { const [h0, c0] = st[i - 1], [h1, c1] = st[i], t = (h - h0) / (h1 - h0); return [c0[0] + (c1[0] - c0[0]) * t, c0[1] + (c1[1] - c0[1]) * t, c0[2] + (c1[2] - c0[2]) * t]; } return st[st.length - 1][1]; }
+function colorize(){
+  const dark = isDark(), st = dark ? RAMP.dark : RAMP.light;
+  const lut = []; for (let h = 100; h <= 340; h++) lut.push(rampAt(st, h));
+  const img = tctx.createImageData(GW, GH), d = img.data;
+  for (let i = 0; i < GW * GH; i++) {
+    const c = lut[clamp(Math.round(HGT[i]) - 100, 0, 240)], s = SHD[i], j = i * 4;
+    if (dark) { const a = s * 75; d[j] = c[0] + a; d[j + 1] = c[1] + a; d[j + 2] = c[2] + a * 1.1; }
+    else { const f = 1 + 0.62 * s; d[j] = c[0] * f; d[j + 1] = c[1] * f; d[j + 2] = c[2] * f; }
+    d[j + 3] = 255;
+  }
+  tctx.putImageData(img, 0, 0);
+}
+
+/* ============================== MAP: VIEW ============================== */
+let OBST = [], FREE = { L:16, T:90, R:300, B:300 };
+function measureOverlays(){
+  if (!W) return;
+  const cr = cv.getBoundingClientRect();
+  OBST = [];
+  for (const el of $$('.map-wrap .mc > *, .map-wrap .botrow > *, #mapHint')) {
+    if (el.hidden || el.classList.contains('botrow')) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width && r.height) OBST.push({ x:r.left - cr.left - 4, y:r.top - cr.top - 4, w:r.width + 8, h:r.height + 8 });
+  }
+  const g = sel => { const r = $(sel).getBoundingClientRect(); return { top:r.top - cr.top, bottom:r.bottom - cr.top, left:r.left - cr.left }; };
+  const tl = g('.mc.tl'), tr = g('.mc.tr'), bot = g('.mc.bot');
+  FREE = { L:16, T:clamp(tl.bottom + 14, 16, H / 2), R:clamp(tr.left - 14, W / 2, W - 16), B:clamp(bot.top - 14, H / 2, H - 16) };
+}
+function computeFit(pts){
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const p of pts) { x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y); }
+  const pl = FREE.L + 14, pr = W - FREE.R + 14, pt = FREE.T + 10, pb = H - FREE.B + 12;
+  const bw = Math.max(700, x1 - x0), bh = Math.max(700, y1 - y0);
+  const s = clamp(Math.min(Math.max(60, W - pl - pr) / bw, Math.max(60, H - pt - pb) / bh), S_MIN, S_MAX);
+  return { cx:(x0 + x1) / 2 + (pr - pl) / 2 / s, cy:(y0 + y1) / 2 + (pb - pt) / 2 / s, s };
+}
+function clampView(){ view.s = clamp(view.s, S_MIN, S_MAX); view.cx = clamp(view.cx, BOUNDS.x0, BOUNDS.x1); view.cy = clamp(view.cy, BOUNDS.y0, BOUNDS.y1); }
+function toWorld(sx, sy){ return [(sx - W / 2) / view.s + view.cx, (sy - H / 2) / view.s + view.cy]; }
+function flyTo(cx, cy, s, ms = 420){
+  cancelAnimationFrame(flyRaf);
+  s = clamp(s, S_MIN, S_MAX);
+  if (REDUCED) { view.cx = cx; view.cy = cy; view.s = s; clampView(); draw(); return; }
+  const a = { cx:view.cx, cy:view.cy, ls:Math.log(view.s) }, b = { cx, cy, ls:Math.log(s) }, t0 = performance.now();
+  const step = t => {
+    const k = Math.min(1, (t - t0) / ms), e = 1 - Math.pow(1 - k, 3);
+    view.cx = a.cx + (b.cx - a.cx) * e; view.cy = a.cy + (b.cy - a.cy) * e; view.s = Math.exp(a.ls + (b.ls - a.ls) * e);
+    clampView(); draw();
+    if (k < 1) flyRaf = requestAnimationFrame(step);
+  };
+  flyRaf = requestAnimationFrame(step);
+}
+function zoomAround(sx, sy, f, animate){
+  const [wx, wy] = toWorld(sx, sy), s = clamp(view.s * f, S_MIN, S_MAX);
+  const cx = wx - (sx - W / 2) / s, cy = wy - (sy - H / 2) / s;
+  if (animate) flyTo(cx, cy, s, 260); else { view.s = s; view.cx = cx; view.cy = cy; clampView(); requestDraw(); }
+}
+function fitPlaces(list){ const pts = list.slice(); const st = startPoint(); if (st) pts.push(st); const f = computeFit(pts); flyTo(f.cx, f.cy, f.s); }
+function ensureVisible(p){
+  const sx = (p.x - view.cx) * view.s + W / 2, sy = (p.y - view.cy) * view.s + H / 2;
+  if (sx < FREE.L + 10 || sx > FREE.R - 10 || sy < FREE.T + 10 || sy > FREE.B - 10) {
+    const s = Math.max(view.s, 0.05);
+    flyTo(p.x + ((W - FREE.R) - FREE.L) / 2 / s, p.y + ((H - FREE.B) - FREE.T) / 2 / s, s);
+  }
+}
+function resize(){
+  const r = cv.getBoundingClientRect();
+  if (!r.width || !r.height) return;
+  const first = !W;
+  W = r.width; H = r.height; DPR = Math.min(window.devicePixelRatio || 1, 2.5);
+  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+  measureOverlays();
+  S_MIN = computeFit(PLACES).s * 0.6;
+  if (first) { const f = computeFit(PLACES.filter(p => p.id !== 'wildflower')); view.cx = f.cx; view.cy = f.cy; view.s = f.s; }
+  clampView(); draw();
+}
+let drawQueued = false;
+function requestDraw(){ if (drawQueued) return; drawQueued = true; requestAnimationFrame(() => { drawQueued = false; draw(); }); }
+
+/* ============================== MAP: DRAWING ============================== */
+function path(pts, s, ox, oy, close){ ctx.beginPath(); for (let i = 0; i < pts.length; i++) { const x = pts[i][0] * s + ox, y = pts[i][1] * s + oy; if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); } if (close) ctx.closePath(); }
+function rr(x, y, w, h, r){ ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function spacing(px){ if ('letterSpacing' in ctx) ctx.letterSpacing = px + 'px'; }
+function draw(){
+  if (!W) return;
+  measureOverlays();
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const s = view.s, ox = W / 2 - view.cx * s, oy = H / 2 - view.cy * s;
+  ctx.fillStyle = MC.bg; ctx.fillRect(0, 0, W, H);
+  if (terrainReady) { ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.drawImage(tcv, BOUNDS.x0 * s + ox, BOUNDS.y0 * s + oy, GW * CS * s, GH * CS * s); }
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.setLineDash([]);
+  path(F.ut, s, ox, oy, true); ctx.fillStyle = MC.ut; ctx.fill();
+  ctx.fillStyle = MC.park; for (const pk of F.parks) { path(pk, s, ox, oy, true); ctx.fill(); }
+  ctx.strokeStyle = MC.park; ctx.lineWidth = Math.max(3, 240 * s); path(F.greenbelt, s, ox, oy); ctx.stroke();
+  for (const w of F.water) { path(w.pts, s, ox, oy); ctx.lineWidth = Math.max(3, (w.w + 230) * s); ctx.stroke(); }
+  drawGrid(s, ox, oy);
+  for (const c of F.creeks) { path(c, s, ox, oy); ctx.strokeStyle = MC.creek; ctx.lineWidth = Math.min(3.2, Math.max(1, 22 * s)); ctx.stroke(); }
+  for (const w of F.water) { path(w.pts, s, ox, oy); ctx.strokeStyle = MC.waterEdge; ctx.lineWidth = Math.max(2.5, w.w * s) + 2; ctx.stroke(); }
+  for (const w of F.water) { path(w.pts, s, ox, oy); ctx.strokeStyle = MC.water; ctx.lineWidth = Math.max(2.5, w.w * s); ctx.stroke(); }
+  for (const w of F.water) { if (w.w * s > 7) { path(w.pts, s, ox, oy); ctx.strokeStyle = MC.waterHi; ctx.lineWidth = w.w * s * 0.28; ctx.stroke(); } }
+  path(F.pool, s, ox, oy); ctx.strokeStyle = MC.waterEdge; ctx.lineWidth = Math.max(3, 48 * s) + 2; ctx.stroke(); ctx.strokeStyle = MC.water; ctx.lineWidth = Math.max(3, 48 * s); ctx.stroke();
+  const hw = Math.min(9, Math.max(2.2, 36 * s)), aw = Math.min(5.5, Math.max(1, 19 * s));
+  ctx.strokeStyle = MC.artCase; ctx.lineWidth = aw + 1.6; for (const r of F.art) { path(r, s, ox, oy); ctx.stroke(); }
+  ctx.strokeStyle = MC.hwyCase; ctx.lineWidth = hw + 2; for (const r of F.hwy) { path(r, s, ox, oy); ctx.stroke(); }
+  ctx.strokeStyle = MC.art; ctx.lineWidth = aw; for (const r of F.art) { path(r, s, ox, oy); ctx.stroke(); }
+  ctx.strokeStyle = MC.hwy; ctx.lineWidth = hw; for (const r of F.hwy) { path(r, s, ox, oy); ctx.stroke(); }
+  if (state.settings.night) {
+    ctx.fillStyle = MC.dusk; ctx.fillRect(0, 0, W, H);
+    path(F.sixth, s, ox, oy); ctx.strokeStyle = MC.caution; ctx.lineWidth = Math.max(8, 90 * s); ctx.stroke();
+    if (s > 0.045) { const a = F.sixth[0], b = F.sixth[1]; label('E 6th St: rowdy late', ((a[0] + b[0]) / 2) * s + ox, ((a[1] + b[1]) / 2) * s + oy - Math.max(10, 70 * s), `italic 600 12px ${BF}`, MC.ink, 0, -8); }
+  }
+  const LY = layout(s, ox, oy);
+  const placed = drawLabels(s, ox, oy, LY.boxes);
+  drawShields(s, ox, oy, LY.boxes, placed);
+  drawRoute(s, ox, oy);
+  drawGps(s, ox, oy);
+  drawStartMarker(LY);
+  drawPinsLayer(LY);
+  updateScale(s);
+}
+function drawGrid(s, ox, oy){
+  if (s < 0.03) return;
+  const c = proj(30.2720, -97.7415), th = 17.5 * Math.PI / 180;
+  const N = [Math.sin(th), -Math.cos(th)], E = [Math.cos(th), Math.sin(th)];
+  const hw = 900, hh = 1050, step = 108;
+  const P = (u, v) => [(c.x + E[0] * u + N[0] * v) * s + ox, (c.y + E[1] * u + N[1] * v) * s + oy];
+  ctx.save();
+  ctx.beginPath(); const q1 = P(-hw, -hh), q2 = P(hw, -hh), q3 = P(hw, hh), q4 = P(-hw, hh);
+  ctx.moveTo(q1[0], q1[1]); ctx.lineTo(q2[0], q2[1]); ctx.lineTo(q3[0], q3[1]); ctx.lineTo(q4[0], q4[1]); ctx.closePath(); ctx.clip();
+  ctx.strokeStyle = MC.grid; ctx.lineWidth = s > 0.08 ? 1.4 : 1;
+  ctx.beginPath();
+  for (let u = -hw; u <= hw; u += step) { const a = P(u, -hh), b = P(u, hh); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); }
+  for (let v = -hh; v <= hh; v += step) { const a = P(-hw, v), b = P(hw, v); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); }
+  ctx.stroke(); ctx.restore();
+}
+function label(t, x, y, font, color, sp, rot){
+  ctx.save(); ctx.translate(x, y); if (rot) ctx.rotate(rot * Math.PI / 180);
+  ctx.font = font; spacing(sp || 0); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.lineWidth = 3.2; ctx.strokeStyle = MC.halo; ctx.lineJoin = 'round'; ctx.strokeText(t, 0, 0);
+  ctx.fillStyle = color; ctx.fillText(t, 0, 0); ctx.restore(); spacing(0);
+}
+function labelFont(L, s){
+  if (L.k === 'hood') return `600 ${s > 0.07 ? 11.5 : 10.5}px ${CF}`;
+  if (L.k === 'water') return `italic ${s > 0.06 ? 14 : 12.5}px ${SF}`;
+  if (L.k === 'creek') return `italic 11.5px ${SF}`;
+  return `italic ${s > 0.045 ? 15 : 13}px ${SF}`;
+}
+/* Background labels give way to pins, pin labels and the map controls. */
+function drawLabels(s, ox, oy, boxes){
+  const placed = [];
+  for (const L of LABELS) {
+    if (s < (L.min || 0) || s > (L.max || 99)) continue;
+    const x = L.x * s + ox, y = L.y * s + oy;
+    if (x < -150 || x > W + 150 || y < -80 || y > H + 80) continue;
+    const font = labelFont(L, s), sp = L.k === 'hood' ? 1.8 : L.k === 'terrain' ? 0.8 : 0.3;
+    ctx.font = font; spacing(sp); const tw = ctx.measureText(L.t).width; spacing(0);
+    const a = (L.rot || 0) * Math.PI / 180, th = 15, n = Math.max(1, Math.ceil(tw / 34)), mine = [];
+    for (let i = 0; i < n; i++) {
+      const d = -tw / 2 + (i + 0.5) * tw / n, side = Math.max(th, tw / n);
+      mine.push({ x:x + Math.cos(a) * d - side / 2, y:y + Math.sin(a) * d - th / 2, w:side, h:th });
+    }
+    if (mine.some(b => boxes.some(o => overlaps(o, b)) || placed.some(o => overlaps(o, b)))) continue;
+    placed.push(...mine);
+    const col = L.k === 'hood' ? MC.label : (L.k === 'water' || L.k === 'creek') ? MC.water_l : MC.terrain;
+    label(L.t, x, y, font, col, sp, L.rot);
+  }
+  return placed;
+}
+function drawShields(s, ox, oy, boxes, placed){
+  if (s < 0.028) return;
+  ctx.font = `800 10.5px ${CF}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (const sh of SHIELDS) {
+    const x = sh.x * s + ox, y = sh.y * s + oy; if (x < -30 || x > W + 30 || y < -20 || y > H + 20) continue;
+    const w = ctx.measureText(sh.t).width + 10, b = { x:x - w / 2, y:y - 8, w, h:16 };
+    if (boxes.some(o => overlaps(o, b)) || placed.some(o => overlaps(o, b))) continue;
+    placed.push(b);
+    rr(b.x, b.y, w, 16, 4); ctx.fillStyle = sh.c; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = '#ffffff'; ctx.stroke();
+    ctx.fillStyle = '#ffffff'; ctx.fillText(sh.t, x, y + 0.5);
+  }
+}
+function arrowHead(x, y, ang, color){
+  ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
+  ctx.beginPath(); ctx.moveTo(7, 0); ctx.lineTo(-5, -5.5); ctx.lineTo(-2.5, 0); ctx.lineTo(-5, 5.5); ctx.closePath();
+  ctx.lineWidth = 3; ctx.strokeStyle = MC.halo; ctx.stroke(); ctx.fillStyle = color; ctx.fill(); ctx.restore();
+}
+function drawRoute(s, ox, oy){
+  if (!route || !route.legs.length) return;
+  const legs = route.legs, lens = legs.map(l => Math.hypot(l.to.x - l.from.x, l.to.y - l.from.y)), total = lens.reduce((a, b) => a + b, 0) || 1;
+  let budget = (1 - Math.pow(1 - routeProg, 2)) * total;
+  for (let i = 0; i < legs.length; i++) {
+    if (budget <= 0) break;
+    const L = legs[i], f = Math.min(1, budget / (lens[i] || 1)); budget -= lens[i];
+    const ax = L.from.x * s + ox, ay = L.from.y * s + oy, bx0 = L.to.x * s + ox, by0 = L.to.y * s + oy;
+    const bx = ax + (bx0 - ax) * f, by = ay + (by0 - ay) * f, walk = L.kind === 'walk';
+    ctx.lineCap = 'round'; ctx.setLineDash([]);
+    ctx.strokeStyle = MC.halo; ctx.lineWidth = walk ? 7 : 8.5; ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+    ctx.setLineDash(walk ? [0.1, 7] : []); ctx.strokeStyle = walk ? MC.walk : MC.route; ctx.lineWidth = walk ? 3.4 : 4.2;
+    ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke(); ctx.setLineDash([]);
+    const len = Math.hypot(bx0 - ax, by0 - ay);
+    if (f >= 1 && len > 50) arrowHead(ax + (bx0 - ax) * 0.6, ay + (by0 - ay) * 0.6, Math.atan2(by0 - ay, bx0 - ax), walk ? MC.walk : MC.route);
+    if (f >= 1 && !walk && len > 90) {
+      const mx = ax + (bx0 - ax) * 0.38, my = ay + (by0 - ay) * 0.38;
+      ctx.font = `800 10px ${BF}`; const w = ctx.measureText('Uber').width + 10;
+      rr(mx - w / 2, my - 8, w, 16, 8); ctx.fillStyle = MC.route; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = MC.halo; ctx.stroke();
+      ctx.fillStyle = isDark() ? '#15173b' : '#ffffff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('Uber', mx, my + 0.5);
+    }
+  }
+}
+function drawGps(s, ox, oy){
+  if (!(gps && inBounds(gps))) return;
+  const p = proj(gps.lat, gps.lng), x = p.x * s + ox, y = p.y * s + oy;
+  ctx.beginPath(); ctx.arc(x, y, Math.max(12, Math.min(70, (gps.acc || 30) * s)), 0, Math.PI * 2); ctx.fillStyle = 'rgba(47,123,246,.16)'; ctx.fill();
+  ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI * 2); ctx.fillStyle = '#2f7bf6'; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = '#ffffff'; ctx.stroke();
+}
+function drawStartMarker(LY){
+  if (!LY.start) return;
+  ctx.save(); ctx.translate(LY.start.x, LY.start.y); ctx.rotate(Math.PI / 4);
+  ctx.fillStyle = MC.ink; ctx.strokeStyle = MC.ring; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.rect(-7, -7, 14, 14); ctx.fill(); ctx.stroke(); ctx.restore();
+}
+function overlaps(a, b){ return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
+/* Layout pass: where pins and their name tags go, so nothing else is drawn on top of them. */
+function layout(s, ox, oy){
+  const r = 10 + 5 * clamp((s - 0.035) / 0.08, 0, 1);
+  const inView = [], off = [];
+  for (const p of PLACES) { const x = p.x * s + ox, y = p.y * s + oy; ((x > -r && x < W + r && y > -r && y < H + r) ? inView : off).push({ p, x, y }); }
+  const st = startPoint();
+  const start = (st && state.settings.start !== 'gps') ? { x:st.x * s + ox, y:st.y * s + oy, text:st.short } : null;
+  const boxes = OBST.slice();
+  for (const it of inView) boxes.push({ x:it.x - r - 2, y:it.y - r - 2, w:2 * r + 4, h:2 * r + 4 });
+  if (start) boxes.push({ x:start.x - 11, y:start.y - 11, w:22, h:22 });
+  ctx.font = `700 12px ${BF}`;
+  const place = (cx, cy, rad, text, force) => {
+    const tw = ctx.measureText(text).width + 12, th = 20;
+    const cands = [[cx + rad + 5, cy - th / 2], [cx - rad - 5 - tw, cy - th / 2], [cx - tw / 2, cy + rad + 4], [cx - tw / 2, cy - rad - 4 - th]];
+    for (const [bx, by] of cands) {
+      const b = { x:bx, y:by, w:tw, h:th };
+      if (bx < 2 || by < 2 || bx + tw > W - 2 || by + th > H - 2) continue;
+      if (!boxes.some(o => overlaps(o, b))) { boxes.push(b); return b; }
+    }
+    if (force) { const b = { x:clamp(cands[0][0], 2, W - tw - 2), y:clamp(cands[0][1], 2, H - th - 2), w:tw, h:th }; boxes.push(b); return b; }
+    return null;
+  };
+  const inRoute = new Set(route ? route.order.map(p => p.id) : []);
+  const rank = it => (inRoute.has(it.p.id) ? 0 : state.plan.includes(it.p.id) ? 1 : 2) * 100 + it.p.n;
+  const labels = [];
+  const sel = inView.find(it => it.p.id === selectedId);
+  if (sel) labels.push({ it:sel, b:place(sel.x, sel.y, r, sel.p.short, true) });
+  const startBox = (start && s >= 0.03) ? place(start.x, start.y, 9, start.text, false) : null;
+  if (s >= 0.03) for (const it of inView.slice().sort((a, b) => rank(a) - rank(b))) { if (it === sel) continue; const b = place(it.x, it.y, r, it.p.short, false); if (b) labels.push({ it, b }); }
+  return { r, inView, off, start, startBox, labels, boxes };
+}
+function drawPinsLayer(LY){
+  hits = [];
+  const order = new Map(); if (route) route.order.forEach((p, i) => order.set(p.id, i));
+  const list = LY.inView.slice().sort((a, b) => (a.p.id === selectedId) - (b.p.id === selectedId));
+  for (const it of list) { drawPin(it, LY.r, order); hits.push({ id:it.p.id, x:it.x, y:it.y, r:LY.r }); }
+  const tag = (b, text, strong) => {
+    rr(b.x, b.y, b.w, b.h, 6); ctx.fillStyle = MC.lblBg; ctx.fill(); ctx.lineWidth = strong ? 1.6 : 1; ctx.strokeStyle = strong ? MC.route : MC.lblLine; ctx.stroke();
+    ctx.fillStyle = MC.ink; ctx.font = `700 12px ${BF}`; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(text, b.x + 6, b.y + b.h / 2 + 0.5);
+  };
+  for (const { it, b } of LY.labels) if (b) tag(b, it.p.short, it.p.id === selectedId);
+  if (LY.startBox) tag(LY.startBox, LY.start.text, false);
+  const { L, T, R, B } = FREE, cx = (L + R) / 2, cy = (T + B) / 2;
+  for (const it of LY.off) {
+    const dx = it.x - cx, dy = it.y - cy;
+    const tx = dx > 0 ? (R - cx) / dx : dx < 0 ? (L - cx) / dx : Infinity, ty = dy > 0 ? (B - cy) / dy : dy < 0 ? (T - cy) / dy : Infinity;
+    const t = Math.min(tx, ty), x = cx + dx * t, y = cy + dy * t, ang = Math.atan2(dy, dx), col = MC[sKey(safetyNow(it.p))];
+    ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
+    ctx.beginPath(); ctx.moveTo(18, 0); ctx.lineTo(9, -6.5); ctx.lineTo(9, 6.5); ctx.closePath(); ctx.fillStyle = col; ctx.fill(); ctx.restore();
+    ctx.beginPath(); ctx.arc(x, y, 11.5, 0, Math.PI * 2); ctx.fillStyle = col; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = MC.ring; ctx.stroke();
+    ctx.fillStyle = MC['badge-ink']; ctx.font = `800 12px ${CF}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(it.p.n), x, y + 0.5);
+    hits.push({ id:it.p.id, x, y, r:12 });
+  }
+}
+function drawPin(it, r, order){
+  const { p, x, y } = it, col = MC[sKey(safetyNow(p))], sel = p.id === selectedId, planned = state.plan.includes(p.id), seen = state.places[p.id].seen;
+  ctx.save(); ctx.shadowColor = 'rgba(0,0,0,.3)'; ctx.shadowBlur = 6; ctx.shadowOffsetY = 2;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = col; ctx.fill(); ctx.restore();
+  ctx.lineWidth = 2.5; ctx.strokeStyle = MC.ring; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
+  if (planned) { ctx.setLineDash([3, 3]); ctx.lineWidth = 2; ctx.strokeStyle = MC.route; ctx.beginPath(); ctx.arc(x, y, r + 4.5, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); }
+  if (sel) { ctx.lineWidth = 3; ctx.strokeStyle = MC.route; ctx.beginPath(); ctx.arc(x, y, r + (planned ? 9 : 5.5), 0, Math.PI * 2); ctx.stroke(); }
+  ctx.fillStyle = MC['badge-ink']; ctx.font = `800 ${Math.round(r * 1.2)}px ${CF}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(p.n), x, y + 0.5);
+  if (seen) {
+    const bx = x + r * 0.8, by = y + r * 0.8;
+    ctx.beginPath(); ctx.arc(bx, by, 6.5, 0, Math.PI * 2); ctx.fillStyle = MC.ink; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = MC.ring; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(bx - 3, by + 0.2); ctx.lineTo(bx - 0.8, by + 2.4); ctx.lineTo(bx + 3.1, by - 2.3); ctx.strokeStyle = MC.ring; ctx.lineWidth = 1.7; ctx.stroke();
+  }
+  if (order.has(p.id)) {
+    const k = LET(order.get(p.id)), bx = x - r * 0.95, by = y - r * 0.95;
+    ctx.font = `800 10.5px ${CF}`; const w = Math.max(15, ctx.measureText(k).width + 8);
+    rr(bx - w / 2, by - 7.5, w, 15, 5); ctx.fillStyle = MC.route; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = MC.ring; ctx.stroke();
+    ctx.fillStyle = isDark() ? '#15173b' : '#ffffff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(k, bx, by + 0.5);
+  }
+}
+let lastScale = '';
+function updateScale(s){
+  const opts = [0.1, 0.25, 0.5, 1, 2, 5]; let m = opts[0];
+  for (const o of opts) if (o * 1609.344 * s <= 92) m = o;
+  const len = Math.round(m * 1609.344 * s), txt = (m === 0.25 ? '¼' : m === 0.5 ? '½' : String(m)) + ' mi', key = len + txt;
+  if (key === lastScale) return; lastScale = key;
+  $('#scBar').style.width = len + 'px'; $('#scTxt').textContent = txt;
+}
+function animateRoute(){
+  cancelAnimationFrame(routeRaf);
+  if (REDUCED) { routeProg = 1; requestDraw(); return; }
+  routeProg = 0; const t0 = performance.now(), dur = 1100;
+  const step = t => { routeProg = Math.min(1, (t - t0) / dur); draw(); if (routeProg < 1) routeRaf = requestAnimationFrame(step); };
+  routeRaf = requestAnimationFrame(step);
+}
+
+/* ============================== MAP: INTERACTION ============================== */
+const pointers = new Map();
+let gesture = null, tapCand = null, rect = null;
+const ptOf = e => ({ x:e.clientX - rect.left, y:e.clientY - rect.top });
+cv.addEventListener('pointerdown', e => {
+  rect = cv.getBoundingClientRect();
+  try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+  const p = ptOf(e); pointers.set(e.pointerId, p);
+  if (pointers.size === 1) { tapCand = { ...p, t:performance.now(), id:e.pointerId }; gesture = { type:'pan', sx:p.x, sy:p.y, cx:view.cx, cy:view.cy }; }
+  else if (pointers.size === 2) {
+    tapCand = null; const [a, b] = [...pointers.values()], mid = { x:(a.x + b.x) / 2, y:(a.y + b.y) / 2 }, [wx, wy] = toWorld(mid.x, mid.y);
+    gesture = { type:'pinch', d0:Math.hypot(a.x - b.x, a.y - b.y) || 1, s0:view.s, wx, wy };
+  }
+  cancelAnimationFrame(flyRaf);
+});
+cv.addEventListener('pointermove', e => {
+  if (!pointers.has(e.pointerId)) return;
+  const p = ptOf(e); pointers.set(e.pointerId, p);
+  if (tapCand && Math.hypot(p.x - tapCand.x, p.y - tapCand.y) > 8) tapCand = null;
+  if (gesture && gesture.type === 'pan' && pointers.size === 1) {
+    view.cx = gesture.cx - (p.x - gesture.sx) / view.s; view.cy = gesture.cy - (p.y - gesture.sy) / view.s; clampView(); requestDraw();
+  } else if (gesture && gesture.type === 'pinch' && pointers.size >= 2) {
+    const [a, b] = [...pointers.values()], d = Math.hypot(a.x - b.x, a.y - b.y), mid = { x:(a.x + b.x) / 2, y:(a.y + b.y) / 2 };
+    view.s = clamp(gesture.s0 * d / gesture.d0, S_MIN, S_MAX);
+    view.cx = gesture.wx - (mid.x - W / 2) / view.s; view.cy = gesture.wy - (mid.y - H / 2) / view.s; clampView(); requestDraw();
+  }
+});
+function endPointer(e, cancelled){
+  if (!pointers.has(e.pointerId)) return;
+  pointers.delete(e.pointerId);
+  if (!cancelled && tapCand && tapCand.id === e.pointerId && performance.now() - tapCand.t < 650) handleTap(tapCand.x, tapCand.y);
+  tapCand = null;
+  if (pointers.size === 1) { const [p] = [...pointers.values()]; gesture = { type:'pan', sx:p.x, sy:p.y, cx:view.cx, cy:view.cy }; }
+  else if (!pointers.size) gesture = null;
+}
+cv.addEventListener('pointerup', e => endPointer(e, false));
+cv.addEventListener('pointercancel', e => endPointer(e, true));
+cv.addEventListener('wheel', e => { e.preventDefault(); rect = cv.getBoundingClientRect(); const p = ptOf(e); zoomAround(p.x, p.y, Math.exp(-e.deltaY * 0.0016), false); }, { passive:false });
+function handleTap(x, y){
+  if (settingStart) {
+    const [wx, wy] = toWorld(x, y); state.settings.custom = unproj(wx, wy); state.settings.start = 'custom';
+    endSetStart(); save(); afterSettings(); toast('Start point saved'); return;
+  }
+  let best = null, bd = Infinity;
+  for (const h of hits) { const d = Math.hypot(h.x - x, h.y - y); if (d < h.r + 10 && d < bd) { bd = d; best = h; } }
+  if (best) { openSheet(best.id); return; }
+  const now = performance.now();
+  if (lastEmptyTap && now - lastEmptyTap.t < 330 && Math.hypot(lastEmptyTap.x - x, lastEmptyTap.y - y) < 30) { lastEmptyTap = null; zoomAround(x, y, 2, true); }
+  else lastEmptyTap = { x, y, t:now };
+}
+function beginSetStart(){ settingStart = true; $('#mapHintT').textContent = 'Tap the map where you are staying'; $('#mapHint').hidden = false; $('.map-wrap').scrollIntoView({ behavior:REDUCED ? 'auto' : 'smooth', block:'start' }); }
+function endSetStart(){ settingStart = false; $('#mapHint').hidden = true; }
+function locate(fly){
+  return new Promise(res => {
+    if (!navigator.geolocation) { toast('Location is not available here. Pick a start point instead.'); res(null); return; }
+    navigator.geolocation.getCurrentPosition(pos => {
+      gps = { lat:pos.coords.latitude, lng:pos.coords.longitude, acc:pos.coords.accuracy };
+      if (!inBounds(gps)) toast('You are outside the map area, so the planner uses another start for now.');
+      else if (fly) { const p = proj(gps.lat, gps.lng); flyTo(p.x, p.y, Math.max(view.s, 0.06)); }
+      requestDraw(); res(gps);
+    }, () => { toast('Location is blocked here. Pick a start point or tap the map to set one.'); res(null); }, { enableHighAccuracy:true, timeout:10000, maximumAge:60000 });
+  });
+}
+
+/* ============================== RENDER: PLACES ============================== */
+const ui = { tab:'places', filter:'all', sort:'num' };
+const FILTERS = [['all','All'],['unseen','Not seen'],['seen','Seen'],['plan','In plan']];
+function rowHTML(p){
+  const st = state.places[p.id], inPlan = state.plan.includes(p.id), sv = safetyNow(p), col = sVar(sv);
+  const safe = sv == null ? '<span>Closed after dark</span>' : `<span>${nightish(p) ? 'Night safety' : 'Safety'} <b>${fmtR(sv)}</b>${meter(sv, col)}</span>`;
+  return `<li class="row" style="--c:${col}">
+    <button class="row-main" type="button" data-act="open" data-id="${p.id}">
+      <span class="row-n">${p.n}</span>
+      <span class="row-body">
+        <span class="row-name">${esc(p.name)}</span>
+        <span class="row-meta">${esc(p.kind)}. ${durTxt(p.dur)}, ${esc(costShort(p))}.</span>
+        <span class="row-rate">${safe}<span>Friendliness <b>${fmtR(p.friendly)}</b>${meter(p.friendly, 'var(--pear)')}</span></span>
+        ${st.seen ? `<span class="row-seen">Seen${st.rating ? ` <span class="gold" aria-label="${st.rating} of 5 stars">${'★'.repeat(st.rating)}</span>` : ''}</span>` : ''}
+      </span>
+    </button>
+    <button class="row-add" type="button" data-act="plan" data-id="${p.id}" aria-pressed="${inPlan}" aria-label="${inPlan ? 'Remove from plan' : 'Add to plan'}: ${esc(p.name)}"><span aria-hidden="true">${inPlan ? '✓' : '+'}</span>${inPlan ? 'In plan' : 'Plan'}</button>
+  </li>`;
+}
+function renderPlaces(){
+  let list = PLACES.slice();
+  if (ui.filter === 'unseen') list = list.filter(p => !state.places[p.id].seen);
+  if (ui.filter === 'seen') list = list.filter(p => state.places[p.id].seen);
+  if (ui.filter === 'plan') list = list.filter(p => state.plan.includes(p.id));
+  const sv = p => safetyNow(p) == null ? -1 : safetyNow(p);
+  if (ui.sort === 'safe') list.sort((a, b) => sv(b) - sv(a) || b.friendly - a.friendly);
+  if (ui.sort === 'friendly') list.sort((a, b) => b.friendly - a.friendly || sv(b) - sv(a));
+  if (ui.sort === 'near') { const h = homePoint(); list.sort((a, b) => Math.hypot(a.x - h.x, a.y - h.y) - Math.hypot(b.x - h.x, b.y - h.y)); }
+  const seen = PLACES.filter(p => state.places[p.id].seen).length;
+  $('#tab-places').innerHTML = `${lockBar('Unlock to see which places you have visited, rated and planned.')}
+    <p class="intro">Picked for a woman traveling alone: safety first, then friendliness. Tap a row or a pin for tips, your notes and links.${state.settings.night ? ' <b>Showing after-dark safety.</b>' : ''}</p>
+    <div class="progress"><span class="bar"><i style="width:${seen * 10}%"></i></span><span>${seen} of 10 seen</span></div>
+    <div class="filters">
+      <div class="fchips" role="group" aria-label="Filter">${FILTERS.map(([k, t]) => `<button class="fchip" type="button" data-act="filter" data-f="${k}" aria-pressed="${ui.filter === k}">${t}</button>`).join('')}</div>
+      <select data-change="sort" aria-label="Sort places">
+        ${[['num','Map order'],['safe','Safest first'],['friendly','Friendliest first'],['near','Closest to my start']].map(([k, t]) => `<option value="${k}"${ui.sort === k ? ' selected' : ''}>${t}</option>`).join('')}
+      </select>
+    </div>
+    <ul class="index">${list.map(rowHTML).join('') || '<li class="muted" style="padding:14px 4px">Nothing matches this filter yet.</li>'}</ul>`;
+}
+
+/* ============================== RENDER: SHEET ============================== */
+function ratingRow(label, v, why, color, isFriend){
+  const word = v == null ? 'closed' : (isFriend ? friendWord(v) : safeWord(v));
+  return `<div class="rating" style="--mc:${color}"><div class="score">${v == null ? '–' : fmtR(v)}</div><div><div class="lbl">${label}, ${esc(word)}</div>${v == null ? '' : meter(v, color)}<p class="why">${esc(why)}</p></div></div>`;
+}
+function renderSheet(){
+  const p = byId(selectedId); if (!p) return;
+  const st = state.places[p.id], inPlan = state.plan.includes(p.id), sh = $('#sheet'), keep = sh.scrollTop;
+  sh.innerHTML = `
+    <div class="grab" aria-hidden="true"></div>
+    <div class="sh-head">
+      <span class="sh-num" style="--c:${sVar(safetyNow(p))}">${p.n}</span>
+      <div class="sh-title"><h2>${esc(p.name)}</h2><div class="sh-kind">${esc(p.kind)}</div></div>
+      <button class="x" type="button" data-act="close-sheet" aria-label="Close">✕</button>
+    </div>
+    <p class="blurb">${esc(p.blurb)}</p>
+    <div class="ratings">
+      ${ratingRow('Safety by day', p.safety.day, p.why.day, sVar(p.safety.day), false)}
+      ${ratingRow('Safety after dark', p.safety.night, p.why.night, sVar(p.safety.night), false)}
+      ${ratingRow('Friendliness', p.friendly, p.why.friend, 'var(--pear)', true)}
+    </div>
+    <div class="facts">
+      <div><span>Best time</span><b>${esc(p.best)}</b></div>
+      <div><span>Time to allow</span><b>${durTxt(p.dur)}</b></div>
+      <div><span>Estimated cost</span><b>${esc(p.costNote)}</b></div>
+      <div><span>Hours</span><b>${esc(p.hours)}</b></div>
+    </div>
+    <h3 class="h3">Tips for going solo</h3>
+    <ul class="tips">${p.tips.map(t => `<li>${esc(t)}</li>`).join('')}</ul>
+    <div class="row-btns">
+      <a class="btn primary" href="${esc(gDir(p, 'walking'))}" target="_blank" rel="noopener">Walking directions</a>
+      <a class="btn" href="${esc(uberTo(p))}" target="_blank" rel="noopener">Uber here</a>
+      <button class="btn${inPlan ? ' on' : ''}" type="button" data-act="plan" data-id="${p.id}" aria-pressed="${inPlan}">${inPlan ? '✓ In my plan' : '+ Add to plan'}</button>
+    </div>
+    ${sec.locked ? `<section class="mine"><h3 class="h3">My visit</h3>${lockBar('Unlock to mark visits, rate places and read or write notes.')}</section>` : `<section class="mine">
+      <h3 class="h3">My visit</h3>
+      <div class="seenrow">
+        <label class="check" style="margin:6px 0"><input type="checkbox" data-change="seen" data-id="${p.id}"${st.seen ? ' checked' : ''}> I have been here</label>
+        ${st.seen ? `<input type="date" aria-label="Date visited" data-change="seen-date" data-id="${p.id}" value="${esc(dateVal(st.seenAt))}">` : ''}
+      </div>
+      <div class="stars" role="radiogroup" aria-label="My rating">
+        ${[1, 2, 3, 4, 5].map(v => `<button type="button" role="radio" class="${st.rating >= v ? 'on' : ''}" data-act="rate" data-id="${p.id}" data-v="${v}" aria-checked="${st.rating === v}" aria-label="${v} star${v > 1 ? 's' : ''}">★</button>`).join('')}
+        <span class="sl">${st.rating ? `You gave it ${st.rating} of 5` : 'Tap to rate'}</span>
+      </div>
+      <label class="field" style="margin-top:4px"><span>My notes (saved as you type)</span><textarea data-input="note" data-id="${p.id}" rows="3" placeholder="What did you love? Who did you meet? Anything to warn a friend about?">${esc(st.note)}</textarea></label>
+      <div class="share">
+        <a class="btn sm" data-act="copy-review" data-id="${p.id}" href="${esc(gPlace(p))}" target="_blank" rel="noopener">Copy note, review on Google</a>
+        <a class="btn sm" data-act="copy-review" data-id="${p.id}" href="${esc(yelpLink(p))}" target="_blank" rel="noopener">Copy note, review on Yelp</a>
+        <a class="btn sm" data-act="email-friend" data-id="${p.id}" href="#" target="_blank" rel="noopener">Email a friend</a>
+      </div>
+      <p class="hint">The review buttons copy your note, then open the place. On Google Maps choose Reviews, then Write a review, tap your stars and paste.</p>
+      <label class="field"><span>Friend’s email (optional, used for all emails)</span><input type="email" data-input="friend" value="${esc(state.friend)}" placeholder="friend@example.com" autocomplete="email"></label>
+    </section>`}`;
+  sh.scrollTop = keep;
+}
+function dateVal(iso){ if (!iso) return ''; const d = new Date(iso); if (isNaN(d)) return ''; const z = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`; }
+let lastFocus = null;
+function openSheet(id){
+  if (!byId(id)) return;
+  const wasOpen = $('#sheet').classList.contains('on');
+  selectedId = id; renderSheet(); if (!wasOpen) $('#sheet').scrollTop = 0;
+  $('#sheet').classList.add('on'); $('#scrim').classList.add('on');
+  if (!wasOpen) lastFocus = document.activeElement;
+  ensureVisible(byId(id)); requestDraw();
+  setTimeout(() => { const x = $('#sheet .x'); if (x) x.focus({ preventScroll:true }); }, 60);
+}
+function closeSheet(){
+  $('#sheet').classList.remove('on'); $('#scrim').classList.remove('on'); selectedId = null; requestDraw();
+  if (lastFocus && lastFocus.focus && document.body.contains(lastFocus)) lastFocus.focus({ preventScroll:true });
+}
+
+/* ============================== RENDER: PLAN ============================== */
+function legRow(L){
+  const u = L.kind === 'uber';
+  const txt = u ? `Uber ${fmtMi(L.km)}, about ${fmtMin(L.min)} with pickup, ~${fmtUSD(L.cost)}` : `Walk ${fmtMi(L.km)}, about ${fmtMin(L.min)}`;
+  const warn = L.warn === 'long' ? '<em class="warn">Long walk. Consider an Uber.</em>' : L.warn === 'dark' ? '<em class="warn">After dark. Consider an Uber.</em>' : '';
+  return `<li class="mv"><span class="lg-ico" aria-hidden="true">${u ? '🚗' : '🚶'}</span><span class="lg-t">${txt}${L.home ? ' back to start' : ''}${warn}</span><span class="lg-a"><a href="${esc(gDir(L.to, u ? 'driving' : 'walking', L.from))}" target="_blank" rel="noopener">Map</a>${u ? `<a href="${esc(uberTo(L.to))}" target="_blank" rel="noopener">Uber</a>` : ''}</span></li>`;
+}
+function routeHTML(){
+  const r = route; if (!r) return '';
+  const nx = nextStop(), items = [];
+  if (r.start) items.push(`<li class="mv"><span class="lg-ico" aria-hidden="true">◆</span><span class="lg-t">Start at ${esc(r.start.label)}</span></li>`);
+  let li = 0;
+  r.order.forEach((p, k) => {
+    if (r.start || k > 0) { const g = r.legs[li++]; if (g) items.push(legRow(g)); }
+    const st = state.places[p.id], sv = (r.night || p.when === 'night') ? p.safety.night : p.safety.day;
+    items.push(`<li class="stop"><span class="st-n">${LET(k)}</span><span class="st-main"><button class="linkish" type="button" data-act="open" data-id="${p.id}">${esc(p.name)}</button><span class="muted">${durTxt(p.dur)} there, ${esc(costShort(p))}. ${sv == null ? 'Closed after dark.' : `Safety ${fmtR(sv)}.`}${st.seen ? ' Seen.' : ''}</span></span><span class="pin-mini" style="--c:${sVar(sv)}" aria-label="Map number ${p.n}">${p.n}</span></li>`);
+  });
+  if (r.round) { const g = r.legs[li]; if (g) items.push(legRow(g)); }
+  const timing = r.order.filter(p => p.timing).map(p => `<li>${esc(p.short)}: ${esc(p.timing)}</li>`).join('');
+  return `<div class="routecard">
+    <div class="rc-head"><h3 class="h3">Best order for ${r.order.length} place${r.order.length > 1 ? 's' : ''}</h3><span class="muted" style="margin:0">${r.mode === 'walk' ? 'Walking' : 'Uber + walking'}${r.night ? ', after dark' : ''}</span></div>
+    ${r.note ? `<p class="note">${esc(r.note)}</p>` : ''}
+    <dl class="stats">
+      <div><dt>Travel time</dt><dd>${fmtMin(r.travel)}</dd></div>
+      <div><dt>Time at places</dt><dd>${fmtMin(r.atStops)}</dd></div>
+      <div><dt>Walking</dt><dd>${r.walkKm > 0.05 ? fmtMi(r.walkKm) : 'none'}</dd></div>
+      <div><dt>Uber</dt><dd>${r.rides ? `${r.rides} ride${r.rides > 1 ? 's' : ''}, ~${fmtUSD(r.uberCost)}` : 'none'}</dd></div>
+    </dl>
+    <p class="muted">${r.timeOrder ? 'Ordered by time of day first (morning line, daytime sights, sunset, then nightlife), then by distance.' : 'Ordered by distance only.'} Door to door, about ${fmtMin(r.travel + r.atStops)}.${r.travel + r.atStops > 600 ? ' That is a long day, so think about splitting it in two.' : ''}</p>
+    ${nx ? `<a class="btn primary wide" href="${esc(gDir(nx.p, nx.mode))}" target="_blank" rel="noopener">Directions to ${esc(nx.p.name)}</a>` : '<p class="muted">You have seen every place on this route.</p>'}
+    <ol class="legs">${items.join('')}</ol>
+    <a class="btn wide" href="${esc(fullRouteLink())}" target="_blank" rel="noopener">Open the whole route in Google Maps</a>
+    <p class="muted">Timing to keep in mind:</p>
+    <ul class="timing">${timing}</ul>
+    <h3 class="h3">Estimated cost</h3>
+    <table class="ctable">
+      ${r.order.map(p => `<tr><td>${esc(p.short)}</td><td>${costOf(p) ? fmtUSD(costOf(p)) : 'Free'}</td></tr>`).join('')}
+      <tr><td>Uber, ${r.rides} ride${r.rides === 1 ? '' : 's'}</td><td>${fmtUSD(r.uberCost)}</td></tr>
+      <tr class="tot"><td>Proposal total, before tips</td><td>${fmtUSD(r.total)}</td></tr>
+    </table>
+    <p class="muted">Ride prices can double on weekend nights and during big events.</p>
+    <label class="field"><span>Name this proposal</span><input type="text" id="planName" placeholder="Day ${state.plans.length + 1}" maxlength="60"></label>
+    <div class="row-btns">
+      <button class="btn primary" type="button" data-act="save-plan">Save proposal</button>
+      <button class="btn" type="button" data-act="copy-plan">Copy</button>
+      <a class="btn" data-act="email-plan" href="#" target="_blank" rel="noopener">Email</a>
+      <button class="btn" type="button" data-act="hide-route">Clear route</button>
+    </div>
+  </div>`;
+}
+function renderPlan(){
+  const sel = state.plan.map(byId).filter(Boolean), st = state.settings;
+  const prevName = $('#planName') ? $('#planName').value : '';
+  $('#tab-plan').innerHTML = `${lockBar('Unlock to see your saved proposals and your saved spot.')}
+    <section class="block">
+      <h2 class="h">Visit proposal</h2>
+      <p class="muted">Pick places for a day, choose how you will get around, and the planner finds the shortest order (an exact traveling-salesman solve).</p>
+      <div class="chips">${sel.length ? sel.map(p => `<span class="chip" style="--c:${sVar(safetyNow(p))}"><i>${p.n}</i>${esc(p.short)}<button type="button" data-act="plan" data-id="${p.id}" aria-label="Remove ${esc(p.name)}">×</button></span>`).join('') : '<span class="muted">No places yet. Use + Plan on any place, or add everything you have not seen.</span>'}</div>
+      <div class="row-btns"><button class="btn" type="button" data-act="add-unseen">Add all unseen</button>${sel.length ? '<button class="btn" type="button" data-act="clear-plan">Clear plan</button>' : ''}</div>
+      <label class="field"><span>Start from</span><select data-change="start">${START_OPTS.map(([k, t]) => `<option value="${k}"${st.start === k ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
+      ${st.start === 'custom' ? `<button class="btn" type="button" data-act="set-start-map">${st.custom ? 'Move my spot on the map' : 'Set my spot on the map'}</button>` : ''}
+      <div class="field"><span>Getting around</span>
+        <div class="seg flat" role="group" aria-label="Getting around">
+          <button type="button" data-act="mode" data-mode="walk" aria-pressed="${st.mode === 'walk'}">🚶 Walk everywhere</button>
+          <button type="button" data-act="mode" data-mode="uber" aria-pressed="${st.mode === 'uber'}">🚗 Uber + walk</button>
+        </div>
+      </div>
+      ${st.mode === 'uber' ? `<label class="field"><span>Walk legs up to${st.night ? ' (after dark: ¼ mile)' : ''}</span><select data-change="walkmax"${st.night ? ' disabled' : ''}>${WALK_OPTS.map(([v, t]) => `<option value="${v}"${Math.abs(st.walkMax - v) < 0.01 ? ' selected' : ''}>${t}</option>`).join('')}</select></label>` : ''}
+      <label class="check"><input type="checkbox" data-change="night"${st.night ? ' checked' : ''}> <span>After dark: use night-time safety and only walk very short legs</span></label>
+      <label class="check"><input type="checkbox" data-change="timeorder"${st.timeOrder ? ' checked' : ''}> <span>Order by time of day: barbecue line first, sunset and nightlife last</span></label>
+      <label class="check"><input type="checkbox" data-change="round"${st.round ? ' checked' : ''}> <span>Come back to my start at the end</span></label>
+      <button class="go wide" type="button" data-act="route">Find the best route</button>
+    </section>
+    <section id="routeOut">${routeHTML()}</section>
+    <section class="block">
+      <h3 class="h3">Saved proposals</h3>
+      ${state.plans.length ? `<ul class="saved">${state.plans.map(pl => `<li><div><b>${esc(pl.name)}</b><span class="muted">${pl.stops.length} place${pl.stops.length > 1 ? 's' : ''}, about ${fmtUSD(pl.total || 0)}, ${pl.mode === 'walk' ? 'walking' : 'Uber + walking'}</span></div><div class="row-btns" style="margin:0"><button class="btn sm" type="button" data-act="load-plan" data-pid="${esc(pl.id)}">Load</button><button class="btn sm" type="button" data-act="del-plan" data-pid="${esc(pl.id)}" aria-label="Delete ${esc(pl.name)}">Delete</button></div></li>`).join('')}</ul>` : '<p class="muted">Save a proposal to compare days or send it to a friend.</p>'}
+    </section>`;
+  if (prevName && $('#planName')) $('#planName').value = prevName;
+}
+
+/* ============================== RENDER: LOG ============================== */
+function logGroups(){
+  const ents = [];
+  PLACES.forEach(p => { const st = state.places[p.id]; if (st.seen) ents.push({ type:'place', p, at:st.seenAt || new Date().toISOString() }); });
+  state.journal.forEach(j => ents.push({ type:'note', j, at:j.at }));
+  ents.sort((a, b) => new Date(a.at) - new Date(b.at));
+  const groups = [];
+  for (const e of ents) {
+    const d = new Date(e.at), key = isNaN(d) ? 'Undated' : d.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+    let g = groups.find(x => x.key === key); if (!g) { g = { key, items:[] }; groups.push(g); }
+    g.items.push(e);
+  }
+  return groups;
+}
+function logSummary(){
+  const seen = PLACES.filter(p => state.places[p.id].seen), rated = seen.filter(p => state.places[p.id].rating);
+  const avg = rated.length ? rated.reduce((a, p) => a + state.places[p.id].rating, 0) / rated.length : 0;
+  const spent = seen.reduce((a, p) => a + costOf(p), 0);
+  if (!seen.length) return 'Nothing logged yet.';
+  return `${seen.length} of 10 places seen${rated.length ? `, average rating ${avg.toFixed(1)} of 5` : ''}, and about ${fmtUSD(spent)} spent on entry and food at them.`;
+}
+function renderLog(){
+  if (sec.locked) {
+    $('#tab-log').innerHTML = `<section class="block"><h2 class="h">Travel log</h2>${lockBar('Your travel log is encrypted. Unlock with your passphrase to read it or add to it.')}
+      <p class="muted">Notes, visit dates, ratings, saved proposals, your saved spot and your friend’s email are all sealed until you unlock.</p></section>`;
+    return;
+  }
+  const groups = logGroups();
+  const prev = $('#noteIn') ? $('#noteIn').value : '';
+  $('#tab-log').innerHTML = `
+    <section class="block">
+      <h2 class="h">Travel log</h2>
+      <p class="muted">${esc(logSummary())}</p>
+      <div class="addnote">
+        <textarea id="noteIn" rows="2" placeholder="Add a note to today’s log: where you ate, who you met, what to tell friends"></textarea>
+        <button class="btn primary" type="button" data-act="add-note">Add to log</button>
+      </div>
+      ${groups.length ? `<ol class="timeline">${groups.map(g => `<li class="day"><h3>${esc(g.key)}</h3><ul class="ents">${g.items.map(e => {
+        if (e.type === 'place') { const st = state.places[e.p.id]; return `<li class="ent"><span class="pin-mini" style="--c:${sVar(e.p.safety.day)}">${e.p.n}</span><div><button class="linkish" type="button" data-act="open" data-id="${e.p.id}">${esc(e.p.name)}</button>${st.rating ? ` <span class="gold" aria-label="${st.rating} of 5 stars">${'★'.repeat(st.rating)}</span>` : ''}${st.note ? `<p>${esc(st.note)}</p>` : ''}</div></li>`; }
+        return `<li class="ent"><span class="ico" aria-hidden="true">✎</span><div><p style="color:var(--ink)">${esc(e.j.text)}</p><button class="mini" type="button" data-act="del-note" data-nid="${esc(e.j.id)}">Delete note</button></div></li>`;
+      }).join('')}</ul></li>`).join('')}</ol>` : '<p class="muted">Your log fills in as you go. Open a place and tick “I have been here”, or add a note above.</p>'}
+      <h3 class="h3">Privacy</h3>
+      <p class="muted">${sec.on ? 'Your notes, log, ratings, plans and saved spot are encrypted with your passphrase.' : 'Your notes are saved unencrypted. Add a passphrase to encrypt them on this device before they are stored.'}</p>
+      <div class="row-btns"><button class="btn${sec.on ? '' : ' primary'}" type="button" data-act="privacy">${sec.on ? 'Encryption settings' : 'Protect my notes with a passphrase'}</button>${sec.on ? '<button class="btn" type="button" data-act="lock-now">Lock now</button>' : ''}</div>
+      <h3 class="h3">Make my travel log</h3>
+      <div class="row-btns">
+        <button class="btn primary" type="button" data-act="log-copy">Copy log</button>
+        <a class="btn" data-act="log-email" href="#" target="_blank" rel="noopener">Email log</a>
+        <button class="btn" type="button" data-act="log-download">Download .txt</button>
+      </div>
+      <details class="backup">
+        <summary>Back up or move my data</summary>
+        <p class="muted">Copy the backup code and keep it somewhere safe. Paste it here later to restore your log, ratings and plans.</p>
+        <div class="row-btns"><button class="btn" type="button" data-act="backup-copy">Copy backup code</button></div>
+        <textarea id="restoreIn" rows="3" placeholder="Paste a backup code"></textarea>
+        <div class="row-btns"><button class="btn" type="button" data-act="backup-restore">Restore from code</button><button class="btn" type="button" data-act="reset">Erase everything</button></div>
+      </details>
+    </section>`;
+  if (prev && $('#noteIn')) $('#noteIn').value = prev;
+}
+function logText(){
+  const L = ['My Austin travel log', logSummary(), ''];
+  for (const g of logGroups()) {
+    L.push(g.key);
+    for (const e of g.items) {
+      if (e.type === 'place') { const st = state.places[e.p.id]; L.push(`  ✓ ${e.p.name}${st.rating ? '  ' + starStr(st.rating) : ''}`); if (st.note) L.push('    ' + st.note.replace(/\n/g, '\n    ')); }
+      else L.push('  ✎ ' + e.j.text.replace(/\n/g, '\n    '));
+    }
+    L.push('');
+  }
+  const left = PLACES.filter(p => !state.places[p.id].seen).map(p => p.name);
+  if (left.length) L.push('Still to see: ' + left.join(', '));
+  return L.join('\n');
+}
+
+/* ============================== RENDER: COSTS ============================== */
+function renderCosts(){
+  const b = state.budget;
+  $('#tab-costs').innerHTML = `
+    <section class="block">
+      <h2 class="h">What things cost</h2>
+      <p class="muted">Typical Austin prices in late 2026. Add 8.25% sales tax to most purchases.</p>
+      ${PRICE_GROUPS.map(g => `<h3 class="h3">${esc(g.title)}</h3><table class="ptable">${g.items.map(([k, v, n]) => `<tr><th scope="row">${esc(k)}${n ? `<small>${esc(n)}</small>` : ''}</th><td>${esc(v)}</td></tr>`).join('')}</table>`).join('')}
+      <h3 class="h3">The ten places</h3>
+      <table class="ptable">${PLACES.map(p => `<tr><th scope="row">${esc(p.name)}<small>${esc(p.costNote)}</small></th><td>${costOf(p) ? fmtUSD(costOf(p)) : 'Free'}</td></tr>`).join('')}</table>
+    </section>
+    <section class="block">
+      <h2 class="h">Two-week budget</h2>
+      <p class="muted">A rough total for the whole trip. Your proposals in the Plan tab show the cost of a single day.</p>
+      <label class="field"><span>Nights</span><input type="number" min="1" max="60" inputmode="numeric" data-change="budget" data-k="nights" value="${esc(b.nights)}"></label>
+      <label class="field"><span>Room rate per night, before tax ($)</span><input type="number" min="0" step="10" inputmode="numeric" data-change="budget" data-k="lodge" value="${esc(b.lodge)}"></label>
+      <label class="field"><span>Eating</span><select data-change="budget" data-k="food">${Object.entries(FOOD).map(([k, v]) => `<option value="${k}"${b.food === k ? ' selected' : ''}>${esc(v[0])}</option>`).join('')}</select></label>
+      <label class="field"><span>Getting around</span><select data-change="budget" data-k="move">${Object.entries(MOVE).map(([k, v]) => `<option value="${k}"${b.move === k ? ' selected' : ''}>${esc(v[0])}</option>`).join('')}</select></label>
+      <div id="budgetOut"></div>
+    </section>`;
+  renderBudget();
+}
+function renderBudget(){
+  const out = $('#budgetOut'); if (!out) return;
+  const b = state.budget, nights = clamp(Math.round(+b.nights || 1), 1, 60), lodge = Math.max(0, +b.lodge || 0);
+  const lodging = nights * lodge * 1.17, food = nights * FOOD[b.food][1], move = nights * MOVE[b.move][1];
+  const places = PLACES.reduce((a, p) => a + costOf(p), 0), airport = 60, total = lodging + food + move + places + airport;
+  out.innerHTML = `<table class="ptable">
+    <tr><th scope="row">Room, ${nights} night${nights > 1 ? 's' : ''}<small>Includes 17% hotel tax</small></th><td>${fmtUSD(lodging)}</td></tr>
+    <tr><th scope="row">Eating</th><td>${fmtUSD(food)}</td></tr>
+    <tr><th scope="row">Getting around</th><td>${fmtUSD(move)}</td></tr>
+    <tr><th scope="row">All ten places<small>Entry plus typical spend</small></th><td>${fmtUSD(places)}</td></tr>
+    <tr><th scope="row">Airport rides, both ways</th><td>${fmtUSD(airport)}</td></tr>
+    <tr class="tot"><th scope="row">Estimated trip total</th><td>${fmtUSD(total)}</td></tr>
+  </table><p class="muted">About ${fmtUSD(total / nights)} a day, before flights. Hotel and ride prices jump during big events, so check the event calendar before you book.</p>`;
+}
+
+/* ============================== RENDER: SAFETY ============================== */
+function renderSafety(){
+  const h = homePoint();
+  $('#tab-safety').innerHTML = `
+    <section class="block">
+      <h2 class="h">Staying safe on your own</h2>
+      <p>Austin is generally welcoming to women traveling alone. The real risks are ordinary city ones: late-night bar crowds, dark trails, rideshare mix-ups and car break-ins.</p>
+      <div class="sos"><a class="btn primary" href="tel:911">Call 911</a><a class="btn" href="tel:311">City non-emergency, 311</a></div>
+      <p class="muted">If something feels off, step into a hotel lobby, shop or restaurant and ask staff for help. That is normal here.</p>
+      <h3 class="h3">Rideshare habits</h3>
+      <ul class="tips">
+        <li>Match the plate, car and driver’s name before you open the door. Ask “Who are you here for?” rather than saying your name.</li>
+        <li>Share your trip status with a friend from the Uber app, and sit in the back.</li>
+        <li>Wait indoors until the app shows your car has arrived.</li>
+        <li>In Austin, the Uber app can match you with a driverless Waymo inside its service area. To raise your chances, turn on autonomous vehicles in the app’s ride preferences.</li>
+      </ul>
+      <h3 class="h3">After dark</h3>
+      <ul class="tips">
+        <li>Switch on After dark at the top of the map. Pins change to night-time safety, and the planner only walks legs under a quarter mile.</li>
+        <li>Skip the lake trail and greenbelts after sunset. The unlit shoreline at the end of Rainey Street has seen several late-night drownings.</li>
+        <li>East 6th Street gets rowdy late on weekends. If you go, go early and leave well before the bars close at 2am.</li>
+        <li>The rideshare scramble around 2am is the riskiest pickup window. Leave before it, or wait inside until it passes.</li>
+      </ul>
+      <h3 class="h3">By day</h3>
+      <ul class="tips">
+        <li>Car break-ins are common at park lots such as Zilker and Mount Bonnell. Arriving by Uber avoids the problem.</li>
+        <li>Carry water. The Texas sun is strong even in winter.</li>
+        <li>Never walk or drive through water flowing over a road. Flash floods are the region’s biggest natural hazard.</li>
+        <li>Some blocks near downtown shelters and under I-35 can feel uneasy. Ride through them rather than walk.</li>
+      </ul>
+      <h3 class="h3">Let someone know</h3>
+      <p class="muted">Send today’s route to a friend before you head out.</p>
+      <div class="row-btns">
+        <a class="btn" data-act="email-plan" href="#" target="_blank" rel="noopener">Email today’s plan</a>
+        <a class="btn" href="${esc(uberTo({ lat:h.lat, lng:h.lng, short:'Home base', name:'Home base' }))}" target="_blank" rel="noopener">Uber back to my start point</a>
+      </div>
+    </section>`;
+}
+
+/* ============================== PRIVACY ============================== */
+const AUTO_OPTS = [[5,'5 minutes'],[15,'15 minutes'],[60,'1 hour'],[0,'Only when I close the app']];
+const WORDS = Array.from(new Set(`acorn adobe agave album amber anchor apple apron arrow aspen atlas attic badge bagel banjo barn basil bayou beach beacon
+berry bison blanket blaze bloom bluff boots brass bread brick bridge brook brush bucket bugle cabin cactus camel candle canoe canyon carrot
+castle cedar cello chalk cherry cider cinema citrus clover cobalt comet copper coral cotton cougar cowboy coyote crane creek cricket crow cumin
+daisy dancer delta denim desert dinner dolphin donkey dragon drum eagle ember engine fable falcon fennel fern fiddle finch flame flint forest
+fossil fox garden garlic gecko ginger glacier goose granite grape guitar hammer harbor hawk hazel heron hickory honey horse iris island ivory
+jacket jasmine jelly jungle kayak kettle kitten koala ladder lagoon lantern lark lava lemon lily lizard llama lotus magnet mango maple marble
+meadow melon mesa mint mirror moose mosaic moth mule mural nectar nickel nutmeg oak oasis ocean olive onion opal orbit orchid otter owl paddle
+pancake panda parrot pasta peach pebble pecan pepper piano pickle pigeon pillow pine pixel plum pocket pony poppy prairie pretzel puzzle quail
+quartz quilt rabbit radio raven ribbon river robin rocket rodeo rose ruby saddle sage salmon sandal satin scarf sequin shell sierra silver
+sketch sloth spoon spruce squash star stone sugar summit sunset swan taco tango thistle thunder tiger timber toast tomato topaz trail tulip
+tundra turtle twig umbrella valley velvet violet violin walnut walrus wagon whale willow window winter wizard wolf yarrow yogurt zebra zinnia
+almond badger biscuit breeze butter cabbage cashew compass crystal dune feather harvest juniper kiwi mustang`.split(/\s+/).filter(Boolean)));
+function randInt(n){ const lim = Math.floor(65536 / n) * n, a = new Uint16Array(1); do { crypto.getRandomValues(a); } while (a[0] >= lim); return a[0] % n; }
+function suggestPass(){ const w = []; for (let i = 0; i < 5; i++) w.push(WORDS[randInt(WORDS.length)]); return w.join('-') + '-' + (randInt(90) + 10); }
+function pwStrength(p){
+  const words = p.split(/[^A-Za-z]+/).filter(w => w.length >= 3).length;
+  const kinds = [/[a-z]/, /[A-Z]/, /\d/, /[^A-Za-z0-9]/].filter(r => r.test(p)).length;
+  let s = p.length >= 8 ? 1 : 0;
+  if (p.length >= 12 && (kinds >= 2 || words >= 3)) s = 2;
+  if (p.length >= 16 && words >= 3) s = 3;
+  if (p.length >= 20 && words >= 4) s = 4;
+  if (/^(.)\1+$/.test(p) || /^(password|passw0rd|qwerty|letmein|123456|iloveyou|austin)/i.test(p)) s = Math.min(s, 1);
+  return {
+    pct:[6, 28, 55, 80, 100][s], color:['--s2', '--s3', '--s35', '--s45', '--s5'][s],
+    text:['Too short. Use at least 8 characters.', 'Weak. A fast computer could guess this. Add more words.', 'Fair. One or two more words would make it much harder to guess.', 'Good.', 'Strong.'][s]
+  };
+}
+function updateStrength(){
+  const inp = $('#pwNew'), bar = $('#pwBar'), hint = $('#pwHint'); if (!inp || !bar) return;
+  if (!inp.value) { bar.style.width = '0'; if (hint) hint.textContent = 'At least 8 characters. Four or more unrelated words works best.'; return; }
+  const s = pwStrength(inp.value); bar.style.width = s.pct + '%'; bar.style.background = `var(${s.color})`; if (hint) hint.textContent = s.text;
+}
+const lockBar = msg => sec.locked ? `<div class="lockbar"><span><b>Your notes are locked</b>${esc(msg || 'Unlock to see your log, ratings, notes and plans.')}</span><button class="btn primary sm" type="button" data-act="privacy">Unlock</button></div>` : '';
+const pwField = (id, label, auto, focus) => `<label class="field"><span>${label}</span><span class="pw"><input type="password" id="${id}" autocomplete="${auto}" autocapitalize="off" autocorrect="off" spellcheck="false"${focus ? ' data-focus' : ''}><button class="btn sm" type="button" data-act="pw-toggle" data-for="${id}">Show</button></span></label>`;
+const newPassBlock = focus => `${pwField('pwNew', 'New passphrase', 'new-password', focus)}<div class="meterbar" aria-hidden="true"><i id="pwBar"></i></div><p class="muted" id="pwHint" style="margin-top:0">At least 8 characters. Four or more unrelated words works best.</p>${pwField('pwNew2', 'Type it again', 'new-password', false)}<div class="row-btns"><button class="btn sm" type="button" data-act="pw-suggest">Suggest a strong passphrase</button></div>`;
+function openPrivacy(){
+  let h;
+  if (!CRYPTO_OK) h = `<h3>Privacy</h3><p class="muted">Encryption needs a secure page, and this view is not one. Open the app inside Claude to add a passphrase.</p><div class="row-btns"><button class="btn" type="button" data-act="modal-close">Close</button></div>`;
+  else if (sec.locked) h = `<h3>Unlock your notes</h3>
+    <p class="muted">Your log, ratings, notes, plans and saved spot are encrypted. Enter your passphrase to open them.</p>
+    ${pwField('pwIn', 'Passphrase', 'current-password', true)}<p class="err" id="pwErr" role="alert"></p>
+    <div class="row-btns"><button class="btn primary" type="button" id="unlockBtn" data-act="unlock">Unlock</button><button class="btn" type="button" data-act="modal-close">Not now</button></div>
+    <details class="backup"><summary>Forgot your passphrase?</summary><p class="muted">It cannot be recovered. That is what keeps your notes private. You can erase the locked data and start fresh.</p><button class="btn" type="button" data-act="erase-locked">Erase locked data</button></details>`;
+  else if (!sec.on) h = `<h3>Protect your notes</h3>
+    <p class="muted">Add a passphrase and everything personal is encrypted on this device before it is saved: notes, log, ratings, plans, your saved spot and your friend’s email. Without the passphrase, the app shows only the guide.</p>
+    <ul class="sec-list"><li>Use four or more unrelated words, or tap Suggest.</li><li>Write it down somewhere safe. A forgotten passphrase cannot be recovered.</li></ul>
+    ${newPassBlock(true)}<p class="err" id="pwErr" role="alert"></p>
+    <div class="row-btns"><button class="btn primary" type="button" data-act="enc-on">Encrypt my data</button><button class="btn" type="button" data-act="modal-close">Cancel</button></div>
+    ${store ? '' : '<p class="hint">This view does not keep data between visits, so here encryption protects your backup code.</p>'}`;
+  else h = `<h3>Your notes are encrypted</h3>
+    <p class="muted">What is saved is sealed with AES-256. The key is made from your passphrase, kept only in memory, and forgotten when the app locks or closes.</p>
+    <div class="row-btns"><button class="btn primary" type="button" data-act="lock-now">Lock now</button></div>
+    <label class="field"><span>Lock automatically when idle for</span><select data-change="autolock">${AUTO_OPTS.map(([v, t]) => `<option value="${v}"${+state.settings.autoLock === v ? ' selected' : ''}>${t}</option>`).join('')}</select></label>
+    <details class="backup"><summary>Change or remove the passphrase</summary>
+      ${pwField('pwCur', 'Current passphrase', 'current-password', false)}
+      ${newPassBlock(false)}
+      <div class="row-btns"><button class="btn primary" type="button" data-act="enc-change">Change passphrase</button><button class="btn" type="button" data-act="enc-off">Turn off encryption</button></div>
+      <p class="hint">Both need your current passphrase.</p>
+    </details>
+    <p class="err" id="pwErr" role="alert"></p>
+    <p class="hint">Copying, emailing or downloading your log makes a readable copy outside the app.</p>
+    <div class="row-btns"><button class="btn" type="button" data-act="modal-close">Close</button></div>`;
+  showModal(h);
+}
+const pwErr = m => { const el = $('#pwErr'); if (el) el.textContent = m; };
+function busy(btn, on, text){ if (!btn) return; if (on) { if (!btn.dataset.label) btn.dataset.label = btn.textContent; btn.textContent = text; btn.disabled = true; } else { btn.textContent = btn.dataset.label || btn.textContent; btn.disabled = false; } }
+function checkNew(){
+  const a = ($('#pwNew') || {}).value || '', b = ($('#pwNew2') || {}).value || '';
+  if (a.length < 8) return [null, 'Use at least 8 characters. Four or more words is best.'];
+  if (/^\d+$/.test(a)) return [null, 'Numbers alone are easy to guess. Use words instead.'];
+  if (a !== b) return [null, 'The two passphrases do not match.'];
+  return [a, ''];
+}
+async function tryUnlock(pass){
+  const wait = sec.nextTry - Date.now();
+  if (wait > 0) return { ok:false, msg:`Too many tries. Try again in ${Math.ceil(wait / 1000)} seconds.` };
+  try {
+    const key = await deriveKey(pass, sec.salt, sec.iter);
+    const data = await unseal(sec.env, key);
+    Object.assign(sec, { key, locked:false, fails:0, nextTry:0 });
+    state = merge(data); route = null; lastAct = Date.now();
+    setSave(store ? 'saved' : 'local'); renderAll();
+    return { ok:true };
+  } catch (e) {
+    sec.fails++;
+    if (sec.fails >= 3) sec.nextTry = Date.now() + Math.min(300000, 5000 * Math.pow(2, sec.fails - 3));
+    return { ok:false, msg:sec.fails >= 3 ? `That passphrase did not work. Wait ${Math.ceil((sec.nextTry - Date.now()) / 1000)} seconds before trying again.` : 'That passphrase did not work.' };
+  }
+}
+async function doUnlock(btn){
+  const inp = $('#pwIn'); if (!inp) return;
+  if (!inp.value) { pwErr('Enter your passphrase.'); inp.focus(); return; }
+  busy(btn, true, 'Unlocking…'); pwErr('');
+  const res = await tryUnlock(inp.value);
+  if (res.ok) { inp.value = ''; hideModal(); toast('Unlocked'); }
+  else { busy(btn, false); pwErr(res.msg); inp.select(); }
+}
+async function doEnable(btn){
+  const [pass, msg] = checkNew(); if (!pass) { pwErr(msg); return; }
+  busy(btn, true, 'Encrypting…'); pwErr('');
+  try {
+    const salt = crypto.getRandomValues(new Uint8Array(16)), key = await deriveKey(pass, salt, ITER);
+    Object.assign(sec, { on:true, locked:false, key, salt, iter:ITER });
+    const ok = await flushSave();
+    hideModal(); renderAll();
+    toast(ok ? 'Encrypted. Keep your passphrase somewhere safe.' : 'Encrypted, but saving failed. Make any small change to retry.');
+  } catch (e) { busy(btn, false); pwErr('Encryption failed in this browser.'); }
+}
+async function verifyPass(pass){
+  if (!pass || !sec.on || !sec.key) return false;
+  try { const k = await deriveKey(pass, sec.salt, sec.iter); await unseal(sec.env || await seal(state, sec.key, sec.salt, sec.iter), k); return true; }
+  catch (e) { return false; }
+}
+async function doChange(btn){
+  const [pass, msg] = checkNew(); if (!pass) { pwErr(msg); return; }
+  busy(btn, true, 'Checking…'); pwErr('');
+  if (!(await verifyPass(($('#pwCur') || {}).value))) { busy(btn, false); pwErr('Your current passphrase is not right.'); return; }
+  const salt = crypto.getRandomValues(new Uint8Array(16)), key = await deriveKey(pass, salt, ITER);
+  Object.assign(sec, { key, salt, iter:ITER });
+  await flushSave(); hideModal(); renderAll(); toast('Passphrase changed');
+}
+async function doOff(btn){
+  busy(btn, true, 'Checking…'); pwErr('');
+  if (!(await verifyPass(($('#pwCur') || {}).value))) { busy(btn, false); pwErr('Enter your current passphrase to turn encryption off.'); return; }
+  Object.assign(sec, { on:false, locked:false, key:null, salt:null, env:null });
+  await flushSave(); hideModal(); renderAll(); toast('Encryption is off. Your notes are saved readable.');
+}
+async function lockNow(auto){
+  if (!sec.on || sec.locked || !sec.key || sec.locking) return;
+  sec.locking = true;
+  await flushSave();
+  Object.assign(sec, { key:null, locked:true, locking:false });
+  state = blank(); route = null;
+  if ($('#sheet').classList.contains('on')) closeSheet();
+  $('#sheet').innerHTML = ''; hideModal(); $('#modalBox').innerHTML = '';
+  ['#noteIn', '#planName', '#restoreIn'].forEach(s => { const el = $(s); if (el) el.value = ''; });
+  setSave('locked'); renderAll();
+  toast(auto ? 'Locked after inactivity' : 'Locked. Your notes are hidden.');
+}
+let eraseArmed = 0;
+async function eraseLocked(btn){
+  if (Date.now() - eraseArmed > 4000) { eraseArmed = Date.now(); btn.textContent = 'Tap again to erase for good'; setTimeout(() => { if (btn.isConnected) btn.textContent = 'Erase locked data'; }, 4000); return; }
+  eraseArmed = 0;
+  Object.assign(sec, { on:false, locked:false, key:null, salt:null, env:null, fails:0, nextTry:0 });
+  state = blank(); route = null;
+  await flushSave(); hideModal(); renderAll(); toast('Locked data erased. You are starting fresh.');
+}
+let pendingRestore = null;
+function openRestorePrompt(env){
+  pendingRestore = env;
+  showModal(`<h3>Unlock this backup</h3><p class="muted">This backup code is encrypted. Enter the passphrase that was in use when it was made.</p>${pwField('pwRestore', 'Passphrase for the backup', 'current-password', true)}<p class="err" id="pwErr" role="alert"></p><div class="row-btns"><button class="btn primary" type="button" id="restoreBtn" data-act="restore-unlock">Restore</button><button class="btn" type="button" data-act="modal-close">Cancel</button></div>`);
+}
+async function doRestoreUnlock(btn){
+  const env = pendingRestore, inp = $('#pwRestore'); if (!env || !inp) return;
+  busy(btn, true, 'Unlocking…'); pwErr('');
+  try {
+    const salt = unb64(env.salt), iter = +env.iter || ITER, key = await deriveKey(inp.value, salt, iter);
+    const data = await unseal(env, key);
+    state = merge(data); route = null; pendingRestore = null;
+    Object.assign(sec, { on:true, locked:false, key, salt, iter, env, fails:0, nextTry:0 });
+    await flushSave(); hideModal(); renderAll();
+    toast('Backup restored. Its passphrase now protects your notes.');
+  } catch (e) { busy(btn, false); pwErr('That passphrase does not open this backup.'); }
+}
+async function backupCode(){
+  if (sec.on && sec.key) { await flushSave(); return JSON.stringify(sec.env || await seal(state, sec.key, sec.salt, sec.iter)); }
+  return JSON.stringify(state);
+}
+let lastAct = Date.now();
+['pointerdown', 'keydown', 'input', 'wheel'].forEach(ev => document.addEventListener(ev, () => { lastAct = Date.now(); }, { capture:true, passive:true }));
+function checkAutoLock(){ const m = +state.settings.autoLock; if (sec.on && !sec.locked && sec.key && m > 0 && Date.now() - lastAct > m * 60000) lockNow(true); }
+setInterval(checkAutoLock, 15000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkAutoLock(); });
+
+/* ============================== ACTIONS ============================== */
+function syncControls(){
+  const st = state.settings;
+  $$('[data-act="mode"]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === st.mode)));
+  $('#nightBtn').setAttribute('aria-pressed', String(st.night));
+  $('#lgT').textContent = st.night ? 'Pin color: safety after dark' : 'Pin color: safety rating';
+  $('#lgClosed').hidden = !st.night;
+  const chip = $('#nextChip'), nx = nextStop();
+  if (route && nx) { chip.hidden = false; chip.href = gDir(nx.p, nx.mode); chip.textContent = `Directions to ${nx.p.short}`; }
+  else chip.hidden = true;
+}
+function renderAll(){
+  renderPlaces(); renderPlan(); renderLog();
+  if (ui.tab === 'costs') renderCosts();
+  if (ui.tab === 'safety') renderSafety();
+  if ($('#sheet').classList.contains('on')) renderSheet();
+  syncControls(); requestDraw();
+}
+function afterSettings(){ if (route) computeRoute(); renderAll(); }
+function setTab(t){
+  ui.tab = t;
+  $$('.tab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === t)));
+  $$('.tabpane').forEach(p => { p.hidden = p.id !== 'tab-' + t; });
+  ({ places:renderPlaces, plan:renderPlan, log:renderLog, costs:renderCosts, safety:renderSafety })[t]();
+}
+function togglePlan(id){
+  const i = state.plan.indexOf(id);
+  if (i >= 0) state.plan.splice(i, 1); else state.plan.push(id);
+  save(); afterSettings();
+  toast(i >= 0 ? `Removed ${byId(id).short} from your plan` : `Added ${byId(id).short} to your plan`);
+}
+function setSeen(id, v, quiet){
+  const st = state.places[id]; st.seen = v;
+  st.seenAt = v ? (st.seenAt || new Date().toISOString()) : null;
+  save(); renderAll();
+  if (!quiet) toast(v ? 'Added to your travel log' : 'Removed from your travel log');
+}
+function setRating(id, v){
+  const st = state.places[id]; st.rating = st.rating === v ? 0 : v;
+  if (st.rating && !st.seen) { setSeen(id, true, true); toast('Rated and added to your log'); return; }
+  save(); renderAll();
+}
+function runRoute(){
+  const r = computeRoute({ animate:true, announce:true });
+  setTab('plan'); syncControls();
+  if (!r) return;
+  const pts = r.order.slice(); if (r.start) pts.push(r.start);
+  const f = computeFit(pts); flyTo(f.cx, f.cy, f.s);
+  toast(`Best order found: ${r.order.length} place${r.order.length > 1 ? 's' : ''}, ${fmtMin(r.travel)} of travel${r.rides ? `, Uber ~${fmtUSD(r.uberCost)}` : ''}. Details in Plan.`);
+}
+function uberModal(){
+  const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent), android = /Android/i.test(navigator.userAgent);
+  const stores = [`<a class="btn" href="${UBER_IOS}" target="_blank" rel="noopener">Download for iPhone (App Store)</a>`, `<a class="btn" href="${UBER_ANDROID}" target="_blank" rel="noopener">Download for Android (Google Play)</a>`];
+  if (android) stores.reverse();
+  showModal(`<h3>Uber</h3><p class="muted">Open the app to request a ride from where you are, or install it first.</p>
+    <div class="row-btns col"><a class="btn primary" href="${esc(UBER_OPEN)}" target="_blank" rel="noopener" data-focus>Open Uber</a>${(ios || android) ? stores[0] : stores.join('')}${(ios || android) ? '' : ''}</div>
+    <p class="muted">Austin tip: the Uber app can match you with a driverless Waymo. Turn on autonomous vehicles in the app’s ride preferences to raise your chances.</p>
+    <div class="row-btns"><button class="btn" type="button" data-act="modal-close">Close</button></div>`);
+}
+let resetArmed = 0;
+/* Actions that read or change personal data. While locked they open the unlock prompt instead. */
+const PERSONAL = new Set(['plan', 'rate', 'copy-review', 'email-friend', 'add-unseen', 'clear-plan', 'save-plan', 'load-plan', 'del-plan', 'add-note', 'del-note', 'log-copy', 'log-email', 'log-download', 'backup-copy', 'backup-restore', 'reset', 'set-start-map']);
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-act]'); if (!a) return;
+  const act = a.dataset.act, id = a.dataset.id;
+  if (sec.locked && PERSONAL.has(act)) { e.preventDefault(); openPrivacy(); return; }
+  switch (act) {
+    case 'privacy': openPrivacy(); break;
+    case 'unlock': doUnlock(a); break;
+    case 'pw-toggle': { const inp = $('#' + a.dataset.for); if (inp) { const show = inp.type === 'password'; inp.type = show ? 'text' : 'password'; a.textContent = show ? 'Hide' : 'Show'; } break; }
+    case 'pw-suggest': {
+      const p = suggestPass();
+      ['pwNew', 'pwNew2'].forEach(i => { const el = $('#' + i); if (el) { el.value = p; el.type = 'text'; } });
+      $$('[data-act="pw-toggle"]').forEach(b => { if (b.dataset.for === 'pwNew' || b.dataset.for === 'pwNew2') b.textContent = 'Hide'; });
+      updateStrength(); pwErr('');
+      const hint = $('#pwHint'); if (hint) hint.textContent = 'Strong. Write it down before you continue.';
+      break;
+    }
+    case 'enc-on': doEnable(a); break;
+    case 'enc-change': doChange(a); break;
+    case 'enc-off': doOff(a); break;
+    case 'lock-now': lockNow(false); break;
+    case 'erase-locked': eraseLocked(a); break;
+    case 'restore-unlock': doRestoreUnlock(a); break;
+    case 'tab': setTab(a.dataset.tab); break;
+    case 'open': openSheet(id); break;
+    case 'close-sheet': closeSheet(); break;
+    case 'plan': togglePlan(id); break;
+    case 'rate': setRating(id, +a.dataset.v); break;
+    case 'filter': ui.filter = a.dataset.f; renderPlaces(); break;
+    case 'copy-review': {
+      const p = byId(id), st = state.places[id], text = (st.note || '').trim() || `Visited ${p.name} on a solo trip to Austin.`;
+      copyText(text).then(ok => toast(ok ? `Note copied.${st.rating ? ` Give it ${st.rating} stars there and paste.` : ' Paste it in the review box.'}` : 'Copy is blocked here. Press and hold your note to copy it.'));
+      break;
+    }
+    case 'email-friend': {
+      const p = byId(id), st = state.places[id];
+      const body = [`I'm in Austin and ${st.seen ? 'just went to' : 'found'} ${p.name}.`, st.rating ? `My rating: ${st.rating}/5 ${starStr(st.rating)}` : '', st.note ? `\n${st.note}\n` : '', `My guide rates it ${fmtR(p.safety.day)}/5 for safety and ${fmtR(p.friendly)}/5 for friendliness.`, `Map: ${gPlace(p)}`].filter(Boolean).join('\n');
+      a.href = mailto(state.friend, `Austin: ${p.name}`, body); break;
+    }
+    case 'mode': state.settings.mode = a.dataset.mode; save(); afterSettings(); break;
+    case 'night': state.settings.night = !state.settings.night; save(); afterSettings(); toast(state.settings.night ? 'After dark: night safety, shorter walks' : 'Back to daytime ratings'); break;
+    case 'route': runRoute(); break;
+    case 'hide-route': route = null; renderPlan(); syncControls(); requestDraw(); break;
+    case 'zoom-in': zoomAround(W / 2, H / 2, 1.7, true); break;
+    case 'zoom-out': zoomAround(W / 2, H / 2, 1 / 1.7, true); break;
+    case 'fit': fitPlaces(PLACES); break;
+    case 'locate': locate(true); break;
+    case 'set-start-map': beginSetStart(); break;
+    case 'cancel-hint': endSetStart(); break;
+    case 'add-unseen': PLACES.forEach(p => { if (!state.places[p.id].seen && !state.plan.includes(p.id)) state.plan.push(p.id); }); save(); afterSettings(); toast('Added every place you have not seen'); break;
+    case 'clear-plan': state.plan = []; route = null; save(); renderAll(); break;
+    case 'save-plan': {
+      if (!route) break;
+      const name = planName();
+      state.plans.unshift({ id:'p' + Date.now().toString(36), name, created:new Date().toISOString(), stops:route.order.map(p => p.id), mode:route.mode, night:route.night, start:state.settings.start, custom:state.settings.custom, round:route.round, total:Math.round(route.total) });
+      save(); renderPlan(); toast(`Saved “${name}”`); break;
+    }
+    case 'copy-plan': copyOrShow(planText(), 'Plan'); break;
+    case 'email-plan': a.href = mailto(state.friend, `My Austin plan: ${route ? planName() : 'today'}`, planText()); break;
+    case 'load-plan': {
+      const pl = state.plans.find(x => x.id === a.dataset.pid); if (!pl) break;
+      state.plan = pl.stops.filter(x => byId(x));
+      Object.assign(state.settings, { mode:pl.mode || 'uber', night:!!pl.night, start:pl.start || 'dt', round:!!pl.round });
+      if (pl.custom) state.settings.custom = pl.custom;
+      save(); runRoute(); renderAll(); break;
+    }
+    case 'del-plan': state.plans = state.plans.filter(x => x.id !== a.dataset.pid); save(); renderPlan(); toast('Proposal deleted'); break;
+    case 'add-note': {
+      const t = ($('#noteIn').value || '').trim(); if (!t) { toast('Write a note first'); break; }
+      state.journal.push({ id:'n' + Date.now().toString(36), at:new Date().toISOString(), text:t }); $('#noteIn').value = '';
+      save(); renderLog(); toast('Note added to your log'); break;
+    }
+    case 'del-note': state.journal = state.journal.filter(j => j.id !== a.dataset.nid); save(); renderLog(); break;
+    case 'log-copy': copyOrShow(logText(), 'Travel log'); break;
+    case 'log-email': a.href = mailto(state.friend, 'My Austin travel log', logText()); break;
+    case 'log-download': downloadText('austin-travel-log.txt', logText()); break;
+    case 'backup-copy': backupCode().then(code => copyOrShow(code, sec.on ? 'Encrypted backup code' : 'Backup code')); break;
+    case 'backup-restore': {
+      const raw = ($('#restoreIn').value || '').trim();
+      let data = null; try { data = JSON.parse(raw); } catch (err) { data = null; }
+      if (isEnvelope(data)) { if (CRYPTO_OK) openRestorePrompt(data); else toast('Encrypted backups need a secure page. Open the app inside Claude.'); break; }
+      if (!data || !data.places) { toast('That code could not be read. Paste the whole backup code.'); break; }
+      state = merge(data); route = null; save(); renderAll(); toast('Your data was restored');
+      break;
+    }
+    case 'reset': {
+      if (Date.now() - resetArmed > 4000) { resetArmed = Date.now(); a.textContent = 'Tap again to erase'; setTimeout(() => { if (a.isConnected) a.textContent = 'Erase everything'; }, 4000); break; }
+      resetArmed = 0; state = blank(); route = null; save(); renderAll(); toast('Everything was erased'); break;
+    }
+    case 'uber-modal': uberModal(); break;
+    case 'modal-close': hideModal(); break;
+  }
+});
+document.addEventListener('change', e => {
+  const t = e.target, k = t.dataset.change; if (!k) return;
+  if (sec.locked && (k === 'seen' || k === 'seen-date')) { if (t.type === 'checkbox') t.checked = !t.checked; openPrivacy(); return; }
+  switch (k) {
+    case 'autolock': state.settings.autoLock = +t.value; save(); toast(+t.value ? `Locks after ${t.options[t.selectedIndex].text} without use` : 'Locks when you close the app'); break;
+    case 'seen': setSeen(t.dataset.id, t.checked); break;
+    case 'seen-date': { const st = state.places[t.dataset.id]; if (t.value) { st.seenAt = new Date(t.value + 'T12:00:00').toISOString(); save(); renderLog(); toast('Visit date updated'); } break; }
+    case 'start':
+      state.settings.start = t.value; save();
+      if (t.value === 'gps') locate(false).then(afterSettings);
+      if (t.value === 'custom' && !state.settings.custom) beginSetStart();
+      afterSettings(); break;
+    case 'walkmax': state.settings.walkMax = +t.value; save(); afterSettings(); break;
+    case 'night': state.settings.night = t.checked; save(); afterSettings(); break;
+    case 'round': state.settings.round = t.checked; save(); afterSettings(); break;
+    case 'timeorder': state.settings.timeOrder = t.checked; save(); afterSettings(); break;
+    case 'sort': ui.sort = t.value; renderPlaces(); break;
+    case 'budget': state.budget[t.dataset.k] = t.type === 'number' ? Math.max(0, +t.value || 0) : t.value; save(); renderBudget(); break;
+  }
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'pwNew') { updateStrength(); return; }
+  if (sec.locked && (t.dataset.input === 'note' || t.dataset.input === 'friend')) return;
+  if (t.dataset.input === 'note') { state.places[t.dataset.id].note = t.value; save(); }
+  else if (t.dataset.input === 'friend') { state.friend = t.value.trim(); save(); }
+  else if (t.dataset.change === 'budget' && t.type === 'number') { state.budget[t.dataset.k] = Math.max(0, +t.value || 0); save(); renderBudget(); }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.id === 'pwIn') { e.preventDefault(); doUnlock($('#unlockBtn')); return; }
+  if (e.key === 'Enter' && e.target.id === 'pwRestore') { e.preventDefault(); doRestoreUnlock($('#restoreBtn')); return; }
+  if (e.key !== 'Escape') return;
+  if ($('#modal').classList.contains('on')) hideModal();
+  else if ($('#sheet').classList.contains('on')) closeSheet();
+  else if (settingStart) endSetStart();
+});
+$('#modal').addEventListener('click', e => { if (e.target.id === 'modal') hideModal(); });
+
+/* ============================== START ============================== */
+async function init(){
+  readColors();
+  if (window.ResizeObserver) new ResizeObserver(() => resize()).observe($('.map-wrap')); else window.addEventListener('resize', resize);
+  resize();
+  setSave('loading');
+  renderAll();
+  await load();
+  renderAll();
+  if (sec.locked) openPrivacy();
+  buildTerrain().then(() => { colorize(); terrainReady = true; requestDraw(); });
+  if (window.matchMedia) {
+    const mq = matchMedia('(prefers-color-scheme: dark)'), onScheme = () => { readColors(); if (terrainReady) colorize(); requestDraw(); };
+    if (mq.addEventListener) mq.addEventListener('change', onScheme); else if (mq.addListener) mq.addListener(onScheme);
+  }
+}
+init();
+})();
+</script>
+</body>
+</html>
