@@ -1,0 +1,1286 @@
+
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BrickArchitect AI — Text-to-LEGO CAD & Sourcing Studio for Albert</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js & OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #111827; }
+    ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+    .lego-stud-bg {
+      background-image: radial-gradient(rgba(255,255,255,0.06) 20%, transparent 20%);
+      background-size: 16px 16px;
+    }
+  </style>
+</head>
+<body class="bg-gray-950 text-gray-100 h-screen flex flex-col overflow-hidden font-sans select-none">
+
+  <!-- TOP HEADER -->
+  <header class="h-14 border-b border-gray-800 bg-gray-900/90 px-4 flex items-center justify-between shrink-0 z-20">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded bg-red-600 flex items-center justify-center shadow-lg shadow-red-600/30 border border-red-400">
+        <i data-lucide="boxes" class="w-5 h-5 text-white"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-sm tracking-wide flex items-center gap-2">
+          BRICKARCHITECT <span class="text-xs bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded font-mono">CAD PAYLOAD v1.0</span>
+        </h1>
+        <p class="text-[11px] text-gray-400">Prompt-to-LEGO 3D Compiler, Step Builder & BrickLink Sourcing</p>
+      </div>
+    </div>
+
+    <!-- Preset Selector & Audio Toggle -->
+    <div class="flex items-center gap-2">
+      <span class="text-xs text-gray-400 mr-1">Demo Models:</span>
+      <button onclick="loadPreset('castle')" class="px-2.5 py-1 text-xs bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded transition flex items-center gap-1.5">
+        <span>🏰</span> Mini Yellow Castle
+      </button>
+      <button onclick="loadPreset('duck')" class="px-2.5 py-1 text-xs bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded transition flex items-center gap-1.5">
+        <span>🦆</span> Iconic LEGO Duck
+      </button>
+      <div class="h-4 w-[1px] bg-gray-800 mx-1"></div>
+      <button id="soundToggleBtn" onclick="toggleSound()" class="p-1.5 rounded bg-gray-800 hover:bg-gray-700 border border-gray-700 text-emerald-400" title="Toggle Brick Snap Sound">
+        <i data-lucide="volume-2" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE -->
+  <div class="flex-1 flex overflow-hidden">
+
+    <!-- LEFT PANEL: PROMPT PAYLOAD ENGINE -->
+    <aside class="w-80 border-r border-gray-800 bg-gray-900/60 flex flex-col shrink-0 z-10">
+      <div class="p-3 border-b border-gray-800">
+        <label class="text-xs font-semibold text-gray-300 uppercase tracking-wider flex items-center gap-1.5 mb-2">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i> 1. Describe Your LEGO Idea
+        </label>
+        <textarea id="userIdeaInput" rows="3" placeholder="e.g., A cyberpunk ramen stall with a neon sign and two barstools..."
+          class="w-full bg-gray-950 border border-gray-700 rounded-lg p-2.5 text-xs text-gray-100 focus:outline-none focus:border-amber-500 resize-none">A small medieval watchtower with a grey stone base, yellow battlements, and a red archway door</textarea>
+        
+        <div class="grid grid-cols-2 gap-2 mt-2">
+          <div>
+            <label class="text-[10px] text-gray-400 block mb-1">Complexity</label>
+            <select id="complexitySelect" class="w-full bg-gray-950 border border-gray-800 rounded px-2 py-1 text-xs">
+              <option value="25-45 bricks (Microbuild)">Micro (25-45 pcs)</option>
+              <option value="50-90 bricks (Medium Desktop Set)" selected>Medium (50-90 pcs)</option>
+              <option value="100-160 bricks (Detailed Set)">Detailed (100+ pcs)</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-[10px] text-gray-400 block mb-1">Baseplate Grid</label>
+            <select id="gridSizeSelect" class="w-full bg-gray-950 border border-gray-800 rounded px-2 py-1 text-xs">
+              <option value="12">12 x 12 Studs</option>
+              <option value="16" selected>16 x 16 Studs</option>
+              <option value="24">24 x 24 Studs</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mode Switcher: Manual Payload vs Direct API -->
+      <div class="flex border-b border-gray-800 text-xs font-medium">
+        <button onclick="switchMode('manual')" id="modeManualBtn" class="flex-1 py-2 text-center border-b-2 border-amber-500 text-amber-400 bg-gray-800/40">
+          Copy/Paste Payload (Free)
+        </button>
+        <button onclick="switchMode('api')" id="modeApiBtn" class="flex-1 py-2 text-center border-b-2 border-transparent text-gray-400 hover:text-gray-200">
+          Direct LLM API
+        </button>
+      </div>
+
+      <!-- MANUAL PAYLOAD WORKFLOW -->
+      <div id="manualWorkflow" class="p-3 flex-1 flex flex-col gap-3 overflow-y-auto">
+        <div class="bg-gray-950/80 border border-gray-800 rounded-lg p-2.5">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[11px] font-semibold text-gray-300">Step A: Generate Payload Prompt</span>
+            <span class="text-[10px] text-amber-400 font-mono">Strict JSON Schema</span>
+          </div>
+          <p class="text-[11px] text-gray-400 mb-2 leading-relaxed">
+            Pairs your idea with 3D spatial grid rules, official LEGO Part IDs, and BrickLink Color codes.
+          </p>
+          <button onclick="copyCompiledPrompt()" id="copyPromptBtn" class="w-full py-2 px-3 bg-amber-500 hover:bg-amber-400 text-gray-950 font-semibold rounded text-xs transition flex items-center justify-center gap-1.5 shadow">
+            <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Payload Prompt for LLM
+          </button>
+        </div>
+
+        <div class="bg-gray-950/80 border border-gray-800 rounded-lg p-2.5 flex-1 flex flex-col">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[11px] font-semibold text-gray-300">Step B: Paste LLM JSON Response</span>
+            <button onclick="inspectCompiledPrompt()" class="text-[10px] text-blue-400 hover:underline">View Prompt</button>
+          </div>
+          <textarea id="jsonPasteInput" placeholder='Paste the JSON returned by ChatGPT, Claude, or Gemini here...'
+            class="w-full flex-1 bg-gray-900 border border-gray-800 rounded p-2 text-[11px] font-mono text-emerald-300 focus:outline-none focus:border-emerald-500 resize-none mb-2"></textarea>
+          <button onclick="parseAndRenderPastedJSON()" class="w-full py-2 px-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded text-xs transition flex items-center justify-center gap-1.5 shadow">
+            <i data-lucide="cpu" class="w-3.5 h-3.5"></i> Compile & Render 3D Structure
+          </button>
+        </div>
+      </div>
+
+      <!-- DIRECT API WORKFLOW -->
+      <div id="apiWorkflow" class="p-3 flex-1 hidden flex-col gap-3 overflow-y-auto">
+        <div>
+          <label class="text-[11px] text-gray-400 block mb-1">Provider</label>
+          <select id="apiProvider" onchange="updateModelPlaceholder()" class="w-full bg-gray-950 border border-gray-800 rounded px-2.5 py-1.5 text-xs">
+            <option value="openai">OpenAI (gpt-4o / o3-mini)</option>
+            <option value="gemini">Google Gemini (gemini-2.5-flash / pro)</option>
+            <option value="anthropic">Anthropic (claude-3-5-sonnet-latest)</option>
+          </select>
+        </div>
+        <div>
+          <label class="text-[11px] text-gray-400 block mb-1">Model Name</label>
+          <input id="apiModel" type="text" value="gpt-4o" class="w-full bg-gray-950 border border-gray-800 rounded px-2.5 py-1.5 text-xs font-mono">
+        </div>
+        <div>
+          <label class="text-[11px] text-gray-400 block mb-1">API Key (Stored only in browser RAM)</label>
+          <input id="apiKeyInput" type="password" placeholder="sk-..." class="w-full bg-gray-950 border border-gray-800 rounded px-2.5 py-1.5 text-xs font-mono">
+        </div>
+        <button onclick="generateViaAPI()" id="apiGenerateBtn" class="w-full py-2.5 px-3 bg-gradient-to-r from-amber-500 to-red-600 hover:from-amber-400 hover:to-red-500 text-white font-bold rounded text-xs transition flex items-center justify-center gap-2 shadow-lg mt-1">
+          <i data-lucide="wand-2" class="w-4 h-4"></i> Generate 3D LEGO Build
+        </button>
+        <div id="apiStatusBox" class="hidden p-2.5 rounded bg-gray-950 border border-gray-800 text-xs text-gray-300 font-mono whitespace-pre-wrap"></div>
+      </div>
+    </aside>
+
+    <!-- CENTER PANEL: 3D VIEWPORT & STEP PLAYER -->
+    <main class="flex-1 flex flex-col relative bg-gray-950 lego-stud-bg overflow-hidden">
+      
+      <!-- Top Viewport HUD -->
+      <div class="absolute top-3 left-3 right-3 flex items-start justify-between pointer-events-none z-10">
+        <!-- Model Info Card -->
+        <div class="bg-gray-900/85 backdrop-blur border border-gray-800 rounded-lg p-3 pointer-events-auto max-w-md shadow-xl">
+          <div class="flex items-center gap-2">
+            <h2 id="hudModelTitle" class="font-bold text-sm text-white">Loading Model...</h2>
+            <span id="hudDifficulty" class="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">Builder</span>
+          </div>
+          <p id="hudModelDesc" class="text-xs text-gray-400 mt-0.5"></p>
+          <div class="flex items-center gap-4 mt-2 pt-2 border-t border-gray-800/80 text-xs">
+            <div><span class="text-gray-500">Total Bricks:</span> <strong id="hudBrickCount" class="text-amber-400 font-mono">0</strong></div>
+            <div><span class="text-gray-500">Unique Lots:</span> <strong id="hudLotCount" class="text-emerald-400 font-mono">0</strong></div>
+            <div><span class="text-gray-500">Est. Part Cost:</span> <strong id="hudEstCost" class="text-green-400 font-mono">$0.00</strong></div>
+          </div>
+        </div>
+
+        <!-- Viewport Camera & Shader Controls -->
+        <div class="bg-gray-900/85 backdrop-blur border border-gray-800 rounded-lg p-2 pointer-events-auto flex items-center gap-2 shadow-xl">
+          <button onclick="resetCamera()" class="px-2 py-1 text-xs bg-gray-800 hover:bg-gray-700 rounded flex items-center gap-1" title="Reset Camera">
+            <i data-lucide="focus" class="w-3.5 h-3.5"></i> Reset View
+          </button>
+          <button onclick="toggleGhostMode()" id="ghostBtn" class="px-2 py-1 text-xs bg-gray-800 hover:bg-gray-700 rounded flex items-center gap-1" title="Highlight Current Step Bricks">
+            <i data-lucide="layers" class="w-3.5 h-3.5"></i> Highlight Step: OFF
+          </button>
+          <div class="flex items-center gap-1.5 pl-2 border-l border-gray-800">
+            <span class="text-[10px] text-gray-400">Explode:</span>
+            <input id="explodeSlider" type="range" min="0" max="1.5" step="0.05" value="0" oninput="updateExplodeView(this.value)" class="w-20 accent-amber-500">
+          </div>
+        </div>
+      </div>
+
+      <!-- Three.js Canvas Container -->
+      <div id="canvasContainer" class="flex-1 w-full h-full cursor-grab active:cursor-grabbing"></div>
+
+      <!-- Bottom HUD: Interactive Step-by-Step Player -->
+      <div class="bg-gray-900/95 backdrop-blur border-t border-gray-800 p-3 z-10">
+        <div class="max-w-4xl mx-auto flex flex-col gap-2">
+          
+          <!-- Current Step Callout Banner -->
+          <div class="flex items-center justify-between bg-gray-950 border border-gray-800 rounded-lg px-3 py-2">
+            <div class="flex items-center gap-3">
+              <span id="stepBadge" class="px-2.5 py-1 rounded bg-amber-500 text-gray-950 font-bold text-xs font-mono">STEP 1 / 1</span>
+              <div>
+                <h3 id="stepTitle" class="text-xs font-semibold text-white">Foundation Layer</h3>
+                <p id="stepDescription" class="text-[11px] text-gray-400">Place the base bricks on the grid.</p>
+              </div>
+            </div>
+            <!-- Mini parts needed for THIS step -->
+            <div id="stepMiniParts" class="flex items-center gap-1.5 overflow-x-auto max-w-sm py-0.5"></div>
+          </div>
+
+          <!-- Playback Controls -->
+          <div class="flex items-center gap-3">
+            <button onclick="changeStep(-1)" class="p-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-200 disabled:opacity-40" id="prevStepBtn">
+              <i data-lucide="skip-back" class="w-4 h-4"></i>
+            </button>
+            <button onclick="toggleAutoPlay()" id="playPauseBtn" class="px-3 py-1.5 rounded bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold text-xs flex items-center gap-1.5">
+              <i data-lucide="play" class="w-3.5 h-3.5"></i> <span>Auto-Build</span>
+            </button>
+            <button onclick="changeStep(1)" class="p-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-200 disabled:opacity-40" id="nextStepBtn">
+              <i data-lucide="skip-forward" class="w-4 h-4"></i>
+            </button>
+
+            <input id="stepSlider" type="range" min="1" max="1" value="1" oninput="jumpToStep(parseInt(this.value))" class="flex-1 accent-amber-500 cursor-pointer">
+
+            <button onclick="jumpToStep(999)" class="px-2.5 py-1 text-xs bg-gray-800 hover:bg-gray-700 rounded text-gray-300">
+              Show All
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- RIGHT PANEL: BUILD PLAN, SOURCING SETS & BUY PIECES -->
+    <aside class="w-96 border-l border-gray-800 bg-gray-900/60 flex flex-col shrink-0 z-10">
+      <!-- Right Panel Tabs -->
+      <div class="grid grid-cols-3 border-b border-gray-800 text-xs font-medium bg-gray-900">
+        <button onclick="switchRightTab('steps')" id="tabStepsBtn" class="py-2.5 border-b-2 border-amber-500 text-amber-400 flex items-center justify-center gap-1">
+          <i data-lucide="list-ordered" class="w-3.5 h-3.5"></i> Build Guide
+        </button>
+        <button onclick="switchRightTab('buy')" id="tabBuyBtn" class="py-2.5 border-b-2 border-transparent text-gray-400 hover:text-gray-200 flex items-center justify-center gap-1">
+          <i data-lucide="shopping-cart" class="w-3.5 h-3.5"></i> Buy Pieces
+        </button>
+        <button onclick="switchRightTab('sets')" id="tabSetsBtn" class="py-2.5 border-b-2 border-transparent text-gray-400 hover:text-gray-200 flex items-center justify-center gap-1">
+          <i data-lucide="package-search" class="w-3.5 h-3.5"></i> Known Sets
+        </button>
+      </div>
+
+      <!-- TAB 1: STEP-BY-STEP PLAN -->
+      <div id="panelSteps" class="flex-1 overflow-y-auto p-3 space-y-2.5"></div>
+
+      <!-- TAB 2: BUY PIECES (BOM + BRICKLINK XML + PICK A BRICK) -->
+      <div id="panelBuy" class="flex-1 overflow-y-auto p-3 hidden flex-col gap-3">
+        <!-- One-Click BrickLink Wanted List Action Card -->
+        <div class="bg-gradient-to-br from-blue-950/70 to-gray-900 border border-blue-800/60 rounded-lg p-3">
+          <div class="flex items-center justify-between mb-1">
+            <h3 class="text-xs font-bold text-blue-300 flex items-center gap-1.5">
+              <i data-lucide="shopping-bag" class="w-4 h-4"></i> Instant BrickLink Order
+            </h3>
+            <span class="text-[10px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded font-mono">XML Payload</span>
+          </div>
+          <p class="text-[11px] text-gray-300 leading-relaxed mb-2.5">
+            BrickLink's auto-finder matches all pieces across global stores for the lowest combined price.
+          </p>
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="copyBrickLinkXML()" id="copyXmlBtn" class="py-1.5 px-2 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded text-xs flex items-center justify-center gap-1 shadow">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i> 1. Copy XML
+            </button>
+            <a href="https://www.bricklink.com/v2/wanted/upload.page" target="_blank" rel="noopener"
+              class="py-1.5 px-2 bg-gray-800 hover:bg-gray-700 border border-gray-600 text-gray-100 font-semibold rounded text-xs flex items-center justify-center gap-1">
+              <i data-lucide="external-link" class="w-3.5 h-3.5"></i> 2. Open Upload
+            </a>
+          </div>
+          <button onclick="openAllPickABrick()" class="mt-2 w-full py-1.5 px-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 rounded text-xs flex items-center justify-center gap-1.5">
+            <i data-lucide="search" class="w-3.5 h-3.5"></i> Search Parts on LEGO Pick-a-Brick
+          </button>
+        </div>
+
+        <!-- Bill of Materials List -->
+        <div class="flex items-center justify-between text-xs text-gray-400 pt-1">
+          <span>Bill of Materials (Part Manifest)</span>
+          <span id="bomSummaryText" class="font-mono text-[11px]"></span>
+        </div>
+        <div id="bomListContainer" class="space-y-1.5"></div>
+      </div>
+
+      <!-- TAB 3: KNOWN OFFICIAL SETS FOR SOURCING -->
+      <div id="panelSets" class="flex-1 overflow-y-auto p-3 hidden flex-col gap-3">
+        <div class="bg-gray-950 border border-gray-800 rounded-lg p-3">
+          <h3 class="text-xs font-bold text-amber-400 flex items-center gap-1.5 mb-1">
+            <i data-lucide="compass" class="w-4 h-4"></i> Efficient Set Harvesting
+          </h3>
+          <p class="text-[11px] text-gray-400 leading-relaxed">
+            Often it is cheaper to buy 1 or 2 existing LEGO Creative/Classic boxes or theme sets that contain a high percentage of these parts than ordering individual pieces.
+          </p>
+        </div>
+        <div id="knownSetsContainer" class="space-y-2.5"></div>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- MODAL FOR INSPECTING SYSTEM PROMPT OR XML -->
+  <div id="payloadModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+    <div class="bg-gray-900 border border-gray-700 rounded-xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl">
+      <div class="p-3 border-b border-gray-800 flex items-center justify-between">
+        <h3 id="modalTitle" class="font-bold text-sm text-amber-400">Compiled Payload Prompt</h3>
+        <button onclick="closeModal()" class="text-gray-400 hover:text-white">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <pre id="modalContent" class="p-4 text-xs font-mono text-gray-200 overflow-y-auto flex-1 whitespace-pre-wrap select-all bg-gray-950"></pre>
+      <div class="p-3 border-t border-gray-800 flex justify-end gap-2">
+        <button onclick="closeModal()" class="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded text-xs">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /***********************************************************************
+     * 1. OFFICIAL LEGO PART & BRICKLINK COLOR DICTIONARY
+     ***********************************************************************/
+    const LEGO_PARTS_CATALOG = {
+      "3005": { name: "Brick 1 x 1", w: 1, l: 1, estPrice: 0.07 },
+      "3004": { name: "Brick 1 x 2", w: 1, l: 2, estPrice: 0.08 },
+      "3622": { name: "Brick 1 x 3", w: 1, l: 3, estPrice: 0.11 },
+      "3010": { name: "Brick 1 x 4", w: 1, l: 4, estPrice: 0.14 },
+      "3009": { name: "Brick 1 x 6", w: 1, l: 6, estPrice: 0.18 },
+      "3003": { name: "Brick 2 x 2", w: 2, l: 2, estPrice: 0.10 },
+      "3002": { name: "Brick 2 x 3", w: 2, l: 3, estPrice: 0.13 },
+      "3001": { name: "Brick 2 x 4", w: 2, l: 4, estPrice: 0.16 },
+      "2456": { name: "Brick 2 x 6", w: 2, l: 6, estPrice: 0.25 }
+    };
+
+    // Maps BrickLink Color ID -> Name & Hex for reliable XML export
+    const BRICKLINK_COLORS = {
+      1:  { name: "White", hex: "#F4F4F4" },
+      2:  { name: "Tan", hex: "#DEC69C" },
+      3:  { name: "Yellow", hex: "#F5CD2F" },
+      4:  { name: "Orange", hex: "#FE8A18" },
+      5:  { name: "Red", hex: "#C91A09" },
+      6:  { name: "Green", hex: "#237841" },
+      7:  { name: "Blue", hex: "#0055BF" },
+      11: { name: "Black", hex: "#1B2A34" },
+      15: { name: "Trans-Clear", hex: "#AEE9EF", transparent: true },
+      85: { name: "Dark Bluish Gray", hex: "#6C6E68" },
+      86: { name: "Light Bluish Gray", hex: "#A0A5A9" },
+      88: { name: "Reddish Brown", hex: "#582A12" }
+    };
+
+    /***********************************************************************
+     * 2. PRE-LOADED DEMO MODELS (CASTLE & DUCK)
+     ***********************************************************************/
+    const PRESET_MODELS = {
+      castle: {
+        title: "Classic Mini Yellow Castle Keep",
+        description: "A tribute to the legendary 1978 LEGO Set #375 Yellow Castle with grey foundation walls, red gateway pillars, and yellow battlements.",
+        difficulty: "Intermediate",
+        gridSize: 12,
+        recommendedSets: [
+          {
+            setNumber: "10698-1",
+            name: "LEGO Classic Large Creative Brick Box",
+            matchReason: "Contains 100% of the Yellow (ID 3), Light Bluish Gray (ID 86), and Red (ID 5) standard bricks needed for this keep.",
+            estimatedSetPrice: "$45.99"
+          },
+          {
+            setNumber: "11014-1",
+            name: "LEGO Classic Bricks and Wheels",
+            matchReason: "High concentration of 1x2, 2x2, and 2x4 primary color bricks at a low price-per-part ratio.",
+            estimatedSetPrice: "$19.99"
+          }
+        ],
+        steps: [
+          {
+            stepNumber: 1,
+            title: "Stone Foundation Perimeter",
+            instruction: "Lay down the Light Bluish Gray 2x4 and 2x2 foundation stones around a 8x8 footprint, leaving a 2-stud entrance gap in the front.",
+            bricks: [
+              { partId: "3001", colorId: 86, colorName: "Light Bluish Gray", hex: "#A0A5A9", x: 2, y: 0, z: 2, width: 4, length: 2 },
+              { partId: "3001", colorId: 86, colorName: "Light Bluish Gray", hex: "#A0A5A9", x: 6, y: 0, z: 2, width: 4, length: 2 },
+              { partId: "3001", colorId: 86, colorName: "Light Bluish Gray", hex: "#A0A5A9", x: 2, y: 0, z: 4, width: 2, length: 4 },
+              { partId: "3001", colorId: 86, colorName: "Light Bluish Gray", hex: "#A0A5A9", x: 8, y: 0, z: 4, width: 2, length: 4 },
+              { partId: "3003", colorId: 86, colorName: "Light Bluish Gray", hex: "#A0A5A9", x: 2, y: 0, z: 8, width: 2, length: 2 },
+              { partId: "3003", colorId: 86, colorName: "Light Bluish Gray", hex: "#A0A5A9", x: 8, y: 0, z: 8, width: 2, length: 2 }
+            ]
+          },
+          {
+            stepNumber: 2,
+            title: "Lower Yellow Curtain Wall & Red Gate Pillars",
+            instruction: "Build the first course of Classic Yellow castle walls and frame the front gate with Red 1x2 pillars.",
+            bricks: [
+              { partId: "3001", colorId: 3, colorName: "Yellow", hex: "#F5CD2F", x: 3, y: 1, z: 2, width: 6, length: 2 },
+              { partId: "3001", colorId: 3, colorName: "Yellow", hex: "#F5CD2F", x: 2, y: 1, z: 3, width: 2, length: 4 },
+              { partId: "3001", colorId: 3, colorName: "Yellow", hex: "#F5CD2F", x: 8, y: 1, z: 3, width: 2, length: 4 },
+              { partId: "3003", colorId: 3, colorName: "Yellow", hex: "#F5CD2F", x: 2, y: 1, z: 7, width: 2, length: 2 },
+              { partId: "3003", colorId: 3, colorName: "Yellow", hex: "#F5CD2F", x: 8, y: 1, z: 7, width: 2, length: 2 },
+              { partId: "3004", colorId: 5, colorName: "Red", hex: "#C91A09", x: 4, y: 1, z: 8, width: 1, length: 2 },
+              { partId: "3004", colorId: 5, colorName: "Red", hex: "#C91A09", x: 7, y: 1, z: 8, width: 1, length: 2 }
+            ]
+          },
+          {
+            stepNumber: 3,
+            title: "Upper Wall Course & Second Pillar Tier",
+            instruction: "Interlock the second course of Yellow bricks over the seams for structural strength and raise the Red gate frame.",
+            bricks: [
+              { partId: "3001", colorId: 3, colorName: "Yellow", hex: "#F5CD2F", x: 2, y: 2, z: 2, width: 4, length: 2 },
+              { partId: "3001", colorId: 3, colorName: "Yellow", hex: "#F5CD2F", x: 6, y: 2, z: 2, width: 4, length: 2 },
+              { partId: "3001", colorId: 3, colorName: "Yellow", hex: "#F5CD2F", x: 2, y: 2, z: 4, width: 2, length: 4 },
+              { partId: "3001", colorId: 3, colorName: "Yellow", hex: "#F5CD2F", x: 8, y: 2, z: 4, width: 2, length: 4 },
+              { partId: "3003", colorId: 3, colorName: "Yellow", hex: "#F5CD2F", x: 2, y: 2, z: 8, width: 2, length: 2 },
+              { partId: "3003", colorId: 3, colorName: "Yellow", hex: "#F5CD2F", x: 8, y: 2, z: 8, width: 2, length: 2 },
+              { partId: "3004", colorId: 5, colorName: "Red", hex: "#C91A09", x: 4, y: 2, z: 8, width: 1, length: 2 },
+              { partId: "3004", colorId: 5, colorName: "Red", hex: "#C91A09", x: 7, y: 2, z: 8, width: 1, length: 2 }
+            ]
+          },
+          {
+            stepNumber: 4,
+            title: "Gatehouse Lintel & Walkways",
+            instruction: "Bridge the front entrance gap with a Red 2x4 lintel brick and lock in the top perimeter wall.",
+            bricks: [
+              { partId: "3001", colorId: 5, colorName: "Red", hex: "#C91A09", x: 4, y: 3, z: 8, width: 4, length: 2 },
+              { partId: "3001", colorId: 3, colorName: "Yellow", hex: "#F5CD2F", x: 2, y: 3, z: 2, width: 4, length: 2 },
+              { partId: "3001", colorId: 3, colorName: "Yellow", hex: "#F5CD2F", x: 6, y: 3, z: 2, width: 4, length: 2 },
+              { partId: "3001", colorId: 3, colorName: "Yellow", hex: "#F5CD2F", x: 2, y: 3, z: 4, width: 2, length: 6 },
+              { partId: "3001", colorId: 3, colorName: "Yellow", hex: "#F5CD2F", x: 8, y: 3, z: 4, width: 2, length: 6 }
+            ]
+          },
+          {
+            stepNumber: 5,
+            title: "Crenellations & Royal Blue Banner",
+            instruction: "Top the four corners and walls with 2x2 battlements and place two Blue banner bricks above the gatehouse.",
+            bricks: [
+              { partId: "3003", colorId: 86, colorName: "Light Bluish Gray", hex: "#A0A5A9", x: 2, y: 4, z: 2, width: 2, length: 2 },
+              { partId: "3003", colorId: 86, colorName: "Light Bluish Gray", hex: "#A0A5A9", x: 8, y: 4, z: 2, width: 2, length: 2 },
+              { partId: "3003", colorId: 86, colorName: "Light Bluish Gray", hex: "#A0A5A9", x: 2, y: 4, z: 8, width: 2, length: 2 },
+              { partId: "3003", colorId: 86, colorName: "Light Bluish Gray", hex: "#A0A5A9", x: 8, y: 4, z: 8, width: 2, length: 2 },
+              { partId: "3003", colorId: 3, colorName: "Yellow", hex: "#F5CD2F", x: 5, y: 4, z: 2, width: 2, length: 2 },
+              { partId: "3003", colorId: 7, colorName: "Blue", hex: "#0055BF", x: 5, y: 4, z: 8, width: 2, length: 2 },
+              { partId: "3005", colorId: 5, colorName: "Red", hex: "#C91A09", x: 5, y: 5, z: 8, width: 1, length: 1 },
+              { partId: "3005", colorId: 5, colorName: "Red", hex: "#C91A09", x: 6, y: 5, z: 8, width: 1, length: 1 }
+            ]
+          }
+        ]
+      },
+      duck: {
+        title: "Iconic 6-Brick Wooden Duck Homage",
+        description: "Inspired by Ole Kirk Christiansen's famous wooden duck and the LEGO House exclusive model.",
+        difficulty: "Beginner",
+        gridSize: 12,
+        recommendedSets: [
+          {
+            setNumber: "10696-1",
+            name: "LEGO Classic Medium Creative Brick Box",
+            matchReason: "Includes all primary Red, Yellow, Green, and Black bricks required to build multiple variations of the duck.",
+            estimatedSetPrice: "$28.99"
+          }
+        ],
+        steps: [
+          {
+            stepNumber: 1,
+            title: "Webbed Feet & Pedestal",
+            instruction: "Start with two Orange 2x3 bricks forming the webbed feet and a 2x2 support column.",
+            bricks: [
+              { partId: "3002", colorId: 4, colorName: "Orange", hex: "#FE8A18", x: 5, y: 0, z: 4, width: 2, length: 3 },
+              { partId: "3003", colorId: 3, colorName: "Yellow", hex: "#F5CD2F", x: 5, y: 1, z: 5, width: 2, length: 2 }
+            ]
+          },
+          {
+            stepNumber: 2,
+            title: "Lower Feather Body",
+            instruction: "Span a 2x4 Red brick forward and a 2x3 Green brick backward to create the rounded belly and tail.",
+            bricks: [
+              { partId: "3001", colorId: 5, colorName: "Red", hex: "#C91A09", x: 5, y: 2, z: 4, width: 2, length: 4 },
+              { partId: "3003", colorId: 6, colorName: "Green", hex: "#237841", x: 5, y: 2, z: 8, width: 2, length: 2 }
+            ]
+          },
+          {
+            stepNumber: 3,
+            title: "Upper Wing & Tail Tip",
+            instruction: "Lock the body together with a 2x4 Yellow wing brick and raise the tail with a 1x2 Green brick.",
+            bricks: [
+              { partId: "3001", colorId: 3, colorName: "Yellow", hex: "#F5CD2F", x: 5, y: 3, z: 5, width: 2, length: 4 },
+              { partId: "3004", colorId: 6, colorName: "Green", hex: "#237841", x: 5, y: 3, z: 9, width: 2, length: 1 }
+            ]
+          },
+          {
+            stepNumber: 4,
+            title: "Neck, Beak & Eyes",
+            instruction: "Place the Orange beak projecting forward, add the Black eye brick, and cap the head in Green.",
+            bricks: [
+              { partId: "3002", colorId: 4, colorName: "Orange", hex: "#FE8A18", x: 5, y: 4, z: 3, width: 2, length: 3 },
+              { partId: "3003", colorId: 11, colorName: "Black", hex: "#1B2A34", x: 5, y: 5, z: 4, width: 2, length: 2 },
+              { partId: "3003", colorId: 6, colorName: "Green", hex: "#237841", x: 5, y: 6, z: 4, width: 2, length: 2 }
+            ]
+          }
+        ]
+      }
+    };
+
+    /***********************************************************************
+     * 3. THE PAYLOAD PROMPT GENERATOR (SPATIAL CAD INSTRUCTIONS FOR LLMs)
+     ***********************************************************************/
+    function buildPayloadPrompt() {
+      const userIdea = document.getElementById('userIdeaInput').value.trim() || "A small cozy cottage";
+      const complexity = document.getElementById('complexitySelect').value;
+      const gridSize = parseInt(document.getElementById('gridSizeSelect').value, 10);
+
+      return `You are an expert LEGO Master Builder and 3D CAD Compiler.
+Convert the following user request into a structurally sound, recognizable 3D LEGO model with step-by-step building instructions and real-world part sourcing.
+
+USER REQUEST: "${userIdea}"
+TARGET COMPLEXITY: ${complexity}
+BASEPLATE GRID: ${gridSize}x${gridSize} studs (x from 0 to ${gridSize - 1}, z from 0 to ${gridSize - 1}).
+
+STRICT SPATIAL & PART RULES:
+1. COORDINATE SYSTEM:
+   - (x, z) represents the MINIMUM (top-left) stud corner of the brick on the horizontal baseplate.
+   - A brick at (x, z) with width W and length L occupies studs [x .. x+W-1] along X and [z .. z+L-1] along Z.
+   - y represents the vertical brick layer (y=0 is resting on the baseplate, y=1 is stacked on top of y=0, etc.).
+   - NEVER overlap two bricks on the same y layer! Verify that [x .. x+W-1] and [z .. z+L-1] do not collide with any other brick on the same y level.
+   - Center the build roughly around (${Math.floor(gridSize / 2)}, ${Math.floor(gridSize / 2)}).
+
+2. ALLOWED OFFICIAL LEGO PARTS (Orient bricks by swapping width & length):
+   - "3005": Brick 1x1 (width:1, length:1)
+   - "3004": Brick 1x2 (width:1, length:2 OR width:2, length:1)
+   - "3622": Brick 1x3 (width:1, length:3 OR width:3, length:1)
+   - "3010": Brick 1x4 (width:1, length:4 OR width:4, length:1)
+   - "3003": Brick 2x2 (width:2, length:2)
+   - "3002": Brick 2x3 (width:2, length:3 OR width:3, length:2)
+   - "3001": Brick 2x4 (width:2, length:4 OR width:4, length:2)
+
+3. ALLOWED BRICKLINK COLOR IDs & HEX CODES:
+   - 1: White (#F4F4F4)
+   - 2: Tan (#DEC69C)
+   - 3: Yellow (#F5CD2F)
+   - 4: Orange (#FE8A18)
+   - 5: Red (#C91A09)
+   - 6: Green (#237841)
+   - 7: Blue (#0055BF)
+   - 11: Black (#1B2A34)
+   - 15: Trans-Clear (#AEE9EF)
+   - 85: Dark Bluish Gray (#6C6E68)
+   - 86: Light Bluish Gray (#A0A5A9)
+   - 88: Reddish Brown (#582A12)
+
+4. OUTPUT FORMAT:
+Return ONLY valid, raw JSON (no markdown fences or commentary outside JSON) matching this exact schema:
+{
+  "title": "Model Name",
+  "description": "Brief architectural overview",
+  "difficulty": "Beginner | Intermediate | Master",
+  "gridSize": ${gridSize},
+  "recommendedSets": [
+    {
+      "setNumber": "e.g. 10698-1",
+      "name": "Official LEGO Set Name",
+      "matchReason": "Why this set is an efficient way to source these specific parts/colors",
+      "estimatedSetPrice": "$39.99"
+    }
+  ],
+  "steps": [
+    {
+      "stepNumber": 1,
+      "title": "Step Name",
+      "instruction": "Clear human instruction for placing these bricks",
+      "bricks": [
+        {
+          "partId": "3001",
+          "colorId": 5,
+          "colorName": "Red",
+          "hex": "#C91A09",
+          "x": 4,
+          "y": 0,
+          "z": 4,
+          "width": 2,
+          "length": 4
+        }
+      ]
+    }
+  ]
+}`;
+    }
+
+    /***********************************************************************
+     * 4. THREE.JS 3D PROCEDURAL LEGO RENDERER
+     ***********************************************************************/
+    let scene, camera, renderer, controls, baseplateGroup, bricksGroup;
+    let currentModel = null;
+    let currentStepIndex = 1;
+    let totalSteps = 1;
+    let highlightCurrentStep = false;
+    let explodeFactor = 0;
+    let autoPlayInterval = null;
+    let soundEnabled = true;
+    let audioCtx = null;
+
+    const BRICK_HEIGHT = 1.2; // Authentic LEGO aspect ratio (9.6mm height / 8mm stud pitch = 1.2)
+    const STUD_RADIUS = 0.30;
+    const STUD_HEIGHT = 0.20;
+
+    function initThreeJS() {
+      const container = document.getElementById('canvasContainer');
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x090d16);
+
+      camera = new THREE.PerspectiveCamera(42, container.clientWidth / container.clientHeight, 0.1, 1000);
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      container.appendChild(renderer.domElement);
+
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.07;
+      controls.maxPolarAngle = Math.PI / 2 - 0.02;
+
+      // Studio Lighting
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.65);
+      scene.add(ambientLight);
+
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
+      dirLight.position.set(18, 32, 22);
+      dirLight.castShadow = true;
+      dirLight.shadow.mapSize.width = 2048;
+      dirLight.shadow.mapSize.height = 2048;
+      scene.add(dirLight);
+
+      const fillLight = new THREE.DirectionalLight(0x93c5fd, 0.35);
+      fillLight.position.set(-15, 12, -15);
+      scene.add(fillLight);
+
+      baseplateGroup = new THREE.Group();
+      bricksGroup = new THREE.Group();
+      scene.add(baseplateGroup);
+      scene.add(bricksGroup);
+
+      window.addEventListener('resize', () => {
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+      });
+
+      animateThreeJS();
+    }
+
+    function animateThreeJS() {
+      requestAnimationFrame(animateThreeJS);
+      controls.update();
+
+      // Smooth drop-in animation for newly spawned bricks
+      bricksGroup.children.forEach(mesh => {
+        if (mesh.userData && typeof mesh.userData.targetY === 'number') {
+          mesh.position.y += (mesh.userData.targetY - mesh.position.y) * 0.22;
+        }
+      });
+
+      renderer.render(scene, camera);
+    }
+
+    function buildBaseplate(gridSize) {
+      while (baseplateGroup.children.length > 0) {
+        baseplateGroup.remove(baseplateGroup.children[0]);
+      }
+
+      // Baseplate slab
+      const plateGeo = new THREE.BoxGeometry(gridSize, 0.25, gridSize);
+      const plateMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.1 });
+      const plateMesh = new THREE.Mesh(plateGeo, plateMat);
+      plateMesh.position.set(gridSize / 2, -0.125, gridSize / 2);
+      plateMesh.receiveShadow = true;
+      baseplateGroup.add(plateMesh);
+
+      // Grid lines
+      const gridHelper = new THREE.GridHelper(gridSize, gridSize, 0x475569, 0x334155);
+      gridHelper.position.set(gridSize / 2, 0.01, gridSize / 2);
+      baseplateGroup.add(gridHelper);
+
+      // Baseplate studs
+      const studGeo = new THREE.CylinderGeometry(STUD_RADIUS, STUD_RADIUS, 0.12, 16);
+      const studMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.5 });
+      for (let x = 0; x < gridSize; x++) {
+        for (let z = 0; z < gridSize; z++) {
+          const stud = new THREE.Mesh(studGeo, studMat);
+          stud.position.set(x + 0.5, 0.06, z + 0.5);
+          stud.receiveShadow = true;
+          baseplateGroup.add(stud);
+        }
+      }
+    }
+
+    function createProceduralLegoBrick(brick, stepNumber) {
+      const w = Number(brick.width) || 1;
+      const l = Number(brick.length) || 1;
+      const hexColor = brick.hex || (BRICKLINK_COLORS[brick.colorId] ? BRICKLINK_COLORS[brick.colorId].hex : "#F5CD2F");
+      const isTrans = brick.colorId === 15;
+
+      const brickContainer = new THREE.Group();
+
+      const mat = new THREE.MeshPhysicalMaterial({
+        color: new THREE.Color(hexColor),
+        roughness: 0.22,
+        metalness: 0.02,
+        clearcoat: 0.6,
+        clearcoatRoughness: 0.15,
+        transparent: isTrans,
+        opacity: isTrans ? 0.65 : 1.0
+      });
+
+      // Slight 0.03 tolerance gap between bricks so individual seams are visible
+      const bodyGeo = new THREE.BoxGeometry(w - 0.03, BRICK_HEIGHT - 0.02, l - 0.03);
+      const bodyMesh = new THREE.Mesh(bodyGeo, mat);
+      bodyMesh.castShadow = true;
+      bodyMesh.receiveShadow = true;
+      brickContainer.add(bodyMesh);
+
+      // Subtle dark seam edges
+      const edgesGeo = new THREE.EdgesGeometry(bodyGeo);
+      const edgesMat = new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22 });
+      const edgesLine = new THREE.LineSegments(edgesGeo, edgesMat);
+      brickContainer.add(edgesLine);
+
+      // Top Studs
+      const studGeo = new THREE.CylinderGeometry(STUD_RADIUS, STUD_RADIUS, STUD_HEIGHT, 20);
+      for (let sx = 0; sx < w; sx++) {
+        for (let sz = 0; sz < l; sz++) {
+          const studMesh = new THREE.Mesh(studGeo, mat);
+          studMesh.position.set(
+            -w / 2 + 0.5 + sx,
+            BRICK_HEIGHT / 2 + STUD_HEIGHT / 2 - 0.01,
+            -l / 2 + 0.5 + sz
+          );
+          studMesh.castShadow = true;
+          studMesh.receiveShadow = true;
+          brickContainer.add(studMesh);
+        }
+      }
+
+      const targetX = Number(brick.x) + w / 2;
+      const baseTargetY = Number(brick.y) * BRICK_HEIGHT + BRICK_HEIGHT / 2;
+      const targetZ = Number(brick.z) + l / 2;
+
+      brickContainer.position.set(targetX, baseTargetY + 3.5, targetZ);
+      brickContainer.userData = {
+        stepNumber,
+        layerY: Number(brick.y),
+        baseTargetY,
+        targetY: baseTargetY,
+        material: mat,
+        isTrans
+      };
+
+      return brickContainer;
+    }
+
+    function renderModelToScene(modelData) {
+      currentModel = modelData;
+      const gridSize = Number(modelData.gridSize) || 16;
+      buildBaseplate(gridSize);
+
+      while (bricksGroup.children.length > 0) {
+        bricksGroup.remove(bricksGroup.children[0]);
+      }
+
+      totalSteps = (modelData.steps && modelData.steps.length) || 1;
+      currentStepIndex = totalSteps;
+
+      modelData.steps.forEach((step, idx) => {
+        const sNum = step.stepNumber || (idx + 1);
+        (step.bricks || []).forEach(brick => {
+          const mesh = createProceduralLegoBrick(brick, sNum);
+          bricksGroup.add(mesh);
+        });
+      });
+
+      resetCamera(gridSize);
+      updateHUDAndPanels();
+      updateStepVisibility(false);
+    }
+
+    function updateStepVisibility(playSoundEffect = true) {
+      bricksGroup.children.forEach(brickGroup => {
+        const sNum = brickGroup.userData.stepNumber;
+        const layerY = brickGroup.userData.layerY;
+        const mat = brickGroup.userData.material;
+
+        const wasVisible = brickGroup.visible;
+        brickGroup.visible = sNum <= currentStepIndex;
+
+        // Calculate target Y including Explode slider
+        brickGroup.userData.targetY = brickGroup.userData.baseTargetY + (layerY * explodeFactor * 0.8);
+
+        // Drop animation when newly revealed
+        if (!wasVisible && brickGroup.visible) {
+          brickGroup.position.y = brickGroup.userData.targetY + 3.0;
+        }
+
+        // Ghost mode: dim older steps so current step pops
+        if (highlightCurrentStep && sNum < currentStepIndex) {
+          mat.transparent = true;
+          mat.opacity = 0.25;
+        } else {
+          mat.transparent = brickGroup.userData.isTrans;
+          mat.opacity = brickGroup.userData.isTrans ? 0.65 : 1.0;
+        }
+      });
+
+      if (playSoundEffect) playBrickSnapSound();
+      updateStepPlayerUI();
+    }
+
+    function resetCamera(gridSizeOverride) {
+      const gridSize = gridSizeOverride || (currentModel ? Number(currentModel.gridSize) : 16) || 16;
+      const center = gridSize / 2;
+      controls.target.set(center, 2.2, center);
+      camera.position.set(center + gridSize * 0.95, gridSize * 0.8, center + gridSize * 0.95);
+      controls.update();
+    }
+
+    /***********************************************************************
+     * 5. WEB AUDIO SYNTHESIZED "LEGO BRICK SNAP" SOUND
+     ***********************************************************************/
+    function playBrickSnapSound() {
+      if (!soundEnabled) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const now = audioCtx.currentTime;
+
+        // Crisp ABS plastic click transient
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(1100, now);
+        osc.frequency.exponentialRampToValueAtTime(260, now + 0.045);
+
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.05);
+      } catch (e) {}
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      const btn = document.getElementById('soundToggleBtn');
+      btn.className = soundEnabled
+        ? "p-1.5 rounded bg-gray-800 hover:bg-gray-700 border border-gray-700 text-emerald-400"
+        : "p-1.5 rounded bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-500";
+    }
+
+    /***********************************************************************
+     * 6. BILL OF MATERIALS (BOM), BRICKLINK XML & SET SOURCING
+     ***********************************************************************/
+    function computeBillOfMaterials(modelData) {
+      const map = new Map();
+      let totalBricks = 0;
+      let totalCost = 0;
+
+      (modelData.steps || []).forEach(step => {
+        (step.bricks || []).forEach(b => {
+          totalBricks++;
+          const partId = String(b.partId || "3001");
+          const colorId = Number(b.colorId) || 3;
+          const key = `${partId}_${colorId}`;
+          const partMeta = LEGO_PARTS_CATALOG[partId] || { name: `Brick ${b.width}x${b.length}`, estPrice: 0.12 };
+          const colorMeta = BRICKLINK_COLORS[colorId] || { name: b.colorName || "Custom", hex: b.hex || "#F5CD2F" };
+
+          if (!map.has(key)) {
+            map.set(key, {
+              partId,
+              partName: partMeta.name,
+              colorId,
+              colorName: colorMeta.name,
+              hex: b.hex || colorMeta.hex,
+              qty: 0,
+              unitPrice: partMeta.estPrice
+            });
+          }
+          const entry = map.get(key);
+          entry.qty += 1;
+          totalCost += partMeta.estPrice;
+        });
+      });
+
+      return {
+        items: Array.from(map.values()).sort((a, b) => b.qty - a.qty),
+        totalBricks,
+        uniqueLots: map.size,
+        totalCost
+      };
+    }
+
+    function generateBrickLinkXMLString() {
+      if (!currentModel) return "";
+      const bom = computeBillOfMaterials(currentModel);
+      let xml = `<INVENTORY>\n`;
+      bom.items.forEach(item => {
+        xml += `  <ITEM>\n`;
+        xml += `    <ITEMTYPE>P</ITEMTYPE>\n`;
+        xml += `    <ITEMID>${item.partId}</ITEMID>\n`;
+        xml += `    <COLOR>${item.colorId}</COLOR>\n`;
+        xml += `    <MINQTY>${item.qty}</MINQTY>\n`;
+        xml += `  </ITEM>\n`;
+      });
+      xml += `</INVENTORY>`;
+      return xml;
+    }
+
+    function copyBrickLinkXML() {
+      const xml = generateBrickLinkXMLString();
+      navigator.clipboard.writeText(xml);
+      const btn = document.getElementById('copyXmlBtn');
+      const orig = btn.innerHTML;
+      btn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i> XML Copied!`;
+      lucide.createIcons();
+      setTimeout(() => { btn.innerHTML = orig; lucide.createIcons(); }, 2000);
+    }
+
+    function openAllPickABrick() {
+      if (!currentModel) return;
+      const bom = computeBillOfMaterials(currentModel);
+      const uniquePartIds = [...new Set(bom.items.map(i => i.partId))].join(" ");
+      const url = `https://www.lego.com/en-us/pick-and-build/pick-a-brick?query=${encodeURIComponent(uniquePartIds)}`;
+      window.open(url, '_blank');
+    }
+
+    /***********************************************************************
+     * 7. UI UPDATES & STEP PLAYBACK CONTROLS
+     ***********************************************************************/
+    function updateHUDAndPanels() {
+      if (!currentModel) return;
+      const bom = computeBillOfMaterials(currentModel);
+
+      // Top HUD
+      document.getElementById('hudModelTitle').textContent = currentModel.title || "Custom LEGO Structure";
+      document.getElementById('hudModelDesc').textContent = currentModel.description || "";
+      document.getElementById('hudDifficulty').textContent = currentModel.difficulty || "Builder";
+      document.getElementById('hudBrickCount').textContent = bom.totalBricks;
+      document.getElementById('hudLotCount').textContent = bom.uniqueLots;
+      document.getElementById('hudEstCost').textContent = `$${bom.totalCost.toFixed(2)}`;
+
+      // Slider range
+      const slider = document.getElementById('stepSlider');
+      slider.max = totalSteps;
+      slider.value = currentStepIndex;
+
+      // Right Panel Tab 1: Step-by-Step Build Guide
+      const stepsContainer = document.getElementById('panelSteps');
+      stepsContainer.innerHTML = (currentModel.steps || []).map((step, idx) => {
+        const sNum = step.stepNumber || (idx + 1);
+        const isActive = sNum === currentStepIndex;
+        return `
+          <div onclick="jumpToStep(${sNum})" class="p-2.5 rounded-lg border cursor-pointer transition ${
+            isActive ? 'bg-amber-500/10 border-amber-500/60' : 'bg-gray-950/70 border-gray-800 hover:border-gray-700'
+          }">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-bold ${isActive ? 'text-amber-400' : 'text-gray-200'}">Step ${sNum}: ${step.title || ''}</span>
+              <span class="text-[10px] font-mono text-gray-400">${(step.bricks || []).length} pcs</span>
+            </div>
+            <p class="text-[11px] text-gray-400 leading-relaxed">${step.instruction || ''}</p>
+          </div>
+        `;
+      }).join('');
+
+      // Right Panel Tab 2: BOM & Buy Links
+      document.getElementById('bomSummaryText').textContent = `${bom.uniqueLots} Lots / ${bom.totalBricks} Pcs`;
+      document.getElementById('bomListContainer').innerHTML = bom.items.map(item => `
+        <div class="p-2 rounded bg-gray-950 border border-gray-800 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5">
+            <div class="w-6 h-6 rounded border border-white/20 shrink-0 shadow-inner" style="background-color: ${item.hex}"></div>
+            <div>
+              <div class="text-xs font-semibold text-gray-200">${item.qty}x ${item.partName}</div>
+              <div class="text-[10px] text-gray-400 font-mono">${item.colorName} • ID #${item.partId}</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-[11px] font-mono text-emerald-400 mr-1">$${(item.qty * item.unitPrice).toFixed(2)}</span>
+            <a href="https://www.bricklink.com/v2/catalog/catalogitem.page?P=${item.partId}&C=${item.colorId}" target="_blank" rel="noopener"
+              class="px-2 py-1 bg-gray-800 hover:bg-blue-600 text-[10px] rounded text-gray-200 transition flex items-center gap-1" title="Buy exact part & color on BrickLink">
+              Buy <i data-lucide="external-link" class="w-2.5 h-2.5"></i>
+            </a>
+          </div>
+        </div>
+      `).join('');
+
+      // Right Panel Tab 3: Recommended Official Sets
+      const sets = currentModel.recommendedSets || [];
+      document.getElementById('knownSetsContainer').innerHTML = sets.map(s => `
+        <div class="p-3 rounded-lg bg-gray-950 border border-gray-800 space-y-2">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">Set #${s.setNumber}</span>
+              <h4 class="text-xs font-bold text-white mt-1">${s.name}</h4>
+            </div>
+            <span class="text-xs font-mono text-emerald-400 font-semibold">${s.estimatedSetPrice || '$29.99'}</span>
+          </div>
+          <p class="text-[11px] text-gray-400 leading-relaxed">${s.matchReason}</p>
+          <div class="flex gap-2 pt-1">
+            <a href="https://www.bricklink.com/v2/catalog/catalogitem.page?S=${encodeURIComponent(s.setNumber)}" target="_blank" rel="noopener"
+              class="flex-1 py-1.5 px-2 bg-gray-800 hover:bg-gray-700 rounded text-[11px] text-center text-blue-300 font-medium">
+              BrickLink Set Inventory ↗
+            </a>
+            <a href="https://brickset.com/sets/${encodeURIComponent(s.setNumber)}" target="_blank" rel="noopener"
+              class="flex-1 py-1.5 px-2 bg-gray-800 hover:bg-gray-700 rounded text-[11px] text-center text-gray-300 font-medium">
+              View on Brickset ↗
+            </a>
+          </div>
+        </div>
+      `).join('');
+
+      lucide.createIcons();
+    }
+
+    function updateStepPlayerUI() {
+      if (!currentModel || !currentModel.steps) return;
+      const stepObj = currentModel.steps[currentStepIndex - 1] || currentModel.steps[0];
+
+      document.getElementById('stepBadge').textContent = `STEP ${currentStepIndex} / ${totalSteps}`;
+      document.getElementById('stepTitle').textContent = stepObj.title || `Layer ${currentStepIndex}`;
+      document.getElementById('stepDescription').textContent = stepObj.instruction || "";
+      document.getElementById('stepSlider').value = currentStepIndex;
+
+      // Aggregate mini parts for this specific step
+      const stepMap = new Map();
+      (stepObj.bricks || []).forEach(b => {
+        const key = `${b.partId}_${b.hex}`;
+        if (!stepMap.has(key)) {
+          stepMap.set(key, { partId: b.partId, w: b.width, l: b.length, hex: b.hex || "#F5CD2F", qty: 0 });
+        }
+        stepMap.get(key).qty++;
+      });
+
+      document.getElementById('stepMiniParts').innerHTML = Array.from(stepMap.values()).map(p => `
+        <div class="flex items-center gap-1 bg-gray-900 border border-gray-800 px-2 py-1 rounded text-[10px] font-mono shrink-0">
+          <span class="w-3 h-3 rounded-sm inline-block border border-white/20" style="background:${p.hex}"></span>
+          <span>${p.qty}x (${p.w}×${p.l})</span>
+        </div>
+      `).join('');
+
+      // Highlight active step card in right panel
+      updateHUDAndPanels();
+    }
+
+    function changeStep(delta) {
+      stopAutoPlay();
+      currentStepIndex = Math.max(1, Math.min(totalSteps, currentStepIndex + delta));
+      updateStepVisibility(true);
+    }
+
+    function jumpToStep(stepNum) {
+      stopAutoPlay();
+      currentStepIndex = Math.max(1, Math.min(totalSteps, stepNum));
+      updateStepVisibility(true);
+    }
+
+    function toggleAutoPlay() {
+      if (autoPlayInterval) {
+        stopAutoPlay();
+        return;
+      }
+      if (currentStepIndex >= totalSteps) currentStepIndex = 0;
+      const btn = document.getElementById('playPauseBtn');
+      btn.innerHTML = `<i data-lucide="pause" class="w-3.5 h-3.5"></i> <span>Pause</span>`;
+      lucide.createIcons();
+
+      autoPlayInterval = setInterval(() => {
+        if (currentStepIndex < totalSteps) {
+          currentStepIndex++;
+          updateStepVisibility(true);
+        } else {
+          stopAutoPlay();
+        }
+      }, 1100);
+    }
+
+    function stopAutoPlay() {
+      if (autoPlayInterval) {
+        clearInterval(autoPlayInterval);
+        autoPlayInterval = null;
+        const btn = document.getElementById('playPauseBtn');
+        btn.innerHTML = `<i data-lucide="play" class="w-3.5 h-3.5"></i> <span>Auto-Build</span>`;
+        lucide.createIcons();
+      }
+    }
+
+    function toggleGhostMode() {
+      highlightCurrentStep = !highlightCurrentStep;
+      const btn = document.getElementById('ghostBtn');
+      btn.innerHTML = `<i data-lucide="layers" class="w-3.5 h-3.5"></i> Highlight Step: ${highlightCurrentStep ? 'ON' : 'OFF'}`;
+      btn.className = highlightCurrentStep
+        ? "px-2 py-1 text-xs bg-amber-500 text-gray-950 font-semibold rounded flex items-center gap-1"
+        : "px-2 py-1 text-xs bg-gray-800 hover:bg-gray-700 rounded flex items-center gap-1";
+      lucide.createIcons();
+      updateStepVisibility(false);
+    }
+
+    function updateExplodeView(val) {
+      explodeFactor = parseFloat(val);
+      updateStepVisibility(false);
+    }
+
+    /***********************************************************************
+     * 8. WORKFLOW HANDLERS (MANUAL COPY/PASTE & DIRECT API CALLS)
+     ***********************************************************************/
+    function switchMode(mode) {
+      const isManual = mode === 'manual';
+      document.getElementById('manualWorkflow').className = isManual ? 'p-3 flex-1 flex flex-col gap-3 overflow-y-auto' : 'hidden';
+      document.getElementById('apiWorkflow').className = !isManual ? 'p-3 flex-1 flex flex-col gap-3 overflow-y-auto' : 'hidden';
+
+      document.getElementById('modeManualBtn').className = isManual
+        ? 'flex-1 py-2 text-center border-b-2 border-amber-500 text-amber-400 bg-gray-800/40'
+        : 'flex-1 py-2 text-center border-b-2 border-transparent text-gray-400 hover:text-gray-200';
+      document.getElementById('modeApiBtn').className = !isManual
+        ? 'flex-1 py-2 text-center border-b-2 border-amber-500 text-amber-400 bg-gray-800/40'
+        : 'flex-1 py-2 text-center border-b-2 border-transparent text-gray-400 hover:text-gray-200';
+    }
+
+    function switchRightTab(tab) {
+      ['steps', 'buy', 'sets'].forEach(t => {
+        const panel = document.getElementById('panel' + t.charAt(0).toUpperCase() + t.slice(1));
+        const btn = document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1) + 'Btn');
+        if (t === tab) {
+          panel.classList.remove('hidden');
+          panel.classList.add('flex', 'flex-col');
+          btn.className = "py-2.5 border-b-2 border-amber-500 text-amber-400 flex items-center justify-center gap-1";
+        } else {
+          panel.classList.add('hidden');
+          panel.classList.remove('flex', 'flex-col');
+          btn.className = "py-2.5 border-b-2 border-transparent text-gray-400 hover:text-gray-200 flex items-center justify-center gap-1";
+        }
+      });
+    }
+
+    function copyCompiledPrompt() {
+      const prompt = buildPayloadPrompt();
+      navigator.clipboard.writeText(prompt);
+      const btn = document.getElementById('copyPromptBtn');
+      const orig = btn.innerHTML;
+      btn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i> Copied! Paste into ChatGPT/Claude`;
+      lucide.createIcons();
+      setTimeout(() => { btn.innerHTML = orig; lucide.createIcons(); }, 2500);
+    }
+
+    function inspectCompiledPrompt() {
+      document.getElementById('modalTitle').textContent = "Compiled Spatial LEGO Payload Prompt";
+      document.getElementById('modalContent').textContent = buildPayloadPrompt();
+      document.getElementById('payloadModal').classList.remove('hidden');
+      document.getElementById('payloadModal').classList.add('flex');
+    }
+
+    function closeModal() {
+      document.getElementById('payloadModal').classList.add('hidden');
+      document.getElementById('payloadModal').classList.remove('flex');
+    }
+
+    function extractCleanJSON(rawText) {
+      const cleaned = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+      const firstBrace = cleaned.indexOf('{');
+      const lastBrace = cleaned.lastIndexOf('}');
+      if (firstBrace === -1 || lastBrace === -1) throw new Error("No JSON object found in response.");
+      return JSON.parse(cleaned.substring(firstBrace, lastBrace + 1));
+    }
+
+    function parseAndRenderPastedJSON() {
+      const raw = document.getElementById('jsonPasteInput').value;
+      if (!raw.trim()) {
+        alert("Please paste the JSON response from your LLM first.");
+        return;
+      }
+      try {
+        const parsed = extractCleanJSON(raw);
+        renderModelToScene(parsed);
+      } catch (err) {
+        alert("Could not parse JSON: " + err.message);
+      }
+    }
+
+    function updateModelPlaceholder() {
+      const prov = document.getElementById('apiProvider').value;
+      const modelInput = document.getElementById('apiModel');
+      if (prov === 'openai') modelInput.value = 'gpt-4o';
+      if (prov === 'gemini') modelInput.value = 'gemini-2.5-flash';
+      if (prov === 'anthropic') modelInput.value = 'claude-3-5-sonnet-latest';
+    }
+
+    async function generateViaAPI() {
+      const provider = document.getElementById('apiProvider').value;
+      const model = document.getElementById('apiModel').value.trim();
+      const apiKey = document.getElementById('apiKeyInput').value.trim();
+      const statusBox = document.getElementById('apiStatusBox');
+      const btn = document.getElementById('apiGenerateBtn');
+
+      if (!apiKey) {
+        alert("Please enter your API key, or switch to the Free Copy/Paste Payload tab.");
+        return;
+      }
+
+      const payloadPrompt = buildPayloadPrompt();
+      statusBox.classList.remove('hidden');
+      statusBox.textContent = `Compiling 3D spatial grid via ${provider.toUpperCase()} (${model})...\nThis usually takes 8-15 seconds.`;
+      btn.disabled = true;
+      btn.classList.add('opacity-50');
+
+      try {
+        let responseText = "";
+
+        if (provider === 'openai') {
+          const res = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+              model,
+              messages: [{ role: 'user', content: payloadPrompt }],
+              response_format: { type: 'json_object' }
+            })
+          });
+          const data = await res.json();
+          if (data.error) throw new Error(data.error.message);
+          responseText = data.choices[0].message.content;
+
+        } else if (provider === 'gemini') {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: payloadPrompt }] }],
+              generationConfig: { responseMimeType: "application/json" }
+            })
+          });
+          const data = await res.json();
+          if (data.error) throw new Error(data.error.message);
+          responseText = data.candidates[0].content.parts[0].text;
+
+        } else if (provider === 'anthropic') {
+          const res = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': apiKey,
+              'anthropic-version': '2023-06-01',
+              'anthropic-dangerous-direct-browser-access': 'true'
+            },
+            body: JSON.stringify({
+              model,
+              max_tokens: 4096,
+              messages: [{ role: 'user', content: payloadPrompt }]
+            })
+          });
+          const data = await res.json();
+          if (data.error) throw new Error(data.error.message);
+          responseText = data.content[0].text;
+        }
+
+        const parsed = extractCleanJSON(responseText);
+        document.getElementById('jsonPasteInput').value = JSON.stringify(parsed, null, 2);
+        renderModelToScene(parsed);
+        statusBox.textContent = `✓ Successfully compiled "${parsed.title}"!`;
+      } catch (err) {
+        statusBox.textContent = `Error: ${err.message}`;
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove('opacity-50');
+      }
+    }
+
+    function loadPreset(name) {
+      stopAutoPlay();
+      const model = PRESET_MODELS[name];
+      if (!model) return;
+      document.getElementById('jsonPasteInput').value = JSON.stringify(model, null, 2);
+      renderModelToScene(model);
+    }
+
+    // Boot Studio
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      initThreeJS();
+      loadPreset('castle');
+    });
+  </script>
+</body>
+</html>
